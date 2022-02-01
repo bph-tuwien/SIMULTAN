@@ -1,0 +1,242 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="..\..\packages\MSTest.TestAdapter.2.2.7\build\net45\MSTest.TestAdapter.props" Condition="Exists('..\..\packages\MSTest.TestAdapter.2.2.7\build\net45\MSTest.TestAdapter.props')" />
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{A6B45407-273F-4039-BB39-59EED725F5C5}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>SIMULTAN.Tests</RootNamespace>
+    <AssemblyName>SIMULTAN.Tests</AssemblyName>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <ProjectTypeGuids>{3AC096D0-A1C2-E12C-1390-A8335801FDAB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">15.0</VisualStudioVersion>
+    <VSToolsPath Condition="'$(VSToolsPath)' == ''">$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)</VSToolsPath>
+    <ReferencePath>$(ProgramFiles)\Common Files\microsoft shared\VSTT\$(VisualStudioVersion)\UITestExtensionPackages</ReferencePath>
+    <IsCodedUITest>False</IsCodedUITest>
+    <TestProjectType>UnitTest</TestProjectType>
+    <NuGetPackageImportStamp>
+    </NuGetPackageImportStamp>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <LangVersion>7.3</LangVersion>
+    <UseVSHostingProcess>true</UseVSHostingProcess>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <LangVersion>7.3</LangVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="Microsoft.VisualStudio.TestPlatform.TestFramework, Version=14.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\..\..\packages\MSTest.TestFramework.2.2.7\lib\net45\Microsoft.VisualStudio.TestPlatform.TestFramework.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.VisualStudio.TestPlatform.TestFramework.Extensions, Version=14.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\..\..\packages\MSTest.TestFramework.2.2.7\lib\net45\Microsoft.VisualStudio.TestPlatform.TestFramework.Extensions.dll</HintPath>
+    </Reference>
+    <Reference Include="PresentationCore" />
+    <Reference Include="Sprache, Version=2.3.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\..\packages\Sprache.2.3.1\lib\net45\Sprache.dll</HintPath>
+    </Reference>
+    <Reference Include="Sprache.Calc, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\..\packages\Sprache.Calc.1.1.0\lib\netstandard2.0\Sprache.Calc.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.ComponentModel.Composition" />
+    <Reference Include="System.Configuration" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.IO.Compression.FileSystem" />
+    <Reference Include="System.Numerics" />
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="WindowsBase" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Calculations\MultiValueCalculationBinaryFunctionTests.cs" />
+    <Compile Include="Calculations\MultiValueCalculationTests.cs" />
+    <Compile Include="Calculations\MultiValueCalculationUnaryFunctionTests.cs" />
+    <Compile Include="Components\AccessProfileTests.cs" />
+    <Compile Include="Components\AccessTrackerTests.cs" />
+    <Compile Include="Components\CalculationManagementTests.cs" />
+    <Compile Include="Components\ChildComponentManagementTests.cs" />
+    <Compile Include="Components\ComponentInteractionTests.cs" />
+    <Compile Include="Components\ComponentManagementTests.cs" />
+    <Compile Include="Components\ComponentTests.cs" />
+    <Compile Include="Components\InstanceManagementTests.cs" />
+    <Compile Include="Components\ParameterManagementTests.cs" />
+    <Compile Include="Components\ReferenceManagementTests.cs" />
+    <Compile Include="Components\ReferenceTests.cs" />
+    <Compile Include="Components\UserRootComponentCollectionTests.cs" />
+    <Compile Include="Components\SlotTests.cs" />
+    <Compile Include="Geometry\Algorithms\BaseGeometryAlgorithmsTests.cs" />
+    <Compile Include="Geometry\Algorithms\FaceAlgorithmTests.cs" />
+    <Compile Include="Geometry\Algorithms\GeoReferenceAlgorithmsTests.cs" />
+    <Compile Include="Geometry\Algorithms\MathTests.cs" />
+    <Compile Include="Geometry\Algorithms\OffsetSurfaceAlgorithmTests.cs" />
+    <Compile Include="Geometry\Algorithms\VolumeAlgorithmTests.cs" />
+    <Compile Include="Geometry\BaseGeometries\BaseGeometryTests.cs" />
+    <Compile Include="Geometry\BaseGeometries\DerivedColorTests.cs" />
+    <Compile Include="Geometry\BaseGeometries\EdgeLoopTests.cs" />
+    <Compile Include="Geometry\BaseGeometries\EdgeTests.cs" />
+    <Compile Include="Geometry\BaseGeometries\FaceTests.cs" />
+    <Compile Include="Geometry\BaseGeometries\GeometryModelTests.cs" />
+    <Compile Include="Geometry\BaseGeometries\GeometryReferenceTests.cs" />
+    <Compile Include="Geometry\BaseGeometries\GeometrySelectionModelTests.cs" />
+    <Compile Include="Geometry\BaseGeometries\LayerTests.cs" />
+    <Compile Include="Geometry\BaseGeometries\PEdgeTests.cs" />
+    <Compile Include="Geometry\BaseGeometries\PolylineTests.cs" />
+    <Compile Include="Geometry\BaseGeometries\ProxyGeometryTests.cs" />
+    <Compile Include="Geometry\BaseGeometries\VertexTests.cs" />
+    <Compile Include="Geometry\BaseGeometries\VolumeTests.cs" />
+    <Compile Include="Geometry\EventData\BaseGeometryEventData.cs" />
+    <Compile Include="Geometry\EventData\GeometryModelEventData.cs" />
+    <Compile Include="Geometry\EventData\GeometryModelHelper.cs" />
+    <Compile Include="Geometry\EventData\PropertyChangedEventData.cs" />
+    <Compile Include="Geometry\EventData\SelectionModelEventData.cs" />
+    <Compile Include="Instances\InstanceFaceGeometryTests.cs" />
+    <Compile Include="Instances\InstanceNetworkTests.cs" />
+    <Compile Include="Instances\InstanceTests.cs" />
+    <Compile Include="Excel\FilterTests.cs" />
+    <Compile Include="Excel\MapablePropertiesTests.cs" />
+    <Compile Include="Instances\InstanceTestsBugcases.cs" />
+    <Compile Include="Instances\InstanceVolumeGeometryTests.cs" />
+    <Compile Include="Mapping\CalculatorMappingTests.cs" />
+    <Compile Include="Calculations\CalculationAlgorithmsTests.cs" />
+    <Compile Include="Calculations\CalculationTests.cs" />
+    <Compile Include="Calculations\MultiValueCalculationOperandParameterTests.cs" />
+    <Compile Include="Calculations\MultiValueCalculationParserTests.cs" />
+    <Compile Include="Parameters\ParameterTests.cs" />
+    <Compile Include="Projects\ProjectImportExportTests.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="StyleChecks\StyleChecks.cs" />
+    <Compile Include="UnitTestSetup.cs" />
+    <Compile Include="Util\AssertUtil.cs" />
+    <Compile Include="Util\BaseProjectTest.cs" />
+    <Compile Include="Util\CollectionChangedEventCounter.cs" />
+    <Compile Include="Util\ProjectUtils.cs" />
+    <Compile Include="Util\PropertyChangedEventCounter.cs" />
+    <Compile Include="Util\PropertyTestUtils.cs" />
+    <Compile Include="Util\SimFactoryEventCounter.cs" />
+    <Compile Include="Util\UnitTestAuthentificationService.cs" />
+    <Compile Include="Values\MultiValueFunctionPointerTests.cs" />
+    <Compile Include="Values\SimMultiValueBigTableHeaderTests.cs" />
+    <Compile Include="Values\MultiValueBigTablePointerTests.cs" />
+    <Compile Include="Values\SimMultiValueBigTableTests.cs" />
+    <Compile Include="Values\MultiValueField3DPointerTests.cs" />
+    <Compile Include="Values\SimMultiValueCollectionTests.cs" />
+    <Compile Include="Values\SimMultiValueField3D.cs" />
+    <Compile Include="Values\SimMultiValueFunctionGraphTests.cs" />
+    <Compile Include="Values\SimMultiValueFunctionTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="AccessTestsProject.simultan">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="app.config" />
+    <None Include="BigTableTestsProject.simultan">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="BigTableTestsProject_Import.simultan">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="CalculationTestsProject.simultan">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="CalculatorTestsProject.simultan">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="ComponentAccessTestsProject.simultan">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="ComponentExportTest.simultan">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="ComponentImportTest.zip">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="ComponentTests.simultan">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="EmptyProject.simultan">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="ExcelMappingFilterTests.simultan">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Field3DTestsProject.simultan">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="FormatTest_V3.simultan">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="FunctionTestsProject.simultan">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="GeometryInstanceTestsProject.simultan">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="InstanceTestsProject.simultan">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="OffsetGeometryProject.simultan">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="packages.config" />
+    <None Include="ParameterTestsProject.simultan">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="ReferencesTestProject.simultan">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="UnitTestProject.simultan">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="UserComponentListTest.simultan">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\SIMULTAN\SIMULTAN.csproj">
+      <Project>{015d89d1-7b5e-4589-b6d9-7c0b9a85f3db}</Project>
+      <Name>SIMULTAN</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\GeometryViewer\GeometryViewer.csproj">
+      <Project>{A3C844E0-5841-41B5-B205-38E9B9CA86FA}</Project>
+      <Name>GeometryViewer</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\SIMULTAN.Lang\SIMULTAN.Lang.csproj">
+      <Project>{0659B55E-8F88-4BFD-8691-989F249BA6AF}</Project>
+      <Name>SIMULTAN.Lang</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\SIMULTAN.UI\SIMULTAN.UI.csproj">
+      <Project>{B1759717-22CF-4544-81EE-9BD3F046E011}</Project>
+      <Name>SIMULTAN.UI</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup />
+  <Import Project="$(VSToolsPath)\TeamTest\Microsoft.TestTools.targets" Condition="Exists('$(VSToolsPath)\TeamTest\Microsoft.TestTools.targets')" />
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\..\..\packages\MSTest.TestAdapter.2.2.7\build\net45\MSTest.TestAdapter.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\..\packages\MSTest.TestAdapter.2.2.7\build\net45\MSTest.TestAdapter.props'))" />
+    <Error Condition="!Exists('..\..\..\packages\MSTest.TestAdapter.2.2.7\build\net45\MSTest.TestAdapter.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\..\packages\MSTest.TestAdapter.2.2.7\build\net45\MSTest.TestAdapter.targets'))" />
+  </Target>
+  <Import Project="..\..\..\packages\MSTest.TestAdapter.2.2.7\build\net45\MSTest.TestAdapter.targets" Condition="Exists('..\..\..\packages\MSTest.TestAdapter.2.2.7\build\net45\MSTest.TestAdapter.targets')" />
+</Project>
