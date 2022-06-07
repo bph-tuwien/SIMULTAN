@@ -2,7 +2,6 @@
 using SIMULTAN.Data.Geometry;
 using SIMULTAN.Projects;
 using SIMULTAN.Tests.Geometry.EventData;
-using SIMULTAN.UI.Services;
 using System.Windows.Media.Media3D;
 
 namespace SIMULTAN.Tests.Geometry.BaseGeometries

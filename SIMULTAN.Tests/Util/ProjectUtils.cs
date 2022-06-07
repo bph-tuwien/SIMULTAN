@@ -1,8 +1,4 @@
-﻿using GeometryViewer;
-using GeometryViewer.IO;
-using GeometryViewer.Model;
-using GeometryViewer.Service;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SIMULTAN.Data.Assets;
 using SIMULTAN.Data.Components;
 using SIMULTAN.Data.Geometry;
@@ -10,8 +6,6 @@ using SIMULTAN.Data.Users;
 using SIMULTAN.Projects;
 using SIMULTAN.Serializer.Projects;
 using SIMULTAN.Serializer.SimGeo;
-using SIMULTAN.UI;
-using SIMULTAN.UI.Services;
 using SIMULTAN.Utils;
 using System.Collections.Generic;
 using System.IO;

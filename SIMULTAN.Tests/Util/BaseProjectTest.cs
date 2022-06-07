@@ -1,6 +1,5 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SIMULTAN.Projects;
-using SIMULTAN.UI.Services;
 using SIMULTAN.Utils;
 using System;
 using System.Collections.Generic;
