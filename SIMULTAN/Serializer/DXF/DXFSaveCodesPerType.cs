@@ -256,7 +256,8 @@ namespace SIMULTAN.Serializer.DXF
         GEOM_REF_FILE = 1663,
         GEOM_REF_ID = 1664,
         STATE_CONNECTION_STATE = 1665,
-        INST_NWE_LOCATION = 1666
+        INST_NWE_LOCATION = 1666,
+        INST_PROPAGATE_PARAM_CHANGES = 1667
     }
 
     public enum Mapping2ComponentSaveCode

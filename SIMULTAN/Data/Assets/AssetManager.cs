@@ -1831,6 +1831,9 @@ namespace SIMULTAN.Data.Assets
         /// <returns>the key, if found; otherwise -1</returns>
         public int GetResourceKey(FileInfo _file)
         {
+            if (_file == null)
+                throw new ArgumentNullException(nameof(_file));
+
             if (this.resource_look_up.TryFirstOrDefault(x => string.Equals(x.Value.CurrentFullPath, _file.FullName, StringComparison.InvariantCultureIgnoreCase), out var value))
                 return value.Key;
             return -1;
@@ -2121,37 +2124,36 @@ namespace SIMULTAN.Data.Assets
         /// Creates a geometric asset from a resource file with the given key and referring to the given geometric id.
         /// The asset is included in the component with the given id.
         /// </summary>
-        /// <param name="_caller_id">the id of the component asking for the asset</param>
-        /// <param name="_key">the resource key</param>
-        /// <param name="_id_contained">the id of the geometry the asset refers to</param>
+        /// <param name="componentId">the id of the component asking for the asset</param>
+        /// <param name="resourceKey">the resource key</param>
+        /// <param name="geometryId">the id of the geometry the asset refers to</param>
         /// <returns>the created asset</returns>
-        public GeometricAsset CreateGeometricAsset(long _caller_id, int _key, string _id_contained)
+        public GeometricAsset CreateGeometricAsset(long componentId, int resourceKey, string geometryId)
         {
-            if (this.resource_look_up.ContainsKey(_key))
-            {
-                // look for a duplicate...
-                GeometricAsset duplicate = null;
-                if (this.Assets.ContainsKey(_key))
-                    duplicate = this.Assets[_key].Where(x => x is GeometricAsset).FirstOrDefault(x => x.ResourceKey == _key && x.ContainedObjectId == _id_contained) as GeometricAsset;
-                else
-                    this.Assets.Add(_key, new ElectivelyObservableCollection<Asset>());
+            if (!this.resource_look_up.ContainsKey(resourceKey))
+                throw new ArgumentException("Resource key does not exist");
 
-                if (duplicate != null)
-                {
-                    // ... and pass it on
-                    duplicate.AddReferencing(_caller_id);
-                    return duplicate;
-                }
-                else
-                {
-                    GeometricAsset created = new GeometricAsset(this, _caller_id, _key, _id_contained);
-                    this.Assets[_key].Add(created);
-                    return created;
-                }
+            // look for a duplicate...
+            GeometricAsset duplicate = null;
+            if (this.Assets.TryGetValue(resourceKey, out var potentialDuplicates))
+            {
+                duplicate = (GeometricAsset)potentialDuplicates.FirstOrDefault(
+                    x => x is GeometricAsset && x.ResourceKey == resourceKey && x.ContainedObjectId == geometryId);
+            }
+            else
+                this.Assets.Add(resourceKey, new ElectivelyObservableCollection<Asset>());
+
+            if (duplicate != null)
+            {
+                // ... and pass it on
+                duplicate.AddReferencing(componentId);
+                return duplicate;
             }
             else
             {
-                return null;
+                GeometricAsset created = new GeometricAsset(this, componentId, resourceKey, geometryId);
+                this.Assets[resourceKey].Add(created);
+                return created;
             }
         }
 

@@ -28,7 +28,7 @@ namespace SIMULTAN.Utils
                 return result;
             return string.Empty;
         }
-    
+
         internal static string GeometryNameProviderOrDefault(Type geometryType, GeometryNameFormatProvider provider)
         {
             return provider != null ? provider(geometryType) : DefaultGeometryName(geometryType);

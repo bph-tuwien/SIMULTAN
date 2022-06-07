@@ -9,7 +9,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ParameterStructure.Tests.Components
+namespace SIMULTAN.Tests.Components
 {
     [TestClass]
     public class ReferenceTests : BaseProjectTest

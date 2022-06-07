@@ -2,8 +2,8 @@
 using SIMULTAN.Data.Components;
 using SIMULTAN.Projects;
 using SIMULTAN.Serializer.DXF;
-using SIMULTAN.Utils.Collections;
 using SIMULTAN.Utils;
+using SIMULTAN.Utils.Collections;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;

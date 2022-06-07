@@ -35,7 +35,7 @@ namespace SIMULTAN.Projects.ManagedFiles
         /// <inheritdoc />
         public override void Save()
         {
-            ProjectIO.SaveSitePlannerFile(this.File, ProjectData.SitePlannerCommunicator.Manager);
+            ProjectIO.SaveSitePlannerFile(this.File, ProjectData.SitePlannerManager);
             this.OnFileUpToDateChanged(true);
         }
 
@@ -44,7 +44,7 @@ namespace SIMULTAN.Projects.ManagedFiles
         {
             var resource = ProjectData.AssetManager.GetResource(this.File);
             if (resource != null)
-                ProjectIO.OpenSitePlannerFile(this.File, resource, ProjectData.SitePlannerCommunicator.Manager, ProjectData.AssetManager, ProjectData.ValueManager);
+                ProjectIO.OpenSitePlannerFile(resource, ProjectData);
             else
             {
                 ((INotifyCollectionChanged)ProjectData.AssetManager.Resources).CollectionChanged += assetManager_CollectionChanged_OnAddingThisFile;
@@ -56,12 +56,12 @@ namespace SIMULTAN.Projects.ManagedFiles
 
 
 
-        #region OEPNING LOGIC (have to wait for an event)
+        #region OPENING LOGIC (have to wait for an event)
 
         private void ExecuteOpen(ResourceFileEntry fileResource)
         {
             // open
-            ProjectIO.OpenSitePlannerFile(this.File, fileResource, ProjectData.SitePlannerCommunicator.Manager, ProjectData.AssetManager, ProjectData.ValueManager);
+            ProjectIO.OpenSitePlannerFile(fileResource, ProjectData);
             // reset
             ProjectData.AssetManager.UpToDate -= assetManager_UpToDate_OnAddingThisFile;
             ProjectData.AssetManager.ChildResourceCollectionChanged -= assetManager_CollectionChanged_OnAddingThisFile;

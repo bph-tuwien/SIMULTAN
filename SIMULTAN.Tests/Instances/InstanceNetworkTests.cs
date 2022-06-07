@@ -463,7 +463,7 @@ namespace SIMULTAN.Tests.Instances
         [TestMethod]
         public void PathChangedNode()
         {
-            LoadProject(instanceProject);
+            LoadProject(instanceProject, "arch", "arch");
 
             var network = projectData.NetworkManager.NetworkRecord.First(x => x.Name == "TopNetwork");
             var node = network.ContainedNodes.Values.First(x => x.Name == "Start");
@@ -484,9 +484,29 @@ namespace SIMULTAN.Tests.Instances
         }
 
         [TestMethod]
+        public void PathChangedNodeWithGeometry()
+        {
+            LoadProject(instanceProject, "arch", "arch");
+
+            var network = projectData.NetworkManager.NetworkRecord.First(x => x.Name == "GeometryNetwork");
+            var node = network.ContainedNodes.Values.First(x => x.Name == "Start");
+
+            var instance = node.Content;
+
+            var initialPos = instance.InstancePath[0];
+
+            var newPosNW = node.Position + new Vector(3, 3);
+
+            //Changing the position shouldn't do anything. Path comes from geometry
+            node.Position = newPosNW;
+            Assert.AreEqual(1, instance.InstancePath.Count);
+            Assert.AreEqual(initialPos, instance.InstancePath[0]);
+        }
+
+        [TestMethod]
         public void PathChangedEdge()
         {
-            LoadProject(instanceProject);
+            LoadProject(instanceProject, "arch", "arch");
 
             var network = projectData.NetworkManager.NetworkRecord.First(x => x.Name == "TopNetwork");
             var node = network.ContainedNodes.Values.First(x => x.Name == "Start");
@@ -522,9 +542,40 @@ namespace SIMULTAN.Tests.Instances
         }
 
         [TestMethod]
+        public void PathChangedEdgeWithGeometry()
+        {
+            LoadProject(instanceProject, "arch", "arch");
+
+            var network = projectData.NetworkManager.NetworkRecord.First(x => x.Name == "GeometryNetwork");
+            var node = network.ContainedNodes.Values.First(x => x.Name == "Start");
+            var subNet = network.ContainedFlowNetworks.Values.First();
+            var edge = network.ContainedEdges.Values.First(x => x.Name == "TopEdge");
+
+            var instance = edge.Content;
+
+            var originalPath = instance.InstancePath.ToList();
+
+            //Start Node changed
+            var newPosNodeNW = node.Position + new Vector(3, 3);
+            var newNodePos = new Point3D(newPosNodeNW.X * SimInstancePlacementNetwork.SCALE_PIXEL_TO_M,
+                0.0, newPosNodeNW.Y * SimInstancePlacementNetwork.SCALE_PIXEL_TO_M);
+
+            node.Position = newPosNodeNW;
+            AssertUtil.ContainEqualValues(originalPath, instance.InstancePath);
+
+            //End Network changed
+            var newPosSubnetNW = subNet.Position + new Vector(4, -2);
+            var newSubnetPos = new Point3D(newPosSubnetNW.X * SimInstancePlacementNetwork.SCALE_PIXEL_TO_M,
+                0.0, newPosSubnetNW.Y * SimInstancePlacementNetwork.SCALE_PIXEL_TO_M);
+
+            subNet.Position = newPosSubnetNW;
+            AssertUtil.ContainEqualValues(originalPath, instance.InstancePath);
+        }
+
+        [TestMethod]
         public void SubnetPathChangedNode()
         {
-            LoadProject(instanceProject);
+            LoadProject(instanceProject, "arch", "arch");
 
             var network = projectData.NetworkManager.NetworkRecord.First(x => x.Name == "TopNetwork");
             var subnetwork = network.ContainedFlowNetworks.Values.First(x => x.Name == "SubNet1");
@@ -552,7 +603,7 @@ namespace SIMULTAN.Tests.Instances
         [TestMethod]
         public void SubnetPathChangedEdge()
         {
-            LoadProject(instanceProject);
+            LoadProject(instanceProject, "arch", "arch");
 
             var network = projectData.NetworkManager.NetworkRecord.First(x => x.Name == "TopNetwork");
             var subnetwork = network.ContainedFlowNetworks.Values.First(x => x.Name == "SubNet1");
@@ -602,7 +653,7 @@ namespace SIMULTAN.Tests.Instances
         [TestMethod]
         public void SubnetPathSubnetMoved()
         {
-            LoadProject(instanceProject);
+            LoadProject(instanceProject, "arch", "arch");
 
             var network = projectData.NetworkManager.NetworkRecord.First(x => x.Name == "TopNetwork");
             var subnetwork = network.ContainedFlowNetworks.Values.First(x => x.Name == "SubNet1");

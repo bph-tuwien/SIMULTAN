@@ -1,5 +1,8 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using SIMULTAN.Data.Components;
+using SIMULTAN.Data.MultiValues;
 using SIMULTAN.Exceptions;
+using SIMULTAN.Tests.Utils;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -7,9 +10,6 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using SIMULTAN.Tests.Utils;
-using SIMULTAN.Data.Components;
-using SIMULTAN.Data.MultiValues;
 
 namespace SIMULTAN.Tests.Components
 {
@@ -111,7 +111,7 @@ namespace SIMULTAN.Tests.Components
             var lastWrite = comp.AccessLocal.LastAccess(SimComponentAccessPrivilege.Write);
 
             var oldParams = comp.Parameters.ToArray();
-            Assert.AreEqual(3, comp.Parameters.Count);
+            Assert.AreEqual(2, comp.Parameters.Count);
             Thread.Sleep(5);
 
             //Clear
@@ -135,8 +135,6 @@ namespace SIMULTAN.Tests.Components
         {
             LoadProject(parameterProject);
 
-            projectData.Components.EnableAsyncUpdates = false;
-
             var sourceComponent = projectData.Components.FirstOrDefault(x => x.Name == "NotEmpty");
             WeakReference paramRef = new WeakReference(sourceComponent.Parameters.First());
 
@@ -156,8 +154,6 @@ namespace SIMULTAN.Tests.Components
         {
             LoadProject(parameterProject);
             var comp = projectData.Components.First(x => x.Name == "Empty");
-
-            projectData.Components.EnableAsyncUpdates = false;
 
             var param = new SimParameter("param", "unicorns", 2, SimParameterOperations.All);
             param.Category = SimCategory.Light_Natural;
@@ -185,10 +181,10 @@ namespace SIMULTAN.Tests.Components
 
             //Add
             Assert.ThrowsException<AccessDeniedException>(() => { archComp.Parameters.Add(param); });
-            Assert.AreEqual(2, archComp.Parameters.Count);
+            Assert.AreEqual(1, archComp.Parameters.Count);
 
             bphComp.Parameters.Add(param);
-            Assert.AreEqual(3, bphComp.Parameters.Count);
+            Assert.AreEqual(2, bphComp.Parameters.Count);
         }
 
         [TestMethod]
@@ -206,9 +202,9 @@ namespace SIMULTAN.Tests.Components
             bphComp.Parameters.Add(param);
 
             //Remove
-            Assert.ThrowsException<AccessDeniedException>(() => { archComp.Parameters.RemoveAt(1); });
+            Assert.ThrowsException<AccessDeniedException>(() => { archComp.Parameters.RemoveAt(0); });
             bphComp.Parameters.Remove(param);
-            Assert.AreEqual(2, bphComp.Parameters.Count);
+            Assert.AreEqual(1, bphComp.Parameters.Count);
         }
     }
 }

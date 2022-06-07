@@ -1,4 +1,6 @@
-﻿using System;
+﻿using SIMULTAN.Data.Assets;
+using SIMULTAN.Exchange;
+using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
@@ -89,7 +91,7 @@ namespace SIMULTAN.Data.Geometry
                 if (geometryModel != value)
                 {
                     if (value.Model != null && value.Model != this)
-                        throw new ArgumentException("Geomtry has already been used with another model");
+                        throw new ArgumentException("Geometry has already been used with another model");
 
                     var old = geometryModel;
                     geometryModel = value;
@@ -125,7 +127,7 @@ namespace SIMULTAN.Data.Geometry
         /// <summary>
         /// Stores the geometry file for this model
         /// </summary>
-        public FileInfo File
+        public ResourceFileEntry File
         {
             get
             {
@@ -140,12 +142,32 @@ namespace SIMULTAN.Data.Geometry
                 }
             }
         }
-        private FileInfo file;
+        private ResourceFileEntry file;
 
         /// <summary>
         /// A list of all models that are linked to this model
         /// </summary>
         public ObservableCollection<GeometryModel> LinkedModels { get; private set; }
+
+        public ComponentGeometryExchange Exchange 
+        {
+            get 
+            {
+                return offsetQuery;
+            }
+            set
+            {
+                if (offsetQuery != null)
+                    offsetQuery.GeometryInvalidated -= this.OffsetQuery_GeometryInvalidated;
+
+                offsetQuery = value;
+
+                if (offsetQuery != null)
+                    offsetQuery.GeometryInvalidated += this.OffsetQuery_GeometryInvalidated;
+            }
+        }
+
+        private ComponentGeometryExchange offsetQuery = null;
 
         #endregion
 
@@ -180,7 +202,7 @@ namespace SIMULTAN.Data.Geometry
         /// <param name="file">The geometry file to use</param>
         /// <param name="permissions">The permissions for this model</param>
         /// <param name="geometry">The geometry for this model</param>
-        public GeometryModel(Guid id, string name, FileInfo file, OperationPermission permissions, GeometryModelData geometry)
+        public GeometryModel(Guid id, string name, ResourceFileEntry file, OperationPermission permissions, GeometryModelData geometry)
         {
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
@@ -197,5 +219,13 @@ namespace SIMULTAN.Data.Geometry
             this.Geometry.Model = this;
             this.LinkedModels = new ObservableCollection<GeometryModel>();
         }
+
+
+        private void OffsetQuery_GeometryInvalidated(object sender, System.Collections.Generic.IEnumerable<BaseGeometry> affected_geometry)
+        {
+            if (Geometry != null && Geometry.OffsetModel != null)
+                Geometry.OffsetModel.OnGeometryInvalidated(affected_geometry);
+        }
+
     }
 }

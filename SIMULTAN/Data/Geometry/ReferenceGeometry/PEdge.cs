@@ -23,6 +23,10 @@ namespace SIMULTAN.Data.Geometry
         /// </summary>
         public Vertex StartVertex { get { return (Orientation == GeometricOrientation.Forward) ? Edge.Vertices[0] : Edge.Vertices[1]; } }
         /// <summary>
+        /// Returns the end vertex 
+        /// </summary>
+        public Vertex EndVertex { get { return (Orientation == GeometricOrientation.Forward) ? Edge.Vertices[1] : Edge.Vertices[0]; } }
+        /// <summary>
         /// Returns the represented edge
         /// </summary>
         public Edge Edge { get; private set; }

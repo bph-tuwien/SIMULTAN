@@ -170,25 +170,11 @@ namespace SIMULTAN.Data.FlowNetworks
 
         public void UpdateRealization()
         {
-            if (this.Content != null)
-            {
-                if (Start.Content == null || End.Content == null)
-                {
-                    this.Content.State = new SimInstanceState(false, this.Content.State.ConnectionState);
-                }
-                else
-                {
-                    this.Content.State = new SimInstanceState(
-                        Start.Content.State.IsRealized && End.Content.State.IsRealized,
-                        this.Content.State.ConnectionState
-                        );
-                }
-            }
         }
 
         internal override void CommunicatePositionUpdateToContent()
         {
-            if (this.Content != null)
+            if (this.Content != null && this.RepresentationReference == GeometricReference.Empty)
             {
                 var placement = (SimInstancePlacementNetwork)this.Content.Placements.FirstOrDefault(x => x is SimInstancePlacementNetwork p && p.NetworkElement == this);
                 if (placement != null)

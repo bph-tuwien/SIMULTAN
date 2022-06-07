@@ -19,9 +19,9 @@ namespace SIMULTAN.Data.Components
         /// <summary>
         /// The referenced component. Null when the reference points nowhere
         /// </summary>
-        public SimComponent Target 
+        public SimComponent Target
         {
-            get { return target; } 
+            get { return target; }
             set
             {
                 if (target != value)

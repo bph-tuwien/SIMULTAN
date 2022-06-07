@@ -88,14 +88,8 @@ namespace SIMULTAN.Data.Components
             }
             set
             {
-                if (key == null)
-                    throw new ArgumentNullException(nameof(key));
-
-                this.NotifyWriteAccess();
-
-                if (!data.ContainsKey(key))
-                    throw new KeyNotFoundException("operator may not be used to add additional entries");
-                data[key] = value;
+                SetWithoutNotify(key, value);
+                NotifyGeometryExchange(key);
             }
         }
 
@@ -142,6 +136,25 @@ namespace SIMULTAN.Data.Components
         /// Notifies the instance that a write access has happened
         /// </summary>
         protected abstract void NotifyWriteAccess();
+
+        /// <summary>
+        /// Notifies the Geometry Exchange that a parameter has been modified
+        /// </summary>
+        /// <param name="parameter">The modified parameter</param>
+        protected abstract void NotifyGeometryExchange(SimParameter parameter);
+    
+        internal void SetWithoutNotify(SimParameter key, double value)
+        {
+            if (key == null)
+                throw new ArgumentNullException(nameof(key));
+
+            this.NotifyWriteAccess();
+
+            if (!data.ContainsKey(key))
+                throw new KeyNotFoundException("operator may not be used to add additional entries");
+
+            data[key] = value;
+        }
     }
 
     public partial class SimComponentInstance
@@ -162,6 +175,12 @@ namespace SIMULTAN.Data.Components
             {
                 Owner.NotifyWriteAccess();
             }
+            /// <inheritdoc />
+            protected override void NotifyGeometryExchange(SimParameter parameter)
+            {
+                if (Owner.Component != null && Owner.Component.Factory != null)
+                    Owner.Component.Factory.ProjectData.ComponentGeometryExchange.OnParameterValueChanged(parameter, Owner);
+            }
         }
 
         /// <summary>
@@ -179,6 +198,11 @@ namespace SIMULTAN.Data.Components
             protected override void NotifyWriteAccess()
             {
                 //Do nothing. Temporary parameters are exempt from access management
+            }
+            /// <inheritdoc />
+            protected override void NotifyGeometryExchange(SimParameter parameter)
+            {
+                //Do nothing
             }
         }
     }

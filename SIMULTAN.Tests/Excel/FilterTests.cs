@@ -22,7 +22,6 @@ namespace SIMULTAN.Tests.Excel
         public void ComponentCategoryFilter()
         {
             LoadProject(emptyProject);
-            projectData.Components.EnableAsyncUpdates = false;
             var comp = new SimComponent();
             projectData.Components.Add(comp);
 
@@ -35,7 +34,7 @@ namespace SIMULTAN.Tests.Excel
                 Category = SimCategory.Costs
             });
 
-            Assert.AreEqual(SimCategory.Air | SimCategory.Costs | SimCategory.Communication, comp.Category);
+            Assert.AreEqual(SimCategory.Air | SimCategory.Costs, comp.Category);
 
             Assert.IsTrue(ExcelMappingNode.InstancePassesFilter(comp, new List<(string, object)> { ("Category", SimCategory.Air) }, null));
             Assert.IsTrue(ExcelMappingNode.InstancePassesFilter(comp, new List<(string, object)> { ("Category", SimCategory.Costs) }, null));
@@ -47,7 +46,6 @@ namespace SIMULTAN.Tests.Excel
         public void ComponentCurrentSlotFilter()
         {
             LoadProject(emptyProject);
-            projectData.Components.EnableAsyncUpdates = false;
             var comp = new SimComponent();
             projectData.Components.Add(comp);
 
@@ -102,7 +100,6 @@ namespace SIMULTAN.Tests.Excel
         public void ComponentIsAutomaticallyGeneratedFilter()
         {
             LoadProject(emptyProject);
-            projectData.Components.EnableAsyncUpdates = false;
 
             var comp = new SimComponent();
             projectData.Components.Add(comp);
@@ -122,7 +119,6 @@ namespace SIMULTAN.Tests.Excel
         public void ComponentNameFilter()
         {
             LoadProject(emptyProject);
-            projectData.Components.EnableAsyncUpdates = false;
             var comp = new SimComponent();
             projectData.Components.Add(comp);
 
@@ -136,7 +132,6 @@ namespace SIMULTAN.Tests.Excel
         public void ComponentDescriptionFilter()
         {
             LoadProject(emptyProject);
-            projectData.Components.EnableAsyncUpdates = false;
             var comp = new SimComponent();
             projectData.Components.Add(comp);
 
@@ -151,7 +146,6 @@ namespace SIMULTAN.Tests.Excel
         public void ComponentLocalIDFilter()
         {
             LoadProject(emptyProject);
-            projectData.Components.EnableAsyncUpdates = false;
             var comp = new SimComponent();
             projectData.Components.Add(comp);
 
@@ -170,7 +164,6 @@ namespace SIMULTAN.Tests.Excel
         public void ParameterCategoryFilter()
         {
             LoadProject(emptyProject);
-            projectData.Components.EnableAsyncUpdates = false;
             var comp = new SimComponent();
             projectData.Components.Add(comp);
 
@@ -186,7 +179,6 @@ namespace SIMULTAN.Tests.Excel
         public void ParameterDescriptionFilter()
         {
             LoadProject(emptyProject);
-            projectData.Components.EnableAsyncUpdates = false;
             var comp = new SimComponent();
             projectData.Components.Add(comp);
 
@@ -204,7 +196,6 @@ namespace SIMULTAN.Tests.Excel
         public void ParameterLocalIDFilter()
         {
             LoadProject(emptyProject);
-            projectData.Components.EnableAsyncUpdates = false;
             var comp = new SimComponent();
             projectData.Components.Add(comp);
 
@@ -221,7 +212,6 @@ namespace SIMULTAN.Tests.Excel
         public void ParameterValueMaxFilter()
         {
             LoadProject(emptyProject);
-            projectData.Components.EnableAsyncUpdates = false;
             var comp = new SimComponent();
             projectData.Components.Add(comp);
 
@@ -238,7 +228,6 @@ namespace SIMULTAN.Tests.Excel
         public void ParameterValueMinFilter()
         {
             LoadProject(emptyProject);
-            projectData.Components.EnableAsyncUpdates = false;
             var comp = new SimComponent();
             projectData.Components.Add(comp);
 
@@ -255,7 +244,6 @@ namespace SIMULTAN.Tests.Excel
         public void ParameterNameFilter()
         {
             LoadProject(emptyProject);
-            projectData.Components.EnableAsyncUpdates = false;
             var comp = new SimComponent();
             projectData.Components.Add(comp);
 
@@ -271,7 +259,6 @@ namespace SIMULTAN.Tests.Excel
         public void ParameterPropagationFilter()
         {
             LoadProject(emptyProject);
-            projectData.Components.EnableAsyncUpdates = false;
             var comp = new SimComponent();
             projectData.Components.Add(comp);
 
@@ -288,7 +275,6 @@ namespace SIMULTAN.Tests.Excel
         public void ParameterTextValueFilter()
         {
             LoadProject(emptyProject);
-            projectData.Components.EnableAsyncUpdates = false;
             var comp = new SimComponent();
             projectData.Components.Add(comp);
 
@@ -305,7 +291,6 @@ namespace SIMULTAN.Tests.Excel
         public void ParameterUnitFilter()
         {
             LoadProject(emptyProject);
-            projectData.Components.EnableAsyncUpdates = false;
             var comp = new SimComponent();
             projectData.Components.Add(comp);
 
@@ -321,7 +306,6 @@ namespace SIMULTAN.Tests.Excel
         public void ParameterValueCurrentFilter()
         {
             LoadProject(emptyProject);
-            projectData.Components.EnableAsyncUpdates = false;
             var comp = new SimComponent();
             projectData.Components.Add(comp);
 

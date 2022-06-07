@@ -1,5 +1,5 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using SIMULTAN.Exchange;
+using SIMULTAN.Data.Geometry;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -9,7 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Media;
 using System.Windows.Media.Media3D;
-using SIMULTAN.Data.Geometry;
+using SIMULTAN.Tests.Util;
 
 namespace SIMULTAN.Tests.Geometry.EventData
 {
@@ -19,14 +19,14 @@ namespace SIMULTAN.Tests.Geometry.EventData
         {
             (var gm, var layer) = EmptyModelData();
 
-            GeometryModel model = new GeometryModel(Guid.NewGuid(), "TestModel", new FileInfo(@".\testing_dummy.geosim"), OperationPermission.All, gm);
+            GeometryModel model = new GeometryModel(Guid.NewGuid(), "TestModel", new DummyResourceFileEntry(@".\testing_dummy.geosim", 1), OperationPermission.All, gm);
 
             return (model, layer);
         }
 
         public static (GeometryModelData modelData, Layer layer) EmptyModelData()
         {
-            GeometryModelData gm = new GeometryModelData(new DummyComponentGeometryExchange(new FileInfo(@".\testing_dummy.geosim")));
+            GeometryModelData gm = new GeometryModelData();
             Layer layer = new Layer(gm, "Layer0") { Color = new DerivedColor(Colors.Red) };
             gm.Layers.Add(layer);
 
@@ -41,7 +41,7 @@ namespace SIMULTAN.Tests.Geometry.EventData
 
         public static GeometryModelData CubeModel()
         {
-            GeometryModelData gm = new GeometryModelData(new DummyComponentGeometryExchange(new FileInfo(@".\testing_dummy.geosim")));
+            GeometryModelData gm = new GeometryModelData();
             Layer layer = new Layer(gm, "Layer0") { Color = new DerivedColor(Colors.Red) };
             gm.Layers.Add(layer);
 
@@ -53,7 +53,6 @@ namespace SIMULTAN.Tests.Geometry.EventData
         public static void Compare(GeometryModelData expected, GeometryModelData actual)
         {
             Assert.AreEqual(expected.IsVisible, actual.IsVisible);
-            Assert.AreEqual(expected.OffsetQuery, actual.OffsetQuery);
 
             for (int i = 0; i < expected.Layers.Count; ++i)
                 Compare(expected.Layers[i], actual.Layers[i]);

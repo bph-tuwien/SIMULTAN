@@ -42,7 +42,7 @@ namespace SIMULTAN.Projects
 
         #endregion
 
-        
+
 
         /// <summary>
         /// All watchers of the fallback paths of the asset managers (paths used by linked resources).

@@ -1,5 +1,5 @@
-﻿using SIMULTAN.Utils.Randomize;
-using SIMULTAN.Utils;
+﻿using SIMULTAN.Utils;
+using SIMULTAN.Utils.Randomize;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;

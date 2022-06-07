@@ -2,6 +2,7 @@
 using SIMULTAN.Data.Components;
 using SIMULTAN.Data.Geometry;
 using SIMULTAN.Tests.Utils;
+using SIMULTAN.Utils;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -37,7 +38,6 @@ namespace SIMULTAN.Tests.Instances
         public void AddVolumeInstance()
         {
             LoadProject(testProject);
-            projectData.Components.EnableAsyncUpdates = false;
             (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
 
             var comp = projectData.Components.First(x => x.Name == "Room1");
@@ -46,7 +46,7 @@ namespace SIMULTAN.Tests.Instances
             Assert.AreEqual(0, comp.Instances.Count);
 
             //Add new association
-            projectData.GeometryCommunicator.Associate(comp, volume);
+            projectData.ComponentGeometryExchange.Associate(comp, volume);
 
             Assert.AreEqual(1, comp.Instances.Count);
 
@@ -65,11 +65,58 @@ namespace SIMULTAN.Tests.Instances
         }
 
         [TestMethod]
+        public void AddVolumeInstanceAlreadyConnected()
+        {
+            LoadProject(testProject);
+            (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
+
+            var comp = projectData.Components.First(x => x.Name == "Room1");
+            var volume = gm.Geometry.Volumes.First(x => x.Name == "Room");
+
+            Assert.AreEqual(0, comp.Instances.Count);
+
+            //Add new association
+            projectData.ComponentGeometryExchange.Associate(comp, volume);
+
+            Assert.AreEqual(1, comp.Instances.Count);
+
+            var inst1 = comp.Instances[0];
+            Assert.AreEqual(comp, inst1.Component);
+            Assert.AreEqual(SimInstanceType.Entity3D, inst1.InstanceType);
+            Assert.AreEqual(true, inst1.State.IsRealized);
+            Assert.AreEqual(SimInstanceConnectionState.Ok, inst1.State.ConnectionState);
+            Assert.AreEqual(1, inst1.Placements.Count);
+
+            var geomPlacement = inst1.Placements[0] as SimInstancePlacementGeometry;
+            Assert.AreNotEqual(null, geomPlacement);
+            Assert.AreEqual(volume.Id, geomPlacement.GeometryId);
+            Assert.AreEqual(resource.Key, geomPlacement.FileId);
+            Assert.AreEqual(SimInstancePlacementState.Valid, geomPlacement.State);
+
+            // associate again, should not change anything
+            projectData.ComponentGeometryExchange.Associate(comp, volume);
+
+            Assert.AreEqual(1, comp.Instances.Count);
+
+            inst1 = comp.Instances[0];
+            Assert.AreEqual(comp, inst1.Component);
+            Assert.AreEqual(SimInstanceType.Entity3D, inst1.InstanceType);
+            Assert.AreEqual(true, inst1.State.IsRealized);
+            Assert.AreEqual(SimInstanceConnectionState.Ok, inst1.State.ConnectionState);
+            Assert.AreEqual(1, inst1.Placements.Count);
+
+            geomPlacement = inst1.Placements[0] as SimInstancePlacementGeometry;
+            Assert.AreNotEqual(null, geomPlacement);
+            Assert.AreEqual(volume.Id, geomPlacement.GeometryId);
+            Assert.AreEqual(resource.Key, geomPlacement.FileId);
+            Assert.AreEqual(SimInstancePlacementState.Valid, geomPlacement.State);
+        }
+
+        [TestMethod]
         public void AddVolumeInstanceSubComponents()
         {
             LoadProject(testProject);
-            projectData.Components.EnableAsyncUpdates = false;
-            projectData.GeometryCommunicator.EnableAsyncUpdates = false;
+
             (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
 
             var comp = projectData.Components.First(x => x.Name == "Room1");
@@ -78,7 +125,7 @@ namespace SIMULTAN.Tests.Instances
             Assert.AreEqual(0, comp.Components.Count);
 
             //Add new association
-            projectData.GeometryCommunicator.Associate(comp, volume);
+            projectData.ComponentGeometryExchange.Associate(comp, volume);
 
             //Check number of subcomponents
             Assert.AreEqual(7, comp.Components.Count);
@@ -173,14 +220,13 @@ namespace SIMULTAN.Tests.Instances
         public void AddVolumeInstanceSubFaceParameters()
         {
             LoadProject(testProject);
-            projectData.Components.EnableAsyncUpdates = false;
-            projectData.GeometryCommunicator.EnableAsyncUpdates = false;
+
             (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
 
             //Add floor to get different min/max heights
             var floorFace = gm.Geometry.Faces.First(x => x.Name == "Floor");
             var floorComp = projectData.Components.First(x => x.Name == "Floor");
-            projectData.GeometryCommunicator.Associate(floorComp, floorFace);
+            projectData.ComponentGeometryExchange.Associate(floorComp, floorFace);
 
 
             var frontFace = gm.Geometry.Faces.First(x => x.Name == "FrontWall");
@@ -188,22 +234,22 @@ namespace SIMULTAN.Tests.Instances
             var volume = gm.Geometry.Volumes.First(x => x.Name == "Room");
 
             //Add new association
-            projectData.GeometryCommunicator.Associate(volumeComp, volume);
+            projectData.ComponentGeometryExchange.Associate(volumeComp, volume);
 
             var wallComp = volumeComp.Components.First(c => c.Component != null && c.Component.Instances.Any(
                     inst => inst.Placements.Any(p => p is SimInstancePlacementGeometry pg && pg.FileId == resource.Key && pg.GeometryId == frontFace.Id))).Component;
 
             CheckParameter(wallComp, "A", 46.0, "m²", SimInfoFlow.Input, SimCategory.Geometry);
-            CheckParameter(wallComp, "AᴍᴀX", 48.52, "-", SimInfoFlow.Input, SimCategory.Geometry);
-            CheckParameter(wallComp, "AᴍɪN", 43.04, "-", SimInfoFlow.Input, SimCategory.Geometry);
+            CheckParameter(wallComp, "AᴍᴀX", 48.52, "m²", SimInfoFlow.Input, SimCategory.Geometry);
+            CheckParameter(wallComp, "AᴍɪN", 43.04, "m²", SimInfoFlow.Input, SimCategory.Geometry);
 
             CheckParameter(wallComp, "b", 10.0, "m", SimInfoFlow.Input, SimCategory.Geometry);
-            CheckParameter(wallComp, "BᴍᴀX", 10.1, "-", SimInfoFlow.Input, SimCategory.Geometry);
-            CheckParameter(wallComp, "BᴍɪN", 9.8, "-", SimInfoFlow.Input, SimCategory.Geometry);
+            CheckParameter(wallComp, "BᴍᴀX", 10.1, "m", SimInfoFlow.Input, SimCategory.Geometry);
+            CheckParameter(wallComp, "BᴍɪN", 9.8, "m", SimInfoFlow.Input, SimCategory.Geometry);
 
             CheckParameter(wallComp, "h", 5.0, "m", SimInfoFlow.Input, SimCategory.Geometry);
-            CheckParameter(wallComp, "HᴍᴀX", 5.2, "-", SimInfoFlow.Input, SimCategory.Geometry);
-            CheckParameter(wallComp, "HᴍɪN", 4.8, "-", SimInfoFlow.Input, SimCategory.Geometry);
+            CheckParameter(wallComp, "HᴍᴀX", 5.2, "m", SimInfoFlow.Input, SimCategory.Geometry);
+            CheckParameter(wallComp, "HᴍɪN", 4.8, "m", SimInfoFlow.Input, SimCategory.Geometry);
 
             CheckParameter(wallComp, "Kᴅᴀ", 5.0, "m", SimInfoFlow.Input, SimCategory.Geometry);
             CheckParameter(wallComp, "Kꜰᴀ", 0.0, "m", SimInfoFlow.Input, SimCategory.Geometry);
@@ -213,14 +259,13 @@ namespace SIMULTAN.Tests.Instances
         public void AddVolumeInstanceSubHoleParameters()
         {
             LoadProject(testProject);
-            projectData.Components.EnableAsyncUpdates = false;
-            projectData.GeometryCommunicator.EnableAsyncUpdates = false;
+
             (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
 
             //Add floor to get different min/max heights
             var floorFace = gm.Geometry.Faces.First(x => x.Name == "Floor");
             var floorComp = projectData.Components.First(x => x.Name == "Floor");
-            projectData.GeometryCommunicator.Associate(floorComp, floorFace);
+            projectData.ComponentGeometryExchange.Associate(floorComp, floorFace);
 
 
             var frontFace = gm.Geometry.Faces.First(x => x.Name == "FrontWall");
@@ -228,7 +273,7 @@ namespace SIMULTAN.Tests.Instances
             var volume = gm.Geometry.Volumes.First(x => x.Name == "Room");
 
             //Add new association
-            projectData.GeometryCommunicator.Associate(volumeComp, volume);
+            projectData.ComponentGeometryExchange.Associate(volumeComp, volume);
 
             var wallComp = volumeComp.Components.First(c => c.Component != null && c.Component.Instances.Any(
                     inst => inst.Placements.Any(p => p is SimInstancePlacementGeometry pg && pg.FileId == resource.Key && pg.GeometryId == frontFace.Id))).Component;
@@ -238,16 +283,16 @@ namespace SIMULTAN.Tests.Instances
                 var holeComp = wallComp.Components.First(x => x.Component != null && x.Component.Name.StartsWith("Window1"))?.Component;
 
                 CheckParameter(holeComp, "A", 2.0, "m²", SimInfoFlow.Input, SimCategory.Geometry);
-                CheckParameter(holeComp, "AᴍᴀX", 2.0, "-", SimInfoFlow.Input, SimCategory.Geometry);
-                CheckParameter(holeComp, "AᴍɪN", 2.0, "-", SimInfoFlow.Input, SimCategory.Geometry);
+                CheckParameter(holeComp, "AᴍᴀX", 2.0, "m²", SimInfoFlow.Input, SimCategory.Geometry);
+                CheckParameter(holeComp, "AᴍɪN", 2.0, "m²", SimInfoFlow.Input, SimCategory.Geometry);
 
                 CheckParameter(holeComp, "b", 2.0, "m", SimInfoFlow.Input, SimCategory.Geometry);
-                CheckParameter(holeComp, "BᴍᴀX", 2.0, "-", SimInfoFlow.Input, SimCategory.Geometry);
-                CheckParameter(holeComp, "BᴍɪN", 2.0, "-", SimInfoFlow.Input, SimCategory.Geometry);
+                CheckParameter(holeComp, "BᴍᴀX", 2.0, "m", SimInfoFlow.Input, SimCategory.Geometry);
+                CheckParameter(holeComp, "BᴍɪN", 2.0, "m", SimInfoFlow.Input, SimCategory.Geometry);
 
                 CheckParameter(holeComp, "h", 1.0, "m", SimInfoFlow.Input, SimCategory.Geometry);
-                CheckParameter(holeComp, "HᴍᴀX", 1.0, "-", SimInfoFlow.Input, SimCategory.Geometry);
-                CheckParameter(holeComp, "HᴍɪN", 1.0, "-", SimInfoFlow.Input, SimCategory.Geometry);
+                CheckParameter(holeComp, "HᴍᴀX", 1.0, "m", SimInfoFlow.Input, SimCategory.Geometry);
+                CheckParameter(holeComp, "HᴍɪN", 1.0, "m", SimInfoFlow.Input, SimCategory.Geometry);
 
                 CheckParameter(holeComp, "Kᴅᴀ", 3.0, "m", SimInfoFlow.Input, SimCategory.Geometry);
                 CheckParameter(holeComp, "Kꜰᴀ", 2.0, "m", SimInfoFlow.Input, SimCategory.Geometry);
@@ -258,16 +303,16 @@ namespace SIMULTAN.Tests.Instances
                 var holeComp = wallComp.Components.First(x => x.Component != null && x.Component.Name.StartsWith("Edge Loop")).Component;
 
                 CheckParameter(holeComp, "A", 2.0, "m²", SimInfoFlow.Input, SimCategory.Geometry);
-                CheckParameter(holeComp, "AᴍᴀX", 2.0, "-", SimInfoFlow.Input, SimCategory.Geometry);
-                CheckParameter(holeComp, "AᴍɪN", 2.0, "-", SimInfoFlow.Input, SimCategory.Geometry);
+                CheckParameter(holeComp, "AᴍᴀX", 2.0, "m²", SimInfoFlow.Input, SimCategory.Geometry);
+                CheckParameter(holeComp, "AᴍɪN", 2.0, "m²", SimInfoFlow.Input, SimCategory.Geometry);
 
                 CheckParameter(holeComp, "b", 2.0, "m", SimInfoFlow.Input, SimCategory.Geometry);
-                CheckParameter(holeComp, "BᴍᴀX", 2.0, "-", SimInfoFlow.Input, SimCategory.Geometry);
-                CheckParameter(holeComp, "BᴍɪN", 2.0, "-", SimInfoFlow.Input, SimCategory.Geometry);
+                CheckParameter(holeComp, "BᴍᴀX", 2.0, "m", SimInfoFlow.Input, SimCategory.Geometry);
+                CheckParameter(holeComp, "BᴍɪN", 2.0, "m", SimInfoFlow.Input, SimCategory.Geometry);
 
                 CheckParameter(holeComp, "h", 1.0, "m", SimInfoFlow.Input, SimCategory.Geometry);
-                CheckParameter(holeComp, "HᴍᴀX", 1.0, "-", SimInfoFlow.Input, SimCategory.Geometry);
-                CheckParameter(holeComp, "HᴍɪN", 1.0, "-", SimInfoFlow.Input, SimCategory.Geometry);
+                CheckParameter(holeComp, "HᴍᴀX", 1.0, "m", SimInfoFlow.Input, SimCategory.Geometry);
+                CheckParameter(holeComp, "HᴍɪN", 1.0, "m", SimInfoFlow.Input, SimCategory.Geometry);
 
                 CheckParameter(holeComp, "Kᴅᴀ", 3.0, "m", SimInfoFlow.Input, SimCategory.Geometry);
                 CheckParameter(holeComp, "Kꜰᴀ", 2.0, "m", SimInfoFlow.Input, SimCategory.Geometry);
@@ -278,8 +323,7 @@ namespace SIMULTAN.Tests.Instances
         public void AddVolumeInstanceSubVolumeParameters()
         {
             LoadProject(testProject);
-            projectData.Components.EnableAsyncUpdates = false;
-            projectData.GeometryCommunicator.EnableAsyncUpdates = false;
+
             (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
 
             var roomComp = projectData.Components.First(x => x.Name == "Room1");
@@ -288,10 +332,10 @@ namespace SIMULTAN.Tests.Instances
             //Add floor to get different min/max heights
             var floorFace = gm.Geometry.Faces.First(x => x.Name == "Floor");
             var floorComp = projectData.Components.First(x => x.Name == "Floor");
-            projectData.GeometryCommunicator.Associate(floorComp, floorFace);
+            projectData.ComponentGeometryExchange.Associate(floorComp, floorFace);
 
             //Add new association
-            projectData.GeometryCommunicator.Associate(roomComp, volume);
+            projectData.ComponentGeometryExchange.Associate(roomComp, volume);
 
             var volumeComp = roomComp.Components.First(c => c.Component != null && c.Component.Instances.Any(
                     inst => inst.Placements.Any(p => p is SimInstancePlacementGeometry pg && pg.FileId == resource.Key && pg.GeometryId == volume.Id))).Component;
@@ -326,15 +370,14 @@ namespace SIMULTAN.Tests.Instances
         public void AddVolumeInstanceAssets()
         {
             LoadProject(testProject);
-            projectData.Components.EnableAsyncUpdates = false;
-            projectData.GeometryCommunicator.EnableAsyncUpdates = false;
+
             (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
 
             var roomComp = projectData.Components.First(x => x.Name == "Room1");
             var volume = gm.Geometry.Volumes.First(x => x.Name == "Room");
 
             //Add new association
-            projectData.GeometryCommunicator.Associate(roomComp, volume);
+            projectData.ComponentGeometryExchange.Associate(roomComp, volume);
 
             Assert.AreEqual(1, roomComp.ReferencedAssets.Count);
             Assert.AreEqual(resource, roomComp.ReferencedAssets[0].Resource);
@@ -387,15 +430,14 @@ namespace SIMULTAN.Tests.Instances
         public void AddVolumeInstanceSubFacePath()
         {
             LoadProject(testProject);
-            projectData.Components.EnableAsyncUpdates = false;
-            projectData.GeometryCommunicator.EnableAsyncUpdates = false;
+
             (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
 
             var roomComp = projectData.Components.First(x => x.Name == "Room1");
             var volume = gm.Geometry.Volumes.First(x => x.Name == "Room");
 
             //Add new association
-            projectData.GeometryCommunicator.Associate(roomComp, volume);
+            projectData.ComponentGeometryExchange.Associate(roomComp, volume);
 
             //Face
             var frontface = gm.Geometry.Faces.First(x => x.Name == "FrontWall");
@@ -416,15 +458,14 @@ namespace SIMULTAN.Tests.Instances
         public void AddVolumeInstanceSubHolePath()
         {
             LoadProject(testProject);
-            projectData.Components.EnableAsyncUpdates = false;
-            projectData.GeometryCommunicator.EnableAsyncUpdates = false;
+
             (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
 
             var roomComp = projectData.Components.First(x => x.Name == "Room1");
             var volume = gm.Geometry.Volumes.First(x => x.Name == "Room");
 
             //Add new association
-            projectData.GeometryCommunicator.Associate(roomComp, volume);
+            projectData.ComponentGeometryExchange.Associate(roomComp, volume);
 
             //Face
             var frontface = gm.Geometry.Faces.First(x => x.Name == "FrontWall");
@@ -465,15 +506,14 @@ namespace SIMULTAN.Tests.Instances
         public void AddVolumeInstanceSubVolumePath()
         {
             LoadProject(testProject);
-            projectData.Components.EnableAsyncUpdates = false;
-            projectData.GeometryCommunicator.EnableAsyncUpdates = false;
+
             (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
 
             var roomComp = projectData.Components.First(x => x.Name == "Room1");
             var volume = gm.Geometry.Volumes.First(x => x.Name == "Room");
 
             //Add new association
-            projectData.GeometryCommunicator.Associate(roomComp, volume);
+            projectData.ComponentGeometryExchange.Associate(roomComp, volume);
 
             //Room
             var instance = roomComp.Instances[0];
@@ -490,8 +530,7 @@ namespace SIMULTAN.Tests.Instances
         public void AddVolumeInstanceNeighborReferences()
         {
             LoadProject(testProject);
-            projectData.Components.EnableAsyncUpdates = false;
-            projectData.GeometryCommunicator.EnableAsyncUpdates = false;
+
             (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
 
             var room1Comp = projectData.Components.First(x => x.Name == "Room1");
@@ -499,7 +538,7 @@ namespace SIMULTAN.Tests.Instances
             var volume = gm.Geometry.Volumes.First(x => x.Name == "Room");
 
             //Add new association
-            projectData.GeometryCommunicator.Associate(room1Comp, volume);
+            projectData.ComponentGeometryExchange.Associate(room1Comp, volume);
 
             Assert.AreEqual(1, room1Comp.ReferencedComponents.Count);
             Assert.AreEqual(room2Comp, room1Comp.ReferencedComponents.First().Target);
@@ -516,15 +555,14 @@ namespace SIMULTAN.Tests.Instances
         public void AddVolumeInstanceMaterialReferences()
         {
             LoadProject(testProject);
-            projectData.Components.EnableAsyncUpdates = false;
-            projectData.GeometryCommunicator.EnableAsyncUpdates = false;
+
             (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
 
             var room1Comp = projectData.Components.First(x => x.Name == "Room1");
             var volume = gm.Geometry.Volumes.First(x => x.Name == "Room");
 
             //Add new association
-            projectData.GeometryCommunicator.Associate(room1Comp, volume);
+            projectData.ComponentGeometryExchange.Associate(room1Comp, volume);
 
             var wallComp = projectData.Components.First(x => x.Name == "Wall 2");
 
@@ -550,11 +588,110 @@ namespace SIMULTAN.Tests.Instances
         #region Geometry Changes
 
         [TestMethod]
-        public void VolumeChangedSubVolumeParameters()
+        public void VolumeAddFace()
         {
             LoadProject(testProject);
-            projectData.Components.EnableAsyncUpdates = false;
-            projectData.GeometryCommunicator.EnableAsyncUpdates = false;
+
+            (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
+
+            var volume = gm.Geometry.Volumes.First(x => x.Name == "Room");
+
+            //Add new association
+            var volumeComp = projectData.Components.First(x => x.Name == "Room1");
+            projectData.ComponentGeometryExchange.Associate(volumeComp, volume);
+
+            //Remove face from volume
+            gm.Geometry.StartBatchOperation();
+
+            var leftFace = volume.Faces.RemoveFirst(x => x.Face.Name == "LeftWall");
+
+            gm.Geometry.EndBatchOperation();
+
+            Assert.AreEqual(5, volumeComp.Components
+                .Where(x => x.Component != null && x.Component.InstanceType == SimInstanceType.GeometricSurface).Count());
+        }
+
+        private void ReplaceFace(GeometryModelData gm)
+        {
+            var volume = gm.Volumes.First(x => x.Name == "Room");
+            var topFace = gm.Faces.First(x => x.Name == "Ceiling");
+            var bottomFace = gm.Faces.First(x => x.Name == "Floor");
+
+            var vtb = gm.Vertices.First(x => x.Id == 26);
+            var vtf = gm.Vertices.First(x => x.Id == 14);
+            var vbb = gm.Vertices.First(x => x.Id == 6);
+            var vbf = gm.Vertices.First(x => x.Id == 1);
+
+            gm.StartBatchOperation();
+
+            topFace.Boundary.Edges.RemoveFirst(x => x.Edge.Id == 31);
+            bottomFace.Boundary.Edges.RemoveFirst(x => x.Edge.Id == 9);
+            volume.Faces.RemoveFirst(x => x.Face.Id == 33);
+
+            //Create new edges, vertices
+            var vertexTop = new Vertex(volume.Layer, "", new Point3D(0, 5, -2.5));
+            var vertexBottom = new Vertex(volume.Layer, "", new Point3D(0, 0, -2.5));
+
+            var eTop1 = new Edge(volume.Layer, "", new Vertex[] { vtb, vertexTop });
+            var eTop2 = new Edge(volume.Layer, "", new Vertex[] { vertexTop, vtf });
+
+            var eBottom1 = new Edge(volume.Layer, "", new Vertex[] { vbb, vertexBottom });
+            var eBottom2 = new Edge(volume.Layer, "", new Vertex[] { vertexBottom, vbf });
+
+            var vEdge = new Edge(volume.Layer, "", new Vertex[] { vertexTop, vertexBottom });
+
+            //Replace edges
+            topFace.Boundary.Edges.Add(new PEdge(eTop1, GeometricOrientation.Undefined, topFace.Boundary));
+            topFace.Boundary.Edges.Add(new PEdge(eTop2, GeometricOrientation.Undefined, topFace.Boundary));
+
+            bottomFace.Boundary.Edges.Add(new PEdge(eBottom1, GeometricOrientation.Undefined, bottomFace.Boundary));
+            bottomFace.Boundary.Edges.Add(new PEdge(eBottom2, GeometricOrientation.Undefined, bottomFace.Boundary));
+
+            //Create new face
+            var newLoop = new EdgeLoop(volume.Layer, "", new Edge[] { eTop1, vEdge, eBottom1, gm.Edges.First(x => x.Id == 27) });
+            var newFace = new Face(volume.Layer, "", newLoop, GeometricOrientation.Forward, null);
+            volume.Faces.Add(new PFace(newFace, volume, GeometricOrientation.Undefined));
+
+            newLoop = new EdgeLoop(volume.Layer, "", new Edge[] { eTop2, gm.Edges.First(x => x.Id == 15), eBottom2, vEdge });
+            newFace = new Face(volume.Layer, "", newLoop, GeometricOrientation.Forward, null);
+            volume.Faces.Add(new PFace(newFace, volume, GeometricOrientation.Undefined));
+
+            gm.EndBatchOperation();
+        }
+        [TestMethod]
+        public void VolumeTopologyChanged()
+        {
+            LoadProject(testProject);
+
+            (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
+
+            var volume = gm.Geometry.Volumes.First(x => x.Name == "Room");
+
+            //Add new association
+            var volumeComp = projectData.Components.First(x => x.Name == "Room1");
+            projectData.ComponentGeometryExchange.Associate(volumeComp, volume);
+
+            //Replace one face
+            ReplaceFace(gm.Geometry);
+
+            //Check result
+            Assert.AreEqual(7, volumeComp.Components.Where(x => x.Component != null && x.Component.InstanceType == SimInstanceType.GeometricSurface).Count());
+
+            foreach (var face in volume.Faces.Select(x => x.Face))
+            {
+                var faceComp = volumeComp.Components.FirstOrDefault(x => x.Component != null && x.Component.Instances.Count == 1 &&
+                x.Component.Instances[0].Placements.Any(p => p is SimInstancePlacementGeometry gp && gp.FileId == resource.Key && gp.GeometryId == face.Id))
+                    ?.Component;
+                Assert.IsNotNull(faceComp);
+            }
+
+        }
+
+        [TestMethod]
+        public void VolumeChangedSubVolumeParameters()
+        {
+            LoadProject(testProject, "arch", "arch");
+
             (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
 
             var room1Comp = projectData.Components.First(x => x.Name == "Room1");
@@ -563,10 +700,13 @@ namespace SIMULTAN.Tests.Instances
             //Add floor to get different min/max heights
             var floorFace = gm.Geometry.Faces.First(x => x.Name == "Floor");
             var floorComp = projectData.Components.First(x => x.Name == "Floor");
-            projectData.GeometryCommunicator.Associate(floorComp, floorFace);
-
-            //Add new association
-            projectData.GeometryCommunicator.Associate(room1Comp, volume);
+            // Disable access checking as a workaround to check permissions for arch user
+            using (AccessCheckingDisabler.Disable(floorComp.Factory))
+            {
+                projectData.ComponentGeometryExchange.Associate(floorComp, floorFace);
+                //Add new association
+                projectData.ComponentGeometryExchange.Associate(room1Comp, volume);
+            }
 
             //Move right Wall by two meters and floor by -1 meter
             var rightWall = gm.Geometry.Faces.First(x => x.Name == "RightWall");
@@ -609,8 +749,7 @@ namespace SIMULTAN.Tests.Instances
         public void VolumeChangedSubFaceParameters()
         {
             LoadProject(testProject);
-            projectData.Components.EnableAsyncUpdates = false;
-            projectData.GeometryCommunicator.EnableAsyncUpdates = false;
+
             (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
 
             var room1Comp = projectData.Components.First(x => x.Name == "Room1");
@@ -619,10 +758,10 @@ namespace SIMULTAN.Tests.Instances
             //Add floor to get different min/max heights
             var floorFace = gm.Geometry.Faces.First(x => x.Name == "Floor");
             var floorComp = projectData.Components.First(x => x.Name == "Floor");
-            projectData.GeometryCommunicator.Associate(floorComp, floorFace);
+            projectData.ComponentGeometryExchange.Associate(floorComp, floorFace);
 
             //Add new association
-            projectData.GeometryCommunicator.Associate(room1Comp, volume);
+            projectData.ComponentGeometryExchange.Associate(room1Comp, volume);
 
             //Move right Wall by two meters and floor by -1 meter
             var rightWall = gm.Geometry.Faces.First(x => x.Name == "RightWall");
@@ -640,16 +779,16 @@ namespace SIMULTAN.Tests.Instances
                     inst => inst.Placements.Any(p => p is SimInstancePlacementGeometry pg && pg.FileId == resource.Key && pg.GeometryId == frontFace.Id))).Component;
 
             CheckParameter(wallComp, "A", 68.0, "m²", SimInfoFlow.Input, SimCategory.Geometry);
-            CheckParameter(wallComp, "AᴍᴀX", 71.02, "-", SimInfoFlow.Input, SimCategory.Geometry);
-            CheckParameter(wallComp, "AᴍɪN", 64.44, "-", SimInfoFlow.Input, SimCategory.Geometry);
+            CheckParameter(wallComp, "AᴍᴀX", 71.02, "m²", SimInfoFlow.Input, SimCategory.Geometry);
+            CheckParameter(wallComp, "AᴍɪN", 64.44, "m²", SimInfoFlow.Input, SimCategory.Geometry);
 
             CheckParameter(wallComp, "b", 12.0, "m", SimInfoFlow.Input, SimCategory.Geometry);
-            CheckParameter(wallComp, "BᴍᴀX", 12.1, "-", SimInfoFlow.Input, SimCategory.Geometry);
-            CheckParameter(wallComp, "BᴍɪN", 11.8, "-", SimInfoFlow.Input, SimCategory.Geometry);
+            CheckParameter(wallComp, "BᴍᴀX", 12.1, "m", SimInfoFlow.Input, SimCategory.Geometry);
+            CheckParameter(wallComp, "BᴍɪN", 11.8, "m", SimInfoFlow.Input, SimCategory.Geometry);
 
             CheckParameter(wallComp, "h", 6.0, "m", SimInfoFlow.Input, SimCategory.Geometry);
-            CheckParameter(wallComp, "HᴍᴀX", 6.2, "-", SimInfoFlow.Input, SimCategory.Geometry);
-            CheckParameter(wallComp, "HᴍɪN", 5.8, "-", SimInfoFlow.Input, SimCategory.Geometry);
+            CheckParameter(wallComp, "HᴍᴀX", 6.2, "m", SimInfoFlow.Input, SimCategory.Geometry);
+            CheckParameter(wallComp, "HᴍɪN", 5.8, "m", SimInfoFlow.Input, SimCategory.Geometry);
 
             CheckParameter(wallComp, "Kᴅᴀ", 5.0, "m", SimInfoFlow.Input, SimCategory.Geometry);
             CheckParameter(wallComp, "Kꜰᴀ", -1.0, "m", SimInfoFlow.Input, SimCategory.Geometry);
@@ -658,14 +797,13 @@ namespace SIMULTAN.Tests.Instances
         public void VolumeChangedSubHoleParameters()
         {
             LoadProject(testProject);
-            projectData.Components.EnableAsyncUpdates = false;
-            projectData.GeometryCommunicator.EnableAsyncUpdates = false;
+
             (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
 
             //Add floor to get different min/max heights
             var floorFace = gm.Geometry.Faces.First(x => x.Name == "Floor");
             var floorComp = projectData.Components.First(x => x.Name == "Floor");
-            projectData.GeometryCommunicator.Associate(floorComp, floorFace);
+            projectData.ComponentGeometryExchange.Associate(floorComp, floorFace);
 
 
             var frontFace = gm.Geometry.Faces.First(x => x.Name == "FrontWall");
@@ -673,7 +811,7 @@ namespace SIMULTAN.Tests.Instances
             var volume = gm.Geometry.Volumes.First(x => x.Name == "Room");
 
             //Add new association
-            projectData.GeometryCommunicator.Associate(volumeComp, volume);
+            projectData.ComponentGeometryExchange.Associate(volumeComp, volume);
 
             var wallComp = volumeComp.Components.First(c => c.Component != null && c.Component.Instances.Any(
                     inst => inst.Placements.Any(p => p is SimInstancePlacementGeometry pg && pg.FileId == resource.Key && pg.GeometryId == frontFace.Id))).Component;
@@ -693,16 +831,16 @@ namespace SIMULTAN.Tests.Instances
                 var holeComp = wallComp.Components.First(x => x.Component != null && x.Component.Name.StartsWith("Window1")).Component;
 
                 CheckParameter(holeComp, "A", 3.0, "m²", SimInfoFlow.Input, SimCategory.Geometry);
-                CheckParameter(holeComp, "AᴍᴀX", 3.0, "-", SimInfoFlow.Input, SimCategory.Geometry);
-                CheckParameter(holeComp, "AᴍɪN", 3.0, "-", SimInfoFlow.Input, SimCategory.Geometry);
+                CheckParameter(holeComp, "AᴍᴀX", 3.0, "m²", SimInfoFlow.Input, SimCategory.Geometry);
+                CheckParameter(holeComp, "AᴍɪN", 3.0, "m²", SimInfoFlow.Input, SimCategory.Geometry);
 
                 CheckParameter(holeComp, "b", 3.0, "m", SimInfoFlow.Input, SimCategory.Geometry);
-                CheckParameter(holeComp, "BᴍᴀX", 3.0, "-", SimInfoFlow.Input, SimCategory.Geometry);
-                CheckParameter(holeComp, "BᴍɪN", 3.0, "-", SimInfoFlow.Input, SimCategory.Geometry);
+                CheckParameter(holeComp, "BᴍᴀX", 3.0, "m", SimInfoFlow.Input, SimCategory.Geometry);
+                CheckParameter(holeComp, "BᴍɪN", 3.0, "m", SimInfoFlow.Input, SimCategory.Geometry);
 
                 CheckParameter(holeComp, "h", 1.0, "m", SimInfoFlow.Input, SimCategory.Geometry);
-                CheckParameter(holeComp, "HᴍᴀX", 1.0, "-", SimInfoFlow.Input, SimCategory.Geometry);
-                CheckParameter(holeComp, "HᴍɪN", 1.0, "-", SimInfoFlow.Input, SimCategory.Geometry);
+                CheckParameter(holeComp, "HᴍᴀX", 1.0, "m", SimInfoFlow.Input, SimCategory.Geometry);
+                CheckParameter(holeComp, "HᴍɪN", 1.0, "m", SimInfoFlow.Input, SimCategory.Geometry);
 
                 CheckParameter(holeComp, "Kᴅᴀ", 3.0, "m", SimInfoFlow.Input, SimCategory.Geometry);
                 CheckParameter(holeComp, "Kꜰᴀ", 2.0, "m", SimInfoFlow.Input, SimCategory.Geometry);
@@ -713,16 +851,16 @@ namespace SIMULTAN.Tests.Instances
                 var holeComp = wallComp.Components.First(x => x.Component != null && x.Component.Name.StartsWith("Edge Loop")).Component;
 
                 CheckParameter(holeComp, "A", 3.0, "m²", SimInfoFlow.Input, SimCategory.Geometry);
-                CheckParameter(holeComp, "AᴍᴀX", 3.0, "-", SimInfoFlow.Input, SimCategory.Geometry);
-                CheckParameter(holeComp, "AᴍɪN", 3.0, "-", SimInfoFlow.Input, SimCategory.Geometry);
+                CheckParameter(holeComp, "AᴍᴀX", 3.0, "m²", SimInfoFlow.Input, SimCategory.Geometry);
+                CheckParameter(holeComp, "AᴍɪN", 3.0, "m²", SimInfoFlow.Input, SimCategory.Geometry);
 
                 CheckParameter(holeComp, "b", 3.0, "m", SimInfoFlow.Input, SimCategory.Geometry);
-                CheckParameter(holeComp, "BᴍᴀX", 3.0, "-", SimInfoFlow.Input, SimCategory.Geometry);
-                CheckParameter(holeComp, "BᴍɪN", 3.0, "-", SimInfoFlow.Input, SimCategory.Geometry);
+                CheckParameter(holeComp, "BᴍᴀX", 3.0, "m", SimInfoFlow.Input, SimCategory.Geometry);
+                CheckParameter(holeComp, "BᴍɪN", 3.0, "m", SimInfoFlow.Input, SimCategory.Geometry);
 
                 CheckParameter(holeComp, "h", 1.0, "m", SimInfoFlow.Input, SimCategory.Geometry);
-                CheckParameter(holeComp, "HᴍᴀX", 1.0, "-", SimInfoFlow.Input, SimCategory.Geometry);
-                CheckParameter(holeComp, "HᴍɪN", 1.0, "-", SimInfoFlow.Input, SimCategory.Geometry);
+                CheckParameter(holeComp, "HᴍᴀX", 1.0, "m", SimInfoFlow.Input, SimCategory.Geometry);
+                CheckParameter(holeComp, "HᴍɪN", 1.0, "m", SimInfoFlow.Input, SimCategory.Geometry);
 
                 CheckParameter(holeComp, "Kᴅᴀ", 3.0, "m", SimInfoFlow.Input, SimCategory.Geometry);
                 CheckParameter(holeComp, "Kꜰᴀ", 2.0, "m", SimInfoFlow.Input, SimCategory.Geometry);
@@ -731,9 +869,8 @@ namespace SIMULTAN.Tests.Instances
         [TestMethod]
         public void VolumeChangedFacePath()
         {
-            LoadProject(testProject);
-            projectData.Components.EnableAsyncUpdates = false;
-            projectData.GeometryCommunicator.EnableAsyncUpdates = false;
+            LoadProject(testProject, "arch", "arch");
+
             (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
 
             var room1Comp = projectData.Components.First(x => x.Name == "Room1");
@@ -742,10 +879,13 @@ namespace SIMULTAN.Tests.Instances
             //Add floor to get different min/max heights
             var floorFace = gm.Geometry.Faces.First(x => x.Name == "Floor");
             var floorComp = projectData.Components.First(x => x.Name == "Floor");
-            projectData.GeometryCommunicator.Associate(floorComp, floorFace);
+            using (AccessCheckingDisabler.Disable(floorComp.Factory))
+            {
+                projectData.ComponentGeometryExchange.Associate(floorComp, floorFace);
 
-            //Add new association
-            projectData.GeometryCommunicator.Associate(room1Comp, volume);
+                //Add new association
+                projectData.ComponentGeometryExchange.Associate(room1Comp, volume);
+            }
 
             //Move right Wall by two meters and floor by -1 meter
             var rightWall = gm.Geometry.Faces.First(x => x.Name == "RightWall");
@@ -773,14 +913,13 @@ namespace SIMULTAN.Tests.Instances
         public void VolumeChangedHolePath()
         {
             LoadProject(testProject);
-            projectData.Components.EnableAsyncUpdates = false;
-            projectData.GeometryCommunicator.EnableAsyncUpdates = false;
+
             (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
 
             //Add floor to get different min/max heights
             var floorFace = gm.Geometry.Faces.First(x => x.Name == "Floor");
             var floorComp = projectData.Components.First(x => x.Name == "Floor");
-            projectData.GeometryCommunicator.Associate(floorComp, floorFace);
+            projectData.ComponentGeometryExchange.Associate(floorComp, floorFace);
 
 
             var frontFace = gm.Geometry.Faces.First(x => x.Name == "FrontWall");
@@ -788,7 +927,7 @@ namespace SIMULTAN.Tests.Instances
             var volume = gm.Geometry.Volumes.First(x => x.Name == "Room");
 
             //Add new association
-            projectData.GeometryCommunicator.Associate(volumeComp, volume);
+            projectData.ComponentGeometryExchange.Associate(volumeComp, volume);
 
             var wallComp = volumeComp.Components.First(c => c.Component != null && c.Component.Instances.Any(
                     inst => inst.Placements.Any(p => p is SimInstancePlacementGeometry pg && pg.FileId == resource.Key && pg.GeometryId == frontFace.Id))).Component;
@@ -826,19 +965,232 @@ namespace SIMULTAN.Tests.Instances
             }
         }
 
+        #endregion
+
+        #region Geometry Name Changes
+
+        [TestMethod]
+        public void VolumeFaceNameChanged()
+        {
+            LoadProject(testProject, "arch", "arch");
+
+            (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
+            var volumeComp = projectData.Components.First(x => x.Name == "Room2");
+
+            var face = gm.Geometry.Faces.First(x => x.Name == "Surface 91");
+            var faceSubComp = volumeComp.Components.First(
+                x => x.Component.Instances.Any(i => i.Placements.Any(p => p is SimInstancePlacementGeometry gp && gp.GeometryId == face.Id))).Component;
+            Assert.AreEqual(face.Name, faceSubComp.Name);
+
+            face.Name = "asdfFace";
+            Assert.AreEqual(face.Name, faceSubComp.Name);
+        }
+
+        [TestMethod]
+        public void VolumeFaceNameReplaced()
+        {
+            LoadProject(testProject, "arch", "arch");
+
+            (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
+            var volumeComp = projectData.Components.First(x => x.Name == "Room2");
+            var oldFace = gm.Geometry.Faces.First(x => x.Name == "Surface 91");
+
+            var faceSubComp = volumeComp.Components.First(
+                x => x.Component.Instances.Any(i => i.Placements.Any(p => p is SimInstancePlacementGeometry gp && gp.GeometryId == oldFace.Id)))
+                .Component;
+            Assert.AreEqual(oldFace.Name, faceSubComp.Name);
+
+            var newGM = gm.Geometry.Clone();
+            var newFace = newGM.Faces.First(x => x.Name == "Surface 91");
+            newFace.Name = "asdfFace";
+            Assert.AreEqual(oldFace.Name, faceSubComp.Name);
+
+            gm.Geometry = newGM;
+            Assert.AreEqual(newFace.Name, faceSubComp.Name);
+        }
+
+        [TestMethod]
+        public void VolumeVolumeNameChanged()
+        {
+            LoadProject(testProject, "arch", "arch");
+
+            (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
+            var volumeComp = projectData.Components.First(x => x.Name == "Room2");
+
+            var volume = gm.Geometry.Volumes.First(x => x.Name == "Volume 92");
+            var volumeSubComp = volumeComp.Components.First(
+                x => x.Component.Instances.Any(i => i.Placements.Any(p => p is SimInstancePlacementGeometry gp && gp.GeometryId == volume.Id)))
+                .Component;
+            Assert.AreEqual(volume.Name, volumeSubComp.Name);
+
+            volume.Name = "asdfFace";
+            Assert.AreEqual(volume.Name, volumeSubComp.Name);
+        }
+
+        [TestMethod]
+        public void VolumeVolumeNameReplaced()
+        {
+            LoadProject(testProject, "arch", "arch");
+
+            (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
+            var volumeComp = projectData.Components.First(x => x.Name == "Room2");
+            var oldVolume = gm.Geometry.Volumes.First(x => x.Name == "Volume 92");
+
+            var volumeSubComp = volumeComp.Components.First(
+                x => x.Component.Instances.Any(i => i.Placements.Any(p => p is SimInstancePlacementGeometry gp && gp.GeometryId == oldVolume.Id)))
+                .Component;
+            Assert.AreEqual(oldVolume.Name, volumeSubComp.Name);
+
+            var newGM = gm.Geometry.Clone();
+            var newVolume = newGM.Volumes.First(x => x.Name == "Volume 92");
+            newVolume.Name = "asdfVolume";
+            Assert.AreEqual(oldVolume.Name, volumeSubComp.Name);
+
+            gm.Geometry = newGM;
+            Assert.AreEqual(newVolume.Name, volumeSubComp.Name);
+        }
+
+        [TestMethod]
+        public void VolumeHoleEmptyNameChanged()
+        {
+            LoadProject(testProject);
+
+            (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
+            var volume = gm.Geometry.Volumes.First(x => x.Name == "Room");
+            var frontWall = gm.Geometry.Faces.First(x => x.Name == "FrontWall");
+            var hole = frontWall.Holes.First(x => x.Faces.Count == 1);
+
+            var volumeComp = projectData.Components.First(x => x.Name == "Room1");
+
+            projectData.ComponentGeometryExchange.Associate(volumeComp, volume);
+
+            var frontFaceComp = volumeComp.Components.First(
+                x => x.Component.Instances.Any(i => i.Placements.Any(p => p is SimInstancePlacementGeometry gp && gp.GeometryId == frontWall.Id)))
+                .Component;
+            var holeComp = frontFaceComp.Components.First(
+                x => x.Component.Instances.Any(i => i.Placements.Any(p => p is SimInstancePlacementGeometry gp && gp.GeometryId == hole.Id)))
+                .Component;
+
+            Assert.AreEqual(hole.Name, holeComp.Name);
+
+            hole.Name = "asdfHole";
+            Assert.AreEqual(hole.Name, holeComp.Name);
+        }
+
+        [TestMethod]
+        public void VolumeHoleEmptyNameReplaced()
+        {
+            LoadProject(testProject);
+
+            (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
+            var volume = gm.Geometry.Volumes.First(x => x.Name == "Room");
+            var volumeComp = projectData.Components.First(x => x.Name == "Room1");
+
+            projectData.ComponentGeometryExchange.Associate(volumeComp, volume);
+
+            var frontWall = gm.Geometry.Faces.First(x => x.Name == "FrontWall");
+            var hole = frontWall.Holes.First(x => x.Faces.Count == 1);
+
+            var frontFaceComp = volumeComp.Components.First(
+                x => x.Component.Instances.Any(i => i.Placements.Any(p => p is SimInstancePlacementGeometry gp && gp.GeometryId == frontWall.Id)))
+                .Component;
+            var holeComp = frontFaceComp.Components.First(
+                x => x.Component.Instances.Any(i => i.Placements.Any(p => p is SimInstancePlacementGeometry gp && gp.GeometryId == hole.Id)))
+                .Component;
+
+            Assert.AreEqual(hole.Name, holeComp.Name);
+
+            var newGM = gm.Geometry.Clone();
+            frontWall = newGM.Faces.First(x => x.Name == "FrontWall");
+            var newHole = frontWall.Holes.First(x => x.Faces.Count == 1);
+
+            newHole.Name = "asdfHole";
+            Assert.AreEqual(hole.Name, holeComp.Name);
+
+            gm.Geometry = newGM;
+            Assert.AreEqual(newHole.Name, holeComp.Name);
+        }
+
+        [TestMethod]
+        public void VolumeHoleFilledNameChanged()
+        {
+            LoadProject(testProject);
+
+            (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
+            var volume = gm.Geometry.Volumes.First(x => x.Name == "Room");
+            var frontWall = gm.Geometry.Faces.First(x => x.Name == "FrontWall");
+            var hole = frontWall.Holes.First(x => x.Faces.Count == 2);
+            var holeFace = hole.Faces.First(x => x != frontWall);
+
+            var volumeComp = projectData.Components.First(x => x.Name == "Room1");
+
+            projectData.ComponentGeometryExchange.Associate(volumeComp, volume);
+
+            var frontFaceComp = volumeComp.Components.First(
+                x => x.Component.Instances.Any(i => i.Placements.Any(p => p is SimInstancePlacementGeometry gp && gp.GeometryId == frontWall.Id)))
+                .Component;
+            var holeComp = frontFaceComp.Components.First(
+                x => x.Component.Instances.Any(i => i.Placements.Any(p => p is SimInstancePlacementGeometry gp && gp.GeometryId == holeFace.Id)))
+                .Component;
+
+            Assert.AreEqual(holeFace.Name, holeComp.Name);
+
+            holeFace.Name = "asdfHole";
+            Assert.AreEqual(holeFace.Name, holeComp.Name);
+        }
+
+        [TestMethod]
+        public void VolumeHoleFilledNameReplaced()
+        {
+            LoadProject(testProject);
+
+            (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
+            var volume = gm.Geometry.Volumes.First(x => x.Name == "Room");
+            var volumeComp = projectData.Components.First(x => x.Name == "Room1");
+
+            projectData.ComponentGeometryExchange.Associate(volumeComp, volume);
+
+            var frontWall = gm.Geometry.Faces.First(x => x.Name == "FrontWall");
+            var hole = frontWall.Holes.First(x => x.Faces.Count == 2);
+            var holeFace = hole.Faces.First(x => x != frontWall);
+
+            var frontFaceComp = volumeComp.Components.First(
+                x => x.Component.Instances.Any(i => i.Placements.Any(p => p is SimInstancePlacementGeometry gp && gp.GeometryId == frontWall.Id)))
+                .Component;
+            var holeComp = frontFaceComp.Components.First(
+                x => x.Component.Instances.Any(i => i.Placements.Any(p => p is SimInstancePlacementGeometry gp && gp.GeometryId == holeFace.Id)))
+                .Component;
+
+            Assert.AreEqual(holeFace.Name, holeComp.Name);
+
+            var newGM = gm.Geometry.Clone();
+            frontWall = newGM.Faces.First(x => x.Name == "FrontWall");
+            hole = frontWall.Holes.First(x => x.Faces.Count == 2);
+            var newHoleFace = hole.Faces.First(x => x != frontWall);
+
+            newHoleFace.Name = "asdfHole";
+            Assert.AreEqual(holeFace.Name, holeComp.Name);
+
+            gm.Geometry = newGM;
+            Assert.AreEqual(newHoleFace.Name, holeComp.Name);
+        }
+
+        #endregion
+
+        #region Holes
+
         [TestMethod]
         public void VolumeHoleAddedEmpty()
         {
             LoadProject(testProject);
-            projectData.Components.EnableAsyncUpdates = false;
-            projectData.GeometryCommunicator.EnableAsyncUpdates = false;
+
             (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
 
             var volume = gm.Geometry.Volumes.First(x => x.Name == "Room");
 
             //Add new association
             var volumeComp = projectData.Components.First(x => x.Name == "Room1");
-            projectData.GeometryCommunicator.Associate(volumeComp, volume);
+            projectData.ComponentGeometryExchange.Associate(volumeComp, volume);
 
             gm.Geometry.StartBatchOperation();
 
@@ -885,15 +1237,14 @@ namespace SIMULTAN.Tests.Instances
         public void VolumeHoleAddedFilled()
         {
             LoadProject(testProject);
-            projectData.Components.EnableAsyncUpdates = false;
-            projectData.GeometryCommunicator.EnableAsyncUpdates = false;
+
             (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
 
             var volume = gm.Geometry.Volumes.First(x => x.Name == "Room");
 
             //Add new association
             var volumeComp = projectData.Components.First(x => x.Name == "Room1");
-            projectData.GeometryCommunicator.Associate(volumeComp, volume);
+            projectData.ComponentGeometryExchange.Associate(volumeComp, volume);
 
             gm.Geometry.StartBatchOperation();
 
@@ -937,16 +1288,507 @@ namespace SIMULTAN.Tests.Instances
             //Parameter check
             AssertUtil.AssertDoubleEqual(21.0, leftWallComp.Parameters.First(x => x.Name == "A").ValueCurrent);
         }
+        [TestMethod]
+        public void VolumeHoleRemovedEmpty()
+        {
+            LoadProject(testProject);
+
+            (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
+
+            var volume = gm.Geometry.Volumes.First(x => x.Name == "Room");
+
+            //Add new association
+            var volumeComp = projectData.Components.First(x => x.Name == "Room1");
+            projectData.ComponentGeometryExchange.Associate(volumeComp, volume);
+
+            //Remove hole
+            gm.Geometry.StartBatchOperation();
+
+            var frontFace = gm.Geometry.Faces.First(x => x.Name == "FrontWall");
+            var holeLoop = frontFace.Holes.First(x => x.Faces.Count == 1);
+            frontFace.Holes.Remove(holeLoop);
+
+            gm.Geometry.EndBatchOperation();
+
+            var wallComp = volumeComp.Components.First(c => c.Component != null && c.Component.Instances.Any(
+                    inst => inst.Placements.Any(p => p is SimInstancePlacementGeometry pg && pg.FileId == resource.Key && pg.GeometryId == frontFace.Id)))?.Component;
+
+            Assert.AreEqual(1, wallComp.Components.Count);
+
+            //Check parameters
+            AssertUtil.AssertDoubleEqual(48.0, wallComp.Parameters.First(x => x.Name == "A").ValueCurrent);
+        }
+        [TestMethod]
+        public void VolumeHoleRemovedFilled()
+        {
+            LoadProject(testProject);
+
+            (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
+
+            var volume = gm.Geometry.Volumes.First(x => x.Name == "Room");
+
+            //Add new association
+            var volumeComp = projectData.Components.First(x => x.Name == "Room1");
+            projectData.ComponentGeometryExchange.Associate(volumeComp, volume);
+
+            //Remove hole
+            gm.Geometry.StartBatchOperation();
+
+            var frontFace = gm.Geometry.Faces.First(x => x.Name == "FrontWall");
+            var holeLoop = frontFace.Holes.First(x => x.Faces.Count > 1);
+            frontFace.Holes.Remove(holeLoop);
+
+            holeLoop.Faces.First(x => x.Boundary == holeLoop).RemoveFromModel();
+
+            gm.Geometry.EndBatchOperation();
+
+            var wallComp = volumeComp.Components.First(c => c.Component != null && c.Component.Instances.Any(
+                    inst => inst.Placements.Any(p => p is SimInstancePlacementGeometry pg && pg.FileId == resource.Key && pg.GeometryId == frontFace.Id)))?.Component;
+
+            Assert.AreEqual(1, wallComp.Components.Count);
+
+            //Check parameters
+            AssertUtil.AssertDoubleEqual(48.0, wallComp.Parameters.First(x => x.Name == "A").ValueCurrent);
+        }
+
+
+        [TestMethod]
+        public void VolumeHoleConvertedToFace()
+        {
+            LoadProject(testProject);
+
+            (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
+
+            var face = (Face)gm.Geometry.Faces.First(x => x.Name == "FrontWall");
+            var volume = face.PFaces[0].Volume;
+            var holeLoop = face.Holes.First(x => x.Faces.Count == 1);
+
+            var volumeComponent = projectData.Components.First(x => x.Name == "Room1");
+            projectData.ComponentGeometryExchange.Associate(volumeComponent, volume);
+
+            var faceComponent = volumeComponent.Components.SelectMany(
+                c => c.Component.Instances.SelectMany(i => i.Placements.OfType<SimInstancePlacementGeometry>()))
+                .First(x => x.FileId == face.ModelGeometry.Model.File.Key && x.GeometryId == face.Id).Instance.Component;
+
+            var attrib2DSubComponents = faceComponent.Components.Where(x => x.Component.InstanceType == SimInstanceType.GeometricSurface)
+                .Select(x => x.Component).ToList();
+            Assert.AreEqual(2, attrib2DSubComponents.Count);
+
+            //Add face to hole
+            Face holeFace = new Face(holeLoop.Layer, "HoleFace", holeLoop, GeometricOrientation.Forward);
+
+            //Check if edge loop component is gone and face is there
+            var loopComponentExists = attrib2DSubComponents.SelectMany(
+                c => c.Instances.SelectMany(i => i.Placements.OfType<SimInstancePlacementGeometry>()))
+                .Any(x => x.FileId == holeLoop.ModelGeometry.Model.File.Key && x.GeometryId == holeLoop.Id);
+            Assert.IsFalse(loopComponentExists);
+
+            var holeFaceComponent = attrib2DSubComponents.SelectMany(
+                c => c.Instances.SelectMany(i => i.Placements.OfType<SimInstancePlacementGeometry>()))
+                .First(x => x.FileId == holeFace.ModelGeometry.Model.File.Key && x.GeometryId == holeFace.Id).Instance.Component;
+            Assert.IsNotNull(holeFace.Name, holeFaceComponent.Name);
+            Assert.AreEqual(SimInstanceType.GeometricSurface, holeFaceComponent.InstanceType);
+        }
+        [TestMethod]
+        public void VolumeHoleConvertedToEdgeLoop()
+        {
+            LoadProject(testProject);
+
+            (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
+
+            var face = (Face)gm.Geometry.Faces.First(x => x.Name == "FrontWall");
+            var volume = face.PFaces[0].Volume;
+            var holeLoop = face.Holes.First(x => x.Faces.Count == 2);
+            var holeFace = holeLoop.Faces.First(x => x != face);
+
+            var volumeComponent = projectData.Components.First(x => x.Name == "Room1");
+            projectData.ComponentGeometryExchange.Associate(volumeComponent, volume);
+
+            var faceComponent = volumeComponent.Components.SelectMany(
+                c => c.Component.Instances.SelectMany(i => i.Placements.OfType<SimInstancePlacementGeometry>()))
+                .First(x => x.FileId == face.ModelGeometry.Model.File.Key && x.GeometryId == face.Id).Instance.Component;
+
+            var attrib2DSubComponents = faceComponent.Components.Where(x => x.Component.InstanceType == SimInstanceType.GeometricSurface)
+                .Select(x => x.Component).ToList();
+            Assert.AreEqual(2, attrib2DSubComponents.Count);
+
+            //Delete face from hole
+            holeFace.RemoveFromModel();
+
+            //Check if edge loop component is gone and face is there
+            var holeFaceComponent = attrib2DSubComponents.SelectMany(
+                c => c.Instances.SelectMany(i => i.Placements.OfType<SimInstancePlacementGeometry>()))
+                .Any(x => x.FileId == holeFace.ModelGeometry.Model.File.Key && x.GeometryId == holeFace.Id);
+            Assert.IsFalse(holeFaceComponent);
+
+            var loopComponentExists = attrib2DSubComponents.SelectMany(
+                c => c.Instances.SelectMany(i => i.Placements.OfType<SimInstancePlacementGeometry>()))
+                .First(x => x.FileId == holeLoop.ModelGeometry.Model.File.Key && x.GeometryId == holeLoop.Id).Instance.Component;
+            Assert.IsNotNull(holeLoop.Name, loopComponentExists.Name);
+            Assert.AreEqual(SimInstanceType.GeometricSurface, loopComponentExists.InstanceType);
+        }
+
+
+        [TestMethod]
+        public void VolumeHoleInHoleAddEmpty()
+        {
+            LoadProject(testProject);
+
+            (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
+
+            //Associate
+            var volume = gm.Geometry.Volumes.First(x => x.Name == "Room");
+            var volumeComponent = projectData.Components.First(x => x.Name == "Room1");
+            projectData.ComponentGeometryExchange.Associate(volumeComponent, volume);
+
+            //Find hole face
+            var wallFace = gm.Geometry.Faces.First(x => x.Name == "FrontWall");
+            var holeFace = gm.Geometry.Faces.First(x => x.Name == "Window1");
+
+            var wallComponent = volumeComponent.Components.First(x => x.Component.Instances[0].Placements[0] is SimInstancePlacementGeometry gp &&
+                gp.GeometryId == wallFace.Id).Component;
+            var holeFaceComponent = wallComponent.Components.First(x => x.Component.Instances[0].Placements[0] is SimInstancePlacementGeometry gp &&
+                gp.GeometryId == holeFace.Id).Component;
+
+            Assert.AreEqual(0, holeFaceComponent.Components.Count);
+
+            //Add hole to hole
+            gm.Geometry.StartBatchOperation();
+
+            Vertex[] holeholeVertices = new Vertex[]
+            {
+                new Vertex(volume.Layer, "", new Point3D(2.5, 2.5, 0)),
+                new Vertex(volume.Layer, "", new Point3D(3.5, 2.5, 0)),
+                new Vertex(volume.Layer, "", new Point3D(3.5, 2.75, 0)),
+                new Vertex(volume.Layer, "", new Point3D(2.5, 2.75, 0)),
+            };
+            Edge[] holeholeEdges = new Edge[]
+            {
+                new Edge(volume.Layer, "", new Vertex[]{ holeholeVertices[0], holeholeVertices[1] }),
+                new Edge(volume.Layer, "", new Vertex[]{ holeholeVertices[1], holeholeVertices[2] }),
+                new Edge(volume.Layer, "", new Vertex[]{ holeholeVertices[2], holeholeVertices[3] }),
+                new Edge(volume.Layer, "", new Vertex[]{ holeholeVertices[3], holeholeVertices[0] }),
+            };
+            EdgeLoop holeholeLoop = new EdgeLoop(volume.Layer, "HoleHole", holeholeEdges);
+
+            holeFace.Holes.Add(holeholeLoop);
+
+            gm.Geometry.EndBatchOperation();
+
+            //Check results
+            var holeholeComponent = holeFaceComponent.Components.First().Component;
+            Assert.AreEqual(1, holeholeComponent.Instances.Count);
+            Assert.AreEqual(new SimInstanceState(true, SimInstanceConnectionState.Ok), holeholeComponent.Instances[0].State);
+
+            var geometryPlacement = (SimInstancePlacementGeometry)holeholeComponent.Instances[0].Placements.First(x => x is SimInstancePlacementGeometry);
+            Assert.IsNotNull(geometryPlacement);
+            Assert.AreEqual(resource.Key, geometryPlacement.FileId);
+            Assert.AreEqual(holeholeLoop.Id, geometryPlacement.GeometryId);
+            Assert.AreEqual(SimInstancePlacementState.Valid, geometryPlacement.State);
+
+            //Parameter check
+            AssertUtil.AssertDoubleEqual(0.25, holeholeComponent.Parameters.First(x => x.Name == "A").ValueCurrent);
+        }
+        [TestMethod]
+        public void VolumeHoleInHoleAddFilled()
+        {
+            LoadProject(testProject);
+
+            (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
+
+            //Associate
+            var volume = gm.Geometry.Volumes.First(x => x.Name == "Room");
+            var volumeComponent = projectData.Components.First(x => x.Name == "Room1");
+            projectData.ComponentGeometryExchange.Associate(volumeComponent, volume);
+
+            //Find hole face
+            var wallFace = gm.Geometry.Faces.First(x => x.Name == "FrontWall");
+            var holeFace = gm.Geometry.Faces.First(x => x.Name == "Window1");
+
+            var wallComponent = volumeComponent.Components.First(x => x.Component.Instances[0].Placements[0] is SimInstancePlacementGeometry gp &&
+                gp.GeometryId == wallFace.Id).Component;
+            var holeFaceComponent = wallComponent.Components.First(x => x.Component.Instances[0].Placements[0] is SimInstancePlacementGeometry gp &&
+                gp.GeometryId == holeFace.Id).Component;
+
+            Assert.AreEqual(0, holeFaceComponent.Components.Count);
+
+            //Add hole to hole
+            gm.Geometry.StartBatchOperation();
+
+            Vertex[] holeholeVertices = new Vertex[]
+            {
+                new Vertex(volume.Layer, "", new Point3D(2.5, 2.5, 0)),
+                new Vertex(volume.Layer, "", new Point3D(3.5, 2.5, 0)),
+                new Vertex(volume.Layer, "", new Point3D(3.5, 2.75, 0)),
+                new Vertex(volume.Layer, "", new Point3D(2.5, 2.75, 0)),
+            };
+            Edge[] holeholeEdges = new Edge[]
+            {
+                new Edge(volume.Layer, "", new Vertex[]{ holeholeVertices[0], holeholeVertices[1] }),
+                new Edge(volume.Layer, "", new Vertex[]{ holeholeVertices[1], holeholeVertices[2] }),
+                new Edge(volume.Layer, "", new Vertex[]{ holeholeVertices[2], holeholeVertices[3] }),
+                new Edge(volume.Layer, "", new Vertex[]{ holeholeVertices[3], holeholeVertices[0] }),
+            };
+            EdgeLoop holeholeLoop = new EdgeLoop(volume.Layer, "HoleHole", holeholeEdges);
+            Face holeholeFace = new Face(volume.Layer, "HoleHoleFace", holeholeLoop, GeometricOrientation.Forward);
+
+            holeFace.Holes.Add(holeholeLoop);
+
+            gm.Geometry.EndBatchOperation();
+
+            //Check results
+            var holeholeComponent = holeFaceComponent.Components.First().Component;
+            Assert.AreEqual(1, holeholeComponent.Instances.Count);
+            Assert.AreEqual(new SimInstanceState(true, SimInstanceConnectionState.Ok), holeholeComponent.Instances[0].State);
+
+            var geometryPlacement = (SimInstancePlacementGeometry)holeholeComponent.Instances[0].Placements.First(x => x is SimInstancePlacementGeometry);
+            Assert.IsNotNull(geometryPlacement);
+            Assert.AreEqual(resource.Key, geometryPlacement.FileId);
+            Assert.AreEqual(holeholeFace.Id, geometryPlacement.GeometryId);
+            Assert.AreEqual(SimInstancePlacementState.Valid, geometryPlacement.State);
+
+            //Parameter check
+            AssertUtil.AssertDoubleEqual(0.25, holeholeComponent.Parameters.First(x => x.Name == "A").ValueCurrent);
+        }
+
+        [TestMethod]
+        public void VolumeHoleInHoleRemoveEmpty()
+        {
+            LoadProject(testProject);
+
+            (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
+
+            //Associate
+            var volume = gm.Geometry.Volumes.First(x => x.Name == "Room");
+            var volumeComponent = projectData.Components.First(x => x.Name == "Room1");
+            projectData.ComponentGeometryExchange.Associate(volumeComponent, volume);
+
+            //Find hole face
+            var wallFace = gm.Geometry.Faces.First(x => x.Name == "FrontWall");
+            var holeFace = gm.Geometry.Faces.First(x => x.Name == "Window1");
+
+            var wallComponent = volumeComponent.Components.First(x => x.Component.Instances[0].Placements[0] is SimInstancePlacementGeometry gp &&
+                gp.GeometryId == wallFace.Id).Component;
+            var holeFaceComponent = wallComponent.Components.First(x => x.Component.Instances[0].Placements[0] is SimInstancePlacementGeometry gp &&
+                gp.GeometryId == holeFace.Id).Component;
+
+            Assert.AreEqual(0, holeFaceComponent.Components.Count);
+
+            //Add hole to hole
+            gm.Geometry.StartBatchOperation();
+
+            Vertex[] holeholeVertices = new Vertex[]
+            {
+                new Vertex(volume.Layer, "", new Point3D(2.5, 2.5, 0)),
+                new Vertex(volume.Layer, "", new Point3D(3.5, 2.5, 0)),
+                new Vertex(volume.Layer, "", new Point3D(3.5, 2.75, 0)),
+                new Vertex(volume.Layer, "", new Point3D(2.5, 2.75, 0)),
+            };
+            Edge[] holeholeEdges = new Edge[]
+            {
+                new Edge(volume.Layer, "", new Vertex[]{ holeholeVertices[0], holeholeVertices[1] }),
+                new Edge(volume.Layer, "", new Vertex[]{ holeholeVertices[1], holeholeVertices[2] }),
+                new Edge(volume.Layer, "", new Vertex[]{ holeholeVertices[2], holeholeVertices[3] }),
+                new Edge(volume.Layer, "", new Vertex[]{ holeholeVertices[3], holeholeVertices[0] }),
+            };
+            EdgeLoop holeholeLoop = new EdgeLoop(volume.Layer, "HoleHole", holeholeEdges);
+
+            holeFace.Holes.Add(holeholeLoop);
+
+            gm.Geometry.EndBatchOperation();
+
+            //Check results
+            holeFace.Holes.Clear();
+
+            Assert.AreEqual(0, holeFaceComponent.Components.Count);
+        }
+        [TestMethod]
+        public void VolumeHoleInHoleRemoveFilled()
+        {
+            LoadProject(testProject);
+
+            (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
+
+            //Associate
+            var volume = gm.Geometry.Volumes.First(x => x.Name == "Room");
+            var volumeComponent = projectData.Components.First(x => x.Name == "Room1");
+            projectData.ComponentGeometryExchange.Associate(volumeComponent, volume);
+
+            //Find hole face
+            var wallFace = gm.Geometry.Faces.First(x => x.Name == "FrontWall");
+            var holeFace = gm.Geometry.Faces.First(x => x.Name == "Window1");
+
+            var wallComponent = volumeComponent.Components.First(x => x.Component.Instances[0].Placements[0] is SimInstancePlacementGeometry gp &&
+                gp.GeometryId == wallFace.Id).Component;
+            var holeFaceComponent = wallComponent.Components.First(x => x.Component.Instances[0].Placements[0] is SimInstancePlacementGeometry gp &&
+                gp.GeometryId == holeFace.Id).Component;
+
+            Assert.AreEqual(0, holeFaceComponent.Components.Count);
+
+            //Add hole to hole
+            gm.Geometry.StartBatchOperation();
+
+            Vertex[] holeholeVertices = new Vertex[]
+            {
+                new Vertex(volume.Layer, "", new Point3D(2.5, 2.5, 0)),
+                new Vertex(volume.Layer, "", new Point3D(3.5, 2.5, 0)),
+                new Vertex(volume.Layer, "", new Point3D(3.5, 2.75, 0)),
+                new Vertex(volume.Layer, "", new Point3D(2.5, 2.75, 0)),
+            };
+            Edge[] holeholeEdges = new Edge[]
+            {
+                new Edge(volume.Layer, "", new Vertex[]{ holeholeVertices[0], holeholeVertices[1] }),
+                new Edge(volume.Layer, "", new Vertex[]{ holeholeVertices[1], holeholeVertices[2] }),
+                new Edge(volume.Layer, "", new Vertex[]{ holeholeVertices[2], holeholeVertices[3] }),
+                new Edge(volume.Layer, "", new Vertex[]{ holeholeVertices[3], holeholeVertices[0] }),
+            };
+            EdgeLoop holeholeLoop = new EdgeLoop(volume.Layer, "HoleHole", holeholeEdges);
+            Face holeholeFace = new Face(volume.Layer, "HoleHoleFace", holeholeLoop, GeometricOrientation.Forward);
+
+            holeFace.Holes.Add(holeholeLoop);
+
+            gm.Geometry.EndBatchOperation();
+
+            //Check results
+            holeFace.Holes.Clear();
+
+            Assert.AreEqual(0, holeFaceComponent.Components.Count);
+        }
+
+        [TestMethod]
+        public void VolumeHoleInHoleConvertToFace()
+        {
+            LoadProject(testProject);
+
+            (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
+
+            //Associate
+            var volume = gm.Geometry.Volumes.First(x => x.Name == "Room");
+            var volumeComponent = projectData.Components.First(x => x.Name == "Room1");
+            projectData.ComponentGeometryExchange.Associate(volumeComponent, volume);
+
+            //Find hole face
+            var wallFace = gm.Geometry.Faces.First(x => x.Name == "FrontWall");
+            var holeFace = gm.Geometry.Faces.First(x => x.Name == "Window1");
+
+            var wallComponent = volumeComponent.Components.First(x => x.Component.Instances[0].Placements[0] is SimInstancePlacementGeometry gp &&
+                gp.GeometryId == wallFace.Id).Component;
+            var holeFaceComponent = wallComponent.Components.First(x => x.Component.Instances[0].Placements[0] is SimInstancePlacementGeometry gp &&
+                gp.GeometryId == holeFace.Id).Component;
+
+            Assert.AreEqual(0, holeFaceComponent.Components.Count);
+
+            //Setup
+            gm.Geometry.StartBatchOperation();
+
+            Vertex[] holeholeVertices = new Vertex[]
+            {
+                new Vertex(volume.Layer, "", new Point3D(2.5, 2.5, 0)),
+                new Vertex(volume.Layer, "", new Point3D(3.5, 2.5, 0)),
+                new Vertex(volume.Layer, "", new Point3D(3.5, 2.75, 0)),
+                new Vertex(volume.Layer, "", new Point3D(2.5, 2.75, 0)),
+            };
+            Edge[] holeholeEdges = new Edge[]
+            {
+                new Edge(volume.Layer, "", new Vertex[]{ holeholeVertices[0], holeholeVertices[1] }),
+                new Edge(volume.Layer, "", new Vertex[]{ holeholeVertices[1], holeholeVertices[2] }),
+                new Edge(volume.Layer, "", new Vertex[]{ holeholeVertices[2], holeholeVertices[3] }),
+                new Edge(volume.Layer, "", new Vertex[]{ holeholeVertices[3], holeholeVertices[0] }),
+            };
+            EdgeLoop holeholeLoop = new EdgeLoop(volume.Layer, "HoleHole", holeholeEdges);
+
+            holeFace.Holes.Add(holeholeLoop);
+
+            gm.Geometry.EndBatchOperation();
+
+            //Find components
+            var holeholeComponent = holeFaceComponent.Components.First().Component;
+            var geometryPlacement = (SimInstancePlacementGeometry)holeholeComponent.Instances[0].Placements.First(x => x is SimInstancePlacementGeometry);
+            Assert.AreEqual(1, holeholeComponent.Instances.Count);
+            Assert.AreEqual(resource.Key, geometryPlacement.FileId);
+            Assert.AreEqual(holeholeLoop.Id, geometryPlacement.GeometryId);
+
+            //Operation to test
+            Face holeholeFace = new Face(volume.Layer, "HoleHoleFace", holeholeLoop, GeometricOrientation.Forward);
+
+            //Check results
+            geometryPlacement = (SimInstancePlacementGeometry)holeholeComponent.Instances[0].Placements.First(x => x is SimInstancePlacementGeometry);
+            Assert.AreEqual(1, holeholeComponent.Instances.Count);
+            Assert.AreEqual(resource.Key, geometryPlacement.FileId);
+            Assert.AreEqual(holeholeFace.Id, geometryPlacement.GeometryId);
+        }
+        [TestMethod]
+        public void VolumeHoleInHoleConvertToEdgeLoop()
+        {
+            LoadProject(testProject);
+
+            (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
+
+            //Associate
+            var volume = gm.Geometry.Volumes.First(x => x.Name == "Room");
+            var volumeComponent = projectData.Components.First(x => x.Name == "Room1");
+            projectData.ComponentGeometryExchange.Associate(volumeComponent, volume);
+
+            //Find hole face
+            var wallFace = gm.Geometry.Faces.First(x => x.Name == "FrontWall");
+            var holeFace = gm.Geometry.Faces.First(x => x.Name == "Window1");
+
+            var wallComponent = volumeComponent.Components.First(x => x.Component.Instances[0].Placements[0] is SimInstancePlacementGeometry gp &&
+                gp.GeometryId == wallFace.Id).Component;
+            var holeFaceComponent = wallComponent.Components.First(x => x.Component.Instances[0].Placements[0] is SimInstancePlacementGeometry gp &&
+                gp.GeometryId == holeFace.Id).Component;
+
+            Assert.AreEqual(0, holeFaceComponent.Components.Count);
+
+            //Setup
+            gm.Geometry.StartBatchOperation();
+
+            Vertex[] holeholeVertices = new Vertex[]
+            {
+                new Vertex(volume.Layer, "", new Point3D(2.5, 2.5, 0)),
+                new Vertex(volume.Layer, "", new Point3D(3.5, 2.5, 0)),
+                new Vertex(volume.Layer, "", new Point3D(3.5, 2.75, 0)),
+                new Vertex(volume.Layer, "", new Point3D(2.5, 2.75, 0)),
+            };
+            Edge[] holeholeEdges = new Edge[]
+            {
+                new Edge(volume.Layer, "", new Vertex[]{ holeholeVertices[0], holeholeVertices[1] }),
+                new Edge(volume.Layer, "", new Vertex[]{ holeholeVertices[1], holeholeVertices[2] }),
+                new Edge(volume.Layer, "", new Vertex[]{ holeholeVertices[2], holeholeVertices[3] }),
+                new Edge(volume.Layer, "", new Vertex[]{ holeholeVertices[3], holeholeVertices[0] }),
+            };
+            EdgeLoop holeholeLoop = new EdgeLoop(volume.Layer, "HoleHole", holeholeEdges);
+            Face holeholeFace = new Face(volume.Layer, "HoleHoleFace", holeholeLoop, GeometricOrientation.Forward);
+
+            holeFace.Holes.Add(holeholeLoop);
+
+            gm.Geometry.EndBatchOperation();
+
+            //Find components
+            var holeholeComponent = holeFaceComponent.Components.First().Component;
+            var geometryPlacement = (SimInstancePlacementGeometry)holeholeComponent.Instances[0].Placements.First(x => x is SimInstancePlacementGeometry);
+            Assert.AreEqual(1, holeholeComponent.Instances.Count);
+            Assert.AreEqual(resource.Key, geometryPlacement.FileId);
+            Assert.AreEqual(holeholeFace.Id, geometryPlacement.GeometryId);
+
+            //Operation to test
+            holeholeFace.RemoveFromModel();
+
+            //Check results
+            geometryPlacement = (SimInstancePlacementGeometry)holeholeComponent.Instances[0].Placements.First(x => x is SimInstancePlacementGeometry);
+            Assert.AreEqual(1, holeholeComponent.Instances.Count);
+            Assert.AreEqual(resource.Key, geometryPlacement.FileId);
+            Assert.AreEqual(holeholeLoop.Id, geometryPlacement.GeometryId);
+        }
 
         #endregion
 
-        #region RemoveInstance
+        #region Remove
 
         [TestMethod]
         public void RemoveVolumeInstance()
         {
             LoadProject(testProject);
-            projectData.Components.EnableAsyncUpdates = false;
             (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
 
             var comp = projectData.Components.First(x => x.Name == "Room1");
@@ -955,15 +1797,87 @@ namespace SIMULTAN.Tests.Instances
             Assert.AreEqual(0, comp.Instances.Count);
 
             //Add new association
-            projectData.GeometryCommunicator.Associate(comp, volume);
+            projectData.ComponentGeometryExchange.Associate(comp, volume);
             Assert.AreNotEqual(0, comp.Components.Count);
 
-            projectData.GeometryCommunicator.DisAssociate(comp, volume);
+            projectData.ComponentGeometryExchange.Disassociate(comp, volume);
             Assert.AreEqual(0, comp.Components.Count);
             Assert.AreEqual(0, comp.Instances.Count);
             Assert.AreEqual(new SimInstanceState(false, SimInstanceConnectionState.Ok), comp.InstanceState);
             Assert.AreEqual(0, comp.ReferencedComponents.Count);
+        }
 
+        [TestMethod]
+        public void RemovedVolumeState()
+        {
+            LoadProject(testProject);
+
+            (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
+
+            var volume = gm.Geometry.Volumes.First(x => x.Name == "Room");
+
+            //Add new association
+            var volumeComp = projectData.Components.First(x => x.Name == "Room1");
+            projectData.ComponentGeometryExchange.Associate(volumeComp, volume);
+
+            //Remove volume
+            volume.RemoveFromModel();
+
+            //Check state
+            Assert.AreEqual(SimInstanceConnectionState.GeometryNotFound, volumeComp.InstanceState.ConnectionState);
+            Assert.AreEqual(true, volumeComp.InstanceState.IsRealized);
+            Assert.AreEqual(1, volumeComp.Instances.Count);
+
+            var instance = volumeComp.Instances[0];
+            Assert.AreEqual(SimInstanceConnectionState.GeometryNotFound, instance.State.ConnectionState);
+            Assert.AreEqual(true, instance.State.IsRealized);
+            Assert.AreEqual(1, instance.Placements.Count);
+
+            var placement = (SimInstancePlacementGeometry)instance.Placements[0];
+            Assert.AreEqual(SimInstancePlacementState.InstanceTargetMissing, placement.State);
+            Assert.AreEqual(true, placement.IsValid);
+        }
+
+        [TestMethod]
+        public void RemoveVolumeSubComponents()
+        {
+            LoadProject(testProject);
+
+            (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
+
+            var volume = gm.Geometry.Volumes.First(x => x.Name == "Room");
+
+            //Add new association
+            var volumeComp = projectData.Components.First(x => x.Name == "Room1");
+            projectData.ComponentGeometryExchange.Associate(volumeComp, volume);
+
+            //Remove volume
+            volume.RemoveFromModel();
+
+            //Check subcomponents
+            Assert.IsTrue(volumeComp.Components.All(x =>
+                x.Component.InstanceType != SimInstanceType.GeometricVolume &&
+                x.Component.InstanceType != SimInstanceType.GeometricSurface));
+        }
+
+        [TestMethod]
+        public void RemoveVolumeNeightborReferences()
+        {
+            LoadProject(testProject);
+
+            (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
+
+            var room1Comp = projectData.Components.First(x => x.Name == "Room1");
+            var room2Comp = projectData.Components.First(x => x.Name == "Room2");
+            var volume = gm.Geometry.Volumes.First(x => x.Name == "Room");
+
+            //Add new association
+            projectData.ComponentGeometryExchange.Associate(room1Comp, volume);
+
+            volume.RemoveFromModel();
+
+            Assert.AreEqual(0, room1Comp.ReferencedComponents.Count);
+            Assert.AreEqual(0, room2Comp.ReferencedComponents.Count);
         }
 
         #endregion

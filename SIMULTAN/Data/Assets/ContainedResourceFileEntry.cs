@@ -1,8 +1,8 @@
 ﻿using SIMULTAN;
 using SIMULTAN.Data.Users;
 using SIMULTAN.Serializer.DXF;
-using SIMULTAN.Utils.Files;
 using SIMULTAN.Utils;
+using SIMULTAN.Utils.Files;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -26,6 +26,31 @@ namespace SIMULTAN.Data.Assets
         public override bool CanBeRenamed => true;
         /// <inheritdoc/>
         public override bool CanBeMoved => true;
+
+        /// <inheritdoc/>
+        public override bool Exists
+        {
+            get
+            {
+                return base.Exists && !IsMissing;
+            }
+        }
+
+        /// <summary>
+        /// Determines if the file is temporarily. 
+        /// If it is marked as missing, Exists will be false.
+        /// </summary>
+        public bool IsMissing
+        {
+            get { return isMissing; }
+            set
+            {
+                isMissing = value;
+                NotifyPropertyChanged(nameof(IsMissing));
+                NotifyPropertyChanged(nameof(Exists));
+            }
+        }
+        private bool isMissing;
 
         /// <summary>
         /// Can be called with the absolute path (when first being set by the user) and with the relative
@@ -125,15 +150,12 @@ namespace SIMULTAN.Data.Assets
                 this.CurrentFullPath = _file_path;
             else
                 this.current_full_path = _file_path;
-            if (_path_exists && !System.IO.File.Exists(_file_path))
-                throw new ArgumentException("The given absolute path is not valid!");
 
             this.File = new FileInfo(_file_path);
             this.FileIsNotReallyContained = true;
 
             bool set_rel_path = false;
             DirectoryInfo di = this.File.Directory;
-            //DirectoryInfo diW = (this.Parent == null) ? new DirectoryInfo(this.manager.WorkingDirectory) : new DirectoryInfo(this.Parent.CurrentFullPath);
             DirectoryInfo diW = new DirectoryInfo(this.manager.WorkingDirectory);
             if (FileSystemNavigation.IsSubdirectoryOf(diW.FullName, di.FullName, _path_exists) || string.Equals(diW.FullName, di.FullName, StringComparison.InvariantCultureIgnoreCase))
             {
@@ -360,76 +382,6 @@ namespace SIMULTAN.Data.Assets
             FileInfo file_new = new FileInfo(this.CurrentFullPath);
             //if (this.manager != null)
             //    this.manager.OnResourceManipulated(new ManipulatedResourceEventArgs(file_old, file_new, additional_dirs));
-        }
-
-        /// <inheritdoc/>
-        public override void PathChangedExternally(FileSystemInfo _new_data)
-        {
-            FileInfo file_new = null;
-
-            if (_new_data == null)
-                throw new ArgumentNullException(nameof(_new_data));
-            if (!(_new_data is FileInfo))
-                throw new ArgumentException("The new name has to be packed in a FileInfo instance!", nameof(_new_data));
-
-            file_new = new FileInfo(_new_data.FullName);
-
-            // check if the renaming causes a change in the structure
-            DirectoryInfo parent_old = this.File.Directory;
-            DirectoryInfo parent_new = file_new.Directory;
-
-            if (string.Equals(parent_old.FullName, parent_new.FullName, StringComparison.InvariantCultureIgnoreCase))
-            {
-                // no change in structure
-                this.SetFullPath(file_new.FullName, true, true);
-                this.Name = (this.File == null) ? FileSystemNavigation.ExtractNameFromPath(file_new.FullName) : this.File.Name;
-            }
-            else
-            {
-                // 1. check the admissiblility of the location change
-                var parent_old_check = this.CheckLocation(parent_old, true);
-                var parent_new_check = this.CheckLocation(parent_new, false);
-
-                if (!parent_new_check.is_working_dir && !parent_new_check.is_subdir_of_working_dir)
-                    throw new ArgumentException("Contained resources may not be moved outside the working directory", nameof(_new_data));
-                if (!parent_old_check.location_parent_match)
-                    throw new Exception("Inconsistency with the resource parent. This shoud not happen!");
-
-                // 2.  before making structurural changes...
-                // 2a. remove from the old parent
-                if (parent_old_check.is_working_dir)
-                    this.manager.RemoveAsTopLevelResource(this);
-                else
-                    (this.Parent as ResourceDirectoryEntry).Children.Remove(this);
-
-                // 2c. change the entry itself
-                this.SetFullPath(file_new.FullName);
-                this.Name = (this.File == null) ? FileSystemNavigation.ExtractNameFromPath(file_new.FullName) : this.File.Name;
-
-                // 2d. add to the new parent
-                if (parent_new_check.is_working_dir)
-                {
-                    this.manager.AddAsTopLevelResource(this);
-                }
-                else
-                {
-                    ResourceDirectoryEntry p = this.manager.GetResource(parent_new);
-                    if (p == null || !(p is ResourceDirectoryEntry))
-                    {
-                        // create the directory
-                        (_, var p_new, var all_new) = this.manager.CreateResourceDirFrom(parent_new);
-                        if (p_new != null)
-                        {
-                            p_new.Children.Add(this);
-                        }
-                    }
-                    else
-                    {
-                        p.Children.Add(this);
-                    }
-                }
-            }
-            // done
         }
 
         /// <inheritdoc/>

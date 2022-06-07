@@ -445,6 +445,54 @@ namespace SIMULTAN.Serializer.DXF.DXFEntities
                 this.dxf_Visibility, this.dxf_ComponentColor, this.dxf_SortingType, this.dxf_SymbolId
                 );
 
+            //Set parameters to auto propagate for old composite components
+            if (Decoder.CurrentFileVersion <= 9)
+            {
+                if (this.dxf_parsed.InstanceType == SimInstanceType.AttributesFace)
+                {
+                    var propagationParameter = this.dxf_parsed.Parameters.FirstOrDefault(x => x.Name == ReservedParameters.RP_INST_PROPAGATE);
+                    if (propagationParameter != null)
+                    {
+                        propagationParameter.ValueCurrent = 1.0;
+                    }
+
+                    //Reset instance parameters for propagating params
+                    foreach (var param in dxf_parsed.Parameters.
+                        Where(x => x.InstancePropagationMode != SimParameterInstancePropagation.PropagateNever))
+                    {
+                        foreach (var instance in dxf_parsed.Instances)
+                        {
+                            // as of version 11 the propagation parameter might not exist anymore, make sure this is set correctly
+                            instance.PropagateParameterChanges = true; 
+                            for (int i = 0; i < instance.LoadingParameterValuesPersistent.Count; ++i)
+                            {
+                                if (instance.LoadingParameterValuesPersistent[i].id.LocalId == param.Id.LocalId ||
+                                    (instance.LoadingParameterValuesPersistent[i].id == SimId.Empty && 
+                                     instance.LoadingParameterValuesPersistent[i].parameterName == param.Name))
+                                {
+                                    instance.LoadingParameterValuesPersistent.RemoveAt(i);
+                                    i--;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // migrate instance propagation parameter
+            if(Decoder.CurrentFileVersion <= 10)
+            {
+                var propagationParameter = this.dxf_parsed.Parameters.FirstOrDefault(x => x.Name == ReservedParameters.RP_INST_PROPAGATE);
+                if(propagationParameter != null)
+                {
+                    foreach(var instance in dxf_parsed.Instances)
+                    {
+                        instance.PropagateParameterChanges = propagationParameter.ValueCurrent != 0;
+                    }
+                    dxf_parsed.Parameters.Remove(propagationParameter);
+                }
+            }
+
             if (isRootComponent)
                 this.Decoder.ProjectData.Components.Add(dxf_parsed);
         }

@@ -132,73 +132,6 @@ namespace SIMULTAN.Data.Components
         }
         private SimComponent parent;
 
-        internal void RemoveComponentWithoutDelete()
-        {
-            this.component.ParentContainer = null;
-            this.component = null;
-            NotifyPropertyChanged(nameof(Component));
-        }
-
-        private void RemoveFromFactory(SimComponentCollection factory, SimComponent component, bool deleteComponent = true, bool recordWrite = true)
-        {
-            if (deleteComponent)
-            {
-                factory.ProjectData.IdGenerator.Remove(component);
-                component.OnIsBeingDeleted();
-            }
-
-            if (recordWrite)
-                component.RecordWriteAccess();
-
-            if (deleteComponent)
-            {
-                component.Id = new SimId(component.Id.GlobalId, component.Id.LocalId);
-                component.Factory = null;
-                component.ParentContainer = null;
-            }
-        }
-
-        private void AddToFactory(SimComponentCollection factory, SimComponent component)
-        {
-            if (component.Factory == null) //This is a component that is currently not part of the system
-            {
-                if (component.Id != SimId.Empty) //Used pre-stored id (only possible during loading)
-                {
-                    if (factory.IsLoading)
-                    {
-                        component.Id = new SimId(factory.CalledFromLocation, component.Id.LocalId);
-                        factory.ProjectData.IdGenerator.Reserve(component, component.Id);
-                    }
-                    else
-                        throw new NotSupportedException("Existing Ids may only be used during a loading operation");
-                }
-                else
-                    component.Id = factory.ProjectData.IdGenerator.NextId(component, factory.CalledFromLocation);
-
-                component.Factory = factory;
-            }
-            else //This component is moved from somewhere else
-            {
-                if (component.Factory != factory)
-                    throw new ArgumentException("Child components must be part of the same factory as the parent");
-
-                if (component.ParentContainer == null) // Moved from top level
-                {
-                    component.Factory.RemoveWithoutDelete(component);
-                }
-                else if (component.ParentContainer != this) //Moved from another parent 
-                {
-                    component.ParentContainer.RemoveComponentWithoutDelete();
-                }
-            }
-
-            component.ParentContainer = this;
-
-            var cu = factory.ProjectData.UsersManager.CurrentUser;
-            if (cu != null)
-                component.ForceRecordWriteAccess(cu);
-        }
-
         #endregion
 
         #region Events
@@ -247,6 +180,7 @@ namespace SIMULTAN.Data.Components
             }
         }
 
+
         internal void OnRemoveWithoutDelete()
         {
             if (Component != null)
@@ -257,6 +191,75 @@ namespace SIMULTAN.Data.Components
                 if (Component.Factory != null)
                     RemoveFromFactory(Component.Factory, Component, false);
             }
+        }
+
+        internal void RemoveComponentWithoutDelete()
+        {
+            this.component.ParentContainer = null;
+            this.component = null;
+            NotifyPropertyChanged(nameof(Component));
+        }
+
+        private void RemoveFromFactory(SimComponentCollection factory, SimComponent component, bool deleteComponent = true, bool recordWrite = true)
+        {
+            if (deleteComponent)
+            {
+                factory.ProjectData.ComponentGeometryExchange.OnComponentRemoved(component);
+                factory.ProjectData.IdGenerator.Remove(component);
+                component.OnIsBeingDeleted();
+            }
+
+            if (recordWrite)
+                component.RecordWriteAccess();
+
+            if (deleteComponent)
+            {
+                component.Id = new SimId(component.Id.GlobalId, component.Id.LocalId);
+                component.Factory = null;
+                component.ParentContainer = null;
+            }
+        }
+
+        private void AddToFactory(SimComponentCollection factory, SimComponent component)
+        {
+            if (component.Factory == null) //This is a component that is currently not part of the system
+            {
+                if (component.Id != SimId.Empty) //Used pre-stored id (only possible during loading)
+                {
+                    if (factory.IsLoading)
+                    {
+                        component.Id = new SimId(factory.CalledFromLocation, component.Id.LocalId);
+                        factory.ProjectData.IdGenerator.Reserve(component, component.Id);
+                    }
+                    else
+                        throw new NotSupportedException("Existing Ids may only be used during a loading operation");
+                }
+                else
+                    component.Id = factory.ProjectData.IdGenerator.NextId(component, factory.CalledFromLocation);
+
+                component.Factory = factory;
+                factory.ProjectData.ComponentGeometryExchange.OnComponentAdded(component);
+            }
+            else //This component is moved from somewhere else
+            {
+                if (component.Factory != factory)
+                    throw new ArgumentException("Child components must be part of the same factory as the parent");
+
+                if (component.ParentContainer == null) // Moved from top level
+                {
+                    component.Factory.RemoveWithoutDelete(component);
+                }
+                else if (component.ParentContainer != this) //Moved from another parent 
+                {
+                    component.ParentContainer.RemoveComponentWithoutDelete();
+                }
+            }
+
+            component.ParentContainer = this;
+
+            var cu = factory.ProjectData.UsersManager.CurrentUser;
+            if (cu != null)
+                component.ForceRecordWriteAccess(cu);
         }
     }
 }

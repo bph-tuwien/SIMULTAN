@@ -254,7 +254,7 @@ namespace SIMULTAN.Tests.Components
             bphComp.Calculations.Add(calc);
 
             //Remove
-            Assert.ThrowsException<AccessDeniedException>(() => { archComp.Parameters.RemoveAt(1); });
+            Assert.ThrowsException<AccessDeniedException>(() => { archComp.Parameters.RemoveAt(0); });
             bphComp.Calculations.Remove(calc);
             Assert.AreEqual(1, bphComp.Calculations.Count);
         }

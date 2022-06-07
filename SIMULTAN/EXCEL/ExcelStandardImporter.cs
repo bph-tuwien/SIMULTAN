@@ -74,7 +74,7 @@ namespace SIMULTAN.Excel
 
         #region IMPORT: Big Table
 
-        public void ImportBigTableFromFile(IReferenceLocation location, FileInfo file, SimMultiValueCollection factory, 
+        public void ImportBigTableFromFile(IReferenceLocation location, FileInfo file, SimMultiValueCollection factory,
             string unitX, string unitY, string rowNameFormat, string rowUnit,
             int maxRowCount = 0)
         {
@@ -121,7 +121,7 @@ namespace SIMULTAN.Excel
             //GC.Collect();
         }
 
-        public void ImportBigTableWNamesFromFile(IReferenceLocation location, FileInfo file, SimMultiValueCollection factory, 
+        public void ImportBigTableWNamesFromFile(IReferenceLocation location, FileInfo file, SimMultiValueCollection factory,
             string unitX, string unitY, string rowUnit,
             int maxRowCount = 0)
         {

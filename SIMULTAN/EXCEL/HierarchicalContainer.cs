@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using System.Windows.Media.Media3D;
 
 namespace SIMULTAN.Excel
-{ 
+{
     [Obsolete("Will be replaced in future with SimObjectNew")]
     public abstract class HierarchicalContainer
     {

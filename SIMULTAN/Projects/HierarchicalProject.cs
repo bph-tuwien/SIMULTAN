@@ -10,8 +10,8 @@ using SIMULTAN.Projects.ManagedFiles;
 using SIMULTAN.Serializer.DXF;
 using SIMULTAN.Serializer.Projects;
 using SIMULTAN.Serializer.SimGeo;
-using SIMULTAN.Utils.Files;
 using SIMULTAN.Utils;
+using SIMULTAN.Utils.Files;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -838,20 +838,18 @@ namespace SIMULTAN.Projects
                 throw new ArgumentNullException(nameof(_resource_to_delete));
 
             // for internally managed files (e.g. geometry): check if the file is open
-            if (_resource_to_delete is ContainedResourceFileEntry)
+            if (_resource_to_delete is ContainedResourceFileEntry rfEntry)
             {
                 // geometry
-                FileInfo geom_file = new FileInfo(_resource_to_delete.CurrentFullPath);
-                if (string.Equals(geom_file.Extension, ParamStructFileExtensions.FILE_EXT_GEOMETRY_INTERNAL, StringComparison.InvariantCultureIgnoreCase))
+                if (string.Equals(rfEntry.Extension, ParamStructFileExtensions.FILE_EXT_GEOMETRY_INTERNAL, StringComparison.InvariantCultureIgnoreCase))
                 {
-                    if (this.AllProjectDataManagers.GeometryCommunicator != null &&
-                        this.AllProjectDataManagers.GeometryModels.TryGetGeometryModel(new FileInfo(_resource_to_delete.CurrentFullPath), out _, false))
+                    if (this.AllProjectDataManagers.GeometryModels.TryGetGeometryModel(rfEntry, out _, false))
                         return (true, false);
                 }
                 // site planner
                 if (_resource_to_delete.CurrentFullPath.EndsWith(ParamStructFileExtensions.FILE_EXT_SITEPLANNER) || _resource_to_delete.CurrentFullPath.EndsWith(ParamStructFileExtensions.FILE_EXT_GEOMAP))
                 {
-                    if (this.AllProjectDataManagers.SitePlannerCommunicator != null && this.AllProjectDataManagers.SitePlannerCommunicator.Manager.IsFileOpen(new FileInfo(_resource_to_delete.CurrentFullPath)))
+                    if (this.AllProjectDataManagers.SitePlannerManager.IsFileOpen(new FileInfo(_resource_to_delete.CurrentFullPath)))
                         return (true, false);
                 }
             }
@@ -860,6 +858,17 @@ namespace SIMULTAN.Projects
             var del_test = asset_manager.DeleteResourceEntryPossible(_resource_to_delete);
             if (!del_test.exists || !del_test.can_delete)
                 return (del_test.exists, del_test.can_delete);
+
+            //Remove from siteplanner (in case of siteplanner file)
+            if (_resource_to_delete is ContainedResourceFileEntry fe && fe.Extension == ParamStructFileExtensions.FILE_EXT_SITEPLANNER)
+            {
+                var spProject = this.AllProjectDataManagers.SitePlannerManager.SitePlannerProjects.FirstOrDefault(x => x.SitePlannerFile == fe);
+                if (spProject != null)
+                {
+                    this.AllProjectDataManagers.ComponentGeometryExchange.RemoveSiteplannerProject(spProject);
+                    this.AllProjectDataManagers.SitePlannerManager.SitePlannerProjects.Remove(spProject);
+                }
+            }
 
             DisableProjectUnpackFolderWatcher();
 
@@ -923,6 +932,27 @@ namespace SIMULTAN.Projects
 
         #region RESOURCE METHODS: new
 
+        public ResourceFileEntry AddEmptyResource(FileInfo file)
+        {
+            if (file == null)
+                throw new ArgumentNullException(nameof(file));
+            if (file.Exists)
+                throw new ArgumentException("File exists already");
+
+            DisableProjectUnpackFolderWatcher();
+
+            //Needed because resource cannot be created for non existing files. Needs to be reworked at some point
+            // Dispose immediately so the FileStream is closed again, else it causes a file lock
+            file.Create().Dispose();
+
+            int newResourceKey = this.AllProjectDataManagers.AssetManager.AddResourceEntry(file);
+            var resource = this.AllProjectDataManagers.AssetManager.GetResource(newResourceKey) as ResourceFileEntry;
+
+            EnableProjectUnpackFolderWatcher();
+
+            return resource;
+        }
+
         /// <summary>
         /// Adds an empty geometry resource to the given folder. If the folder is Null, it adds it directly 
         /// to the project's unpack folder.
@@ -934,11 +964,9 @@ namespace SIMULTAN.Projects
         ///   {0}: The original filename without extension
         ///   {1}: A running counter
         /// </param>
-        /// <param name="serviceProvider">The service provider</param>
         /// <returns>the created resource</returns>
         public ResourceFileEntry AddEmptyGeometryResource(DirectoryInfo _target, string _initial_file_name,
-            string nameCollisionFormat,
-            IServicesProvider serviceProvider)
+            string nameCollisionFormat)
         {
             DisableProjectUnpackFolderWatcher();
 
@@ -951,13 +979,15 @@ namespace SIMULTAN.Projects
                 nameCollisionFormat);
             var uniqueFile = new FileInfo(fileNameUnique);
 
-            var geometry = new GeometryModelData(this.AllProjectDataManagers.GeometryCommunicator);
+            var resource = AddEmptyResource(uniqueFile);
+
+            var geometry = new GeometryModelData();
             geometry.Layers.Add(new Layer(geometry, "0") { Color = new DerivedColor(Colors.White) });
-            var model = new GeometryModel(Guid.NewGuid(), _initial_file_name, uniqueFile, OperationPermission.DefaultWallModelPermissions, geometry);
+            var model = new GeometryModel(Guid.NewGuid(), _initial_file_name, resource, OperationPermission.DefaultWallModelPermissions, geometry);
 
             try
             {
-                SimGeoIO.Save(model, uniqueFile, SimGeoIO.WriteMode.Plaintext);
+                SimGeoIO.Save(model, resource, SimGeoIO.WriteMode.Plaintext);
             }
             catch (Exception e)
             {
@@ -967,14 +997,9 @@ namespace SIMULTAN.Projects
                 throw;
             }
 
-            AssetManager asset_manager = this.AllProjectDataManagers.AssetManager;
-            if (asset_manager == null)
-                throw new Exception("The Asset Manager cannot be accessed!");
-            int newResourceKey = asset_manager.AddResourceEntry(uniqueFile);
-
             EnableProjectUnpackFolderWatcher();
 
-            return asset_manager.GetResource(newResourceKey) as ResourceFileEntry;
+            return resource;
         }
 
         /// <summary>
@@ -1056,7 +1081,7 @@ namespace SIMULTAN.Projects
 
             // create GeoMap
             GeoMap gm = new GeoMap(resFileEntry);
-            this.AllProjectDataManagers.SitePlannerCommunicator.Manager.GeoMaps.Add(gm);
+            this.AllProjectDataManagers.SitePlannerManager.GeoMaps.Add(gm);
 
             EnableProjectUnpackFolderWatcher();
 
@@ -1152,22 +1177,6 @@ namespace SIMULTAN.Projects
                 DisableProjectUnpackFolderWatcher();
                 _resource.ChangeName(_name, nameCollisionFormat);
                 EnableProjectUnpackFolderWatcher();
-            }
-        }
-
-        /// <summary>
-        /// Renames a contained resource, after it got renamed in the project unpack directory on a file system level.
-        /// </summary>
-        /// <param name="_resource">the resource that was renamed</param>
-        /// <param name="_name">the new name of the resource including file extension</param>
-        public void ResourceEntryRenamedExternally(ResourceEntry _resource, string _name)
-        {
-            if (_resource == null)
-                throw new ArgumentNullException("The resource cannot be Null!", nameof(_resource));
-
-            if ((_resource is ContainedResourceFileEntry) || (_resource is ResourceDirectoryEntry))
-            {
-                _resource.PathChangedExternally(new FileInfo(_name));
             }
         }
 
@@ -1647,11 +1656,13 @@ namespace SIMULTAN.Projects
             projectUnpackFolderWatcher = new FileSystemWatcher();
             projectUnpackFolderWatcher.Path = ProjectUnpackFolder.FullName;
             projectUnpackFolderWatcher.Filter = "";
+            // Name filters required for the Renamed event to work
             projectUnpackFolderWatcher.NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName | NotifyFilters.DirectoryName;
             projectUnpackFolderWatcher.IncludeSubdirectories = true;
             projectUnpackFolderWatcher.Changed += ProjectUnpackFolderWatcher_Changed;
             projectUnpackFolderWatcher.Renamed += ProjectUnpackFolderWatcher_Renamed;
             projectUnpackFolderWatcher.Deleted += ProjectUnpackFolderWatcher_Deleted;
+            projectUnpackFolderWatcher.Created += ProjectUnpackFolderWatcher_Created;
             projectUnpackFolderWatcher.EnableRaisingEvents = true;
         }
 
@@ -1693,6 +1704,27 @@ namespace SIMULTAN.Projects
             }
         }
 
+        private void ProjectUnpackFolderWatcher_Created(object sender, FileSystemEventArgs e)
+        {
+            // Check if the created file already existed and set it to non missing
+            var oldUnmanagedFile = nonManagedFiles.FirstOrDefault(x => x.FullName == e.FullPath);
+            if (oldUnmanagedFile != null)
+            {
+                int key = this.AllProjectDataManagers.AssetManager.GetResourceKey(new FileInfo(e.FullPath));
+                ResourceFileEntry resource = this.AllProjectDataManagers.AssetManager.GetResource(key) as ResourceFileEntry;
+                if (resource != null)
+                {
+                    localDispatcher.Invoke(new Action(() =>
+                    {
+                        if (resource is ContainedResourceFileEntry cre)
+                        {
+                            cre.IsMissing = false;
+                        }
+                    }));
+                }
+            }
+        }
+
         private void ProjectUnpackFolderWatcher_Renamed(object sender, RenamedEventArgs e)
         {
             FileInfo info = new FileInfo(e.OldFullPath);
@@ -1705,7 +1737,32 @@ namespace SIMULTAN.Projects
                 {
                     localDispatcher.Invoke(new Action(() =>
                     {
-                        ResourceEntryRenamedExternally(resource, e.FullPath);
+                        if (resource is ContainedResourceFileEntry cre)
+                        {
+                            // Do not rename the resource or change its path, just mark it as missing
+                            // This is because some programs do a whole "rename file -> recreate file as temp -> rename temp file to original -> delete backup"
+                            // cycle when saving. so when it get renamed back to the original we just set it to not missing again.
+                            // If that does not happen it is simply missing.
+                            cre.IsMissing = true;
+                        }
+                    }));
+                }
+            }
+
+            // check if some filed was renamed back to its original name. Sometimes happen when some external program saves the file.
+            var oldUnmanagedFile = nonManagedFiles.FirstOrDefault(x => x.FullName == e.FullPath);
+            if (oldUnmanagedFile != null)
+            {
+                int key = this.AllProjectDataManagers.AssetManager.GetResourceKey(new FileInfo(e.FullPath));
+                ResourceFileEntry resource = this.AllProjectDataManagers.AssetManager.GetResource(key) as ResourceFileEntry;
+                if (resource != null)
+                {
+                    localDispatcher.Invoke(new Action(() =>
+                    {
+                        if (resource is ContainedResourceFileEntry cre)
+                        {
+                            cre.IsMissing = false;
+                        }
                     }));
                 }
             }
@@ -2037,7 +2094,7 @@ namespace SIMULTAN.Projects
         /// <param name="_data_manager">the data manager</param>
         internal void Open(IEnumerable<FileInfo> _files, IEnumerable<FileInfo> _non_managed_files, IEnumerable<DirectoryInfo> _conteined_dirs,
             ExtendedProjectData _data_manager)
-        { 
+        {
             this.IsLoadingData = true;
 
             // 1. Reset id provider

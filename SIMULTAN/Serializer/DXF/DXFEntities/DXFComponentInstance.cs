@@ -54,6 +54,8 @@ namespace SIMULTAN.Serializer.DXF.DXFEntities
         private SimInstanceSizeTransferSource dxf_sizedef_current_source;
         private int dfx_sizedef_current_index;
 
+        private bool dxf_propagate_parameter_chagnes;
+
 
         // for being included in components
         internal SimComponentInstance dxf_parsed;
@@ -94,6 +96,8 @@ namespace SIMULTAN.Serializer.DXF.DXFEntities
             this.dxf_sizedef_current_parameter_name = null;
             this.dxf_sizedef_current_source = SimInstanceSizeTransferSource.User;
             this.dfx_sizedef_current_index = 0;
+
+            this.dxf_propagate_parameter_chagnes = true;
         }
 
         #region OVERRIDES : Read Property
@@ -226,6 +230,9 @@ namespace SIMULTAN.Serializer.DXF.DXFEntities
                         }
                     }
                     break;
+                case (int)ComponentInstanceSaveCode.INST_PROPAGATE_PARAM_CHANGES:
+                    this.dxf_propagate_parameter_chagnes = this.Decoder.IntValue() == 1;
+                    break;
                 default:
                     // DXFEntity: CLASS_NAME, ENT_ID, ENT_KEY
                     base.ReadPoperty();
@@ -288,7 +295,7 @@ namespace SIMULTAN.Serializer.DXF.DXFEntities
 
             this.dxf_parsed = new SimComponentInstance(dxf_ID, dxf_Name, this.dxf_Type, state, geoRef,
                                                         dxf_inst_rotation, size, dxf_size_transfer_def, new SimObjectId(dxf_inst_nwe_location, dxf_inst_nwe_id),
-                                                        dxf_inst_path, dxf_instance_param_values);
+                                                        dxf_inst_path, dxf_instance_param_values, dxf_propagate_parameter_chagnes);
         }
 
         #endregion
@@ -306,7 +313,7 @@ namespace SIMULTAN.Serializer.DXF.DXFEntities
                     return "DESCRIBES_3D";
                 case SimInstanceType.GeometricSurface:
                     return "DESCRIBES_2DorLESS";
-                case SimInstanceType.Attributes2D:
+                case SimInstanceType.AttributesFace:
                     return "ALIGNED_WITH";
                 case SimInstanceType.NetworkNode:
                     return "CONTAINED_IN";
@@ -316,6 +323,10 @@ namespace SIMULTAN.Serializer.DXF.DXFEntities
                     return "GROUPS";
                 case SimInstanceType.BuiltStructure:
                     return "PARAMETERIZES";
+                case SimInstanceType.AttributesEdge:
+                    return "ATTRIBUTES_EDGE";
+                case SimInstanceType.AttributesPoint:
+                    return "ATTRIBUTES_POINT";
                 default:
                     return "NONE";
             }
@@ -334,7 +345,7 @@ namespace SIMULTAN.Serializer.DXF.DXFEntities
                 case "DESCRIBES_2DorLESS":
                     return SimInstanceType.GeometricSurface;
                 case "ALIGNED_WITH":
-                    return SimInstanceType.Attributes2D;
+                    return SimInstanceType.AttributesFace;
                 case "CONTAINED_IN":
                     return SimInstanceType.NetworkNode;
                 case "CONNECTS":
@@ -343,6 +354,10 @@ namespace SIMULTAN.Serializer.DXF.DXFEntities
                     return SimInstanceType.Group;
                 case "PARAMETERIZES":
                     return SimInstanceType.BuiltStructure;
+                case "ATTRIBUTES_EDGE":
+                    return SimInstanceType.AttributesEdge;
+                case "ATTRIBUTES_POINT":
+                    return SimInstanceType.AttributesPoint;
                 default:
                     return SimInstanceType.None;
             }

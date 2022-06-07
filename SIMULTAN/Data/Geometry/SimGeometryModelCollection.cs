@@ -1,4 +1,5 @@
-﻿using SIMULTAN.Exchange;
+﻿using SIMULTAN.Data.Assets;
+using SIMULTAN.Projects;
 using SIMULTAN.Serializer.Geometry;
 using System;
 using System.Collections;
@@ -30,8 +31,22 @@ namespace SIMULTAN.Data.Geometry
             }
         }
 
-        private Dictionary<string, GeometryModelReference> geometryModels = new Dictionary<string, GeometryModelReference>();
+        private Dictionary<ResourceFileEntry, GeometryModelReference> geometryModels = new Dictionary<ResourceFileEntry, GeometryModelReference>();
         private GeometryImporterCache geometryCache = new GeometryImporterCache();
+
+        public ProjectData ProjectData { get; }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SimGeometryModelCollection"/> class
+        /// </summary>
+        /// <param name="projectData">The projectData this collection belongs to</param>
+        public SimGeometryModelCollection(ProjectData projectData)
+        {
+            if (projectData == null)
+                throw new ArgumentNullException(nameof(projectData));
+
+            this.ProjectData = projectData;
+        }
 
         #region IEnumerable
 
@@ -69,7 +84,7 @@ namespace SIMULTAN.Data.Geometry
         /// <param name="model">The new model</param>
         public void AddGeometryModel(GeometryModel model)
         {
-            if (this.geometryModels.TryGetValue(model.File.FullName, out var entry))
+            if (this.geometryModels.TryGetValue(model.File, out var entry))
             {
                 entry.ReferenceCounter++;
             }
@@ -78,15 +93,23 @@ namespace SIMULTAN.Data.Geometry
                 var newReference = new GeometryModelReference(model);
                 newReference.ReferenceCounter++;
 
-                this.geometryModels.Add(model.File.FullName, newReference);
+                this.geometryModels.Add(model.File, newReference);
                 NotifyCollectionChanged(
                     new NotifyCollectionChangedEventArgs(
                         NotifyCollectionChangedAction.Add,
                         model
                     ));
-                //this.GeometryModelAdded?.Invoke(this, new GeometryModelEventArgs(model));
+
+                ProjectData.ComponentGeometryExchange.AddGeometryModel(model);
+
+                //Linked models
+                foreach (var linkedModel in model.LinkedModels)
+                    AddGeometryModel(linkedModel);
+
+                model.LinkedModels.CollectionChanged += this.LinkedModels_CollectionChanged;
             }
         }
+
         /// <summary>
         /// Removes a GeometryModel from the store. Only frees the model when this has been the last reference to the model.
         /// </summary>
@@ -94,15 +117,22 @@ namespace SIMULTAN.Data.Geometry
         /// <returns></returns>
         public bool RemoveGeometryModel(GeometryModel model)
         {
-            if (this.geometryModels.TryGetValue(model.File.FullName, out var entry))
+            if (this.geometryModels.TryGetValue(model.File, out var entry))
             {
+                foreach (var linkedModel in model.LinkedModels)
+                    RemoveGeometryModel(linkedModel);
+
                 if (entry.ReferenceCounter == 1)
                 {
-                    this.geometryModels.Remove(model.File.FullName);
+                    this.geometryModels.Remove(model.File);
                     NotifyCollectionChanged(new NotifyCollectionChangedEventArgs(
                         NotifyCollectionChangedAction.Remove,
                         model
                         ));
+
+                    ProjectData.ComponentGeometryExchange.RemoveGeometryModel(model);
+                    model.LinkedModels.CollectionChanged -= this.LinkedModels_CollectionChanged;
+
                     return true;
                 }
                 else
@@ -143,7 +173,7 @@ namespace SIMULTAN.Data.Geometry
             return false;
         }
         /// <summary>
-        /// Tries to find a GeometryModel from a given file
+        /// Tries to find a GeometryModel for a given file
         /// </summary>
         /// <param name="file">The file to search for</param>
         /// <param name="model">Returns the model when one exists</param>
@@ -152,10 +182,10 @@ namespace SIMULTAN.Data.Geometry
         /// A model requested with isOwning == true has to be freed by calling RemoveGeometryModel
         /// </param>
         /// <returns>True when a model with this file exists, otherwise False</returns>
-        public bool TryGetGeometryModel(FileInfo file, out GeometryModel model, bool isOwning = true)
+        public bool TryGetGeometryModel(ResourceFileEntry file, out GeometryModel model, bool isOwning = true)
         {
             model = null;
-            if (this.geometryModels.TryGetValue(file.FullName, out var entry))
+            if (this.geometryModels.TryGetValue(file, out var entry))
             {
                 if (isOwning)
                     entry.ReferenceCounter++;
@@ -166,18 +196,32 @@ namespace SIMULTAN.Data.Geometry
             return false;
         }
 
-        /// <summary>
-        /// Notifies the store that a file has been renamed
-        /// </summary>
-        /// <param name="oldFile">The old file</param>
-        /// <param name="newFile">The new/renamed file</param>
-        public void FileRenamed(FileInfo oldFile, FileInfo newFile)
+        private void LinkedModels_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
-            if (this.geometryModels.TryGetValue(oldFile.FullName, out var model))
+            switch (e.Action)
             {
-                this.geometryModels.Remove(oldFile.FullName);
-                model.Model.File = newFile;
-                this.geometryModels.Add(newFile.FullName, model);
+                case NotifyCollectionChangedAction.Add:
+                    {
+                        foreach (var model in e.NewItems.OfType<GeometryModel>())
+                            AddGeometryModel(model);
+                    }
+                    break;
+                case NotifyCollectionChangedAction.Remove:
+                    {
+                        foreach (var model in e.OldItems.OfType<GeometryModel>())
+                            RemoveGeometryModel(model);
+                    }
+                    break;
+                case NotifyCollectionChangedAction.Replace:
+                    {
+                        foreach (var model in e.OldItems.OfType<GeometryModel>())
+                            RemoveGeometryModel(model);
+                        foreach (var model in e.NewItems.OfType<GeometryModel>())
+                            AddGeometryModel(model);
+                    }
+                    break;
+                default:
+                    throw new NotSupportedException("This operation is not supported");
             }
         }
 

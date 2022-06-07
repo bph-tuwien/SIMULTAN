@@ -113,38 +113,38 @@ namespace SIMULTAN.Serializer.DXF.DXFEntities
                     break;
                 case (int)SitePlannerSaveCode.VALUE_MAPPING_ASSOCIATION_INDEX:
                     this.dxf_ValueParameterAssociation.idx = this.Decoder.IntValue();
-                    SaveValueMappingAssociation();
+                    ReadValueMappingAssociation();
                     break;
                 case (int)SitePlannerSaveCode.VALUE_MAPPING_ASSOCIATION_NAME:
                     this.dxf_ValueParameterAssociation.v.name = this.Decoder.FValue;
-                    SaveValueMappingAssociation();
+                    ReadValueMappingAssociation();
                     break;
                 case (int)SitePlannerSaveCode.VALUE_MAPPING_VALUE_TABLE_LOCATION:
                     this.dxf_ValueParameterAssociation.v.valueTableLocation = new Guid(this.Decoder.FValue);
                     break;
                 case (int)SitePlannerSaveCode.VALUE_MAPPING_VALUE_TABLE_KEY:
                     this.dxf_ValueParameterAssociation.v.valueTableID = this.Decoder.LongValue();
-                    SaveValueMappingAssociation();
+                    ReadValueMappingAssociation();
                     break;
                 case (int)SitePlannerSaveCode.VALUE_MAPPING_INDEX_USAGE:
                     this.dxf_ValueParameterAssociation.v.indexUsage = this.Decoder.FValue;
-                    SaveValueMappingAssociation();
+                    ReadValueMappingAssociation();
                     break;
                 case (int)SitePlannerSaveCode.VALUE_MAPPING_COLOR_MAP_TYPE:
                     this.dxf_ValueParameterAssociation.v.colorMapType = this.Decoder.FValue;
-                    SaveValueMappingAssociation();
+                    ReadValueMappingAssociation();
                     break;
                 case (int)SitePlannerSaveCode.VALUE_MAPPING_COLOR_MAP_PARAMS:
                     this.dxf_ValueParameterAssociation.v.colorMapParams = this.Decoder.FValue;
-                    SaveValueMappingAssociation();
+                    ReadValueMappingAssociation();
                     break;
                 case (int)SitePlannerSaveCode.VALUE_MAPPING_PREFILTER_TYPE:
                     this.dxf_ValueParameterAssociation.v.prefilterType = this.Decoder.FValue;
-                    SaveValueMappingAssociation();
+                    ReadValueMappingAssociation();
                     break;
                 case (int)SitePlannerSaveCode.VALUE_MAPPING_PREFILTER_PARAMS:
                     this.dxf_ValueParameterAssociation.v.prefilterParams = this.Decoder.FValue;
-                    SaveValueMappingAssociation();
+                    ReadValueMappingAssociation();
                     break;
                 case (int)SitePlannerSaveCode.VALUE_MAPPING_ACTIVE_ASSOCIATION_INDEX:
                     this.dxf_ValueParameterActiveAssociation = this.Decoder.IntValue();
@@ -174,7 +174,7 @@ namespace SIMULTAN.Serializer.DXF.DXFEntities
             }
         }
 
-        private void SaveValueMappingAssociation()
+        private void ReadValueMappingAssociation()
         {
             if (dxf_ValueParameterAssociation.idx == -1 || dxf_ValueParameterAssociation.v.name == "" ||
                 dxf_ValueParameterAssociation.v.valueTableID == -1 || dxf_ValueParameterAssociation.v.colorMapType == "" ||
@@ -239,7 +239,9 @@ namespace SIMULTAN.Serializer.DXF.DXFEntities
                             mvId = DXFDecoder.IdTranslation[(typeof(SimMultiValue), vm.valueTableID)];
                         }
 
-                        SimMultiValueBigTable table = decoder.MultiValueCollection.GetByID(vm.valueTableLocation, mvId) as SimMultiValueBigTable;
+                        //Atm, only references to ValueFields in the current project are supported
+                        var projectId = decoder.Manager.ProjectData.Owner != null ? decoder.Manager.ProjectData.Owner.GlobalID : Guid.Empty;
+                        SimMultiValueBigTable table = decoder.MultiValueCollection.GetByID(projectId, mvId) as SimMultiValueBigTable;
                         ValueMappingParameters vmparameters = new ValueMappingParameters(table);
                         vmparameters.ComponentIndexUsage = (ComponentIndexUsage)Enum.Parse(typeof(ComponentIndexUsage), vm.indexUsage);
 

@@ -530,7 +530,7 @@ namespace SIMULTAN.Data.Components
                     return new SimSlotBase(COMP_SLOT_VOLUMES);
                 case SimInstanceType.GeometricSurface:
                     return new SimSlotBase(COMP_SLOT_AREAS);
-                case SimInstanceType.Attributes2D:
+                case SimInstanceType.AttributesFace:
                     return new SimSlotBase(COMP_SLOT_COMPOSITE);
                 case SimInstanceType.NetworkNode:
                 case SimInstanceType.NetworkEdge:

@@ -24,7 +24,6 @@ namespace SIMULTAN.Tests.Components
         public void AddInstance()
         {
             LoadProject(testProject);
-            projectData.Components.EnableAsyncUpdates = false;
             var component = new SimComponent();
             projectData.Components.Add(component);
             var lastWrite = component.AccessLocal.LastAccess(SimComponentAccessPrivilege.Write);
@@ -53,7 +52,6 @@ namespace SIMULTAN.Tests.Components
         public void RemoveInstance()
         {
             LoadProject(testProject);
-            projectData.Components.EnableAsyncUpdates = false;
 
             var component = projectData.Components.First(x => x.Name == "Wall 2");
             var lastWrite = component.AccessLocal.LastAccess(SimComponentAccessPrivilege.Write);
@@ -77,7 +75,6 @@ namespace SIMULTAN.Tests.Components
         public void ClearInstances()
         {
             LoadProject(testProject);
-            projectData.Components.EnableAsyncUpdates = false;
 
             var component = projectData.Components.First(x => x.Name == "Wall 2");
             var lastWrite = component.AccessLocal.LastAccess(SimComponentAccessPrivilege.Write);
@@ -104,7 +101,6 @@ namespace SIMULTAN.Tests.Components
         public void MemoryLeakTest()
         {
             LoadProject(testProject);
-            projectData.Components.EnableAsyncUpdates = false;
 
             var component = projectData.Components.First(x => x.Name == "Wall 2");
             WeakReference instanceRef = new WeakReference(component.Instances.First());
@@ -124,7 +120,6 @@ namespace SIMULTAN.Tests.Components
         public void InstanceStateChanged()
         {
             LoadProject(emptyProject);
-            projectData.Components.EnableAsyncUpdates = false;
 
             var component = new SimComponent();
             projectData.Components.Add(component);

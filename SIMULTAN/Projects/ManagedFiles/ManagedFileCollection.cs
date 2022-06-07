@@ -421,6 +421,8 @@ namespace SIMULTAN.Projects.ManagedFiles
             using (AccessCheckingDisabler.Disable(Project.AllProjectDataManagers.Components))
             {
 
+                Project.AllProjectDataManagers.SitePlannerManager.ClearRecord();
+
                 // 7. unload the parameter library
                 Project.AllProjectDataManagers.ParameterLibraryManager.ClearRecord();
 

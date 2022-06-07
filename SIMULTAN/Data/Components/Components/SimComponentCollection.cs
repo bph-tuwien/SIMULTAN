@@ -18,12 +18,29 @@ namespace SIMULTAN.Data.Components
         #region Properties
 
         /// <summary>
-        /// When set to True (the default value), some operations are performed asynchronously. For example, parameter changes are only propagated to references after some time.
+        /// Enables/Disables whether parameter values are propagated to references.
+        /// Forces a reevaluation of all referncing parameters when changing from False to True
         /// </summary>
-        public bool EnableAsyncUpdates { get; set; } = true;
+        public bool EnableReferencePropagation 
+        {
+            get { return enableReferencePropagation; }
+            set
+            {
+                if (enableReferencePropagation != value)
+                {
+                    enableReferencePropagation = value;
+                    if (enableReferencePropagation)
+                        InvalidateReferenceParameters();
+                }
+            }
+        }
+        private bool enableReferencePropagation = true;
 
+        /// <summary>
+        /// Enables/Disables access management checkings.
+        /// Checking is enabled when the checking counter is 0 and at least one user exists
+        /// </summary>
         internal bool EnableAccessChecking { get { return EnableAccessCheckingCounter == 0 && ProjectData.UsersManager.Users.Count > 0; } }
-
         private int EnableAccessCheckingCounter = 0;
 
         #endregion
@@ -50,6 +67,8 @@ namespace SIMULTAN.Data.Components
 
             base.InsertItem(index, item);
             NotifyChanged();
+
+            ProjectData.ComponentGeometryExchange.OnComponentAdded(item);
         }
         /// <inheritdoc />
         protected override void RemoveItem(int index)
@@ -63,6 +82,8 @@ namespace SIMULTAN.Data.Components
                 throw new AccessDeniedException("User does not have write access on the removed component or on one of the subcomponents");
 
             oldItem.RecordWriteAccess();
+
+            ProjectData.ComponentGeometryExchange.OnComponentRemoved(oldItem);
 
             UnsetValues(oldItem, true);
             base.RemoveItem(index);
@@ -90,6 +111,9 @@ namespace SIMULTAN.Data.Components
             foreach (var item in this)
             {
                 item.RecordWriteAccess();
+
+                ProjectData.ComponentGeometryExchange.OnComponentRemoved(item);
+
                 UnsetValues(item, true);
             }
             base.ClearItems();
@@ -115,6 +139,7 @@ namespace SIMULTAN.Data.Components
             }
 
             oldItem.RecordWriteAccess();
+            ProjectData.ComponentGeometryExchange.OnComponentRemoved(oldItem);
             UnsetValues(oldItem, true);
 
             if (cu != null)
@@ -123,6 +148,8 @@ namespace SIMULTAN.Data.Components
 
             base.SetItem(index, item);
             NotifyChanged();
+
+            ProjectData.ComponentGeometryExchange.OnComponentAdded(item);
         }
 
         private void SetValues(SimComponent item)
@@ -236,14 +263,10 @@ namespace SIMULTAN.Data.Components
         /// <param name="networkElements">A list of all network elements ordered by id. This is necessary since network elements are not part of the new system</param>
         public void RestoreReferences(Dictionary<SimObjectId, SimFlowNetworkElement> networkElements)
         {
-            this.EnableAsyncUpdates = false;
-
             foreach (var comp in this)
             {
                 comp?.RestoreReferences(networkElements, this.ProjectData.AssetManager);
             }
-
-            this.EnableAsyncUpdates = true;
         }
 
         /// <summary>
@@ -293,6 +316,25 @@ namespace SIMULTAN.Data.Components
             {
                 OnGeometryResourceDeleted(child.Component, resourceId);
             }
+        }
+
+        private void InvalidateReferenceParameters()
+        {
+            foreach (var component in this)
+                InvalidateReferenceParameters(component);
+        }
+        private void InvalidateReferenceParameters(SimComponent component)
+        {
+            foreach (var param in component.Parameters)
+            {
+                var target = param.GetReferencedParameter();
+                if (target != null && target != param) // which means it's referencing
+                    ComponentParameters.PropagateParameterValueChange(param, target);
+            }
+
+            foreach (var child in component.Components)
+                if (child.Component != null)
+                    InvalidateReferenceParameters(child.Component);
         }
 
         #endregion

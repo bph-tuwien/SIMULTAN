@@ -111,7 +111,7 @@ namespace SIMULTAN.Data.Geometry
                 throw new ArgumentException(String.Format("Unable to find property \"{0}\" on type {1}", property, parent.GetType().FullName));
 
             if (parentColorProperty.PropertyType != typeof(DerivedColor) && !parentColorProperty.PropertyType.IsSubclassOf(typeof(DerivedColor)))
-                throw new ArgumentException(String.Format("Property \"{0}\" on type {1} does not derive from {2}", 
+                throw new ArgumentException(String.Format("Property \"{0}\" on type {1} does not derive from {2}",
                     property, parent.GetType().FullName, typeof(DerivedColor).Name));
 
             if (parent is INotifyPropertyChanged)

@@ -190,11 +190,11 @@ namespace SIMULTAN.Tests.Utils
             Assert.IsTrue(Compare(expected, actual, tolerance), string.Format("Expected {0} Actual: {1}", expected, actual));
         }
 
-        public static void AreEqual(Point3D expected, Point3D actual)
+        public static void AreEqual(Point3D expected, Point3D actual, double tolerance = 0.00001)
         {
-            AssertDoubleEqual(expected.X, actual.X);
-            AssertDoubleEqual(expected.Y, actual.Y);
-            AssertDoubleEqual(expected.Z, actual.Z);
+            AssertDoubleEqual(expected.X, actual.X, tolerance);
+            AssertDoubleEqual(expected.Y, actual.Y, tolerance);
+            AssertDoubleEqual(expected.Z, actual.Z, tolerance);
         }
 
         public static void ContainEqualValuesDifferentStart<T>(IEnumerable<T> expected, IEnumerable<T> actual, Func<T, T, bool> comparer)

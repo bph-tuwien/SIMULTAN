@@ -48,11 +48,10 @@ namespace SIMULTAN.Tests.Utils
         public static (GeometryModel geometryModel, ResourceEntry resource)
             LoadGeometry(string resourceName, ExtendedProjectData dataManager, IServicesProvider serviceProvider)
         {
-            var resource = dataManager.AssetManager.Resources.FirstOrDefault(x => x.Name == resourceName);
-            var gvInstance = new TemporaryGeometryViewerInstance(dataManager.GeometryCommunicator);
+            var resource = (ResourceFileEntry)dataManager.AssetManager.Resources.FirstOrDefault(x => x.Name == resourceName);
 
             var errors = new List<SimGeoIOError>();
-            var model = SimGeoIO.Load(new FileInfo(resource.CurrentFullPath), gvInstance, dataManager, errors);
+            var model = SimGeoIO.Load(resource, dataManager, errors);
             dataManager.GeometryModels.AddGeometryModel(model);
 
             return (model, resource);

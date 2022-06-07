@@ -485,6 +485,26 @@ namespace SIMULTAN.Tests.Values
         }
 
         [TestMethod]
+        public void ReplaceDataWithTable()
+        {
+            var data = TestDataTable(3, 4);
+            var events = new BigTableEventCounter(data.table);
+            CheckTestData(data.table, data.data);
+
+            var replaceData = TestDataTable(5, 1);
+            data.table.ReplaceData(replaceData.table);
+
+            events.AssertEventCount(2, 1, 0, 0);
+            Assert.IsTrue(events.PropertyChangedArgs.Contains(nameof(SimMultiValueBigTable.RowHeaders)));
+            Assert.IsTrue(events.PropertyChangedArgs.Contains(nameof(SimMultiValueBigTable.ColumnHeaders)));
+            Assert.AreEqual(0, events.ResizedArgs[0].ColumnStartIndex);
+            Assert.AreEqual(0, events.ResizedArgs[0].RowStartIndex);
+            Assert.AreEqual(SimMultiValueBigTable.ResizeDirection.Both, events.ResizedArgs[0].ResizeDirection);
+
+            CheckTestData(data.table, replaceData.data);
+        }
+
+        [TestMethod]
         public void Resize()
         {
             var data = TestDataTable(3, 4);

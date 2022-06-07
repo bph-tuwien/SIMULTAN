@@ -39,8 +39,9 @@ namespace SIMULTAN.Serializer.DXF
         /// 08.06.2021: version 7 (instance parameters)
         /// 15.06.2021: version 8 (transferable sizes)
         /// 15.12.2021: version 9 (components now have unique ids too)
+        /// 13.04.2022: version 11 (save PropagateParameterInstance of instances)
         /// </remarks>
-        public const ulong CurrentFileFormatVersion = 9L;
+        public const ulong CurrentFileFormatVersion = 11L;
 
         public bool HasValidData { get; private set; } = false;
 
@@ -250,7 +251,7 @@ namespace SIMULTAN.Serializer.DXF
         {
             if (this.DecoderMode == DXFDecoderMode.Components)
             {
-                ProjectData.Components.EnableAsyncUpdates = false;
+                ProjectData.Components.EnableReferencePropagation = false;
                 ProjectData.Components.StartLoading();
             }
 
@@ -266,8 +267,8 @@ namespace SIMULTAN.Serializer.DXF
 
             if (this.DecoderMode == DXFDecoderMode.Components)
             {
-                ProjectData.Components.EnableAsyncUpdates = true;
                 ProjectData.Components.EndLoading();
+                ProjectData.Components.EnableReferencePropagation = true;
             }
         }
 

@@ -71,7 +71,6 @@ namespace SIMULTAN.Tests.Instances
         public void InstanceAdded()
         {
             LoadProject(emptyProject);
-            projectData.Components.EnableAsyncUpdates = false;
 
             var component = new SimComponent();
             projectData.Components.Add(component);
@@ -107,7 +106,6 @@ namespace SIMULTAN.Tests.Instances
         public void ParameterAdded()
         {
             LoadProject(emptyProject);
-            projectData.Components.EnableAsyncUpdates = false;
 
             var component = new SimComponent();
             projectData.Components.Add(component);
@@ -147,7 +145,6 @@ namespace SIMULTAN.Tests.Instances
         public void ParameterRemoved()
         {
             LoadProject(emptyProject);
-            projectData.Components.EnableAsyncUpdates = false;
 
             var component = new SimComponent();
             projectData.Components.Add(component);
@@ -184,9 +181,9 @@ namespace SIMULTAN.Tests.Instances
         public void ParameterChanged()
         {
             LoadProject(emptyProject);
-            projectData.Components.EnableAsyncUpdates = false;
 
             var component = new SimComponent();
+
             projectData.Components.Add(component);
             var param1 = new SimParameter("param1", "m", 1.8)
             {
@@ -199,12 +196,11 @@ namespace SIMULTAN.Tests.Instances
             };
             component.Parameters.Add(param2);
 
-            var propParam = component.Parameters.First(x => x.Name == ReservedParameters.RP_INST_PROPAGATE);
-
             var instance = new SimComponentInstance(SimInstanceType.None);
+            Assert.AreEqual(true, instance.PropagateParameterChanges);
+            instance.PropagateParameterChanges = false;
             component.Instances.Add(instance);
 
-            Assert.AreEqual(0.0, propParam.ValueCurrent);
             Assert.AreEqual(false, instance.PropagateParameterChanges);
             Assert.AreEqual(1.8, instance.InstanceParameterValuesPersistent[param1]);
             Assert.AreEqual(2.8, instance.InstanceParameterValuesPersistent[param2]);
@@ -215,8 +211,7 @@ namespace SIMULTAN.Tests.Instances
             Assert.AreEqual(2.8, instance.InstanceParameterValuesPersistent[param2]);
 
             //Enable propagation
-            propParam.ValueCurrent = 1.0;
-            Assert.AreEqual(1.0, propParam.ValueCurrent);
+            component.Instances.ToList().ForEach(x => x.PropagateParameterChanges = true);
             Assert.AreEqual(true, instance.PropagateParameterChanges);
             Assert.AreEqual(99.9, instance.InstanceParameterValuesPersistent[param1]);
             Assert.AreEqual(2.8, instance.InstanceParameterValuesPersistent[param2]);
@@ -227,8 +222,7 @@ namespace SIMULTAN.Tests.Instances
             Assert.AreEqual(2.8, instance.InstanceParameterValuesPersistent[param2]);
 
             //Disable propagation
-            propParam.ValueCurrent = 0.0;
-            Assert.AreEqual(0.0, propParam.ValueCurrent);
+            component.Instances.ToList().ForEach(x => x.PropagateParameterChanges = false);
             Assert.AreEqual(false, instance.PropagateParameterChanges);
             Assert.AreEqual(55.8, instance.InstanceParameterValuesPersistent[param1]);
             Assert.AreEqual(2.8, instance.InstanceParameterValuesPersistent[param2]);
@@ -243,9 +237,9 @@ namespace SIMULTAN.Tests.Instances
         public void ParameterChanged_PropagateAlways()
         {
             LoadProject(emptyProject);
-            projectData.Components.EnableAsyncUpdates = false;
 
             var component = new SimComponent();
+
             projectData.Components.Add(component);
             var param1 = new SimParameter("param1", "m", 1.8)
             {
@@ -260,12 +254,11 @@ namespace SIMULTAN.Tests.Instances
             };
             component.Parameters.Add(param2);
 
-            var propParam = component.Parameters.First(x => x.Name == ReservedParameters.RP_INST_PROPAGATE);
-
             var instance = new SimComponentInstance(SimInstanceType.None);
+            Assert.AreEqual(true, instance.PropagateParameterChanges);
+            instance.PropagateParameterChanges = false;
             component.Instances.Add(instance);
 
-            Assert.AreEqual(0.0, propParam.ValueCurrent);
             Assert.AreEqual(false, instance.PropagateParameterChanges);
             Assert.AreEqual(1.8, instance.InstanceParameterValuesPersistent[param1]);
             Assert.AreEqual(2.8, instance.InstanceParameterValuesPersistent[param2]);
@@ -276,8 +269,7 @@ namespace SIMULTAN.Tests.Instances
             Assert.AreEqual(2.8, instance.InstanceParameterValuesPersistent[param2]);
 
             //Enable propagation
-            propParam.ValueCurrent = 1.0;
-            Assert.AreEqual(1.0, propParam.ValueCurrent);
+            component.Instances.ToList().ForEach(x => x.PropagateParameterChanges = true);
             Assert.AreEqual(true, instance.PropagateParameterChanges);
             Assert.AreEqual(99.9, instance.InstanceParameterValuesPersistent[param1]);
             Assert.AreEqual(2.8, instance.InstanceParameterValuesPersistent[param2]);
@@ -288,8 +280,7 @@ namespace SIMULTAN.Tests.Instances
             Assert.AreEqual(2.8, instance.InstanceParameterValuesPersistent[param2]);
 
             //Disable propagation
-            propParam.ValueCurrent = 0.0;
-            Assert.AreEqual(0.0, propParam.ValueCurrent);
+            component.Instances.ToList().ForEach(x => x.PropagateParameterChanges = false);
             Assert.AreEqual(false, instance.PropagateParameterChanges);
             Assert.AreEqual(55.8, instance.InstanceParameterValuesPersistent[param1]);
             Assert.AreEqual(2.8, instance.InstanceParameterValuesPersistent[param2]);
@@ -301,12 +292,70 @@ namespace SIMULTAN.Tests.Instances
         }
 
         [TestMethod]
+        public void ParameterChanged_PropagateIfInstance()
+        {
+            LoadProject(emptyProject);
+
+            var component = new SimComponent();
+
+            projectData.Components.Add(component);
+            var param1 = new SimParameter("param1", "m", 1.8)
+            {
+                Propagation = SimInfoFlow.Input,
+                InstancePropagationMode = SimParameterInstancePropagation.PropagateIfInstance
+            };
+            component.Parameters.Add(param1);
+            var param2 = new SimParameter("param2", "m", 2.8)
+            {
+                Propagation = SimInfoFlow.Automatic,
+                InstancePropagationMode = SimParameterInstancePropagation.PropagateIfInstance
+            };
+            component.Parameters.Add(param2);
+
+            var instance = new SimComponentInstance(SimInstanceType.None);
+            Assert.AreEqual(true, instance.PropagateParameterChanges);
+            instance.PropagateParameterChanges = false;
+            component.Instances.Add(instance);
+
+            Assert.AreEqual(false, instance.PropagateParameterChanges);
+            Assert.AreEqual(1.8, instance.InstanceParameterValuesPersistent[param1]);
+            Assert.AreEqual(2.8, instance.InstanceParameterValuesPersistent[param2]);
+
+            //Change value, no propagation enabled
+            param1.ValueCurrent = 99.9;
+            Assert.AreEqual(1.8, instance.InstanceParameterValuesPersistent[param1]);
+            Assert.AreEqual(2.8, instance.InstanceParameterValuesPersistent[param2]);
+
+            //Enable propagation
+            component.Instances.ToList().ForEach(x => x.PropagateParameterChanges = true);
+            Assert.AreEqual(true, instance.PropagateParameterChanges);
+            Assert.AreEqual(99.9, instance.InstanceParameterValuesPersistent[param1]);
+            Assert.AreEqual(2.8, instance.InstanceParameterValuesPersistent[param2]);
+
+            //Change value with propagation
+            param1.ValueCurrent = 55.8;
+            Assert.AreEqual(55.8, instance.InstanceParameterValuesPersistent[param1]);
+            Assert.AreEqual(2.8, instance.InstanceParameterValuesPersistent[param2]);
+
+            //Disable propagation
+            component.Instances.ToList().ForEach(x => x.PropagateParameterChanges = false);
+            Assert.AreEqual(false, instance.PropagateParameterChanges);
+            Assert.AreEqual(55.8, instance.InstanceParameterValuesPersistent[param1]);
+            Assert.AreEqual(2.8, instance.InstanceParameterValuesPersistent[param2]);
+
+            //Change parameter, again without propagation
+            param2.ValueCurrent = 18.9;
+            Assert.AreEqual(55.8, instance.InstanceParameterValuesPersistent[param1]);
+            Assert.AreEqual(2.8, instance.InstanceParameterValuesPersistent[param2]);
+        }
+
+        [TestMethod]
         public void ParameterChanged_PropagateNever()
         {
             LoadProject(emptyProject);
-            projectData.Components.EnableAsyncUpdates = false;
 
             var component = new SimComponent();
+
             projectData.Components.Add(component);
             var param1 = new SimParameter("param1", "m", 1.8)
             {
@@ -321,12 +370,12 @@ namespace SIMULTAN.Tests.Instances
             };
             component.Parameters.Add(param2);
 
-            var propParam = component.Parameters.First(x => x.Name == ReservedParameters.RP_INST_PROPAGATE);
-
             var instance = new SimComponentInstance(SimInstanceType.None);
+            Assert.AreEqual(true, instance.PropagateParameterChanges);
+            instance.PropagateParameterChanges = false;
             component.Instances.Add(instance);
 
-            Assert.AreEqual(0.0, propParam.ValueCurrent);
+            component.Instances.ToList().ForEach(x => x.PropagateParameterChanges = false);
             Assert.AreEqual(false, instance.PropagateParameterChanges);
             Assert.AreEqual(1.8, instance.InstanceParameterValuesPersistent[param1]);
             Assert.AreEqual(2.8, instance.InstanceParameterValuesPersistent[param2]);
@@ -337,8 +386,7 @@ namespace SIMULTAN.Tests.Instances
             Assert.AreEqual(2.8, instance.InstanceParameterValuesPersistent[param2]);
 
             //Enable propagation
-            propParam.ValueCurrent = 1.0;
-            Assert.AreEqual(1.0, propParam.ValueCurrent);
+            component.Instances.ToList().ForEach(x => x.PropagateParameterChanges = true);
             Assert.AreEqual(true, instance.PropagateParameterChanges);
             Assert.AreEqual(1.8, instance.InstanceParameterValuesPersistent[param1]);
             Assert.AreEqual(2.8, instance.InstanceParameterValuesPersistent[param2]);
@@ -349,8 +397,7 @@ namespace SIMULTAN.Tests.Instances
             Assert.AreEqual(2.8, instance.InstanceParameterValuesPersistent[param2]);
 
             //Disable propagation
-            propParam.ValueCurrent = 0.0;
-            Assert.AreEqual(0.0, propParam.ValueCurrent);
+            component.Instances.ToList().ForEach(x => x.PropagateParameterChanges = false);
             Assert.AreEqual(false, instance.PropagateParameterChanges);
             Assert.AreEqual(1.8, instance.InstanceParameterValuesPersistent[param1]);
             Assert.AreEqual(2.8, instance.InstanceParameterValuesPersistent[param2]);
@@ -359,6 +406,45 @@ namespace SIMULTAN.Tests.Instances
             param2.ValueCurrent = 18.9;
             Assert.AreEqual(1.8, instance.InstanceParameterValuesPersistent[param1]);
             Assert.AreEqual(2.8, instance.InstanceParameterValuesPersistent[param2]);
+        }
+
+        #endregion
+
+        #region InstanceSize
+
+        [TestMethod]
+        public void SetSize()
+        {
+            LoadProject(instanceProject);
+
+            var nodeComponent = projectData.Components.First(x => x.Name == "Node2");
+            var instance = nodeComponent.Instances.FirstOrDefault();
+
+            instance.SetSize(new SimInstanceSize(new Vector3D(11, 12, 13), new Vector3D(14, 15, 16)), instance.SizeTransfer);
+
+            Assert.AreEqual(11.0, instance.InstanceSize.Min.X);
+            Assert.AreEqual(12.0, instance.InstanceSize.Min.Y);
+            Assert.AreEqual(13.0, instance.InstanceSize.Min.Z);
+
+            Assert.AreEqual(14.0, instance.InstanceSize.Max.X);
+            Assert.AreEqual(15.0, instance.InstanceSize.Max.Y);
+            Assert.AreEqual(16.0, instance.InstanceSize.Max.Z);
+        }
+
+        [TestMethod]
+        public void SetSizeEvents()
+        {
+            LoadProject(instanceProject);
+
+            var nodeComponent = projectData.Components.First(x => x.Name == "Node2");
+            var instance = nodeComponent.Instances.FirstOrDefault();
+
+            PropertyChangedEventCounter cc = new PropertyChangedEventCounter(instance);
+
+            instance.SetSize(new SimInstanceSize(new Vector3D(11, 12, 13), new Vector3D(14, 15, 16)), instance.SizeTransfer);
+
+            cc.AssertEventCount(1);
+            Assert.AreEqual("InstanceSize", cc.PropertyChangedArgs[0]);
         }
 
         #endregion

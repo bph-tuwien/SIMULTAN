@@ -70,17 +70,6 @@ namespace SIMULTAN.Data.Components
             public SimParameterCollection(SimComponent owner)
             {
                 this.owner = owner;
-                this.batchOperationTimer = new DispatcherTimer()
-                {
-                    Interval = new TimeSpan(0, 0, 1),
-                };
-                this.batchOperationTimer.Tick += BatchOperationTimer_Tick;
-
-                this.batchPropertyChangedTimer = new DispatcherTimer()
-                {
-                    Interval = new TimeSpan(0, 0, 1)
-                };
-                this.batchPropertyChangedTimer.Tick += BatchPropertyChangedTimer_Tick;
             }
 
 
@@ -96,17 +85,17 @@ namespace SIMULTAN.Data.Components
 
                 this.owner.RecordWriteAccess();
 
-                SetValues(item);
+                SetValues(item, true);
                 base.InsertItem(index, item);
 
                 //Sync with geometric instances
-                if (owner.Factory != null && owner.Factory.EnableAsyncUpdates)
-                {
-                    this.batchOperationTimer.Stop();
-                    this.batchAddedParameters.Add(item);
-                    this.batchOperationTimer.Start();
-                }
-                else
+                //if (owner.Factory != null && owner.Factory.EnableAsyncUpdates)
+                //{
+                //    this.batchOperationTimer.Stop();
+                //    this.batchAddedParameters.Add(item);
+                //    this.batchOperationTimer.Start();
+                //}
+                //else
                 {
                     SynchronizeParameterAdd(item);
                 }
@@ -122,13 +111,13 @@ namespace SIMULTAN.Data.Components
                 base.RemoveItem(index);
 
                 //Sync with geometric instances
-                if (owner.Factory != null && owner.Factory.EnableAsyncUpdates)
-                {
-                    this.batchOperationTimer.Stop();
-                    this.batchRemovedParameters.Add(oldItem);
-                    this.batchOperationTimer.Start();
-                }
-                else
+                //if (owner.Factory != null && owner.Factory.EnableAsyncUpdates)
+                //{
+                //    this.batchOperationTimer.Stop();
+                //    this.batchRemovedParameters.Add(oldItem);
+                //    this.batchOperationTimer.Start();
+                //}
+                //else
                     SynchronizeParameterRemove(oldItem);
 
             }
@@ -143,13 +132,13 @@ namespace SIMULTAN.Data.Components
                 }
 
                 //Sync with geometric instances
-                if (owner.Factory != null && owner.Factory.EnableAsyncUpdates)
-                {
-                    this.batchOperationTimer.Stop();
-                    this.batchRemovedParameters.AddRange(this);
-                    this.batchOperationTimer.Start();
-                }
-                else
+                //if (owner.Factory != null && owner.Factory.EnableAsyncUpdates)
+                //{
+                //    this.batchOperationTimer.Stop();
+                //    this.batchRemovedParameters.AddRange(this);
+                //    this.batchOperationTimer.Start();
+                //}
+                //else
                 {
                     foreach (var item in this)
                         SynchronizeParameterRemove(item);
@@ -169,25 +158,25 @@ namespace SIMULTAN.Data.Components
                 UnsetValues(oldItem, owner.Factory?.ProjectData.IdGenerator);
 
                 //Sync with geometric instances
-                if (owner.Factory != null && owner.Factory.EnableAsyncUpdates)
-                {
-                    this.batchOperationTimer.Stop();
-                    this.batchRemovedParameters.Add(oldItem);
-                }
-                else
+                //if (owner.Factory != null && owner.Factory.EnableAsyncUpdates)
+                //{
+                //    this.batchOperationTimer.Stop();
+                //    this.batchRemovedParameters.Add(oldItem);
+                //}
+                //else
                 {
                     SynchronizeParameterRemove(oldItem);
                 }
 
-                SetValues(item);
+                SetValues(item, true);
                 base.SetItem(index, item);
 
-                if (owner.Factory != null && owner.Factory.EnableAsyncUpdates)
-                {
-                    this.batchAddedParameters.Add(item);
-                    this.batchOperationTimer.Start();
-                }
-                else
+                //if (owner.Factory != null && owner.Factory.EnableAsyncUpdates)
+                //{
+                //    this.batchAddedParameters.Add(item);
+                //    this.batchOperationTimer.Start();
+                //}
+                //else
                 {
                     SynchronizeParameterAdd(item);
                 }
@@ -195,7 +184,7 @@ namespace SIMULTAN.Data.Components
 
             #endregion
 
-            private void SetValues(SimParameter item)
+            private void SetValues(SimParameter item, bool isAdded)
             {
                 if (owner.Factory != null) //Ids are only possible when the component is already attached to a parent/factory.
                                            //If not the case, Id's have to be handed out when the component get's attached
@@ -214,8 +203,11 @@ namespace SIMULTAN.Data.Components
                     item.Factory = owner.Factory;
                 }
 
-                item.Component = owner;
-                item.PropertyChanged += Item_PropertyChanged;
+                if (isAdded)
+                {
+                    item.Component = owner;
+                    item.PropertyChanged += Item_PropertyChanged;
+                }
             }
 
             private void UnsetValues(SimParameter item, SimIdGenerator idGenerator)
@@ -244,30 +236,14 @@ namespace SIMULTAN.Data.Components
                 if (newValue != null)
                 {
                     foreach (var item in this)
-                        SetValues(item);
+                        SetValues(item, false);
                 }
             }
 
             #region Delayed add/remove (has to be reworked completely)
 
-            private DispatcherTimer batchOperationTimer;
-
             private List<SimParameter> batchAddedParameters = new List<SimParameter>();
             private List<SimParameter> batchRemovedParameters = new List<SimParameter>();
-
-            private void BatchOperationTimer_Tick(object sender, EventArgs e)
-            {
-                this.batchOperationTimer.Stop();
-
-                foreach (var param in batchRemovedParameters)
-                    SynchronizeParameterRemove(param);
-
-                foreach (var param in batchAddedParameters)
-                    SynchronizeParameterAdd(param);
-
-                batchRemovedParameters.Clear();
-                batchAddedParameters.Clear();
-            }
 
             private void SynchronizeParameterAdd(SimParameter param)
             {
@@ -327,13 +303,6 @@ namespace SIMULTAN.Data.Components
 
             #region Delayed property changed (has to be reworked completely)
 
-            private DispatcherTimer batchPropertyChangedTimer; //Should be moved to Parameter itself
-
-            private static HashSet<string> bulkOperationProperties = new HashSet<string>()
-            {
-                nameof(SimParameter.ValueCurrent)
-            };
-
             private static readonly HashSet<string> propagatingParameterProperties = new HashSet<string>
             {
                 nameof(SimParameter.ValueCurrent),
@@ -345,60 +314,37 @@ namespace SIMULTAN.Data.Components
                 nameof(SimParameter.Propagation)
             };
 
-            private HashSet<(SimParameter parameter, string property)> batchPropertyChanges = new HashSet<(SimParameter parameter, string property)>();
-
             private void Item_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
             {
-                if (propagatingParameterProperties.Contains(e.PropertyName))
+                var parameter = (SimParameter)sender;
+
+                bool propagationEnabled = owner.Factory == null || owner.Factory.EnableReferencePropagation;
+
+                if (propagationEnabled &&
+                    propagatingParameterProperties.Contains(e.PropertyName))
                 {
-                    if (owner.Factory != null && owner.Factory.EnableAsyncUpdates && bulkOperationProperties.Contains(e.PropertyName))
+                    if (e.PropertyName == nameof(SimParameter.ValueCurrent))
                     {
-                        this.batchPropertyChangedTimer.Stop();
-                        batchPropertyChanges.Add(((SimParameter)sender, e.PropertyName));
-                        this.batchPropertyChangedTimer.Start();
+                        owner.OnParameterValueChanged(parameter);
                     }
-                    else
+                    else if (e.PropertyName == nameof(SimParameter.TextValue))
                     {
-                        SynchronizePropertyChanged((SimParameter)sender, e.PropertyName);
-                        NotifyParameterPropertyChanged(new List<(SimParameter parameter, string property)> { ((SimParameter)sender, e.PropertyName) });
+                        owner.PropagateRefParamValueFromClosestRef(parameter);
                     }
-                }
-            }
+                    else if (e.PropertyName == nameof(SimParameter.Category))
+                    {
+                        owner.GatherCategoryInfo();
+                    }
+                    else if (e.PropertyName == nameof(SimParameter.Name))
+                    {
+                        owner.ReactToParameterPropagationChanged(parameter);
+                    }
+                    else if (e.PropertyName == nameof(SimParameter.Propagation) && parameter.Propagation == SimInfoFlow.FromReference && parameter.MultiValuePointer == null)
+                    {
+                        owner.ReactToParameterPropagationChanged(parameter);
+                    }
 
-            private void BatchPropertyChangedTimer_Tick(object sender, EventArgs e)
-            {
-                this.batchPropertyChangedTimer.Stop();
-
-                foreach (var change in batchPropertyChanges)
-                {
-                    SynchronizePropertyChanged(change.parameter, change.property);
-                }
-
-                NotifyParameterPropertyChanged(batchPropertyChanges.ToList());
-                batchPropertyChanges.Clear();
-            }
-
-            private void SynchronizePropertyChanged(SimParameter parameter, string property)
-            {
-                if (property == nameof(SimParameter.ValueCurrent))
-                {
-                    owner.OnParameterValueChanged(parameter);
-                }
-                else if (property == nameof(SimParameter.TextValue))
-                {
-                    owner.PropagateRefParamValueFromClosestRef(parameter);
-                }
-                else if (property == nameof(SimParameter.Category))
-                {
-                    owner.GatherCategoryInfo();
-                }
-                else if (property == nameof(SimParameter.Name))
-                {
-                    owner.ReactToParameterPropagationChanged(parameter);
-                }
-                else if (property == nameof(SimParameter.Propagation) && parameter.Propagation == SimInfoFlow.FromReference && parameter.MultiValuePointer == null)
-                {
-                    owner.ReactToParameterPropagationChanged(parameter);
+                    NotifyParameterPropertyChanged(new List<(SimParameter parameter, string property)> { ((SimParameter)sender, e.PropertyName) });
                 }
             }
 

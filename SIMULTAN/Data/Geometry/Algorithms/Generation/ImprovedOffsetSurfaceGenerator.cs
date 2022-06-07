@@ -45,7 +45,7 @@ namespace SIMULTAN.Data.Geometry
         {
             model.OffsetModel.Faces.Clear();
 
-            if (model.OffsetQuery != null)
+            if (model.Model.Exchange != null)
             {
                 List<(Face f1, int f1orient, Face f2, int f2orient)> setbackFaces = new List<(Face f1, int f1orient, Face f2, int f2orient)>();
 
@@ -72,7 +72,7 @@ namespace SIMULTAN.Data.Geometry
             //Directly affected faces
             HashSet<Face> affectedFaces = new HashSet<Face>(invalidatedGeometry.Where(x => x is Face).Select(x => (Face)x));
 
-            if (model.OffsetQuery != null)
+            if (model.Model != null && model.Model.Exchange != null)
             {
                 if (affectedFaces.Count > 0)
                 {
@@ -180,7 +180,7 @@ namespace SIMULTAN.Data.Geometry
                     int orientation = (int)currentPFace.Orientation;
 
                     var offsetFace = new OffsetFace(currentPFace.Face);
-                    offsetFace.Offset = GetOffsetFromDir(model.OffsetQuery.GetFaceOffset(currentPFace.Face), orientation);
+                    offsetFace.Offset = GetOffsetFromDir(model.Model.Exchange.GetFaceOffset(currentPFace.Face), orientation);
 
                     foreach (var currentPEdge in currentPFace.Face.Boundary.Edges)
                     {
@@ -195,7 +195,8 @@ namespace SIMULTAN.Data.Geometry
                             var currentVertexFaces = FacesWithOrient(currentVertex, currentPFace.Face, orientation, x => x.PFaces.Count >= 1 &&
                                 x.PFaces.Any(pf => pf.Volume == currentVolume));
 
-                            (var offset, var isValid) = SolveOffset(currentVertexFaces, currentPFace.Face, currentVertex, model.OffsetQuery, offsetCalculationCache, true);
+                            (var offset, var isValid) = SolveOffset(currentVertexFaces, currentPFace.Face, currentVertex, model.Model.Exchange,
+                                offsetCalculationCache, true);
 
                             //if (!isValid)
                             //	Console.WriteLine("Failed to solve offset-surface at Face {0}, Vertex {1}", face.Id, currentVertex.Id);
@@ -237,7 +238,7 @@ namespace SIMULTAN.Data.Geometry
                 foreach (var orientation in orientations)
                 {
                     var offsetFace = new OffsetFace(face);
-                    offsetFace.Offset = GetOffsetFromDir(model.OffsetQuery.GetFaceOffset(face), orientation);
+                    offsetFace.Offset = GetOffsetFromDir(model.Model.Exchange.GetFaceOffset(face), orientation);
 
                     //Run around loop and calculate new points
                     foreach (var pedge in face.Boundary.Edges)
@@ -264,8 +265,8 @@ namespace SIMULTAN.Data.Geometry
                                     fidata.hasCommonEdge && Math.Abs(Vector3D.DotProduct(fi.Normal, face.Normal)) > 0.99) //Parallel
                                 {
                                     if (Math.Abs(
-                                            GetOffsetFromDir(model.OffsetQuery.GetFaceOffset(face), orientation) -
-                                            GetOffsetFromDir(model.OffsetQuery.GetFaceOffset(fi), fidata.orientModifier)
+                                            GetOffsetFromDir(model.Model.Exchange.GetFaceOffset(face), orientation) -
+                                            GetOffsetFromDir(model.Model.Exchange.GetFaceOffset(fi), fidata.orientModifier)
                                             ) > 0.01)
                                     {
                                         //Remove duplicates
@@ -275,7 +276,8 @@ namespace SIMULTAN.Data.Geometry
                                 }
                             }
 
-                            (var offset, var isValid) = SolveOffset(currentVertexFaces, face, currentVertex, model.OffsetQuery, offsetCalculationCache, true);
+                            (var offset, var isValid) = SolveOffset(currentVertexFaces, face, currentVertex, model.Model.Exchange,
+                                offsetCalculationCache, true);
                             offsetFace.Boundary.Add(currentVertex.Position + offset);
                         }
                     }

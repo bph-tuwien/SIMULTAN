@@ -325,7 +325,7 @@ namespace SIMULTAN.Serializer.DXF.DXFEntities
                         " New Id current: {3}, New Id original: {4}",
                         this.dxf_ID, this.dxf_Name,
                         originalParameter != null ? originalParameter.Name : "???",
-                        newId, originalParameter.Id.LocalId
+                        newId, originalParameter != null ? originalParameter.Id.LocalId : -1
                         ));
                 }
 

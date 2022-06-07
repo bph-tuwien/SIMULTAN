@@ -321,7 +321,6 @@ namespace SIMULTAN.Tests.Values
         {
             LoadProject(testProject);
 
-            projectData.Components.EnableAsyncUpdates = false;
             var comp = projectData.Components.First(x => x.Name == "WithPointer");
             var param = comp.Parameters.First(x => x.Name == "Target");
 
@@ -341,7 +340,6 @@ namespace SIMULTAN.Tests.Values
         {
             LoadProject(testProject);
 
-            projectData.Components.EnableAsyncUpdates = false;
             var comp = projectData.Components.First(x => x.Name == "WithPointer");
             var param = comp.Parameters.First(x => x.Name == "Target");
 

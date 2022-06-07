@@ -45,7 +45,7 @@ namespace SIMULTAN.Data.Geometry
         /// <param name="edges">A list of edges for this polyline. The edges have to form a single path without branches.
         /// The order is not important.
         /// </param>
-        public Polyline(ulong id, Layer layer, string nameFormat, IEnumerable<Edge> edges) 
+        public Polyline(ulong id, Layer layer, string nameFormat, IEnumerable<Edge> edges)
             : base(id, layer)
         {
             if (edges == null)

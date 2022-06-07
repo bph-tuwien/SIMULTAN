@@ -63,6 +63,7 @@ namespace SIMULTAN.Data.Components
 
                 SetValues(item);
                 base.InsertItem(index, item);
+
             }
             /// <inheritdoc />
             protected override void RemoveItem(int index)
@@ -145,7 +146,6 @@ namespace SIMULTAN.Data.Components
                 }
 
                 this.owner.RecordWriteAccess();
-
                 UnsetValues(oldItem);
                 SetValues(item);
                 base.SetItem(index, item);

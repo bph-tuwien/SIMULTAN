@@ -4,6 +4,7 @@ using SIMULTAN.Data.Components;
 using SIMULTAN.Data.FlowNetworks;
 using SIMULTAN.Data.Geometry;
 using SIMULTAN.Data.MultiValues;
+using SIMULTAN.Data.SitePlanner;
 using SIMULTAN.Data.Users;
 using SIMULTAN.Excel;
 using SIMULTAN.Exchange;
@@ -81,19 +82,11 @@ namespace SIMULTAN.Projects
         /// Stores all currently active <see cref="GeometryModel"/>.
         /// Does NOT contain all GeometryModels of the Project, but only the ones that are currently loaded
         /// </summary>
-        public SimGeometryModelCollection GeometryModels { get; } = new SimGeometryModelCollection();
+        public SimGeometryModelCollection GeometryModels { get; }
 
-        /// <summary>
-        /// Manages the communication between the components and the geometry.
-        /// </summary>
-        public IComponentGeometryExchange GeometryCommunicator => componentGeometryExchange;
-        private ComponentGeometryExchange componentGeometryExchange;
+        public ComponentGeometryExchange ComponentGeometryExchange { get; }
 
-        /// <summary>
-        /// Manages a collection of SitePlanner and GeoMap projects.
-        /// </summary>
-        public IComponentSitePlannerExchange SitePlannerCommunicator => componentSiteplannerExchange;
-        private ComponentSitePlannerExchange componentSiteplannerExchange;
+        public SitePlannerManager SitePlannerManager { get; }
 
         #endregion
 
@@ -125,8 +118,10 @@ namespace SIMULTAN.Projects
 
             this.ImageLibraryManager = new ImageRecordManager();
 
-            this.componentGeometryExchange = new ComponentGeometryExchange(this);
-            this.componentSiteplannerExchange = new ComponentSitePlannerExchange(this);
+            this.GeometryModels = new SimGeometryModelCollection(this);
+            this.SitePlannerManager = new SitePlannerManager(this);
+
+            this.ComponentGeometryExchange = new ComponentGeometryExchange(this);
         }
 
         /// <summary>
@@ -138,6 +133,7 @@ namespace SIMULTAN.Projects
 
             using (AccessCheckingDisabler.Disable(this.Components))
             {
+                this.SitePlannerManager.ClearRecord();
                 this.MultiLinkManager.Clear();
                 this.NetworkManager.ClearRecord();
                 this.AssetManager.Reset();
@@ -152,11 +148,9 @@ namespace SIMULTAN.Projects
                 this.ParameterLibraryManager.ClearRecord();
                 this.ImageLibraryManager.ClearRecord();
 
-                this.IdGenerator.Reset();
+                this.UserComponentLists.Clear();
 
-                this.componentGeometryExchange.Reset();
-                if (this.SitePlannerCommunicator != null)
-                    this.SitePlannerCommunicator.Manager?.ClearRecord();
+                this.IdGenerator.Reset();
             }
         }
 

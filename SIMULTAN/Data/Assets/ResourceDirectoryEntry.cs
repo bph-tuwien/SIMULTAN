@@ -1,9 +1,9 @@
 ﻿using SIMULTAN;
 using SIMULTAN.Data.Users;
 using SIMULTAN.Serializer.DXF;
+using SIMULTAN.Utils;
 using SIMULTAN.Utils.Collections;
 using SIMULTAN.Utils.Files;
-using SIMULTAN.Utils;
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;

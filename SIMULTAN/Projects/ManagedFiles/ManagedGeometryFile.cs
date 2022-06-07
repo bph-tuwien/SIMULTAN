@@ -1,5 +1,4 @@
 ﻿using SIMULTAN.Data.Components;
-using SIMULTAN.Exchange;
 using SIMULTAN.Serializer.Projects;
 using SIMULTAN.Serializer.SimGeo;
 using System.IO;
@@ -36,24 +35,8 @@ namespace SIMULTAN.Projects.ManagedFiles
         /// <inheritdoc/>
         public override void Save()
         {
-            this.OnFileUpToDateChanged(true);
-        }
-
-        /// <inheritdoc/>
-        public override void Reset()
-        {
-            ProjectData.GeometryCommunicator.RemoveGeometryModel(this.File, GeometryModelRemovalMode.CLOSE);
-        }
-
-        /// <inheritdoc />
-        public override void OnRenamed(FileInfo newFile)
-        {
-            int index = ProjectData.GeometryCommunicator.GetResourceFileIndex(this.File);
-
-            var oldFile = this.File;
-            this.File = newFile;
-            if (index >= 0)
-                ProjectData.GeometryModels.FileRenamed(oldFile, this.File);
+            if (ProjectIO.SaveGeometryFile(this))
+                this.OnFileUpToDateChanged(true);
         }
 
         /// <inheritdoc/>

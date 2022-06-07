@@ -32,6 +32,16 @@ namespace SIMULTAN.Data.Geometry
         }
 
         /// <summary>
+        /// Returns the length of the edge.
+        /// </summary>
+        /// <param name="edge">The edge.</param>
+        /// <returns>The length of the edge.</returns>
+        public static double Length(Edge edge)
+        {
+            return (edge.Vertices[1].Position - edge.Vertices[0].Position).Length;
+        }
+
+        /// <summary>
         /// Calculates the distance of the point to the line (d) and the line equation parameter of the closed point (t)
         /// </summary>
         /// <param name="e1">The edge</param>
@@ -365,6 +375,106 @@ namespace SIMULTAN.Data.Geometry
             }
         }
 
+        /// <summary>
+        /// Tries to intersect two edges. If they intersect split both at the intersection and connect everything together again.
+        /// </summary>
+        /// <param name="edge1">The first edge</param>
+        /// <param name="edge2">The second edge</param>
+        /// <param name="tolerance">The detection tolerance</param>
+        /// <returns>The created vertex, an array of created edges and an undo item for the whole operation.</returns>
+        [Obsolete("Same as ModelCleanupAlgorithms.SplitEdgeEdgeIntersections")]
+        public static (Vertex v, Edge[] edges, IUndoItem undoItem) IntersectEdges(Edge edge1, Edge edge2, double tolerance = 0)
+        {
+            if(edge1.ModelGeometry != edge2.ModelGeometry)
+            {
+                throw new ArgumentException("Edges can only be intersected if they are in the same geometry model.");
+            }
+
+            List<IUndoItem> undoItems = new List<IUndoItem>();
+
+            var intersection = EdgeEdgeIntersection(edge1, edge2);
+            if (!intersection.isIntersecting)
+                return (null, null, null);
+
+            var edgedir = (edge1.Vertices[1].Position - edge1.Vertices[0].Position);
+            var pointOnLine = edge1.Vertices[0].Position + edgedir * intersection.t1;
+
+            edge1.ModelGeometry.StartBatchOperation();
+
+            edge1.RemoveFromModel();
+            edge2.RemoveFromModel();
+            undoItems.Add(new GeometryRemoveUndoItem(new List<BaseGeometry>() { edge1 }, edge1.ModelGeometry));
+            undoItems.Add(new GeometryRemoveUndoItem(new List<BaseGeometry>() { edge2 }, edge2.ModelGeometry));
+
+            Vertex v = new Vertex(edge1.Layer, "", pointOnLine)
+            {
+                Color = new DerivedColor(edge1.Color.LocalColor, edge1.Color.Parent, edge1.Color.PropertyName)
+                {
+                    IsFromParent = edge1.Color.IsFromParent
+                }
+            };
+            Edge e11 = new Edge(edge1.Layer, "", new Vertex[] { edge1.Vertices[0], v })
+            {
+                Color = new DerivedColor(edge1.Color.LocalColor, edge1.Color.Parent, edge1.Color.PropertyName)
+                {
+                    IsFromParent = edge1.Color.IsFromParent
+                }
+            };
+            Edge e12 = new Edge(edge1.Layer, "", new Vertex[] { v, edge1.Vertices[1] })
+            {
+                Color = new DerivedColor(edge1.Color.LocalColor, edge1.Color.Parent, edge1.Color.PropertyName)
+                {
+                    IsFromParent = edge1.Color.IsFromParent
+                }
+            };
+            Edge e21 = new Edge(edge2.Layer, "", new Vertex[] { edge2.Vertices[0], v })
+            {
+                Color = new DerivedColor(edge2.Color.LocalColor, edge2.Color.Parent, edge2.Color.PropertyName)
+                {
+                    IsFromParent = edge2.Color.IsFromParent
+                }
+            };
+            Edge e22 = new Edge(edge2.Layer, "", new Vertex[] { v, edge2.Vertices[1] })
+            {
+                Color = new DerivedColor(edge2.Color.LocalColor, edge2.Color.Parent, edge2.Color.PropertyName)
+                {
+                    IsFromParent = edge2.Color.IsFromParent
+                }
+            };
+
+            undoItems.Add(new GeometryAddUndoItem(new List<BaseGeometry>() { v, e11, e12, e21, e22 }, edge1.ModelGeometry));
+
+            //Update Loop-Face-Volume
+            foreach (var pe in edge1.PEdges)
+            {
+                BaseEdgeContainer container = pe.Parent;
+                var idx = container.Edges.IndexOf(pe);
+                undoItems.Add(CollectionUndoItem.RemoveAt(container.Edges, idx));
+
+                undoItems.Add(CollectionUndoItem.Insert(container.Edges, new PEdge(e11, pe.Orientation, container), idx));
+                if (pe.Orientation == GeometricOrientation.Forward)
+                    undoItems.Add(CollectionUndoItem.Insert(container.Edges, new PEdge(e12, pe.Orientation, container), idx + 1));
+                else
+                    undoItems.Add(CollectionUndoItem.Insert(container.Edges, new PEdge(e12, pe.Orientation, container), idx));
+            }
+
+            foreach (var pe in edge2.PEdges)
+            {
+                BaseEdgeContainer container = pe.Parent;
+                var idx = container.Edges.IndexOf(pe);
+                undoItems.Add(CollectionUndoItem.RemoveAt(container.Edges, idx));
+
+                undoItems.Add(CollectionUndoItem.Insert(container.Edges, new PEdge(e21, pe.Orientation, container), idx));
+                if (pe.Orientation == GeometricOrientation.Forward)
+                    undoItems.Add(CollectionUndoItem.Insert(container.Edges, new PEdge(e22, pe.Orientation, container), idx + 1));
+                else
+                    undoItems.Add(CollectionUndoItem.Insert(container.Edges, new PEdge(e22, pe.Orientation, container), idx));
+            }
+
+            edge1.ModelGeometry.EndBatchOperation();
+
+            return (v, new Edge[] { edge1, edge2 }, new BatchOperationGroupUndoItem(edge1.ModelGeometry, undoItems));
+        }
         /// <summary>
         /// Splits an edge at a specific position
         /// </summary>

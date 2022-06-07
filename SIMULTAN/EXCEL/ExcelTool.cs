@@ -212,7 +212,7 @@ namespace SIMULTAN.Excel
 
         internal ExcelTool(ExcelTool _original, string nameCopyFormat = "{0}")
         {
-            this.name = _original.name;
+            this.name = "";//Do not copy name, otherwise you'll get problems when you rename it since excel tools are identified by name
             this.last_path_to_file = null;
 
             this.inputRules = new ObservableCollection<ExcelMappingNode>();

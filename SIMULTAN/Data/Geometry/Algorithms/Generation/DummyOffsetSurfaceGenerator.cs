@@ -20,12 +20,14 @@ namespace SIMULTAN.Data.Geometry
         {
             model.OffsetModel.Faces.Clear();
 
-            if (model.OffsetQuery != null)
+            if (model.Model.Exchange != null)
             {
                 foreach (var face in model.Faces)
                 {
-                    model.OffsetModel.Faces.Add((face, GeometricOrientation.Forward), DummyFace(face, GeometricOrientation.Forward, model.OffsetQuery));
-                    model.OffsetModel.Faces.Add((face, GeometricOrientation.Backward), DummyFace(face, GeometricOrientation.Backward, model.OffsetQuery));
+                    model.OffsetModel.Faces.Add((face, GeometricOrientation.Forward), DummyFace(face, GeometricOrientation.Forward, 
+                        model.Model.Exchange));
+                    model.OffsetModel.Faces.Add((face, GeometricOrientation.Backward), DummyFace(face, GeometricOrientation.Backward, 
+                        model.Model.Exchange));
                 }
             }
         }
@@ -40,7 +42,7 @@ namespace SIMULTAN.Data.Geometry
         {
             HashSet<Face> modified = new HashSet<Face>();
 
-            if (model.OffsetQuery != null)
+            if (model.Model.Exchange != null)
             {
                 foreach (var f in invalidatedGeometry.Where(x => x is Face))
                 {
@@ -55,8 +57,10 @@ namespace SIMULTAN.Data.Geometry
                     {
                         modified.Add(face);
 
-                        model.OffsetModel.Faces[(face, GeometricOrientation.Forward)] = DummyFace(face, GeometricOrientation.Forward, model.OffsetQuery);
-                        model.OffsetModel.Faces[(face, GeometricOrientation.Backward)] = DummyFace(face, GeometricOrientation.Backward, model.OffsetQuery);
+                        model.OffsetModel.Faces[(face, GeometricOrientation.Forward)] = DummyFace(face, GeometricOrientation.Forward, 
+                            model.Model.Exchange);
+                        model.OffsetModel.Faces[(face, GeometricOrientation.Backward)] = DummyFace(face, GeometricOrientation.Backward, 
+                            model.Model.Exchange);
                     }
                 }
             }

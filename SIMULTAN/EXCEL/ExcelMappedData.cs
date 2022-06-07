@@ -193,7 +193,7 @@ namespace SIMULTAN.Excel
         {
             string info = this.range.ToString();
             if (this.NumericData != null)
-                info += ": " + this.NumericData[0,0].ToString();
+                info += ": " + this.NumericData[0, 0].ToString();
             else if (this.TextData != null)
                 info += ": " + this.TextData[0][0];
 
@@ -204,7 +204,7 @@ namespace SIMULTAN.Excel
         {
             string content = string.Empty;
             if (this.NumericData != null && this.NumericData.GetLength(0) >= 1 && this.NumericData.GetLength(1) >= 1)
-                content = this.NumericData[0,0].ToString();
+                content = this.NumericData[0, 0].ToString();
             else if (this.TextData != null && this.TextData.Count >= 1 && this.TextData[0].Count >= 1)
                 content = this.TextData[0][0];
 

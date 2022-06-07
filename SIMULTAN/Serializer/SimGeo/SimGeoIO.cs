@@ -1,4 +1,5 @@
-﻿using SIMULTAN.Data.Geometry;
+﻿using SIMULTAN.Data.Assets;
+using SIMULTAN.Data.Geometry;
 using SIMULTAN.Projects;
 using SIMULTAN.Utils.Files;
 using System;
@@ -66,7 +67,7 @@ namespace SIMULTAN.Serializer.SimGeo
         /// <summary>
         /// The current version of the SimGeo Format
         /// </summary>
-        public static int SimGeoVersion => 9;
+        public static int SimGeoVersion => 10;
 
         /// <summary>
         /// Describes which format should be written
@@ -83,9 +84,9 @@ namespace SIMULTAN.Serializer.SimGeo
         /// Stores the model to a file
         /// </summary>
         /// <param name="model">The model to store</param>
-        /// <param name="path">FileInfo of the target file. The file gets overridden without conformation!!</param>
+        /// <param name="file">FileInfo of the target file. The file gets overridden without conformation!!</param>
         /// <param name="mode">Format in which the file should be written</param>
-        public static bool Save(GeometryModel model, FileInfo path, WriteMode mode)
+        public static bool Save(GeometryModel model, ResourceFileEntry file, WriteMode mode)
         {
             //Make sure the model is consistent
             GeometryModelAlgorithms.CheckConsistency(model.Geometry);
@@ -93,10 +94,12 @@ namespace SIMULTAN.Serializer.SimGeo
             bool valid = true;
             try
             {
-                if (!Directory.Exists(path.Directory.FullName))
-                    Directory.CreateDirectory(path.Directory.FullName);
+                var directoryPath = Path.GetDirectoryName(file.CurrentFullPath);
 
-                using (StreamWriter sw = new StreamWriter(path.FullName, false, Encoding.Unicode))
+                if (!Directory.Exists(directoryPath))
+                    Directory.CreateDirectory(directoryPath);
+
+                using (StreamWriter sw = new StreamWriter(file.CurrentFullPath, false, Encoding.Unicode))
                 {
                     if (mode == WriteMode.Plaintext)
                         SavePlaintext(sw, model);
@@ -120,39 +123,28 @@ namespace SIMULTAN.Serializer.SimGeo
         /// Reads a model from a file
         /// </summary>
         /// <param name="geometryFile">The file</param>
-        /// <param name="instance">The instance which requested the loading</param>
         /// <param name="projectData">The model store in which the GeometryModels should be loaded</param>
         /// <param name="errors">A list to which error messages are added</param>
         /// <param name="offsetAlg">Defines how offset surfaces should be generated after loading</param>
         /// <returns>The geometry model</returns>
-        public static GeometryModel Load(FileInfo geometryFile, ILoaderGeometryViewerInstance instance, ProjectData projectData,
+        public static GeometryModel Load(ResourceFileEntry geometryFile, ProjectData projectData,
             List<SimGeoIOError> errors,
             OffsetAlgorithm offsetAlg = OffsetAlgorithm.Full)
         {
-            if (!instance.LoaderGeometryExchange.IsValidResourcePath(geometryFile, false))
-            {
-                throw new IOException(
-                    String.Format("An asset with the path {0} could not be added. Is the file in the asset folder or in one of its subfolder?", 
-                    geometryFile.FullName));
-            }
-
-            if (!instance.LoaderGeometryExchange.ResourceFileExists(geometryFile))
-                instance.LoaderGeometryExchange.AddResourceFile(geometryFile);
-
             //Translates pre-8 ids to Guids
             Dictionary<ulong, Guid> idToGuid = new Dictionary<ulong, Guid>();
 
-            var model = LoadWithoutCheck(geometryFile, instance, projectData, idToGuid, offsetAlg, errors);
+            var model = LoadWithoutCheck(geometryFile, projectData, idToGuid, offsetAlg, errors);
             ConvertIdBasedReferences(model, idToGuid, errors);
 
             return model;
         }
 
-        private static GeometryModel LoadWithoutCheck(FileInfo geometryFile, ILoaderGeometryViewerInstance instance,
+        private static GeometryModel LoadWithoutCheck(ResourceFileEntry geometryFile,
             ProjectData projectData, Dictionary<ulong, Guid> idToGuid, OffsetAlgorithm offsetAlg, List<SimGeoIOError> errors)
         {
             if (!geometryFile.Exists)
-                throw new FileNotFoundException(geometryFile.FullName);
+                throw new FileNotFoundException(geometryFile.CurrentFullPath);
 
             if (projectData.GeometryModels.TryGetGeometryModel(geometryFile, out var existingModel, false))
             {
@@ -163,19 +155,19 @@ namespace SIMULTAN.Serializer.SimGeo
             {
                 try
                 {
-                    var encoding = GetEncoding(geometryFile.FullName);
+                    var encoding = GetEncoding(geometryFile.CurrentFullPath);
 
                     GeometryModel model = null;
                     List<FileInfo> linkedModels = new List<FileInfo>();
 
-                    using (FileStream fs = new FileStream(geometryFile.FullName, FileMode.Open))
+                    using (FileStream fs = new FileStream(geometryFile.CurrentFullPath, FileMode.Open))
                     {
                         using (StreamReader sr = new StreamReader(fs, encoding))
                         {
                             var formatIdent = (char)sr.Read();
                             int row = 1, column = 2;
                             if (formatIdent == 'T')
-                                model = LoadPlaintext(sr, geometryFile, instance.LoaderGeometryExchange, linkedModels, projectData, idToGuid, ref row, ref column, offsetAlg);
+                                model = LoadPlaintext(sr, geometryFile, linkedModels, projectData, idToGuid, ref row, ref column, offsetAlg);
                             else
                                 throw new IOException("Unknown format identifier");
                         }
@@ -185,19 +177,24 @@ namespace SIMULTAN.Serializer.SimGeo
                     {
                         foreach (var file in linkedModels)
                         {
-                            if (!instance.LoaderGeometryExchange.IsValidResourcePath(file, false))
+                            if (!projectData.AssetManager.IsValidResourcePath(file, false))
                             {
-                                errors.Add(new SimGeoIOError(SimGeoIOErrorReason.InvalidLinkedModel, new object[] 
+                                errors.Add(new SimGeoIOError(SimGeoIOErrorReason.InvalidLinkedModel, new object[]
                                 {
                                     file.FullName
-                                }));                                
+                                }));
                             }
                             else
                             {
-                                if (!instance.LoaderGeometryExchange.ResourceFileExists(file))
-                                    instance.LoaderGeometryExchange.AddResourceFile(file);
+                                var resource = projectData.AssetManager.GetResource(file);
 
-                                var linkedModel = LoadWithoutCheck(file, instance, projectData, idToGuid, offsetAlg, errors);
+                                if (resource == null)
+                                {
+                                    int key = projectData.AssetManager.AddResourceEntry(file);
+                                    resource = (ResourceFileEntry)projectData.AssetManager.GetResource(key);
+                                }
+
+                                var linkedModel = LoadWithoutCheck(resource, projectData, idToGuid, offsetAlg, errors);
                                 model.LinkedModels.Add(linkedModel);
                             }
                         }
@@ -234,6 +231,7 @@ namespace SIMULTAN.Serializer.SimGeo
             WriteNumberPlaintext<Int32>(sw, model.LinkedModels.Count);
             WriteNumberPlaintext<Int32>(sw, model.Geometry.ProxyGeometries.Count);
             WriteNumberPlaintext<Int32>(sw, model.Geometry.GeoReferences.Count);
+            WriteNumberPlaintext<UInt64>(sw, model.Geometry.GetFreeId(false)); // free id is the next usable one, we need to remember that
             sw.WriteLine();
 
             //CONTENT
@@ -474,7 +472,9 @@ namespace SIMULTAN.Serializer.SimGeo
 
         private static void WriteLinkedModelPlaintext(StreamWriter sw, GeometryModel linkedModel, GeometryModel sourceModel)
         {
-            var relativePath = FileSystemNavigation.GetRelativePath(sourceModel.File.Directory.FullName, linkedModel.File.FullName);
+            var fileInfo = new FileInfo(sourceModel.File.CurrentFullPath);
+
+            var relativePath = FileSystemNavigation.GetRelativePath(fileInfo.Directory.FullName, linkedModel.File.CurrentFullPath);
             WriteStringPlaintext(sw, relativePath);
         }
 
@@ -507,7 +507,7 @@ namespace SIMULTAN.Serializer.SimGeo
             return Encoding.Default;
         }
 
-        private static GeometryModel LoadPlaintext(StreamReader stream, FileInfo file, ILoaderGeometryExchange offsetQuery,
+        private static GeometryModel LoadPlaintext(StreamReader stream, ResourceFileEntry file,
             List<FileInfo> linkedModels, ProjectData projectData, Dictionary<ulong, Guid> idToGuid,
             ref int row, ref int column, OffsetAlgorithm offsetAlg)
         {
@@ -560,10 +560,14 @@ namespace SIMULTAN.Serializer.SimGeo
             if (versionNumber >= 7)
                 geoRefCount = ReadNumber<Int32>(stream, ref row, ref column, "GeoRef Count");
 
+            UInt64 nextGeoId = 0;
+            if (versionNumber >= 10)
+                nextGeoId = ReadNumber<UInt64>(stream, ref row, ref column, "Next Geometry ID");
+
             string name = ReadString(stream, ref row, ref column, "Model Name");
             bool isVisible = ReadBool(stream, ref row, ref column, "Model IsVisible");
 
-            GeometryModelData modelData = new GeometryModelData(offsetQuery);
+            GeometryModelData modelData = new GeometryModelData(nextGeoId);
             modelData.OffsetModel.Generator.Algorithm = offsetAlg;
             modelData.StartBatchOperation();
 
@@ -806,7 +810,7 @@ namespace SIMULTAN.Serializer.SimGeo
                 if (layers.ContainsKey(parentId.Value))
                     layers[parentId.Value].Layers.Add(layer);
                 else
-                    throw new Exception(String.Format("An error occurred during loading at position {1}:\n"+
+                    throw new Exception(String.Format("An error occurred during loading at position {1}:\n" +
                         "Parent Layer with Id {0} not found",
                         parentId,
                         streamPos));
@@ -1173,8 +1177,7 @@ namespace SIMULTAN.Serializer.SimGeo
         private static FileInfo ReadLinkedModel(StreamReader sr, GeometryModel model, ref int row, ref int column)
         {
             var path = ReadString(sr, ref row, ref column, "Linked Model Path");
-
-            return new FileInfo(Path.Combine(model.File.DirectoryName, path));
+            return new FileInfo(Path.Combine(Path.GetDirectoryName(model.File.CurrentFullPath), path));
         }
 
         private static void ConvertIdBasedReferences(GeometryModel model, Dictionary<ulong, Guid> idToGuid, List<SimGeoIOError> errors)

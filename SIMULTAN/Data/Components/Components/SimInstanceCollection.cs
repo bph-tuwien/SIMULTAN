@@ -42,6 +42,10 @@ namespace SIMULTAN.Data.Components
 
                 SimComponentInstance.AddAutoParameters(owner);
                 SimComponentInstance.UpdateAutoParameters(owner);
+
+                //Notify geometry
+                if (item.Factory != null)
+                    item.Factory.ProjectData.ComponentGeometryExchange.OnInstanceAdded(item);
             }
             /// <inheritdoc />
             protected override void RemoveItem(int index)
@@ -49,6 +53,11 @@ namespace SIMULTAN.Data.Components
                 var oldItem = this[index];
 
                 this.owner.RecordWriteAccess();
+
+                //Notify geometry
+                if (oldItem.Factory != null)
+                    oldItem.Factory.ProjectData.ComponentGeometryExchange.OnInstanceRemoved(oldItem);
+
                 UnsetValues(oldItem);
 
                 base.RemoveItem(index);
@@ -62,7 +71,12 @@ namespace SIMULTAN.Data.Components
                 this.owner.RecordWriteAccess();
 
                 foreach (var item in this)
+                {
+                    //Notify geometry
+                    if (item.Factory != null)
+                        item.Factory.ProjectData.ComponentGeometryExchange.OnInstanceRemoved(item);
                     UnsetValues(item);
+                }
                 base.ClearItems();
                 owner.OnInstanceStateChanged();
 
@@ -77,6 +91,11 @@ namespace SIMULTAN.Data.Components
                 this.owner.RecordWriteAccess();
 
                 var oldItem = this[index];
+
+                //Notify geometry
+                if (item.Factory != null)
+                    item.Factory.ProjectData.ComponentGeometryExchange.OnInstanceRemoved(item);
+
                 UnsetValues(oldItem);
                 SetValues(item);
                 base.SetItem(index, item);
@@ -84,6 +103,10 @@ namespace SIMULTAN.Data.Components
                 owner.OnInstanceStateChanged();
 
                 SimComponentInstance.UpdateAutoParameters(owner);
+
+                //Notify geometry
+                if (item.Factory != null)
+                    item.Factory.ProjectData.ComponentGeometryExchange.OnInstanceAdded(item);
             }
 
             #endregion
@@ -163,8 +186,8 @@ namespace SIMULTAN.Data.Components
                 if (parameter == null)
                     throw new ArgumentNullException(nameof(parameter));
 
-                foreach (var gr in owner.Instances)
-                    gr.ChangeParameterValue(parameter);
+                foreach (var instance in owner.Instances)
+                    instance.ChangeParameterValue(parameter);
             }
 
             #endregion

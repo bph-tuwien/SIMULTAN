@@ -282,10 +282,12 @@ namespace SIMULTAN.Serializer.Projects
 
         internal static bool SaveGeometryFile(ManagedGeometryFile managedFile)
         {
-            var exists = managedFile.ProjectData.GeometryModels.TryGetGeometryModel(managedFile.File, out var rootModel, false);
+            var resource = managedFile.ProjectData.AssetManager.GetResource(managedFile.File);
+
+            var exists = managedFile.ProjectData.GeometryModels.TryGetGeometryModel(resource, out var rootModel, false);
             if (exists && rootModel.Geometry.HandleConsistency)
             {
-                if (!SimGeoIO.Save(rootModel, rootModel.File, SimGeoIO.WriteMode.Plaintext))
+                if (!SimGeoIO.Save(rootModel, resource, SimGeoIO.WriteMode.Plaintext))
                     return false;
             }
             return true;
@@ -420,17 +422,20 @@ namespace SIMULTAN.Serializer.Projects
             _file.LastWriteTime = DateTime.Now;
         }
 
-        internal static void OpenSitePlannerFile(FileInfo file, ResourceFileEntry fileResource, SitePlannerManager manager,
-            AssetManager assetManager, SimMultiValueCollection multiValueCollection)
+        internal static void OpenSitePlannerFile(ResourceFileEntry fileResource, ProjectData projectData)
         {
-            if (file == null || !File.Exists(file.FullName))
+            if (fileResource == null || !File.Exists(fileResource.CurrentFullPath))
                 return;
 
-            using (FileStream fs = new FileStream(file.FullName, FileMode.Open))
+            using (FileStream fs = new FileStream(fileResource.CurrentFullPath, FileMode.Open))
             {
-                DXFDecoderSitePlanner decoder = new DXFDecoderSitePlanner(fileResource, assetManager, manager, multiValueCollection);
-                manager.SitePlannerProjects.Add(decoder.Project);
+                DXFDecoderSitePlanner decoder = new DXFDecoderSitePlanner(fileResource, projectData.AssetManager,
+                    projectData.SitePlannerManager, projectData.ValueManager);
+                projectData.SitePlannerManager.SitePlannerProjects.Add(decoder.Project);
                 decoder.LoadFromFile(fs);
+
+                //Register to exchange
+                projectData.ComponentGeometryExchange.AddSiteplannerProject(decoder.Project);
             }
         }
 

@@ -12,6 +12,9 @@ namespace SIMULTAN.Data.Geometry
     /// <summary>
     /// Displays a arbitrary triangle mesh that is attached to a vertex.
     /// The proxy acts similar to the vertex during selection and all other operations
+    /// 
+    /// Note, that after changing the geometry (<see cref="Positions"/>, <see cref="Normals"/> or <see cref="Indices"/>)
+    /// the <see cref="BaseGeometry.NotifyGeometryChanged"/> has to be called manually
     /// </summary>
     public class ProxyGeometry : BaseGeometry
     {
@@ -95,7 +98,7 @@ namespace SIMULTAN.Data.Geometry
         /// <param name="layer">The layer on which the proxy geometry should exist</param>
         /// <param name="nameFormat">The display name (this is used as a format string for string.Format. {0} is the Id</param>
         /// <param name="vertex">The vertex to which the proxy is attached</param>
-        public ProxyGeometry(Layer layer, string nameFormat, Vertex vertex) 
+        public ProxyGeometry(Layer layer, string nameFormat, Vertex vertex)
             : this(layer != null ? layer.Model.GetFreeId() : ulong.MaxValue, layer, nameFormat, vertex) { }
 
         /// <summary>

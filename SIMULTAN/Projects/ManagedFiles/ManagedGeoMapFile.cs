@@ -37,7 +37,7 @@ namespace SIMULTAN.Projects.ManagedFiles
         /// <inheritdoc />
         public override void Save()
         {
-            ProjectIO.SaveGeoMapFile(this.File, ProjectData.SitePlannerCommunicator.Manager);
+            ProjectIO.SaveGeoMapFile(this.File, ProjectData.SitePlannerManager);
             this.OnFileUpToDateChanged(true);
         }
 
@@ -47,7 +47,7 @@ namespace SIMULTAN.Projects.ManagedFiles
             var resource = ProjectData.AssetManager.GetResource(this.File);
             if (resource != null)
             {
-                ProjectIO.OpenGeoMapFile(this.File, resource, ProjectData.SitePlannerCommunicator.Manager, ProjectData.AssetManager);
+                ProjectIO.OpenGeoMapFile(this.File, resource, ProjectData.SitePlannerManager, ProjectData.AssetManager);
             }
             else
             {
@@ -63,7 +63,7 @@ namespace SIMULTAN.Projects.ManagedFiles
         private void ExecuteOpen(ResourceFileEntry resourceFile)
         {
             // open
-            ProjectIO.OpenGeoMapFile(this.File, resourceFile, ProjectData.SitePlannerCommunicator.Manager, ProjectData.AssetManager);
+            ProjectIO.OpenGeoMapFile(this.File, resourceFile, ProjectData.SitePlannerManager, ProjectData.AssetManager);
             // reset
             ((INotifyCollectionChanged)ProjectData.AssetManager.Resources).CollectionChanged -= assetManager_CollectionChanged_OnAddingThisFile;
             ProjectData.AssetManager.ChildResourceCollectionChanged -= assetManager_CollectionChanged_OnAddingThisFile;

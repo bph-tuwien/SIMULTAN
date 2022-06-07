@@ -573,15 +573,6 @@ namespace SIMULTAN.Data.Assets
         { }
 
         /// <summary>
-        /// Used when the resource changed externally on a file system level.
-        /// Changes the entire path of the resource. This could mean a new path and / or extension. The asset manager parent
-        /// emits the ResourceManipulated event.
-        /// </summary>
-        /// <param name="_new_data">the new name to replace the old</param>
-        public virtual void PathChangedExternally(FileSystemInfo _new_data)
-        { }
-
-        /// <summary>
         /// Changes the name of the resources, *not* the extension or the entire path. The asset manager parent
         /// emits the ResourceManipulated event.
         /// </summary>
@@ -646,7 +637,8 @@ namespace SIMULTAN.Data.Assets
         /// <inheritdoc />
         public override int GetHashCode()
         {
-            return this.Key ^ this.manager.GetHashCode();
+            // use 0 for manager if it is null, relevant for unit testing
+            return this.Key ^ (this.manager == null ? 0 : this.manager.GetHashCode());
         }
 
         #endregion

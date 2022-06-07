@@ -44,7 +44,7 @@ namespace SIMULTAN.Data.Geometry
         /// <param name="layer">The layer this object is placed on</param>
         /// <param name="nameFormat">The display name (this is used as a format string for string.Format. {0} is the Id</param>
         /// <param name="position">The position of the vertex</param>
-        public Vertex(Layer layer, string nameFormat, Point3D position) 
+        public Vertex(Layer layer, string nameFormat, Point3D position)
             : this(layer != null ? layer.Model.GetFreeId() : ulong.MaxValue, layer, nameFormat, position) { }
         /// <summary>
         /// Initializes a new instance of the Vertex class

@@ -26,7 +26,7 @@ namespace SIMULTAN.Data.Geometry
         {
             var t2 = tolerance * tolerance;
 
-            GeometryModelData data = new GeometryModelData(null);
+            GeometryModelData data = new GeometryModelData();
             Layer layer = new Layer(data, "OffsetModel");
 
             //Calculation maximum and minimum along each axis
@@ -89,7 +89,7 @@ namespace SIMULTAN.Data.Geometry
                 }
 
                 //Loop
-                var loop = new EdgeLoop(layer, f.Face.Name,  edges);
+                var loop = new EdgeLoop(layer, f.Face.Name, edges);
 
                 //Face
                 var face = new Face(layer, f.Face.Name, loop);

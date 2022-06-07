@@ -1,5 +1,8 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using SIMULTAN.Data.Components;
+using SIMULTAN.Data.Users;
 using SIMULTAN.Exceptions;
+using SIMULTAN.Tests.Utils;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -7,11 +10,8 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using SIMULTAN.Tests.Utils;
-using SIMULTAN.Data.Components;
-using SIMULTAN.Data.Users;
 
-namespace ParameterStructure.Tests.Components
+namespace SIMULTAN.Tests.Components
 {
     [TestClass]
     public class ReferenceManagementTests : BaseProjectTest
@@ -474,7 +474,7 @@ namespace ParameterStructure.Tests.Components
             //No access to target should be recorded
             Assert.IsTrue(target.AccessLocal.LastAccess(SimComponentAccessPrivilege.Write).lastAccess < startTime);
         }
-        
+
         #endregion
 
         #region Consistency

@@ -43,7 +43,7 @@ namespace SIMULTAN.Data.Geometry
         /// <param name="layer">The layer this object is placed on</param>
         /// <param name="nameFormat">The display name (this is used as a format string for string.Format. {0} is the Id</param>
         /// <param name="faces">A list of boundary faces</param>
-        public Volume(Layer layer, string nameFormat, IEnumerable<Face> faces) 
+        public Volume(Layer layer, string nameFormat, IEnumerable<Face> faces)
             : this(layer != null ? layer.Model.GetFreeId() : ulong.MaxValue, layer, nameFormat, faces) { }
         /// <summary>
         /// Initializes a new instance of the Volume class

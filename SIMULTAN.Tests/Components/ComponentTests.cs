@@ -45,17 +45,13 @@ namespace SIMULTAN.Tests.Components
 
             Assert.AreEqual(0, component.Components.Count);
             Assert.AreEqual(0, component.Calculations.Count);
-            Assert.AreEqual(1, component.Parameters.Count);
+            Assert.AreEqual(0, component.Parameters.Count);
             Assert.AreEqual(0, component.ReferencedComponents.Count);
             Assert.AreEqual(0, component.ReferencedBy.Count);
             Assert.AreEqual(0, component.Instances.Count);
             Assert.AreEqual(0, component.CalculatorMappings.Count);
             Assert.AreEqual(0, component.MappedToBy.Count);
             Assert.AreEqual(0, component.ReferencedAssets.Count);
-
-            //Propagation parameter
-            var propParam = component.Parameters.First(x => x.Name == ReservedParameters.RP_INST_PROPAGATE);
-            Assert.AreEqual(true, propParam.IsAutomaticallyGenerated);
 
             //Access
             foreach (var role in Enum.GetValues(typeof(SimUserRole)).OfType<SimUserRole>())

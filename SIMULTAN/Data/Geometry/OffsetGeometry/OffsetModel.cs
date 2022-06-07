@@ -39,11 +39,6 @@ namespace SIMULTAN.Data.Geometry
         private bool handleGeometryInvalidated;
 
         /// <summary>
-        /// Stores the offset query object
-        /// </summary>
-        public IOffsetQueryable OffsetQuery { get; private set; }
-
-        /// <summary>
         /// Stores the offset faces (always inner and outer surface for each face)
         /// </summary>
         public Dictionary<(Face, GeometricOrientation), OffsetFace> Faces { get; private set; }
@@ -79,19 +74,14 @@ namespace SIMULTAN.Data.Geometry
         /// Initializes a new instance of the OffsetModel class
         /// </summary>
         /// <param name="model">The geometrymodel</param>
-        /// <param name="offsetQuery">Object to query offsets</param>
-        public OffsetModel(GeometryModelData model, IOffsetQueryable offsetQuery)
+        public OffsetModel(GeometryModelData model)
         {
             this.Generator = new OffsetSurfaceGenerator(model);
             this.Model = model;
-            this.OffsetQuery = offsetQuery;
             this.Faces = new Dictionary<(Face, GeometricOrientation), OffsetFace>();
 
             this.Model.GeometryChanged += Model_GeometryChanged;
             this.Model.TopologyChanged += Model_TopologyChanged;
-
-            if (OffsetQuery != null)
-                this.OffsetQuery.GeometryInvalidated += OffsetQuery_GeometryInvalidated;
 
             this.handleGeometryInvalidated = true;
         }
@@ -99,7 +89,7 @@ namespace SIMULTAN.Data.Geometry
 
 
 
-        private void OffsetQuery_GeometryInvalidated(object sender, IEnumerable<BaseGeometry> affected_geometry)
+        internal void OnGeometryInvalidated(IEnumerable<BaseGeometry> affected_geometry)
         {
             if (HandleGeometryInvalidated)
                 Generator.Update(GeometrySettings.Instance.CalculateOffsetSurfaces);

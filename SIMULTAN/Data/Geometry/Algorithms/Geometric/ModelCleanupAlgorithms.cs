@@ -1,5 +1,5 @@
-﻿using SIMULTAN.Utils.BackgroundWork;
-using SIMULTAN.Utils;
+﻿using SIMULTAN.Utils;
+using SIMULTAN.Utils.BackgroundWork;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -1163,7 +1163,7 @@ namespace SIMULTAN.Data.Geometry
 
                         if (Debugger.IsAttached)
                             throw;
-                        
+
                         break; //End method because something is already broken
                     }
 

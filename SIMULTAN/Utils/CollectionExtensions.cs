@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Security;
@@ -53,6 +54,7 @@ namespace SIMULTAN.Utils
         /// <typeparam name="T">The datatype</typeparam>
         /// <param name="collection">The collection</param>
         /// <param name="action">The action</param>
+        [DebuggerStepThrough]
         public static void ForEach<T>(this IEnumerable<T> collection, Action<T> action)
         {
             foreach (var element in collection)

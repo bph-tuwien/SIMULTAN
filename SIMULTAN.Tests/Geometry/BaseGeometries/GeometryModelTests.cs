@@ -1,7 +1,8 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using SIMULTAN.Data.Assets;
 using SIMULTAN.Data.Geometry;
-using SIMULTAN.Exchange;
 using SIMULTAN.Tests.Geometry.EventData;
+using SIMULTAN.Tests.Util;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -19,10 +20,8 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
         public void Ctor()
         {
             var file = new FileInfo("./unittest.geosim");
-            IComponentGeometryExchange componentManager = new DummyComponentGeometryExchange(file);
 
-            GeometryModelData model1 = new GeometryModelData(componentManager);
-            Assert.AreEqual(componentManager, model1.OffsetQuery);
+            GeometryModelData model1 = new GeometryModelData();
             Assert.IsNotNull(model1.Vertices);
             Assert.IsNotNull(model1.EdgeLoops);
             Assert.IsNotNull(model1.Edges);
@@ -198,9 +197,9 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
         {
             var data = GeometryModelHelper.EmptyModel();
 
-            var gm2 = new GeometryModelData(data.model.Geometry.OffsetQuery);
+            var gm2 = new GeometryModelData();
 
-            data.model.LinkedModels.Add(new GeometryModel(Guid.NewGuid(), "Model2", new FileInfo("dummy2.geosim"), OperationPermission.None, gm2));
+            data.model.LinkedModels.Add(new GeometryModel(Guid.NewGuid(), "Model2", new DummyResourceFileEntry("dummy2.geosim", 2), OperationPermission.None, gm2));
             Assert.AreEqual(1, data.model.LinkedModels.Count);
             Assert.AreEqual(gm2, data.model.LinkedModels[0].Geometry);
 
@@ -211,7 +210,7 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
         [TestMethod]
         public void GetFreeId()
         {
-            var gm = new GeometryModelData(new DummyComponentGeometryExchange(new FileInfo("./dummy.geosim")));
+            var gm = new GeometryModelData();
 
             var freeId = gm.GetFreeId();
             Assert.AreEqual((ulong)0, freeId);
@@ -221,7 +220,7 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
             var layer = new Layer(99, gm, "Layer99");
             gm.Layers.Add(layer);
             freeId = gm.GetFreeId();
-            Assert.AreEqual((ulong)2, freeId);
+            Assert.AreEqual((ulong)100, freeId);
         }
 
         [TestMethod]

@@ -325,14 +325,14 @@ namespace SIMULTAN.Data.Geometry
         }
 
         /// <summary>
-        /// Returns the brutto and the netto volume
+        /// Returns the gross and the net volume
         /// </summary>
         /// <param name="vol">The volume</param>
-        /// <returns>The brutto and netto volume as given by the offset surfaces</returns>
-        public static (double volume, double volumeNetto, double volumeBrutto) VolumeBruttoNetto(Volume vol)
+        /// <returns>The gross and net volume as given by the offset surfaces</returns>
+        public static (double volume, double volumeBrutto, double volumeNetto) VolumeBruttoNetto(Volume vol)
         {
             //General algorithm:
-            //1. Calc volume of reference plances
+            //1. Calc volume of reference planes
             //2. Subtract area for each wall (by using the offset-face)
 
             var refVolume = Volume(vol);
@@ -363,46 +363,18 @@ namespace SIMULTAN.Data.Geometry
                     }
                 }
 
-                /*if (vol.Model.OffsetModel.Faces.ContainsKey(pface.Face))
-				{
-					var offsetFace = vol.Model.OffsetModel.Faces[pface.Face];
-
-					if (pface.Orientation == GeometricOrientation.Backward)
-					{
-						nettoArea = EdgeLoopAlgorithms.Area(offsetFace.outer.Boundary);
-						nettoOffset = offsetFace.outer.Offset;
-
-						if (pface.Face.PFaces.Count < 2)
-						{
-							bruttoArea = EdgeLoopAlgorithms.Area(offsetFace.inner.Boundary);
-							bruttoOffset = offsetFace.inner.Offset;
-						}
-					}
-					else
-					{
-						nettoArea = EdgeLoopAlgorithms.Area(offsetFace.inner.Boundary);
-						nettoOffset = offsetFace.inner.Offset;
-
-						if (pface.Face.PFaces.Count < 2)
-						{
-							bruttoArea = EdgeLoopAlgorithms.Area(offsetFace.outer.Boundary);
-							bruttoOffset = offsetFace.outer.Offset;
-						}
-					}
-				}*/
-
                 netto -= (nettoOffset / 3.0) * (refArea + nettoArea + Math.Sqrt(refArea * nettoArea));
                 brutto += (bruttoOffset / 3.0) * (refArea + bruttoArea + Math.Sqrt(refArea * bruttoArea));
             }
 
-            return (refVolume, netto, brutto);
+            return (refVolume, brutto, netto);
         }
 
         /// <summary>
         /// Returns the minimum and maximum height of a volume
         /// </summary>
         /// <param name="vol">The volume</param>
-        /// <returns>The minimum and maximum height differnce between floor and ceiling</returns>
+        /// <returns>The minimum and maximum height difference between floor and ceiling</returns>
         public static (double reference, double min, double max) Height(Volume vol)
         {
             var floorFaces = vol.Faces.Where(x => FaceAlgorithms.IsFloor(x)).ToList();

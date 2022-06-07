@@ -1309,7 +1309,7 @@ namespace SIMULTAN.Data.MultiValues
             var rowHeaderCopies = source.RowHeaders.Select(x => new SimMultiValueBigTableHeader(x.Name, x.Unit)).ToList();
             var columnHeaderCopies = source.ColumnHeaders.Select(x => new SimMultiValueBigTableHeader(x.Name, x.Unit)).ToList();
 
-            ReplaceData(rowHeaderCopies, columnHeaderCopies, values); //values gets copied in the ReplaceData method anyway
+            ReplaceData(columnHeaderCopies, rowHeaderCopies, source.values); //values gets copied in the ReplaceData method anyway
         }
 
         private void AdjustHeader(SimMultiValueBigTableHeader header, int index, SimMultiValueBigTableHeader.AxisEnum axis)

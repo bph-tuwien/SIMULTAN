@@ -1,6 +1,5 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SIMULTAN.Data.Geometry;
-using SIMULTAN.Exchange;
 using SIMULTAN.Tests.Geometry.EventData;
 using System;
 using System.Collections.Generic;
@@ -18,7 +17,7 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
         [TestMethod]
         public void Ctor()
         {
-            var gm = new GeometryModelData(new DummyComponentGeometryExchange(new FileInfo("./dummy.geosim")));
+            var gm = new GeometryModelData();
 
             Assert.ThrowsException<ArgumentNullException>(() => { var l0 = new Layer(null, ""); });
             Assert.ThrowsException<ArgumentNullException>(() => { var l0 = new Layer(gm, null); });
@@ -36,7 +35,7 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
         [TestMethod]
         public void AddToSublayer()
         {
-            var gm = new GeometryModelData(new DummyComponentGeometryExchange(new FileInfo("./dummy.geosim")));
+            var gm = new GeometryModelData();
             var l1 = new Layer(gm, "asdf");
             gm.Layers.Add(l1);
 
@@ -50,7 +49,7 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
         [TestMethod]
         public void RemoveSublayer()
         {
-            var gm = new GeometryModelData(new DummyComponentGeometryExchange(new FileInfo("./dummy.geosim")));
+            var gm = new GeometryModelData();
             var l1 = new Layer(gm, "asdf");
             gm.Layers.Add(l1);
 
@@ -65,7 +64,7 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
         [TestMethod]
         public void GeometryRemoved()
         {
-            var gm = new GeometryModelData(new DummyComponentGeometryExchange(new FileInfo("./dummy.geosim")));
+            var gm = new GeometryModelData();
             var l1 = new Layer(gm, "asdf");
             gm.Layers.Add(l1);
 
@@ -79,7 +78,7 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
         [TestMethod]
         public void IsVisible()
         {
-            var gm = new GeometryModelData(new DummyComponentGeometryExchange(new FileInfo("./dummy.geosim")));
+            var gm = new GeometryModelData();
             var l1 = new Layer(gm, "asdf");
             var l1event = new PropertyChangedEventData(l1);
             gm.Layers.Add(l1);

@@ -43,7 +43,7 @@ namespace SIMULTAN.Data.Geometry
         /// <summary>
         /// Returns the model this geometry object belongs to
         /// </summary>
-        public GeometryModelData ModelGeometry { get { return Layer.Model; } }
+        public GeometryModelData ModelGeometry { get { return Layer?.Model; } }
         /// <summary>
         /// Gets or sets the layer on which this geometry object is placed
         /// </summary>
@@ -62,7 +62,19 @@ namespace SIMULTAN.Data.Geometry
         /// Gets or sets the display name of this object
         /// </summary>
         /// <remarks>The name is NOT unique</remarks>
-        public String Name { get { return name; } set { name = value; PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Name))); } }
+        public string Name
+        { 
+            get { return name; } 
+            set 
+            {
+                if (name != value)
+                {
+                    name = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Name)));
+                    ModelGeometry?.Model?.Exchange?.OnGeometryNameChanged(this);
+                }
+            } 
+        }
         private string name;
 
         private readonly PropertyChangedEventHandler onColorPropertyChanged;

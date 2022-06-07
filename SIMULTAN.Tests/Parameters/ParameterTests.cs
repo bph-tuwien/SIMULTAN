@@ -449,7 +449,6 @@ namespace SIMULTAN.Tests.Parameters
         public void StateRefNotFound()
         {
             LoadProject(parameterProject);
-            projectData.Components.EnableAsyncUpdates = false;
 
             var comp = projectData.Components.FirstOrDefault(x => x.Name == "WithReference");
             var param = new SimParameter("B", "unit", 99.9)
@@ -485,7 +484,6 @@ namespace SIMULTAN.Tests.Parameters
         public void StateHidesReference()
         {
             LoadProject(parameterProject);
-            projectData.Components.EnableAsyncUpdates = false;
 
             var comp = projectData.Components.FirstOrDefault(x => x.Name == "WithReference");
             var param = new SimParameter("A", "unit", 99.9)
@@ -557,7 +555,7 @@ namespace SIMULTAN.Tests.Parameters
         }
 
         [TestMethod]
-        public void GetReferencingParameter()
+        public void GetReferencedParameter()
         {
             LoadProject(parameterProject);
 
@@ -586,7 +584,6 @@ namespace SIMULTAN.Tests.Parameters
         public void NewParameterReferencing()
         {
             LoadProject(parameterProject);
-            projectData.Components.EnableAsyncUpdates = false;
 
             var comp = projectData.Components.FirstOrDefault(x => x.Name == "WithReference");
             var param = new SimParameter("A", "unit", 99.9)
@@ -605,7 +602,6 @@ namespace SIMULTAN.Tests.Parameters
         public void ParameterChangeToReferencing()
         {
             LoadProject(parameterProject);
-            projectData.Components.EnableAsyncUpdates = false;
 
             var comp = projectData.Components.FirstOrDefault(x => x.Name == "WithReference");
             var param = new SimParameter("A", "unit", 99.9)

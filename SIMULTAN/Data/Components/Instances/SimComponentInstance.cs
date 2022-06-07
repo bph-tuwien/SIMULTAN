@@ -83,10 +83,10 @@ namespace SIMULTAN.Data.Components
         /// <summary>
         /// Stores the network element id until all networks have been loaded. Afterwards: Always SimObjectId.Empty
         /// </summary>
-        public SimObjectId LoadingNetworkElementId { get; private set; }
+        internal SimObjectId LoadingNetworkElementId { get; private set; }
 
         //parameterName is only used when the id is not set (used for loading legacy projects)
-        private List<(SimId id, string parameterName, double value)> loadingParameterValuesPersistent;
+        internal List<(SimId id, string parameterName, double value)> LoadingParameterValuesPersistent { get; private set; }
 
         #endregion
 
@@ -125,11 +125,19 @@ namespace SIMULTAN.Data.Components
 
                 owner.OnInstanceStateChanged();
                 owner.NotifyChanged();
+
+                if (owner.Factory != null && item is SimInstancePlacementGeometry gp)
+                    owner.Factory.ProjectData.ComponentGeometryExchange.OnPlacementAdded(gp);
             }
             /// <inheritdoc />
             protected override void RemoveItem(int index)
             {
                 owner.NotifyWriteAccess();
+
+                var oldItem = this[index];
+
+                if (owner.Factory != null && oldItem is SimInstancePlacementGeometry gp)
+                    owner.Factory.ProjectData.ComponentGeometryExchange.OnPlacementRemoved(gp);
 
                 UnsetValue(this[index]);
                 base.RemoveItem(index);
@@ -142,7 +150,11 @@ namespace SIMULTAN.Data.Components
                 owner.NotifyWriteAccess();
 
                 foreach (var pl in this)
+                {
+                    if (owner.Factory != null && pl is SimInstancePlacementGeometry gp)
+                        owner.Factory.ProjectData.ComponentGeometryExchange.OnPlacementRemoved(gp);
                     UnsetValue(pl);
+                }
 
                 base.ClearItems();
                 owner.OnInstanceStateChanged();
@@ -156,12 +168,18 @@ namespace SIMULTAN.Data.Components
 
                 owner.NotifyWriteAccess();
 
+                if (owner.Factory != null && this[index] is SimInstancePlacementGeometry gp)
+                    owner.Factory.ProjectData.ComponentGeometryExchange.OnPlacementRemoved(gp);
+
                 UnsetValue(this[index]);
                 base.SetItem(index, item);
                 SetValue(item);
 
                 owner.OnInstanceStateChanged();
                 owner.NotifyChanged();
+
+                if (owner.Factory != null && item is SimInstancePlacementGeometry gpNew)
+                    owner.Factory.ProjectData.ComponentGeometryExchange.OnPlacementAdded(gpNew);
             }
 
             #endregion
@@ -259,7 +277,7 @@ namespace SIMULTAN.Data.Components
                     this.NotifyWriteAccess();
 
                     sizeTransfer = value.Clone();
-                    this.ApplySizeTransferSettings();
+                    this.InstanceSize = this.ApplySizeTransferSettings(this.instanceSize);
                     this.NotifyPropertyChanged(nameof(SizeTransfer));
                     this.NotifyChanged();
                 }
@@ -278,7 +296,7 @@ namespace SIMULTAN.Data.Components
         public SimInstanceState State
         {
             get { return this.state; }
-            set
+            internal set
             {
                 if (this.state != value)
                 {
@@ -352,7 +370,7 @@ namespace SIMULTAN.Data.Components
                     this.InstancePathLength = GetPathLength(this.instancePath);
 
                     if (SizeTransfer != null && SizeTransfer.Any(x => x.Source == SimInstanceSizeTransferSource.Path))
-                        this.ApplySizeTransferSettings();
+                        this.InstanceSize = this.ApplySizeTransferSettings(this.instanceSize);
                 }
             }
         }
@@ -371,7 +389,7 @@ namespace SIMULTAN.Data.Components
                 this.NotifyChanged();
 
                 if (SizeTransfer != null && SizeTransfer.Any(x => x.Source == SimInstanceSizeTransferSource.Path))
-                    ApplySizeTransferSettings();
+                    this.InstanceSize = ApplySizeTransferSettings(this.instanceSize);
             }
         }
         private double instancePathLength;
@@ -381,15 +399,51 @@ namespace SIMULTAN.Data.Components
         #region PROPERTIES: Instance Parameters
 
         /// <summary>
-        /// Spezifies whether parameter values may be propagated to this instance.
-        /// This property gets set by changes to the ▼ parameter of the component.
-        /// A parameter value of 0 results in False, all other values in True.
+        /// Specifies whether parameter values may be propagated to this instance.
         /// 
         /// This setting is used in combination with <see cref="SimParameter.InstancePropagationMode"/> to identify 
         /// if a parameter value change should be propagated. When this property changes to True, a reevaluation of
         /// all parameters is performed.
         /// </summary>
-        public bool PropagateParameterChanges { get; private set; } = false;
+        public bool PropagateParameterChanges 
+        {
+            get => propagateParameterChanges;
+            set
+            {
+                if (propagateParameterChanges != value)
+                {
+                    this.propagateParameterChanges = value;
+
+                    // if propagate, update parameters and notify
+                    if (propagateParameterChanges && Component != null)
+                    {
+                        foreach (var updateParam in Component.Parameters)
+                        {
+                            if ((
+                                 updateParam.InstancePropagationMode == SimParameterInstancePropagation.PropagateAlways ||
+                                 updateParam.InstancePropagationMode == SimParameterInstancePropagation.PropagateIfInstance
+                                ) &&
+                                this.InstanceParameterValuesPersistent.Contains(updateParam))
+                            {
+                                this.InstanceParameterValuesPersistent.SetWithoutNotify(updateParam, updateParam.ValueCurrent);
+                            }
+                        }
+                        if (Component.Factory != null)
+                        {
+                            Component.Factory.ProjectData.ComponentGeometryExchange.OnParameterValueChanged(
+                                Component.Parameters.Where(x =>
+                                    x.InstancePropagationMode == SimParameterInstancePropagation.PropagateAlways ||
+                                    x.InstancePropagationMode == SimParameterInstancePropagation.PropagateIfInstance),
+                                this
+                                );
+                        }
+                    }
+
+                    NotifyPropertyChanged(nameof(PropagateParameterChanges));
+                }
+            }
+        }
+        private bool propagateParameterChanges = true;
 
         /// <summary>
         /// Stores the persistent parameter values of each parameter. The user may change those values by using the [Parameter] operator.
@@ -525,13 +579,14 @@ namespace SIMULTAN.Data.Components
         /// Id of a network element. 
         /// When set to <see cref="SimObjectId.Empty"/>, no <see cref="SimInstancePlacementNetwork"/> is created
         /// </param>
+        /// <param name="propagateParamterChanges">If the parameters changes should be propagated</param>
         /// <param name="_i_path">The path (geometric information) of the instance</param>
         /// <param name="parameterValuesPersistent">A list of all persistent parameter values present in this instance</param>
         internal SimComponentInstance(long localId, string name, SimInstanceType instanceType, SimInstanceState state,
                                        (int fileId, ulong geometryId, List<ulong> relatedIds)? geometryRef,
                                        Quaternion instanceRotation,
                                        SimInstanceSize instanceSize, SimInstanceSizeTransferDefinition sizeTransfer, SimObjectId networkElementId,
-                                       List<Point3D> _i_path, List<(SimId id, string parameterName, double value)> parameterValuesPersistent)
+                                       List<Point3D> _i_path, List<(SimId id, string parameterName, double value)> parameterValuesPersistent, bool propagateParamterChanges)
             : base(new SimId(localId))
         {
             this.Placements = new PlacementCollection(this);
@@ -539,7 +594,7 @@ namespace SIMULTAN.Data.Components
             this.InstanceParameterValuesTemporary = new SimInstanceParameterCollectionTemporary(this);
             this.InstanceParameterValuesPersistent = new SimInstanceParameterCollectionPersistent(this);
 
-            this.loadingParameterValuesPersistent = parameterValuesPersistent;
+            this.LoadingParameterValuesPersistent = parameterValuesPersistent;
 
             this.Name = name;
             this.State = state;
@@ -558,6 +613,8 @@ namespace SIMULTAN.Data.Components
             this.InstancePath = new List<Point3D>(_i_path);
 
             this.SizeTransfer = sizeTransfer;
+
+            this.PropagateParameterChanges = propagateParamterChanges;
         }
 
 
@@ -724,6 +781,8 @@ namespace SIMULTAN.Data.Components
             if (parameter == null)
                 throw new ArgumentNullException(nameof(parameter));
 
+            // ToDo: Do you have to do somethign special if the PropagateParamterChanges property changes?
+            /*
             if (parameter.Name == ReservedParameters.RP_INST_PROPAGATE)
             {
                 this.PropagateParameterChanges = parameter.ValueCurrent != 0;
@@ -738,18 +797,29 @@ namespace SIMULTAN.Data.Components
                             ) &&
                             this.InstanceParameterValuesPersistent.Contains(updateParam))
                         {
-                            this.InstanceParameterValuesPersistent[updateParam] = updateParam.ValueCurrent;
+                            this.InstanceParameterValuesPersistent.SetWithoutNotify(updateParam, updateParam.ValueCurrent);
                         }
+                    }
+
+                    if (Component.Factory != null)
+                    {
+                        Component.Factory.ProjectData.ComponentGeometryExchange.OnParameterValueChanged(
+                            Component.Parameters.Where(x =>
+                                x.InstancePropagationMode == SimParameterInstancePropagation.PropagateAlways ||
+                                x.InstancePropagationMode == SimParameterInstancePropagation.PropagateIfInstance),
+                            this
+                            );
                     }
                 }
             }
+            */
 
             if (parameter.InstancePropagationMode == SimParameterInstancePropagation.PropagateAlways ||
                 (parameter.InstancePropagationMode == SimParameterInstancePropagation.PropagateIfInstance && PropagateParameterChanges))
             {
                 // update value
                 if (this.InstanceParameterValuesPersistent.Contains(parameter))
-                    this.InstanceParameterValuesPersistent[parameter] = parameter.ValueCurrent;
+                    this.InstanceParameterValuesPersistent.SetWithoutNotify(parameter, parameter.ValueCurrent);
             }
         }
 
@@ -764,9 +834,6 @@ namespace SIMULTAN.Data.Components
                 this.InstanceParameterValuesPersistent.Add(parameter, parameter.ValueCurrent);
                 this.InstanceParameterValuesTemporary.Add(parameter, parameter.ValueCurrent);
             }
-
-            if (parameter.Name == ReservedParameters.RP_INST_PROPAGATE)
-                this.PropagateParameterChanges = parameter.ValueCurrent != 0;
         }
 
         internal void RemoveParameter(SimParameter parameter)
@@ -813,14 +880,14 @@ namespace SIMULTAN.Data.Components
 
         #region METHODS: SIZE TRANSFER
 
-        internal void ApplySizeTransferSettings()
+        internal SimInstanceSize ApplySizeTransferSettings(SimInstanceSize size)
         {
-            List<double> sizes = this.instanceSize.ToList();
+            List<double> sizes = size.ToList();
 
             for (int i = 0; i < 6; ++i)
                 sizes[i] = EvaluateSizeTransferItem(SizeTransfer[(SimInstanceSizeIndex)i], sizes[i]);
 
-            this.InstanceSize = SimInstanceSize.FromList(sizes);
+            return SimInstanceSize.FromList(sizes);
         }
         /// <summary>
         /// Returns the evaluated value for a <see cref="SimInstanceSizeTransferDefinitionItem"/> (as stored in <see cref="SizeTransfer"/>).
@@ -855,8 +922,23 @@ namespace SIMULTAN.Data.Components
         /// <param name="sizeTransfers">The new size transfer definition</param>
         public void SetSize(SimInstanceSize size, ISimInstanceSizeTransferDefinition sizeTransfers)
         {
-            this.instanceSize = size; //Set directly, events are called by setting SizeTransfer
-            this.SizeTransfer = sizeTransfers;
+            if (sizeTransfer == null)
+                throw new ArgumentNullException(nameof(sizeTransfer));
+
+            var instSize = size;
+
+            if (sizeTransfer != sizeTransfers)
+            {
+                this.NotifyWriteAccess();
+
+                sizeTransfer = sizeTransfers.Clone();
+                instSize = this.ApplySizeTransferSettings(size);
+
+                this.NotifyPropertyChanged(nameof(SizeTransfer));
+                this.NotifyChanged();
+            }
+
+            this.InstanceSize = instSize;
         }
 
         #endregion
@@ -878,9 +960,9 @@ namespace SIMULTAN.Data.Components
                 else
                     Console.WriteLine("Unable to locate network element for reference");
             }
-            if (this.loadingParameterValuesPersistent != null)
+            if (this.LoadingParameterValuesPersistent != null)
             {
-                foreach (var loadingData in loadingParameterValuesPersistent)
+                foreach (var loadingData in LoadingParameterValuesPersistent)
                 {
                     SimParameter parameter = null;
 
@@ -907,8 +989,46 @@ namespace SIMULTAN.Data.Components
         /// </summary>
         internal void OnInstanceStateChanged()
         {
-            if (this.Component != null)
-                this.Component.OnInstanceStateChanged();
+            using (AccessCheckingDisabler.Disable(Factory))
+            {
+                SimInstanceConnectionState state = SimInstanceConnectionState.Ok;
+                if (Placements.Any(x => x.State != SimInstancePlacementState.Valid))
+                {
+                    state = SimInstanceConnectionState.GeometryNotFound;
+                }
+
+                bool isRealized = false;
+
+                if (InstanceType == SimInstanceType.NetworkEdge)
+                {
+                    isRealized = Placements.Any(x =>
+                    {
+                        if (x is SimInstancePlacementNetwork pln)
+                        {
+                            if (pln.NetworkElement is SimFlowNetworkEdge edge)
+                            {
+                                if (edge.Start.Content != null && edge.End.Content != null)
+                                {
+                                    return edge.Start.Content.State.IsRealized && edge.End.Content.State.IsRealized;
+                                }
+                            }
+                        }
+                        return false;
+                    });
+                }
+                else
+                {
+                    isRealized = Placements.Any(x => x is SimInstancePlacementGeometry);
+                }
+
+                if (State.IsRealized != isRealized || State.ConnectionState != state)
+                {
+                    State = new SimInstanceState(isRealized, state);
+                }
+
+                if (this.Component != null)
+                    this.Component.OnInstanceStateChanged();
+            }
         }
 
         /// <summary>

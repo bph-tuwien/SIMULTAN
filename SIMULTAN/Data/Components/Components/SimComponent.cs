@@ -6,8 +6,8 @@ using SIMULTAN.Excel;
 using SIMULTAN.Exceptions;
 using SIMULTAN.Serializer.DXF;
 using SIMULTAN.Serializer.DXF.DXFEntities;
-using SIMULTAN.Utils.Collections;
 using SIMULTAN.Utils;
+using SIMULTAN.Utils.Collections;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -519,9 +519,6 @@ namespace SIMULTAN.Data.Components
             this.Visibility = SimComponentVisibility.VisibleInProject;
             this.ComponentColor = System.Windows.Media.Color.FromArgb(255, 0, 255, 0);
             this.sorting_type = SimComponentContentSorting.ByName;
-
-            // default parameters
-            AddPropagationParametersForInstancing();
         }
 
         /// <summary>
@@ -825,18 +822,6 @@ namespace SIMULTAN.Data.Components
             this.ReferencedAssets_Internal = new ObservableCollection<Asset>();
             // conversation -> do not copy
             this.Conversation = new SimChat();
-        }
-
-        private void AddPropagationParametersForInstancing()
-        {
-            SimParameter p21 = new SimParameter(ReservedParameters.RP_INST_PROPAGATE, "-", 0.0, 0.0, double.MaxValue);
-            p21.IsAutomaticallyGenerated = true;
-            p21.TextValue = "All parameter values are propagated to the persistent instance values";
-            p21.Category |= SimCategory.Communication;
-            p21.Propagation = SimInfoFlow.Automatic;
-            p21.AllowedOperations = SimParameterOperations.EditValue;
-
-            this.Parameters.Add(p21);
         }
 
         private void RebindReferences(SimComponent component, Dictionary<SimComponent, SimComponent> componentCopyRecord)

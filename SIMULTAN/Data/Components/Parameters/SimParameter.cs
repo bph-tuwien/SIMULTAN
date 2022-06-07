@@ -25,7 +25,7 @@ namespace SIMULTAN.Data.Components
     /// 
     /// A parameter can be locked for certain operations. See <see cref="AllowedOperations"/> for details.
     /// 
-    /// Each parameter has a override value stored in each <see cref="SimComponentInstance"/>. Depending on the <see cref="instancePropagationMode"/>,
+    /// Each parameter has a override value stored in each <see cref="SimComponentInstance"/>. Depending on the <see cref="InstancePropagationMode"/>,
     /// the <see cref="ValueCurrent"/> is propagated to the instances.
     /// </summary>
     public class SimParameter : SimObjectNew<ISimManagedCollection>
@@ -238,6 +238,10 @@ namespace SIMULTAN.Data.Components
                     this.NotifyPropertyChanged(nameof(ValueCurrent));
                     UpdateState();
                     this.NotifyChanged();
+
+                    //Notify geometry exchange
+                    if (this.Component != null && this.Component.Factory != null)
+                        this.Component.Factory.ProjectData.ComponentGeometryExchange.OnParameterValueChanged(this);
                 }
             }
         }
@@ -570,7 +574,7 @@ namespace SIMULTAN.Data.Components
                 if (this.AllowedOperations.HasFlag(SimParameterOperations.EditValue))
                     newState |= SimParameterState.ValueNaN;
             }
-            else if (ValueCurrent < ValueMin || ValueCurrent > ValueMax)
+            else if (SanitizedDouble(ValueCurrent) < SanitizedDouble(ValueMin) || SanitizedDouble(ValueCurrent) > SanitizedDouble(ValueMax))
             {
                 if (this.AllowedOperations.HasFlag(SimParameterOperations.EditValue))
                     newState |= SimParameterState.ValueOutOfRange;
@@ -601,6 +605,15 @@ namespace SIMULTAN.Data.Components
             }
 
             State = newState;
+        }
+
+        private double SanitizedDouble(double value)
+        {
+            if (value == double.MaxValue)
+                return double.PositiveInfinity;
+            if (value == double.MinValue)
+                return double.NegativeInfinity;
+            return value;
         }
 
         #endregion

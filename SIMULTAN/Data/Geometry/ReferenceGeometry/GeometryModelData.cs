@@ -40,19 +40,14 @@ namespace SIMULTAN.Data.Geometry
         /// </summary>
         public GeometryModel Model { get; set; } = null;
 
-        private HashSet<ulong> usedIds;
+        private Dictionary<ulong, BaseGeometry> geometryLookup;
+        private ulong nextId = 0;
 
         private HashSet<BaseGeometry> batchAddedGeometry;
         private HashSet<BaseGeometry> batchRemovedGeometry;
         private HashSet<BaseGeometry> batchChangedGeometry;
         private HashSet<BaseGeometry> batchTopologyChangedGeometry;
         private HashSet<GeoReference> batchGeoReferencesChanged;
-
-        /// <summary>
-        /// The offset query object for this model
-        /// </summary>
-        public IOffsetQueryable OffsetQuery { get { return offsetQuery; } }
-        private IOffsetQueryable offsetQuery;
 
         /// <summary>
         /// Returns a list of all Vertex instances
@@ -238,11 +233,9 @@ namespace SIMULTAN.Data.Geometry
         /// <summary>
         /// Initializes a new instance of the GeometryModelData class
         /// </summary>
-        /// <param name="offsetQuery">The query object for offset surface offsets</param>
-        public GeometryModelData(IOffsetQueryable offsetQuery)
+        public GeometryModelData()
         {
-            this.offsetQuery = offsetQuery;
-            this.usedIds = new HashSet<ulong>();
+            geometryLookup = new Dictionary<ulong, BaseGeometry>();
 
             Vertices = new ObservableCollection<Vertex>();
             Edges = new ObservableCollection<Edge>();
@@ -261,7 +254,17 @@ namespace SIMULTAN.Data.Geometry
 
             ConnectEvents();
 
-            this.OffsetModel = new OffsetModel(this, offsetQuery);
+            this.OffsetModel = new OffsetModel(this);
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the GeometryModelData class that also sets the initial next id.
+        /// This should only be used when loading from file.
+        /// </summary>
+        /// <param name="nextId">The next id to use for new BaseGeometries.</param>
+        public GeometryModelData(ulong nextId): this()
+        {
+            this.nextId = nextId;
         }
 
 
@@ -308,6 +311,7 @@ namespace SIMULTAN.Data.Geometry
                     {
                         var g = ((BaseGeometry)item);
                         oldGeometry.Add(g);
+                        FreeId(g.Id);
                         g.GeometryChanged -= Geometry_GeometryChanged;
                         g.TopologyChanged -= Geometry_TopologyChanged;
 
@@ -333,8 +337,10 @@ namespace SIMULTAN.Data.Geometry
                     if (item is BaseGeometry)
                     {
                         var g = (BaseGeometry)item;
-                        if (!this.usedIds.Contains(g.Id))
-                            this.usedIds.Add(g.Id);
+                        if (!geometryLookup.ContainsKey(g.Id))
+                        {
+                            RegisterId(g.Id, g);
+                        }
 
                         g.GeometryChanged += Geometry_GeometryChanged;
                         g.TopologyChanged += Geometry_TopologyChanged;
@@ -347,9 +353,12 @@ namespace SIMULTAN.Data.Geometry
                     else if (item is Layer)
                     {
                         var l = (Layer)item;
-                        if (!this.usedIds.Contains(l.Id))
-                            this.usedIds.Add(l.Id);
+                        if (!geometryLookup.ContainsKey(l.Id))
+                        {
+                            // add null if it's a layer just to keep track of the id
+                            RegisterId(l.Id, null);
                     }
+                }
                 }
 
                 if (HandleConsistency)
@@ -382,8 +391,7 @@ namespace SIMULTAN.Data.Geometry
             }
             if (e.NewItems != null)
                 foreach (var item in e.NewItems)
-                    RegisterId(((Layer)item).Id);
-
+                    RegisterId(((Layer)item).Id, null);
         }
 
         #endregion
@@ -391,54 +399,43 @@ namespace SIMULTAN.Data.Geometry
 
 
         /// <summary>
-        /// Returns the next free unique id
+        /// Returns the next free unique id.
+        /// Call <see cref="RegisterId(ulong, BaseGeometry)"/> to register the id and geometry afterwards if so necessary.
         /// </summary>
+        /// <param name="increment">If the id counter should be incremented.</param>
         /// <returns>A free id</returns>
-        public ulong GetFreeId(bool register = true)
+        public ulong GetFreeId(bool increment = true)
         {
-            for (ulong i = 0; i < (ulong)usedIds.Count; ++i)
-            {
-                if (!usedIds.Contains(i))
-                {
-                    if (register)
-                        usedIds.Add(i);
-                    return i;
-                }
-            }
-
-            var newId = (ulong)usedIds.Count;
-            if (register)
-                usedIds.Add(newId);
+            var newId = nextId;
+            if(increment)
+                nextId++;
             return newId;
         }
 
-        /// <summary>
-        /// Returns the maximum used unique id
-        /// </summary>
-        /// <returns>Maximum used unique id</returns>
-        public ulong GetMaxUsedId()
-        {
-            return (ulong)usedIds.Count;
-        }
 
         /// <summary>
-        /// Registes an id as used.
+        /// Registers an id as used.
         /// </summary>
         /// <param name="id">The id</param>
-        public void RegisterId(ulong id)
+        /// <param name="geometry">The geometry to register, use null if it is a layer.</param>
+        public void RegisterId(ulong id, BaseGeometry geometry)
         {
-            if (usedIds.Contains(id))
+            if (geometryLookup.ContainsKey(id))
                 throw new ArgumentException("Id was already registered");
 
-            usedIds.Add(id);
+            geometryLookup.Add(id, geometry);
+
+            if (id >= nextId)
+                nextId = id + 1;
         }
+
         /// <summary>
         /// Frees an id.
         /// </summary>
         /// <param name="id">The id</param>
         public void FreeId(ulong id)
         {
-            usedIds.Remove(id);
+            geometryLookup.Remove(id);
         }
 
         /// <summary>
@@ -517,7 +514,7 @@ namespace SIMULTAN.Data.Geometry
         /// <returns></returns>
         public GeometryModelData Clone()
         {
-            GeometryModelData model = new GeometryModelData(this.offsetQuery);
+            GeometryModelData model = new GeometryModelData();
             GeometryModelAlgorithms.CopyContent(this, model, true);
 
             //Copy linked models
@@ -571,33 +568,10 @@ namespace SIMULTAN.Data.Geometry
         /// <returns>The BaseGeometry or null when the id doesn't exist</returns>
         public BaseGeometry GeometryFromId(ulong id)
         {
-            BaseGeometry g = this.Vertices.FirstOrDefault(x => x.Id == id);
-            if (g != null)
-                return g;
-
-            g = this.Edges.FirstOrDefault(x => x.Id == id);
-            if (g != null)
-                return g;
-
-            g = this.EdgeLoops.FirstOrDefault(x => x.Id == id);
-            if (g != null)
-                return g;
-
-            g = this.Faces.FirstOrDefault(x => x.Id == id);
-            if (g != null)
-                return g;
-
-            g = this.Volumes.FirstOrDefault(x => x.Id == id);
-            if (g != null)
-                return g;
-
-            g = this.ProxyGeometries.FirstOrDefault(x => x.Id == id);
-            if (g != null)
-                return g;
-
-            g = this.Polylines.FirstOrDefault(x => x.Id == id);
-            if (g != null)
-                return g;
+            if(geometryLookup.TryGetValue(id, out var geometry))
+            {
+                return geometry;
+            }
 
             return null;
         }

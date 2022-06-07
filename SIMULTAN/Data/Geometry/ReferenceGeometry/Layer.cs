@@ -214,15 +214,15 @@ namespace SIMULTAN.Data.Geometry
             {
                 foreach (var oi in e.OldItems)
                 {
-                    ((Layer)oi).Parent = null;
                     this.Model.FreeId(((Layer)oi).Id);
+                    ((Layer)oi).Parent = null;
                 }
             }
             if (e.NewItems != null)
             {
                 foreach (var oi in e.NewItems)
                 {
-                    this.Model.RegisterId(((Layer)oi).Id);
+                    this.Model.RegisterId(((Layer)oi).Id, null);
                 }
             }
 

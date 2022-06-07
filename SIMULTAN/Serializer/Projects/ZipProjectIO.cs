@@ -6,8 +6,8 @@ using SIMULTAN.Exceptions;
 using SIMULTAN.Projects;
 using SIMULTAN.Projects.ManagedFiles;
 using SIMULTAN.Serializer.DXF;
-using SIMULTAN.Utils.Files;
 using SIMULTAN.Utils;
+using SIMULTAN.Utils.Files;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -546,10 +546,6 @@ namespace SIMULTAN.Serializer.Projects
             // ~5a. unpack the values file in order to change the locations of the values
             FileInfo value_file_copy = files_copy.FirstOrDefault(x => string.Equals(x.Extension, ParamStructFileExtensions.FILE_EXT_MULTIVALUES, StringComparison.InvariantCultureIgnoreCase));
             FileInfo comp_file_copy = files_copy.FirstOrDefault(x => string.Equals(x.Extension, ParamStructFileExtensions.FILE_EXT_COMPONENTS, StringComparison.InvariantCultureIgnoreCase));
-            if (value_file_copy != null)
-            {
-
-            }
 
             // ~5b. unpack the component file in order to change the paths for the contained resources and the locations of the components
             if (comp_file_copy != null && value_file_copy != null)

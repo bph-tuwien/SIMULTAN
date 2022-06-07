@@ -161,7 +161,7 @@ namespace SIMULTAN.Data.Components
             foreach (SimMultiValueBigTable bt in tables)
             {
                 bt.ApplyAggregationFunction(
-                    SimAggregationFunctionExtensions.FromStringRepresentation(p_aggreg_fct.TextValue), orientation_hrz);
+                    SimAggregationFunctionExtensions.FromStringRepresentation(p_aggreg_fct.TextValue), !orientation_hrz);
             }
 
             if (tables != null && tables.Count > 0)

@@ -584,7 +584,7 @@ namespace SIMULTAN.Data.Components
         /// <param name="dispatcher">Dispatcher used to write back results. May be needed when the calculation is executed in a separate thread</param>
         public void Calculate(SimMultiValueCollection valuefieldCollection,
             TableNameProviderDelegate tableNameProvider = null, TableNameProviderDelegate tableNameAverageProvider = null,
-            Dictionary<SimParameter, SimParameter> parameterReplacements = null, 
+            Dictionary<SimParameter, SimParameter> parameterReplacements = null,
             Dispatcher dispatcher = null)
         {
             if (this.IsMultiValueCalculation)

@@ -130,6 +130,7 @@
     <Compile Include="Data\Geometry\GeoReferencing\GeoRefPoint.cs" />
     <Compile Include="Data\Geometry\GeoReferencing\GeoRefTransform.cs" />
     <Compile Include="Data\Geometry\GeoReferencing\UTMCoord.cs" />
+    <Compile Include="Data\Geometry\ImporterWarningMessage.cs" />
     <Compile Include="Data\Geometry\SimGeometryModelCollection.cs" />
     <Compile Include="Data\SitePlanner\SitePlannerBuildingCollection.cs" />
     <Compile Include="Data\Users\IAuthenticationService.cs" />
@@ -141,39 +142,23 @@
     <Compile Include="Exceptions\ProjectIOException.cs" />
     <Compile Include="Exceptions\PropertyUnsupportedValueException.cs" />
     <Compile Include="Exchange\ComponentGeometryExchange.cs" />
-    <Compile Include="Exchange\ComponentSitePlannerExchange.cs" />
-    <Compile Include="Exchange\ConnectorInteraction\ComponentGeometryContainer.cs" />
-    <Compile Include="Exchange\ConnectorInteraction\ConnectedGeometryManager.cs" />
-    <Compile Include="Exchange\ConnectorInteraction\ConnectorAlgorithms.cs" />
-    <Compile Include="Exchange\ConnectorInteraction\ConnectorManager.cs" />
-    <Compile Include="Exchange\ConnectorInteraction\GeometricTransformations.cs" />
-    <Compile Include="Exchange\Connectors\Attached\ConnectorAttachedToBase.cs" />
-    <Compile Include="Exchange\Connectors\Attached\ConnectorAttachedToVolume.cs" />
-    <Compile Include="Exchange\Connectors\ConnectorConnectionState.cs" />
-    <Compile Include="Exchange\Connectors\Connector.cs" />
-    <Compile Include="Exchange\Connectors\ConnectorBase.cs" />
-    <Compile Include="Exchange\Connectors\Descriptive\ConnectorToBaseGeometry.cs" />
-    <Compile Include="Exchange\Connectors\Descriptive\ConnectorToComplex.cs" />
-    <Compile Include="Exchange\Connectors\Descriptive\ConnectorToEdge.cs" />
-    <Compile Include="Exchange\Connectors\Descriptive\ConnectorToEdgeLoop.cs" />
-    <Compile Include="Exchange\Connectors\Descriptive\ConnectorToFace.cs" />
-    <Compile Include="Exchange\Connectors\Descriptive\ConnectorToVertex.cs" />
-    <Compile Include="Exchange\Connectors\Descriptive\ConnectorToVolume.cs" />
-    <Compile Include="Exchange\Connectors\Parameterizing\ConnectorParameterizingToBuilding.cs" />
-    <Compile Include="Exchange\Connectors\Prescriptive\ConnectorPrescriptiveToFace.cs" />
-    <Compile Include="Exchange\Connectors\Prescriptive\InstanceConnectorToBaseGeometry.cs" />
-    <Compile Include="Exchange\Connectors\Representative\ConnectorRepresentativeToBase.cs" />
-    <Compile Include="Exchange\Connectors\Representative\ConnectorRepresentativeToPolyline.cs" />
-    <Compile Include="Exchange\Connectors\Representative\ConnectorRepresentativeToVertex.cs" />
-    <Compile Include="Exchange\Connectors\Representative\ConnectorToGeometryModel.cs" />
-    <Compile Include="Exchange\DummyComponentGeometryExchange.cs" />
-    <Compile Include="Exchange\DummyNetworkGeometryExchange.cs" />
-    <Compile Include="Exchange\IComponentGeometryExchange.cs" />
-    <Compile Include="Exchange\IComponentSitePlannerExchange.cs" />
-    <Compile Include="Exchange\ImportWarningMessage.cs" />
-    <Compile Include="Exchange\INetworkGeometryExchange.cs" />
-    <Compile Include="Exchange\NetworkConverter.cs" />
-    <Compile Include="Exchange\NetworkGeometryExchange.cs" />
+    <Compile Include="Exchange\ExchangeHelpers.cs" />
+    <Compile Include="Exchange\GeometryConnectors\BaseGeometryConnector.cs" />
+    <Compile Include="Exchange\GeometryConnectors\EdgeConnector.cs" />
+    <Compile Include="Exchange\GeometryConnectors\FaceConnector.cs" />
+    <Compile Include="Exchange\GeometryConnectors\GeometryModelConnector.cs" />
+    <Compile Include="Exchange\GeometryConnectors\VertexConnector.cs" />
+    <Compile Include="Exchange\GeometryConnectors\VolumeConnector.cs" />
+    <Compile Include="Exchange\GeometryConnectors\VolumeFaceConnector.cs" />
+    <Compile Include="Exchange\GeometryConnectors\VolumeFaceHoleConnector.cs" />
+    <Compile Include="Exchange\GeometryConnectors\VolumeVolumeConnector.cs" />
+    <Compile Include="Exchange\NetworkConnectors\BaseNetworkConnector.cs" />
+    <Compile Include="Exchange\NetworkConnectors\NetworkColors.cs" />
+    <Compile Include="Exchange\NetworkConnectors\NetworkEdgeConnector.cs" />
+    <Compile Include="Exchange\NetworkConnectors\NetworkGeometryModelConnector.cs" />
+    <Compile Include="Exchange\NetworkConnectors\NetworkNodeConnector.cs" />
+    <Compile Include="Exchange\SitePlannerConnectors\SitePlannerBuildingConnector.cs" />
+    <Compile Include="Exchange\SitePlannerConnectors\SitePlannerProjectConnector.cs" />
     <Compile Include="Legacy\ComponentToMultiValueReference.cs" />
     <Compile Include="Legacy\RepairMissingValueFieldReferences.cs" />
     <Compile Include="Projects\CompactProject.cs" />
@@ -205,7 +190,6 @@
     <Compile Include="Data\Geometry\DerivedColor.cs" />
     <Compile Include="Data\Geometry\GeometryModel.cs" />
     <Compile Include="Data\Geometry\GeometrySettings.cs" />
-    <Compile Include="Data\Geometry\ILoaderGeometryExchange.cs" />
     <Compile Include="Data\Geometry\OffsetGeometry\IOffsetQueryable.cs" />
     <Compile Include="Data\Geometry\OffsetGeometry\OffsetFace.cs" />
     <Compile Include="Data\Geometry\OffsetGeometry\OffsetModel.cs" />
@@ -398,7 +382,6 @@
     <Compile Include="Serializer\Projects\ZipProjectIO.cs" />
     <Compile Include="Serializer\Projects\ZipUtils.cs" />
     <Compile Include="Serializer\SimGeo\IdBasedGeometryReference.cs" />
-    <Compile Include="Serializer\SimGeo\ILoaderGeometryViewerInstance.cs" />
     <Compile Include="Serializer\SimGeo\SimGeoIO.cs" />
     <Compile Include="Serializer\SpecializedExporters\Errors\RequiredParameters.cs" />
     <Compile Include="Serializer\SpecializedExporters\ExportForSimulation.cs" />
@@ -433,6 +416,7 @@
     <Compile Include="Utils\Collections\ElectivelyObservableCollection.cs" />
     <Compile Include="Utils\Collections\IReadOnlyObservableCollection.cs" />
     <Compile Include="Utils\Collections\IReadonlyObservableDictionary.cs" />
+    <Compile Include="Utils\Collections\MultiDictionary.cs" />
     <Compile Include="Utils\Collections\ObservableDictionary.cs" />
     <Compile Include="Utils\CommonExtensions.cs" />
     <Compile Include="Utils\DefaultNameProvider.cs" />
@@ -466,6 +450,7 @@
   <ItemGroup>
     <WCFMetadata Include="Connected Services\" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PreBuildEvent>

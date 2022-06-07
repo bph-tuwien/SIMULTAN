@@ -92,7 +92,7 @@ namespace SIMULTAN.Projects
         }
 
         /// <summary>
-        /// Converts a given strig read from a DXF file to a resource reference.
+        /// Converts a given string read from a DXF file to a resource reference.
         /// </summary>
         /// <param name="dxf">Reference in string representation read from DXF file</param>
         /// <param name="assetManager">AssetManager which contains</param>

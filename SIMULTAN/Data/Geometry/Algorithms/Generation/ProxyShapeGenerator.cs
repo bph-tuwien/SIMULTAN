@@ -118,6 +118,8 @@ namespace SIMULTAN.Data.Geometry
                 20, 21, 22,
                 20, 22, 23,
             };
+
+            proxy.NotifyGeometryChanged();
         }
 
         /// <summary>
@@ -163,6 +165,9 @@ namespace SIMULTAN.Data.Geometry
         /// <param name="projectData">ProjectData used as cache for the geometry data. Before the geometry is imported from file the cache is checked if it already contains the data.</param>
         public static void UpdateProxyGeometryCombined(ProxyGeometry proxy, IEnumerable<FileInfo> paths, ProjectData projectData)
         {
+            if (proxy.ModelGeometry != null)
+                proxy.ModelGeometry.StartBatchOperation();
+
             if (proxy.Positions == null)
                 proxy.Positions = new List<Point3D>();
             else
@@ -190,6 +195,11 @@ namespace SIMULTAN.Data.Geometry
                 proxy.Normals.AddRange(result.Normals);
                 proxy.Indices.AddRange(result.Indices.Select(x => x + lastIndex));
             }
+
+            proxy.NotifyGeometryChanged();
+
+            if (proxy.ModelGeometry != null)
+                proxy.ModelGeometry.EndBatchOperation();
         }
     }
 }

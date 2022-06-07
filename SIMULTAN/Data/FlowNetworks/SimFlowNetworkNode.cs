@@ -398,9 +398,10 @@ namespace SIMULTAN.Data.FlowNetworks
 
         internal void CommunicatePositionUpdateToContent(bool propagateToEdges)
         {
-            if (this.Content != null)
+            if (this.Content != null && this.RepresentationReference == GeometricReference.Empty)
             {
-                var placement = (SimInstancePlacementNetwork)this.Content.Placements.FirstOrDefault(x => x is SimInstancePlacementNetwork p && p.NetworkElement == this);
+                var placement = (SimInstancePlacementNetwork)this.Content.Placements.FirstOrDefault(
+                    x => x is SimInstancePlacementNetwork p && p.NetworkElement == this);
                 if (placement != null)
                 {
                     var nwOffset = GetOffset();

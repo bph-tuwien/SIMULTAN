@@ -35,7 +35,7 @@ namespace SIMULTAN.Data.Components
         /// The component prescribes the offsets from the reference plane of all 2d faces its instances are associated with.
         /// It represents the concept of wall construction (Aufbau) in building physics.
         /// </summary>
-        Attributes2D = 4,
+        AttributesFace = 4,
         /// <summary>
         /// The component's instances represent the placement of HVAC+MEP components within an architectural space (Verortung).
         /// The instances carry reserved size parameters that govern the representing geometry's size.
@@ -54,6 +54,14 @@ namespace SIMULTAN.Data.Components
         /// <summary>
         /// The component holds (pointer) parameters that can be applied to the target object.
         /// </summary>
-        BuiltStructure = 8
+        BuiltStructure = 8,
+        /// <summary>
+        /// Attached to a geometric edge
+        /// </summary>
+        AttributesEdge = 11,
+        /// <summary>
+        /// Attached to a geometric vertex
+        /// </summary>
+        AttributesPoint = 12,
     }
 }

@@ -4,8 +4,8 @@ using SIMULTAN.Data.Components;
 using SIMULTAN.Data.MultiValues;
 using SIMULTAN.Serializer.DXF;
 using SIMULTAN.Serializer.DXF.DXFEntities;
-using SIMULTAN.Utils.Collections;
 using SIMULTAN.Utils;
+using SIMULTAN.Utils.Collections;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -802,7 +802,7 @@ namespace SIMULTAN.Excel
             { "DESCRIBES", SimInstanceType.Entity3D },
             { "DESCRIBES_3D", SimInstanceType.GeometricVolume },
             { "DESCRIBES_2DorLESS", SimInstanceType.GeometricSurface },
-            { "ALIGNED_WITH", SimInstanceType.Attributes2D },
+            { "ALIGNED_WITH", SimInstanceType.AttributesFace },
             { "CONTAINED_IN", SimInstanceType.NetworkNode },
             { "CONNECTS", SimInstanceType.NetworkEdge },
             { "GROUPS", SimInstanceType.Group },
@@ -823,11 +823,11 @@ namespace SIMULTAN.Excel
             if (_o is double) return DXFDecoder.DoubleToString((double)_o, "F8") + ParamStructTypes.DELIMITER_WITHIN_ENTRY + typeof(double).ToString();
             if (_o is bool b) return b.ToString() + ParamStructTypes.DELIMITER_WITHIN_ENTRY + typeof(bool).ToString();
 
-            if (_o is SimCategory) 
-                return ((SimCategory)_o).ToString() + ParamStructTypes.DELIMITER_WITHIN_ENTRY 
+            if (_o is SimCategory)
+                return ((SimCategory)_o).ToString() + ParamStructTypes.DELIMITER_WITHIN_ENTRY
                     + typeof(SimCategory).GetCustomAttribute<DXFSerializerTypeNameAttribute>().Name;
             if (_o is SimInfoFlow)
-                return ((SimInfoFlow)_o).ToString() + ParamStructTypes.DELIMITER_WITHIN_ENTRY 
+                return ((SimInfoFlow)_o).ToString() + ParamStructTypes.DELIMITER_WITHIN_ENTRY
                     + typeof(SimInfoFlow).GetCustomAttribute<DXFSerializerTypeNameAttribute>().Name;
 
             StringBuilder sb_o = new StringBuilder();
@@ -908,7 +908,7 @@ namespace SIMULTAN.Excel
             {
                 return (SimInfoFlow)(Enum.Parse(typeof(SimInfoFlow), to_parse[0]));
             }
-            else if ((type == typeof(SimInstanceState) || type == typeof(InstanceStateFilter)) 
+            else if ((type == typeof(SimInstanceState) || type == typeof(InstanceStateFilter))
                 && to_parse.Length > 4)
             {
                 SimInstanceType instanceType;
@@ -1983,9 +1983,9 @@ namespace SIMULTAN.Excel
                         if (comp2.ParentContainer == null)
                             slotMatches |= comp2.CurrentSlot.Base == filterSplit.slot;
                         else
-                            slotMatches |= (comp2.ParentContainer.Slot.SlotBase.Base == filterSplit.slot && 
+                            slotMatches |= (comp2.ParentContainer.Slot.SlotBase.Base == filterSplit.slot &&
                                 (filterSplit.extension == "" || comp2.ParentContainer.Slot.SlotExtension == filterSplit.extension));
-                        
+
                         if (callStack != null && callStack.Count > 0)
                         {
                             var lastStackEntry = callStack.Peek();
@@ -2063,7 +2063,7 @@ namespace SIMULTAN.Excel
                 return new double[,] { { parameter.ValueCurrent } };
             }
 
-            return new double[,]{ };
+            return new double[,] { };
         }
 
         #endregion

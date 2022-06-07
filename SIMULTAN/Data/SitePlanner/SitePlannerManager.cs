@@ -1,4 +1,5 @@
 ﻿using SIMULTAN.Data.Assets;
+using SIMULTAN.Projects;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -30,6 +31,8 @@ namespace SIMULTAN.Data.SitePlanner
     /// </summary>
     public class SitePlannerManager
     {
+        public ProjectData ProjectData { get; }
+
         private HashSet<GeoMap> OpenGeoMaps { get; set; }
         private HashSet<SitePlannerProject> OpenSitePlannerProjects { get; set; }
 
@@ -56,8 +59,10 @@ namespace SIMULTAN.Data.SitePlanner
         /// <summary>
         /// Initializes a new instance of the SitePlannerManager class
         /// </summary>
-        public SitePlannerManager()
+        public SitePlannerManager(ProjectData projectData)
         {
+            this.ProjectData = projectData;
+
             GeoMaps = new ObservableCollection<GeoMap>();
             SitePlannerProjects = new ObservableCollection<SitePlannerProject>();
 
@@ -194,6 +199,9 @@ namespace SIMULTAN.Data.SitePlanner
         /// </summary>
         public void ClearRecord()
         {
+            foreach (var project in SitePlannerProjects)
+                ProjectData.ComponentGeometryExchange.RemoveSiteplannerProject(project);
+
             this.GeoMaps.Clear();
             this.SitePlannerProjects.Clear();
         }

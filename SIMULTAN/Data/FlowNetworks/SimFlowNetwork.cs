@@ -1,6 +1,8 @@
-﻿using SIMULTAN.Data.Components;
-using SIMULTAN.Data;
+﻿using SIMULTAN.Data;
+using SIMULTAN.Data.Components;
 using SIMULTAN.Data.Users;
+using SIMULTAN.Serializer.DXF;
+using SIMULTAN.Utils;
 using SIMULTAN.Utils.Collections;
 using System;
 using System.Collections.Generic;
@@ -11,8 +13,6 @@ using System.Linq;
 using System.Text;
 using System.Windows;
 using System.Windows.Data;
-using SIMULTAN.Serializer.DXF;
-using SIMULTAN.Utils;
 
 namespace SIMULTAN.Data.FlowNetworks
 {
@@ -426,7 +426,7 @@ namespace SIMULTAN.Data.FlowNetworks
             : base(_original)
         {
             this.manager = _original.manager;
-            this.index_of_geometric_rep_file = _original.index_of_geometric_rep_file;
+            this.index_of_geometric_rep_file = -1;
 
             this.contained_edges = new ObservableDictionary<long, SimFlowNetworkEdge>();
             this.contained_nodes = new ObservableDictionary<long, SimFlowNetworkNode>();
@@ -489,6 +489,10 @@ namespace SIMULTAN.Data.FlowNetworks
                 this.contained_edges.Add(edge_copy.ID.LocalId, edge_copy);
             }
             this.contained_edges.CollectionChanged += ContainedEdges_CollectionChanged;
+
+            // reset to -1
+            this.node_start_id = -1;
+            this.node_end_id = -1;
 
             // copy the references to the copies of the start and end nodes
             if (id_old_node_new.ContainsKey(_original.node_start_id))

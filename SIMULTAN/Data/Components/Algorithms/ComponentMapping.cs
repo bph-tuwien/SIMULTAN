@@ -319,6 +319,7 @@ namespace SIMULTAN.Data.Components
 
         #region to OTHERS: assets
 
+        //Missleading: Can only create Document Assets while GetAsset also returns GeometryAssets
         public static Asset AddAsset(this SimComponent _comp, ResourceFileEntry _resource, string _content_id)
         {
             var asset = _comp.GetAsset(_resource, _content_id);
