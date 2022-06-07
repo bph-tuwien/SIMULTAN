@@ -437,6 +437,7 @@
     <Compile Include="Utils\Random\NormalDistributedRandomizer.cs" />
     <Compile Include="Utils\Range3D.cs" />
     <Compile Include="Utils\RowColumnRange.cs" />
+    <Compile Include="Utils\ServicesProvider.cs" />
     <Compile Include="Utils\Streams\DelimiterStreamReader.cs" />
     <Compile Include="Utils\Streams\DelimiterStreamWriter.cs" />
     <Compile Include="Utils\UndoRedo\CollectionUndoItem.cs" />
