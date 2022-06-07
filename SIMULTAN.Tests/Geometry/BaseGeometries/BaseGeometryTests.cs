@@ -29,11 +29,11 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
 
             var data = GeometryModelHelper.EmptyModelWithEvents();
             projectData.GeometryModels.AddGeometryModel(data.model);
-            var v0 = VertexWithEvents(new Vertex(data.layer, Lang.GEO_VERTEX_DEFAULTNAME, new Point3D(0, 0, 0)));
-            var v1 = new Vertex(data.layer, Lang.GEO_VERTEX_DEFAULTNAME, new Point3D(0, 2, 0));
-            var v2 = new Vertex(data.layer, Lang.GEO_VERTEX_DEFAULTNAME, new Point3D(0, 2, 2));
+            var v0 = VertexWithEvents(new Vertex(data.layer, "Vertex {0}", new Point3D(0, 0, 0))); // Lang.GEO_VERTEX_DEFAULTNAME
+            var v1 = new Vertex(data.layer, "Vertex {0}", new Point3D(0, 2, 0)); // Lang.GEO_VERTEX_DEFAULTNAME
+            var v2 = new Vertex(data.layer, "Vertex {0}", new Point3D(0, 2, 2)); // Lang.GEO_VERTEX_DEFAULTNAME
 
-            var e0 = EdgeWithEvents(new Edge(data.layer, Lang.GEO_EDGE_DEFAULTNAME, new Vertex[] { v1, v2 }));
+            var e0 = EdgeWithEvents(new Edge(data.layer, "Edge {0}", new Vertex[] { v1, v2 })); // Lang.GEO_EDGE_DEFAULTNAME
 
             v0.v.Parent = new GeometryReference(e0.edge, projectData.GeometryModels);
 
