@@ -46,8 +46,7 @@ pipeline {
     	        vsTest testFiles: 'SIMULTAN.Tests\\bin\\Release\\SIMULTAN.Tests.dll'
     	    }
     	}
-      /*
-      stage ('Deploy checks') {
+      stage ('Release checks') {
             when {
               allOf {
                 expression {
@@ -57,19 +56,20 @@ pipeline {
               }
             }
             environment {
+              REPO_NAME = "SIMULTAN.BPH"
             }
             stages {
-              stage ('Deploy-prod') {
+              stage ('GitHub Release') {
                 steps {
                   script {
                     env.STATUS = bat (
-                      script: """ 
-                        """ ,
+                      script: ".\\make_release.ps1",
                       returnStatus: true
                     )
                   }
                 }
               }
+              /*
               stage ('Notify release') {
                 when {
                   expression {
@@ -80,9 +80,9 @@ pipeline {
                   discordSend description: '', successful: currentBuild.resultIsBetterOrEqualTo('SUCCESS'), result: currentBuild.currentResult, title: 'New public version of Simultan released!', webhookURL: "${RELEASE_WEBHOOK}"
                 }
               }
+              */
             }
         }
-        */
     }
     post {
         always {
