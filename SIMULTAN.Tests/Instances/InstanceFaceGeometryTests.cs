@@ -140,16 +140,21 @@ namespace SIMULTAN.Tests.Instances
             //Add new association
             projectData.ComponentGeometryExchange.Associate(comp, leftFace);
 
-            Assert.AreEqual(2, comp.Parameters.Count);
+            Assert.AreEqual(4, comp.Parameters.Count);
 
             var aParam = comp.Parameters.FirstOrDefault(x => x.Name == "A");
             var nrtotalParam = comp.Parameters.FirstOrDefault(x => x.Name == "NRᴛᴏᴛᴀʟ");
+            var din = comp.Parameters.FirstOrDefault(x => x.Name == "Δdin");
+            var dout = comp.Parameters.FirstOrDefault(x => x.Name == "Δdout");
 
             Assert.AreNotEqual(null, aParam);
             Assert.AreNotEqual(null, nrtotalParam);
 
             Assert.AreEqual(1, nrtotalParam.ValueCurrent);
             AssertUtil.AssertDoubleEqual(25.0, aParam.ValueCurrent);
+            Assert.AreEqual(0.0, din.ValueCurrent);
+            Assert.AreEqual(0.0, dout.ValueCurrent);
+
 
             //Add second association
             projectData.ComponentGeometryExchange.Associate(comp, floorFace);

@@ -7,6 +7,6 @@ using System.Runtime.CompilerServices;
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
-[assembly: AssemblyVersion("0.2.156.*")]
+[assembly: AssemblyVersion("0.2.157.*")]
 
 [assembly: InternalsVisibleTo("SIMULTAN.Tests")] 

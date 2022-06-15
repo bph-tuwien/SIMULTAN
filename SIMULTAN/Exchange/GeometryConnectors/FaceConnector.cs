@@ -27,6 +27,10 @@ namespace SIMULTAN.Exchange.GeometryConnectors
                     SimParameterInstancePropagation.PropagateNever, 0.0);
                 ExchangeHelpers.CreateParameterIfNotExists(placement.Instance.Component, ReservedParameters.RP_COUNT,
                     SimParameterInstancePropagation.PropagateNever, 0.0);
+                ExchangeHelpers.CreateParameterIfNotExists(placement.Instance.Component, ReservedParameters.RP_MATERIAL_COMPOSITE_D_IN,
+                    SimParameterInstancePropagation.PropagateIfInstance, 0.0);
+                ExchangeHelpers.CreateParameterIfNotExists(placement.Instance.Component, ReservedParameters.RP_MATERIAL_COMPOSITE_D_OUT,
+                    SimParameterInstancePropagation.PropagateIfInstance, 0.0);
             }
         }
 
