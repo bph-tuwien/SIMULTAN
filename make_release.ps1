@@ -7,7 +7,7 @@ $assembly = [Reflection.Assembly]::Load([IO.File]::ReadAllBytes($path))
 $version = $assembly.GetName().Version.ToString()
 
 # Make the GitHub release, push DLL later
-$response = Invoke-WebRequest -Method 'POST' -Headers @{'Accept' ='application/vnd.github.v3+json';'Authorization' = "token $Env:GIT_CRED";} `
+$response = Invoke-WebRequest -Method 'POST' -Headers @{'Accept' ='application/vnd.github.v3+json';'Authorization' = "token $Env:GIT_CRED_PSW";} `
     -Body "{""tag_name"": ""$version"", ""target_commitish"": ""main"", ""name"": ""Release version $version""}" `
     -Uri https://api.github.com/repos/bph-tuwien/SIMULTAN.BPH/releases
 
@@ -16,6 +16,6 @@ $parsed = ConvertFrom-Json($response.Content)
 $id = $parsed.id
 
 # Push DLL to release assets
-$response = Invoke-WebRequest -Method 'POST' -Headers @{'Accept' ='application/vnd.github.v3+json';'Authorization' = "token $Env:GIT_CRED";} `
+$response = Invoke-WebRequest -Method 'POST' -Headers @{'Accept' ='application/vnd.github.v3+json';'Authorization' = "token $Env:GIT_CRED_PSW";} `
     -InFile $path -ContentType 'applicateion/octet-stream' `
     -Uri "https://uploads.github.com/repos/bph-tuwien/SIMULTAN.BPH/releases/$id/assets?name=SIMULTAN.dll"
