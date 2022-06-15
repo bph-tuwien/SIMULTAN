@@ -1,3 +1,5 @@
+# Set TLS and SSL versions cause Jenkins needs it
+[Net.ServicePointManager]::SecurityProtocol = "Tls12, Tls11, Tls, Ssl3"
 # Path to SIMULTAN DLL
 $path = Join-Path $(Get-Location).Path 'SIMULTAN\bin\Release\SIMULTAN.dll'
 # Load the assembly into memory so we don't get a file lock
@@ -14,6 +16,6 @@ $parsed = ConvertFrom-Json($response.Content)
 $id = $parsed.id
 
 # Push DLL to release assets
-Invoke-WebRequest -Method 'POST' -Headers @{'Accept' ='application/vnd.github.v3+json';'Authorization' = "token $Env:GIT_CRED";} `
+$response = Invoke-WebRequest -Method 'POST' -Headers @{'Accept' ='application/vnd.github.v3+json';'Authorization' = "token $Env:GIT_CRED";} `
     -InFile $path -ContentType 'applicateion/octet-stream' `
     -Uri "https://uploads.github.com/repos/bph-tuwien/SIMULTAN.BPH/releases/$id/assets?name=SIMULTAN.dll"
