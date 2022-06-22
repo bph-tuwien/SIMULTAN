@@ -13,7 +13,8 @@ Write-Host("Getting DLL version...")
 $path = Join-Path $(Get-Location).Path 'SIMULTAN\bin\Release\SIMULTAN.dll'
 # Load the assembly into memory so we don't get a file lock
 $assembly = [Reflection.Assembly]::Load([IO.File]::ReadAllBytes($path))
-$version = $assembly.GetName().Version.ToString()
+$ver = $assembly.GetName().Version
+$version = "{0}.{1}.{2}" -f $ver.Major, $ver.Minor, $ver.Build
 
 Write-Host("DLL version is $version")
 
