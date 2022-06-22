@@ -65,7 +65,7 @@ pipeline {
               stage ('GitHub Release') {
                 steps {
                   script {
-                    env.STATUS = bat (
+                    env.STATUS = powershell (
                       script: ".\\make_release.ps1",
                       returnStatus: true
                     )
