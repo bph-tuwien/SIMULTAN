@@ -34,6 +34,7 @@ pipeline {
 	environment {
 		WEBHOOK = credentials('discord_webhook_url')
 		RELEASE_WEBHOOK = credentials('discord_release_webhook_url')
+    GIT_CRED = credentials('BPH TU-Wien Github AccessToken')
 	}
     stages {
     	stage ('Build') {
