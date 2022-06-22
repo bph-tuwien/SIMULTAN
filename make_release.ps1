@@ -3,6 +3,10 @@ if ($null -eq $Env:GIT_CRED_PSW -or '' -eq $Env:GIT_CRED_PSW) {
     exit -1
 }
 
+Write-Host("Starting Deployment...")
+
+Write-Host("Getting DLL version...")
+
 # Set TLS and SSL versions cause Jenkins needs it
 [Net.ServicePointManager]::SecurityProtocol = "Tls12, Tls11, Tls, Ssl3"
 # Path to SIMULTAN DLL
@@ -10,6 +14,8 @@ $path = Join-Path $(Get-Location).Path 'SIMULTAN\bin\Release\SIMULTAN.dll'
 # Load the assembly into memory so we don't get a file lock
 $assembly = [Reflection.Assembly]::Load([IO.File]::ReadAllBytes($path))
 $version = $assembly.GetName().Version.ToString()
+
+Write-Host("DLL version is $version")
 
 Write-Host("Creating release...")
 

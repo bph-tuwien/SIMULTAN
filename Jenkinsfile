@@ -42,11 +42,13 @@ pipeline {
      	        bat "\"${tool 'VS 2022'}\\msbuild\" SIMULTAN.sln /t:rebuild /restore /p:RestorePackagesConfig=True /p:Configuration=Release /p:Platform=\"Any CPU\""
     	    }
     	}
+      /*
     	stage ('Test') {
     	    steps {
     	        vsTest testFiles: 'SIMULTAN.Tests\\bin\\Release\\SIMULTAN.Tests.dll'
     	    }
     	}
+      */
       stage ('Release checks') {
             when {
               allOf {
