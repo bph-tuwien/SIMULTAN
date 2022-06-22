@@ -35,6 +35,7 @@ catch {
     }
     else {
         Write-Host("An unknown error occured during release creation, aborting.")
+        $_.Exception
     }
     exit -1
 }
@@ -45,18 +46,33 @@ $id = $parsed.id
 
 Write-Host("Created release with id $id")
 
-Write-Host("Uploading DLL...")
+# Find nuget package to upload
+$nupkgs = Get-ChildItem -File -Path .\SIMULTAN\ "*$version*.nupkg"
 
-# Push DLL to release assets
 try
 {
+    # Push DLL to release assets
+    Write-Host("Uploading DLL...")
     $response = Invoke-WebRequest -Method 'POST' -Headers @{'Accept' ='application/vnd.github.v3+json';'Authorization' = "token $Env:GIT_CRED_PSW";} `
         -InFile $path -ContentType 'applicateion/octet-stream' `
         -Uri "https://uploads.github.com/repos/bph-tuwien/$Env:REPO_NAME/releases/$id/assets?name=SIMULTAN.dll"
+
+    # See if we found some nuget packages
+    if ( $nupkgs.Length -gt 0)
+    {
+        Write-Host("Uploading Nuget package...")
+        $response = Invoke-WebRequest -Method 'POST' -Headers @{'Accept' ='application/vnd.github.v3+json';'Authorization' = "token $Env:GIT_CRED_PSW";} `
+            -InFile $nupkgs[0].FullName -ContentType 'applicateion/octet-stream' `
+            -Uri "https://uploads.github.com/repos/bph-tuwien/$Env:REPO_NAME/releases/$id/assets?name=$($nupkgs[0].Name)"
+    }
+    else {
+        Write-Host("No Nuget package found, skipping upload.")
+    }
 }
 catch
 {
     Write-Host("An unknown error occured during DLL upload, aborting.")
+    $_.Exception
     exit -1
 }
 

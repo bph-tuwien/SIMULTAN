@@ -47,6 +47,16 @@ pipeline {
     	        vsTest testFiles: 'SIMULTAN.Tests\\bin\\Release\\SIMULTAN.Tests.dll'
     	    }
     	}
+      stage ('Build nuget package') {
+        steps {
+          bat 'nuget pack -Properties Configuration=Release .\\SIMULTAN\\'
+        }
+      }
+      stage ('Build docs') {
+        steps {
+          bat 'docfx .\\docfx_project\\docfx.json -o .\\docfx_project\\'
+        }
+      }
       stage ('Release checks') {
             when {
               allOf {
@@ -70,6 +80,7 @@ pipeline {
                   }
                 }
               }
+              /*
               stage ('Notify release') {
                 when {
                   expression {
@@ -80,6 +91,7 @@ pipeline {
                   discordSend description: '', successful: currentBuild.resultIsBetterOrEqualTo('SUCCESS'), result: currentBuild.currentResult, title: 'New public version of Simultan released!', webhookURL: "${RELEASE_WEBHOOK}"
                 }
               }
+              */
             }
         }
     }
