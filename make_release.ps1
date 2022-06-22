@@ -68,6 +68,21 @@ try
     else {
         Write-Host("No Nuget package found, skipping upload.")
     }
+
+    # upload docs if any
+    if (Test-Path ".\docfx_project\_site")
+    {
+        Write-Host("Zipping docs...")
+        Compress-Archive ".\docfx_project\_site\" "docs.zip"
+        Write-Host("Uploading docs...")
+        $response = Invoke-WebRequest -Method 'POST' -Headers @{'Accept' ='application/vnd.github.v3+json';'Authorization' = "token $Env:GIT_CRED_PSW";} `
+            -InFile "docs.zip" -ContentType 'applicateion/octet-stream' `
+            -Uri "https://uploads.github.com/repos/bph-tuwien/$Env:REPO_NAME/releases/$id/assets?name=docs.zip"
+    }
+    else {
+        Write-Host("No docs found, skipping upload.")
+    }
+
 }
 catch
 {
