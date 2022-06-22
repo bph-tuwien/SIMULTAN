@@ -1,0 +1,58 @@
+{
+ 
+    "metadata": [
+        /*Defining the path for each distinct project/namespace etc.. to be generated in a different folder
+        The folders are defined explpicitly by hand  */
+        {
+            "src": [{
+                "src": "../", "files": [
+                    "SIMULTAN/**.csproj"
+                ]
+            }],
+            "dest": "documentation/SIMULTAN",
+            "disableGitFeatures": false,
+            "disableDefaultFilter": false
+        }
+    ],
+    "build": {
+        /* Contains all the files to generate documentation */
+        "content": [{
+            "files": [
+                "documentation/**.yml",
+                "documentation/index.md",
+                "documentation/**/toc.yml",
+                "toc.yml",
+                "*.md",
+                "documentation/**.md"
+            ]
+        }],
+        "resource": [{
+            "files": [
+                "images/**",
+                "logo.svg",
+                "favicon.ico"
+            ]
+        }],
+        "overwrite": [{
+            "files": [
+                "apidoc/**.md"
+            ],
+            "exclude": [
+                "obj/**",
+                "_site/**"
+            ]
+        }],
+        "dest": "_site",
+        "globalMetadataFiles": [],
+        "fileMetadataFiles": [],
+        "template": [
+            "statictoc"
+        ],
+        "postProcessors": [],
+        "markdownEngineName": "markdig",
+        "noLangKeyword": false,
+        "keepFileLink": false,
+        "cleanupCacheHistory": true,
+        "disableGitFeatures": false
+    }
+}
