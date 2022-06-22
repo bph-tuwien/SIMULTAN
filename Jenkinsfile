@@ -42,13 +42,11 @@ pipeline {
      	        bat "\"${tool 'VS 2022'}\\msbuild\" SIMULTAN.sln /t:rebuild /restore /p:RestorePackagesConfig=True /p:Configuration=Release /p:Platform=\"Any CPU\""
     	    }
     	}
-      /*
     	stage ('Test') {
     	    steps {
     	        vsTest testFiles: 'SIMULTAN.Tests\\bin\\Release\\SIMULTAN.Tests.dll'
     	    }
     	}
-      */
       stage ('Release checks') {
             when {
               allOf {
@@ -72,7 +70,6 @@ pipeline {
                   }
                 }
               }
-              /*
               stage ('Notify release') {
                 when {
                   expression {
@@ -83,17 +80,14 @@ pipeline {
                   discordSend description: '', successful: currentBuild.resultIsBetterOrEqualTo('SUCCESS'), result: currentBuild.currentResult, title: 'New public version of Simultan released!', webhookURL: "${RELEASE_WEBHOOK}"
                 }
               }
-              */
             }
         }
     }
     post {
         always {
             mstest testResultsFile: 'TestResults/*.trx'
-            /*
             discordSend description: '**Branch:** ' + "${BRANCH_NAME}" + """
 **Status:** """ + currentBuild.currentResult, successful: currentBuild.resultIsBetterOrEqualTo('SUCCESS'), link: env.BUILD_URL, result: currentBuild.currentResult, title: 'SIMULTAN public build finished', webhookURL: "${WEBHOOK}"
-            */
             updateGithubCommitStatus(currentBuild)
         }
     }
