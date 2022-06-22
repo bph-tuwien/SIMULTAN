@@ -21,9 +21,23 @@ Write-Host("DLL version is $version")
 Write-Host("Creating release...")
 
 # Make the GitHub release, push DLL later
-$response = Invoke-WebRequest -Method 'POST' -Headers @{'Accept' ='application/vnd.github.v3+json';'Authorization' = "token $Env:GIT_CRED_PSW";} `
-    -Body "{""tag_name"": ""$version"", ""target_commitish"": ""main"", ""name"": ""Release version $version""}" `
-    -Uri "https://api.github.com/repos/bph-tuwien/$Env:REPO_NAME/releases"
+try
+{
+    $response = Invoke-WebRequest -Method 'POST' -Headers @{'Accept' ='application/vnd.github.v3+json';'Authorization' = "token $Env:GIT_CRED_PSW";} `
+        -Body "{""tag_name"": ""$version"", ""target_commitish"": ""main"", ""name"": ""Release version $version""}" `
+        -Uri "https://api.github.com/repos/bph-tuwien/$Env:REPO_NAME/releases"
+}
+catch {
+    $StatusCode = $_.Exception.Response.StatusCode.value__
+    if( 422 -eq $StatusCode)
+    {
+        Write-Host("Release already exists, aborting.")
+    }
+    else {
+        Write-Host("An unknown error occured during release creation, aborting.")
+    }
+    exit -1
+}
 
 # Get release id from response
 $parsed = ConvertFrom-Json($response.Content)
@@ -34,8 +48,16 @@ Write-Host("Created release with id $id")
 Write-Host("Uploading DLL...")
 
 # Push DLL to release assets
-$response = Invoke-WebRequest -Method 'POST' -Headers @{'Accept' ='application/vnd.github.v3+json';'Authorization' = "token $Env:GIT_CRED_PSW";} `
-    -InFile $path -ContentType 'applicateion/octet-stream' `
-    -Uri "https://uploads.github.com/repos/bph-tuwien/$Env:REPO_NAME/releases/$id/assets?name=SIMULTAN.dll"
+try
+{
+    $response = Invoke-WebRequest -Method 'POST' -Headers @{'Accept' ='application/vnd.github.v3+json';'Authorization' = "token $Env:GIT_CRED_PSW";} `
+        -InFile $path -ContentType 'applicateion/octet-stream' `
+        -Uri "https://uploads.github.com/repos/bph-tuwien/$Env:REPO_NAME/releases/$id/assets?name=SIMULTAN.dll"
+}
+catch
+{
+    Write-Host("An unknown error occured during DLL upload, aborting.")
+    exit -1
+}
 
 Write-Host("Release done.")
