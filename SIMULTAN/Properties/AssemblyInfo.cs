@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("SIMULTAN")]
-[assembly: AssemblyDescription("The SIMULTAN data model and associated serialization and deserializations.")]
+[assembly: AssemblyDescription("Reference Implementation of the SIMULTAN data model for storing BIM data.")]
 [assembly: AssemblyConfiguration("")]
 
 // Setting ComVisible to false makes the types in this assembly not visible 
