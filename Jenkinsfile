@@ -35,6 +35,7 @@ pipeline {
 		WEBHOOK = credentials('discord_webhook_url')
 		RELEASE_WEBHOOK = credentials('discord_release_webhook_url')
     GIT_CRED = credentials('BPH TU-Wien Github AccessToken')
+    NUGET_PATH = credentials('NUGET_PATH')
 	}
     stages {
     	stage ('Build') {
@@ -49,14 +50,16 @@ pipeline {
     	}
       stage ('Build nuget package') {
         steps {
-          bat 'nuget pack -Properties Configuration=Release .\\SIMULTAN\\'
+          bat '%NUGET_PATH% pack -Properties Configuration=Release .\\SIMULTAN\\'
         }
       }
+      /* Don't build docs for now
       stage ('Build docs') {
         steps {
           bat 'docfx .\\docfx_project\\docfx.json -o .\\docfx_project\\'
         }
       }
+      */
       stage ('Release checks') {
             when {
               allOf {
