@@ -47,7 +47,7 @@ $id = $parsed.id
 Write-Host("Created release with id $id")
 
 # Find nuget package to upload
-$nupkgs = Get-ChildItem -File -Path .\SIMULTAN\ "*$version*.nupkg"
+$nupkgs = Get-ChildItem -File -Path .\ "*$version*.nupkg"
 
 try
 {
