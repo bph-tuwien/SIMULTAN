@@ -72,7 +72,7 @@ pipeline {
               }
             }
             environment {
-              REPO_NAME = "SIMULTAN.BPH"
+              REPO_NAME = "SIMULTAN"
             }
             stages {
               stage ('GitHub Release') {
