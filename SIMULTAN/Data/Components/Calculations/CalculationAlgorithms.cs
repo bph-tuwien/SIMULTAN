@@ -428,6 +428,42 @@ namespace SIMULTAN.Data.Components
             return false;
         }
 
+        /// <summary>
+        /// Looks for the first parameter in the component or one of its subcomponents,
+        /// whose name, unit and propagation match those of the query parameter.
+        /// </summary>
+        /// <param name="_comp">The component instance</param>
+        /// <param name="_p">The parameter, whose corresponding we are looking for</param>
+        /// <returns>a parameter or null</returns>
+        private static SimParameter GetCorresponding(this SimComponent _comp, SimParameter _p)
+        {
+            if (_p == null || _p.Component == null)
+                return null;
+
+            // look locally first
+            SimParameter p_corresp = _comp.Parameters.FirstOrDefault(
+                x => x.Name == _p.Name &&
+                     x.Unit == _p.Unit &&
+                     x.Propagation == _p.Propagation
+                );
+
+            if (p_corresp != null)
+                return p_corresp;
+
+            // look in the sub-components
+            foreach (var entry in _comp.Components)
+            {
+                SimComponent sComp = entry.Component;
+                if (sComp == null) continue;
+
+                p_corresp = sComp.GetCorresponding(_p);
+                if (p_corresp != null)
+                    return p_corresp;
+            }
+
+            return p_corresp;
+        }
+
         #endregion
     }
 }

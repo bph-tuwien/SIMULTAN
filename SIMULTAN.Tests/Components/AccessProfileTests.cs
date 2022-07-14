@@ -90,13 +90,13 @@ namespace SIMULTAN.Tests.Components
         [TestMethod]
         public void CtorParsing()
         {
-            Assert.ThrowsException<ArgumentNullException>(() => { new SimAccessProfile((IDictionary<SimUserRole, SimAccessProfileEntry>)null); });
+            Assert.ThrowsException<ArgumentNullException>(() => { new SimAccessProfile((IList<SimAccessProfileEntry>)null); });
 
-            Dictionary<SimUserRole, SimAccessProfileEntry> input = new Dictionary<SimUserRole, SimAccessProfileEntry>
+            List<SimAccessProfileEntry> input = new List<SimAccessProfileEntry>
             {
-                { SimUserRole.ADMINISTRATOR, new SimAccessProfileEntry(SimUserRole.ADMINISTRATOR, SimComponentAccessPrivilege.Write | SimComponentAccessPrivilege.Read,
+                { new SimAccessProfileEntry(SimUserRole.ADMINISTRATOR, SimComponentAccessPrivilege.Write | SimComponentAccessPrivilege.Read,
                     DateTime.MinValue, DateTime.MinValue, DateTime.MinValue) },
-                { SimUserRole.ARCHITECTURE, new SimAccessProfileEntry(SimUserRole.ARCHITECTURE, SimComponentAccessPrivilege.Write | SimComponentAccessPrivilege.Read,
+                { new SimAccessProfileEntry(SimUserRole.ARCHITECTURE, SimComponentAccessPrivilege.Write | SimComponentAccessPrivilege.Read,
                     new DateTime(2019, 10, 17), DateTime.MinValue, DateTime.MinValue) },
             };
 

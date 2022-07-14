@@ -132,7 +132,7 @@ namespace SIMULTAN.Data.Components
         /// <returns>A serialized representation of the slot</returns>
         public string ToSerializerString()
         {
-            return this.SlotBase + ComponentUtils.COMP_SLOT_DELIMITER + this.SlotExtension;
+            return this.SlotBase + SimDefaultSlots.COMP_SLOT_DELIMITER + this.SlotExtension;
         }
 
         /// <summary>
@@ -145,9 +145,9 @@ namespace SIMULTAN.Data.Components
             if (string.IsNullOrEmpty(serializerString))
                 throw new ArgumentException("Invalid slot format");
 
-            var splited = ComponentUtils.SplitExtensionSlot(serializerString);
+            var splited = SimDefaultSlots.SplitExtensionSlot(serializerString);
 
-            if (!ComponentUtils.COMP_SLOTS_ALL.Contains(splited.slot))
+            if (!SimDefaultSlots.AllSlots.Contains(splited.slot))
                 throw new ArgumentException("Invalid base slot");
 
             return new SimSlot(new SimSlotBase(splited.slot), splited.extension);

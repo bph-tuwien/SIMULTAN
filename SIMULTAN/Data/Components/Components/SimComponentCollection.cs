@@ -1,12 +1,11 @@
 ﻿using SIMULTAN.Data.FlowNetworks;
+using SIMULTAN.Data.SimNetworks;
 using SIMULTAN.Data.Users;
 using SIMULTAN.Exceptions;
 using SIMULTAN.Projects;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SIMULTAN.Data.Components
 {
@@ -55,18 +54,18 @@ namespace SIMULTAN.Data.Components
 
             //Check if current user is not guest
             var cu = this.ProjectData.UsersManager.CurrentUser;
-            if (EnableAccessChecking && cu != null)
+            if (this.EnableAccessChecking && cu != null)
             {
                 if (cu.Role == SimUserRole.GUEST)
                     throw new AccessDeniedException("Guests may not add root components");
             }
 
-            SetValues(item);
+            this.SetValues(item);
             if (cu != null)
                 item.ForceRecordWriteAccess(cu);
 
             base.InsertItem(index, item);
-            NotifyChanged();
+            this.NotifyChanged();
 
             ProjectData.ComponentGeometryExchange.OnComponentAdded(item);
         }
@@ -78,7 +77,7 @@ namespace SIMULTAN.Data.Components
             var cu = this.ProjectData.UsersManager.CurrentUser;
             if (cu == null)
                 throw new AccessDeniedException("Please authenticate a user before performing operations");
-            if (EnableAccessChecking && cu != null && !oldItem.HasSubtreeAccess(cu, SimComponentAccessPrivilege.Write))
+            if (this.EnableAccessChecking && cu != null && !oldItem.HasSubtreeAccess(cu, SimComponentAccessPrivilege.Write))
                 throw new AccessDeniedException("User does not have write access on the removed component or on one of the subcomponents");
 
             oldItem.RecordWriteAccess();
@@ -87,13 +86,13 @@ namespace SIMULTAN.Data.Components
 
             UnsetValues(oldItem, true);
             base.RemoveItem(index);
-            NotifyChanged();
+            this.NotifyChanged();
         }
         /// <inheritdoc />
         protected override void ClearItems()
         {
             //Check access
-            if (EnableAccessChecking)
+            if (this.EnableAccessChecking)
             {
                 var cu = this.ProjectData.UsersManager.CurrentUser;
                 if (cu != null)
@@ -117,7 +116,7 @@ namespace SIMULTAN.Data.Components
                 UnsetValues(item, true);
             }
             base.ClearItems();
-            NotifyChanged();
+            this.NotifyChanged();
         }
         /// <inheritdoc />
         protected override void SetItem(int index, SimComponent item)
@@ -130,7 +129,7 @@ namespace SIMULTAN.Data.Components
             var cu = this.ProjectData.UsersManager.CurrentUser;
             if (cu == null)
                 throw new AccessDeniedException("Please authenticate a user before performing operations");
-            else if (EnableAccessChecking && cu != null)
+            else if (this.EnableAccessChecking && cu != null)
             {
                 if (!oldItem.HasSubtreeAccess(cu, SimComponentAccessPrivilege.Write))
                     throw new AccessDeniedException("User does not have write access on the removed component or on one of the subcomponents");
@@ -144,10 +143,10 @@ namespace SIMULTAN.Data.Components
 
             if (cu != null)
                 item.ForceRecordWriteAccess(cu);
-            SetValues(item);
+            this.SetValues(item);
 
             base.SetItem(index, item);
-            NotifyChanged();
+            this.NotifyChanged();
 
             ProjectData.ComponentGeometryExchange.OnComponentAdded(item);
         }
@@ -161,16 +160,16 @@ namespace SIMULTAN.Data.Components
             {
                 if (item.Id != SimId.Empty) //Used pre-stored id (only possible during loading)
                 {
-                    if (IsLoading)
+                    if (this.IsLoading)
                     {
-                        item.Id = new SimId(CalledFromLocation, item.Id.LocalId);
-                        ProjectData.IdGenerator.Reserve(item, item.Id);
+                        item.Id = new SimId(this.CalledFromLocation, item.Id.LocalId);
+                        this.ProjectData.IdGenerator.Reserve(item, item.Id);
                     }
                     else
                         throw new NotSupportedException("Existing Ids may only be used during a loading operation");
                 }
                 else
-                    item.Id = ProjectData.IdGenerator.NextId(item, CalledFromLocation);
+                    item.Id = this.ProjectData.IdGenerator.NextId(item, this.CalledFromLocation);
 
                 item.Factory = this;
             }
@@ -191,7 +190,7 @@ namespace SIMULTAN.Data.Components
             if (deleteComponent)
                 item.OnIsBeingDeleted();
 
-            ProjectData.IdGenerator.Remove(item);
+            this.ProjectData.IdGenerator.Remove(item);
             item.Id = new SimId(item.Id.GlobalId, item.Id.LocalId);
             item.Factory = null;
         }
@@ -217,7 +216,7 @@ namespace SIMULTAN.Data.Components
 
             component.RecordWriteAccess();
             base.RemoveItem(index);
-            NotifyChanged();
+            this.NotifyChanged();
 
             return true;
         }
@@ -236,14 +235,14 @@ namespace SIMULTAN.Data.Components
         /// </summary>
         public void StartLoading()
         {
-            IsLoading = true;
+            this.IsLoading = true;
         }
         /// <summary>
         /// Ends the loading operation and re-enables Id checking
         /// </summary>
         public void EndLoading()
         {
-            IsLoading = false;
+            this.IsLoading = false;
         }
 
         #endregion
@@ -269,6 +268,10 @@ namespace SIMULTAN.Data.Components
             }
         }
 
+
+
+
+
         /// <summary>
         /// Unbinds all assets from all components stored in this collection
         /// </summary>
@@ -287,7 +290,7 @@ namespace SIMULTAN.Data.Components
         {
             foreach (SimComponent c in this)
             {
-                OnGeometryResourceDeleted(c, resourceId);
+                this.OnGeometryResourceDeleted(c, resourceId);
             }
         }
 
@@ -314,7 +317,7 @@ namespace SIMULTAN.Data.Components
 
             foreach (var child in component.Components.Where(x => x.Component != null))
             {
-                OnGeometryResourceDeleted(child.Component, resourceId);
+                this.OnGeometryResourceDeleted(child.Component, resourceId);
             }
         }
 
@@ -348,7 +351,7 @@ namespace SIMULTAN.Data.Components
         /// <param name="source">The source collection</param>
         public void Merge(IEnumerable<SimComponent> source)
         {
-            ResetIds(source);
+            this.ResetIds(source);
 
             // 3. add to the record
             foreach (SimComponent c in source)
@@ -371,7 +374,7 @@ namespace SIMULTAN.Data.Components
                 foreach (var inst in component.Instances)
                     inst.Id = SimId.Empty;
 
-                ResetIds(component.Components.Select(x => x.Component));
+                this.ResetIds(component.Components.Select(x => x.Component));
             }
         }
 

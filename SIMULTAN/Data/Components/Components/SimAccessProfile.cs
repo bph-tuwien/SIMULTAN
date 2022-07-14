@@ -132,12 +132,12 @@ namespace SIMULTAN.Data.Components
         /// Initializes a new instance of the SimAccessProfile class
         /// </summary>
         /// <param name="trackers">A dictionary of roles with associated access tracker which are used to initialize the profile</param>
-        internal SimAccessProfile(IDictionary<SimUserRole, SimAccessProfileEntry> trackers)
+        internal SimAccessProfile(IEnumerable<SimAccessProfileEntry> trackers)
         {
             if (trackers == null)
                 throw new ArgumentNullException(nameof(trackers));
 
-            this.profile = new Dictionary<SimUserRole, SimAccessProfileEntry>(trackers);
+            this.profile = trackers.ToDictionary(x => x.Role, x => x);
 
             foreach (SimUserRole role in Enum.GetValues(typeof(SimUserRole)))
             {
@@ -233,7 +233,11 @@ namespace SIMULTAN.Data.Components
             NotifyAccessChanged();
         }
 
-        internal void ResetAccessFlags(SimUserRole owner)
+        /// <summary>
+        /// Resets the access profile to the default profile for a specific role
+        /// </summary>
+        /// <param name="owner">The user who should have write access</param>
+        public void ResetAccessFlags(SimUserRole owner)
         {
             this.isCurrentlyAdjusting = true;
 
@@ -289,38 +293,6 @@ namespace SIMULTAN.Data.Components
             }
 
             this.isCurrentlyAdjusting = false;
-        }
-
-        #endregion
-
-        #region TO STRING
-
-        public void AddToExport(ref StringBuilder _sb, bool _is_last)
-        {
-            if (_sb == null) return;
-
-            _sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_START).ToString()); // 0
-            _sb.AppendLine(ParamStructTypes.ACCESS_PROFILE);                          // ACCESS_PROFILE
-
-            _sb.AppendLine(((int)ComponentAccessProfileSaveCode.STATE).ToString());
-            _sb.AppendLine(ComponentUtils.ComponentValidityToString(this.ProfileState));
-
-            _sb.AppendLine(((int)ComponentAccessProfileSaveCode.PROFILE).ToString());
-            _sb.AppendLine(this.profile.Count.ToString());
-
-            foreach (var entry in this.profile)
-            {
-                entry.Value.AddToExport(ref _sb, ComponentUtils.ComponentManagerTypeToLetter(entry.Key));
-            }
-
-            _sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_START).ToString()); // 0
-            _sb.AppendLine(ParamStructTypes.SEQUENCE_END);                            // SEQEND
-
-            if (!_is_last)
-            {
-                _sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_START).ToString()); // 0
-                _sb.AppendLine(ParamStructTypes.ENTITY_CONTINUE);                         // ENTCTN
-            }
         }
 
         #endregion

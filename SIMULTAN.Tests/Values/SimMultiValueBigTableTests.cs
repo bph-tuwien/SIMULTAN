@@ -70,7 +70,6 @@ namespace SIMULTAN.Tests.Values
             SimMultiValueBigTable table)
             TestDataTable(int rows, int columns)
         {
-            var location = new DummyReferenceLocation(Guid.Empty, string.Empty);
             var data = TestData(rows, columns);
             return (data, new SimMultiValueBigTable(
                 data.name, data.unitColumn, data.unitRow, data.columnHeaders, data.rowHeaders, data.values
@@ -79,8 +78,6 @@ namespace SIMULTAN.Tests.Values
 
         internal static SimMultiValueBigTable TestDataTableAggregate()
         {
-            var location = new DummyReferenceLocation(Guid.Empty, string.Empty);
-
             var columnHeaders = new List<SimMultiValueBigTableHeader>
             {
                 new SimMultiValueBigTableHeader("c2", "u2"),
@@ -125,7 +122,7 @@ namespace SIMULTAN.Tests.Values
 
             Assert.AreEqual(testData.unitColumn, table.UnitX);
             Assert.AreEqual(testData.unitRow, table.UnitY);
-            Assert.AreEqual(MultiValueType.TABLE, table.MVType);
+            Assert.AreEqual(SimMultiValueType.BigTable, table.MVType);
 
             Assert.AreEqual(testData.rowHeaders.Count, table.RowHeaders.Count);
             for (int i = 0; i < testData.rowHeaders.Count; ++i)

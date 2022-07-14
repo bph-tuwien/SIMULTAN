@@ -106,7 +106,7 @@ namespace SIMULTAN.Data.FlowNetworks
         internal SimFlowNetworkNode(IReferenceLocation _location, Point _pos)
             : base(_location)
         {
-            this.name = "Node " + this.ID.ToString();
+            this.name = "Node " + this.ID.LocalId.ToString();
             this.Edges_In = new ObservableCollection<SimFlowNetworkEdge>();
             this.Edges_Out = new ObservableCollection<SimFlowNetworkEdge>();
             this.position = _pos;
@@ -135,7 +135,8 @@ namespace SIMULTAN.Data.FlowNetworks
 
         // for parsing
         // the content component has to be parsed FIRST
-        internal SimFlowNetworkNode(Guid _location, long _id, string _name, string _description, bool _is_valid, Point _position, List<SimFlowNetworkCalcRule> _calc_rules)
+        internal SimFlowNetworkNode(Guid _location, long _id, string _name, string _description, bool _is_valid, Point _position, 
+            IEnumerable<SimFlowNetworkCalcRule> _calc_rules)
             : base(_location, _id, _name, _description)
         {
             this.is_valid = _is_valid;
@@ -156,83 +157,6 @@ namespace SIMULTAN.Data.FlowNetworks
         public override string ToString()
         {
             return "Node " + this.ID.ToString() + " " + this.Name + " " + this.ContentToString();
-        }
-
-        internal string ToConnectivityInfo()
-        {
-            string output = this.ToString();
-            if (this.Edges_In_Nested != null)
-            {
-                output += "IN: ";
-                foreach (var e in this.Edges_In_Nested)
-                {
-                    output += e.Name + ", ";
-                }
-            }
-            if (this.Edges_Out_Nested != null)
-            {
-                output += "OUT: ";
-                foreach (var e in this.Edges_Out_Nested)
-                {
-                    output += e.Name + ", ";
-                }
-            }
-            return output;
-        }
-
-        public override void AddToExport(ref StringBuilder _sb, string _key = null)
-        {
-            if (_sb == null) return;
-
-            _sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_START).ToString()); // 0
-            _sb.AppendLine(ParamStructTypes.FLOWNETWORK_NODE);                        // FLOWNETWORK_NODE
-
-            if (!(string.IsNullOrEmpty(_key)))
-            {
-                _sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_KEY).ToString());
-                _sb.AppendLine(_key);
-            }
-
-            _sb.AppendLine(((int)ParamStructCommonSaveCode.CLASS_NAME).ToString());
-            _sb.AppendLine(this.GetType().ToString());
-
-            // general: ENTITY_ID, NAME, DESCRIPTION, CONTENT_ID, IS_VALID
-            base.AddPartToExport(ref _sb);
-
-            // node-specific
-            this.AddNodeSpecificPartToExport(ref _sb);
-
-        }
-
-        protected void AddNodeSpecificPartToExport(ref StringBuilder _sb)
-        {
-            if (_sb == null) return;
-            string tmp = null;
-
-            _sb.AppendLine(((int)FlowNetworkSaveCode.POSITION_X).ToString());
-            _sb.AppendLine(DXFDecoder.DoubleToString(this.Position.X, "F8"));
-
-            _sb.AppendLine(((int)FlowNetworkSaveCode.POSITION_Y).ToString());
-            _sb.AppendLine(DXFDecoder.DoubleToString(this.Position.Y, "F8"));
-
-            _sb.AppendLine(((int)FlowNetworkSaveCode.CALC_RULES).ToString());
-            _sb.AppendLine(this.calculation_rules.Count.ToString());
-
-            foreach (SimFlowNetworkCalcRule rule in this.calculation_rules)
-            {
-                _sb.AppendLine(((int)FlowNetworkSaveCode.CALC_RULE_SUFFIX_OPERANDS).ToString());
-                _sb.AppendLine(rule.Suffix_Operands);
-
-                _sb.AppendLine(((int)FlowNetworkSaveCode.CALC_RULE_SUFFIX_RESULT).ToString());
-                _sb.AppendLine(rule.Suffix_Result);
-
-                _sb.AppendLine(((int)FlowNetworkSaveCode.CALC_RULE_DIRECTION).ToString());
-                tmp = (rule.Direction == SimFlowNetworkCalcDirection.Forward) ? "1" : "0";
-                _sb.AppendLine(tmp);
-
-                _sb.AppendLine(((int)FlowNetworkSaveCode.CALC_RULE_OPERATOR).ToString());
-                _sb.AppendLine(SimFlowNetworkCalcRule.OperatorToString(rule.Operator));
-            }
         }
 
         #endregion

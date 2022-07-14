@@ -99,19 +99,19 @@ namespace SIMULTAN.Data.Assets
 
         #region .CTOR
 
-        internal Asset(AssetManager _manger, long _caller_id, int _path_code_to_asset, string _id)
+        internal Asset(AssetManager _manger, long componentId, int resourceKey, string contentId)
         {
             this.manager = _manger;
-            this.resourceKey = _path_code_to_asset;
-            this.contained_object_id = _id;
-            this.ReferencingComponentIds = new ObservableCollection<long> { _caller_id };
+            this.resourceKey = resourceKey;
+            this.contained_object_id = contentId;
+            this.ReferencingComponentIds = new ObservableCollection<long> { componentId };
         }
 
         #endregion
 
         #region PARSING .CTOR
 
-        internal Asset(AssetManager _manger, List<long> _caller_ids, int _path_code_to_asset, string _id)
+        internal Asset(AssetManager _manger, IEnumerable<long> _caller_ids, int _path_code_to_asset, string _id)
         {
             this.manager = _manger;
             this.resourceKey = _path_code_to_asset;
@@ -161,28 +161,6 @@ namespace SIMULTAN.Data.Assets
 
             string info = "Asset in \"" + file + "\": " + this.contained_object_id;
             return info;
-        }
-
-        public virtual void AddToExport(ref StringBuilder _sb)
-        {
-            // the ENTITY declaration in the sub-types!!!
-
-            _sb.AppendLine(((int)AssetSaveCode.PATH_CODE).ToString());
-            _sb.AppendLine(this.resourceKey.ToString());
-
-            _sb.AppendLine(((int)AssetSaveCode.CONTENT_ID).ToString());
-            _sb.AppendLine(this.contained_object_id);
-
-            _sb.AppendLine(((int)AssetSaveCode.REFERENCE_COL).ToString());
-            _sb.AppendLine(this.ReferencingComponentIds.Count.ToString());
-            if (this.ReferencingComponentIds.Count > 0)
-            {
-                foreach (long id in this.ReferencingComponentIds)
-                {
-                    _sb.AppendLine(((int)AssetSaveCode.REFERENCE).ToString());
-                    _sb.AppendLine(id.ToString());
-                }
-            }
         }
 
         #endregion

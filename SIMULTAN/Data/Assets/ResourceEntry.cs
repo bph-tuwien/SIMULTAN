@@ -396,63 +396,6 @@ namespace SIMULTAN.Data.Assets
 
         #endregion
 
-        #region METHODS: Persistence
-
-        internal virtual void ExportTo(StringBuilder _sb, int _key)
-        {
-            if (_sb == null) return;
-
-            _sb.AppendLine(((int)AssetSaveCode.APATH_USER).ToString());
-            _sb.AppendLine(ComponentUtils.ComponentManagerTypeToLetter(this.UserWithWritingAccess));
-
-            _sb.AppendLine(((int)AssetSaveCode.APATH_KEY).ToString());
-            _sb.AppendLine(_key.ToString());
-        }
-
-        internal virtual void ExportAsObjectTo(StringBuilder _sb)
-        {
-            if (_sb == null) return;
-        }
-
-        /// <summary>
-        /// Exports the common properties of all subtypes of ResourceEntry.
-        /// </summary>
-        /// <param name="_sb">the responsible string builder</param>
-        /// <param name="_export_full_path">if true, export the full path (i.e. only for linked resources)</param>
-        protected void ExportCommon(StringBuilder _sb, bool _export_full_path)
-        {
-            string tmp;
-
-            _sb.AppendLine(((int)ResourceSaveCode.RESOURCE_USER).ToString());
-            _sb.AppendLine(ComponentUtils.ComponentManagerTypeToLetter(this.UserWithWritingAccess));
-
-            _sb.AppendLine(((int)ResourceSaveCode.RESOURCE_KEY).ToString());
-            _sb.AppendLine(this.Key.ToString());
-
-            _sb.AppendLine(((int)ResourceSaveCode.RESOURCE_NAME).ToString());
-            _sb.AppendLine(this.Name);
-
-            _sb.AppendLine(((int)ResourceSaveCode.RESOURCE_RELATIVE).ToString());
-            _sb.AppendLine(this.CurrentRelativePath);
-
-            _sb.AppendLine(((int)ResourceSaveCode.RESOURCE_ANCHOR).ToString());
-            tmp = (_export_full_path) ? this.current_anchor_of_relative_path : AssetManager.PATH_NOT_FOUND;
-            _sb.AppendLine(tmp);
-
-            _sb.AppendLine(((int)ResourceSaveCode.RESOURCE_FULL).ToString());
-            tmp = (_export_full_path) ? this.CurrentFullPath : AssetManager.PATH_NOT_FOUND;
-            _sb.AppendLine(tmp);
-
-            _sb.AppendLine(((int)ResourceSaveCode.RESOURCE_HAS_PARENT).ToString());
-            tmp = (this.Parent != null) ? "1" : "0";
-            _sb.AppendLine(tmp);
-
-            _sb.AppendLine(((int)ResourceSaveCode.RESOURCE_VISIBILITY).ToString());
-            _sb.AppendLine(this.Visibility.ToString());
-        }
-
-        #endregion
-
         #region METHODS: rename, copy
 
         // ------------------------------------------------ CHECKS -------------------------------------------------- //

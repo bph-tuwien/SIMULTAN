@@ -29,12 +29,21 @@ namespace SIMULTAN.Data.SitePlanner
     /// <summary>
     /// Manager for SitePlanner and GeoReference data.
     /// </summary>
-    public class SitePlannerManager
+    public class SitePlannerManager : ILocated
     {
+        /// <summary>
+        /// The project data this instance belongs to
+        /// </summary>
         public ProjectData ProjectData { get; }
 
         private HashSet<GeoMap> OpenGeoMaps { get; set; }
         private HashSet<SitePlannerProject> OpenSitePlannerProjects { get; set; }
+
+        /// <inheritdoc/>
+        public IReferenceLocation CalledFromLocation
+        {
+            get; private set;
+        }
 
         /// <summary>
         /// Invoked when a SitePlannerProjects is opened.
@@ -204,6 +213,12 @@ namespace SIMULTAN.Data.SitePlanner
 
             this.GeoMaps.Clear();
             this.SitePlannerProjects.Clear();
+        }
+
+        /// <inheritdoc/>
+        public void SetCallingLocation(IReferenceLocation caller)
+        {
+            CalledFromLocation = caller;
         }
     }
 }

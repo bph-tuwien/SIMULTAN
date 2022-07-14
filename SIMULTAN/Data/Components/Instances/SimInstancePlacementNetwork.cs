@@ -20,6 +20,9 @@ namespace SIMULTAN.Data.Components
 
         #region Properties
 
+        private SimObjectId loadingNetworkElement;
+        internal SimObjectId LoadingNetworkElement => loadingNetworkElement;
+
         /// <summary>
         /// The network element in which the instance is placed
         /// </summary>
@@ -71,10 +74,20 @@ namespace SIMULTAN.Data.Components
             this.NetworkElement = networkElement;
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SimInstancePlacementNetwork"/> class.
+        /// May only be used during loading.
+        /// </summary>
+        /// <param name="networkElementId">The id of the network element this placement references</param>
+        public SimInstancePlacementNetwork(SimObjectId networkElementId)
+        {
+            this.loadingNetworkElement = networkElementId;
+        }
+
         /// <inheritdoc />
         public override void AddToTarget()
         {
-            if (this.Instance != null && this.Instance.Component != null)
+            if (this.Instance != null && this.Instance.Component != null && this.NetworkElement != null)
             {
                 this.NetworkElement.Content = this.Instance;
             }
@@ -82,8 +95,25 @@ namespace SIMULTAN.Data.Components
         /// <inheritdoc />
         public override void RemoveFromTarget()
         {
-            if (this.Instance != null)
+            if (this.Instance != null && this.NetworkElement != null)
                 this.NetworkElement.Content = null;
+        }
+
+        internal override bool RestoreReferences(Dictionary<SimObjectId, SimFlowNetworkElement> networkElements)
+        {
+            if (this.loadingNetworkElement != SimObjectId.Empty)
+            {
+                bool found = networkElements.TryGetValue(this.loadingNetworkElement, out var nwElement);
+                if (found)
+                {
+                    this.NetworkElement = nwElement;
+                    AddToTarget(); //Make sure that connection is restored
+                }
+                this.loadingNetworkElement = SimObjectId.Empty;
+                return found;
+            }
+            else
+                return true;
         }
     }
 }

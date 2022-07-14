@@ -1,0 +1,6 @@
+﻿F1\F2\D1.txt
+F1\F2\
+F1\D2.txt
+F1\
+F4\D4.txt
+F4\

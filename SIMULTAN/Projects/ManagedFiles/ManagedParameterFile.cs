@@ -31,7 +31,7 @@ namespace SIMULTAN.Projects.ManagedFiles
         /// <inheritdoc/>
         public override void Save()
         {
-            ProjectIO.SaveParameterLibraryFile(this.File, ProjectData.ParameterLibraryManager);
+            ProjectIO.SaveParameterLibraryFile(this.File, ProjectData);
             this.OnFileUpToDateChanged(true);
         }
 

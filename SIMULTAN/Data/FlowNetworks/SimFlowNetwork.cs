@@ -80,7 +80,6 @@ namespace SIMULTAN.Data.FlowNetworks
         private void ContainedNodes_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
             this.NotifyPropertyChanged(nameof(ContainedNodes));
-            this.NotifyPropertyChanged(nameof(NrNodes));
             this.UpdateChildrenContainer();
 
             object old_item = (e.OldItems == null) ? null : e.OldItems[0];
@@ -100,10 +99,6 @@ namespace SIMULTAN.Data.FlowNetworks
                     this.NodeEnd_ID = -1;
             }
         }
-
-        // derived
-        [Obsolete]
-        public int NrNodes { get { return this.contained_nodes.Count(); } }
 
         // --------------------------------- EDGES ------------------------------------ //
         protected ObservableDictionary<long, SimFlowNetworkEdge> contained_edges;
@@ -129,13 +124,8 @@ namespace SIMULTAN.Data.FlowNetworks
         private void ContainedEdges_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
             this.NotifyPropertyChanged(nameof(ContainedEdges));
-            this.NotifyPropertyChanged(nameof(NrEdges));
             this.UpdateChildrenContainer();
         }
-
-        // derived
-        [Obsolete]
-        public int NrEdges { get { return this.contained_edges.Count(); } }
 
         // ------------------------------- NETWORKS ----------------------------------- //
         private ObservableDictionary<long, SimFlowNetwork> contained_flow_networks;
@@ -167,14 +157,9 @@ namespace SIMULTAN.Data.FlowNetworks
                 foreach (var item in e.NewItems.OfType<KeyValuePair<long, SimFlowNetwork>>())
                     item.Value.Parent = this;
 
-            this.NotifyPropertyChanged(nameof(NrFlNetworks));
             this.UpdateChildrenContainer();
         }
 
-
-        // derived
-        [Obsolete]
-        public int NrFlNetworks { get { return this.ContainedFlowNetworks.Count(); } }
 
         // ----------------------------- QUERYING SOURCE AND SINK NODES ----------------------------- //
 
@@ -516,8 +501,9 @@ namespace SIMULTAN.Data.FlowNetworks
 
         internal SimFlowNetwork(Guid _location, long _id, string _name, string _description, bool _is_valid, Point _position,
                             SimUserRole _manager, int _index_of_geometry_rep_file,
-                            IList<SimFlowNetworkNode> _nodes, IList<SimFlowNetworkEdge> _edges, IList<SimFlowNetwork> _subnetworks,
-                            long _node_start_id, long _node_end_id, bool _is_directed, List<SimFlowNetworkCalcRule> _calc_rules)
+                            IEnumerable<SimFlowNetworkNode> _nodes, IEnumerable<SimFlowNetworkEdge> _edges, 
+                            IEnumerable<SimFlowNetwork> _subnetworks,
+                            long _node_start_id, long _node_end_id, bool _is_directed, IEnumerable<SimFlowNetworkCalcRule> _calc_rules)
             : base(_location, _id, _name, _description, _is_valid, _position, _calc_rules)
         {
             // base (SimFlowNetworkElement)
@@ -534,7 +520,7 @@ namespace SIMULTAN.Data.FlowNetworks
 
             // contained entities (FlowNetwork)
             // add nodes
-            if (_nodes != null && _nodes.Count > 0)
+            if (_nodes != null)
             {
                 foreach (SimFlowNetworkNode n in _nodes)
                 {
@@ -545,7 +531,7 @@ namespace SIMULTAN.Data.FlowNetworks
             this.contained_nodes.CollectionChanged += ContainedNodes_CollectionChanged;
 
             // add subnetworks            
-            if (_subnetworks != null && _subnetworks.Count > 0)
+            if (_subnetworks != null)
             {
                 foreach (SimFlowNetwork nw in _subnetworks)
                 {
@@ -555,10 +541,12 @@ namespace SIMULTAN.Data.FlowNetworks
             }
 
             // add edges
-            if (_edges != null && _edges.Count > 0)
+            if (_edges != null)
             {
                 foreach (SimFlowNetworkEdge e in _edges)
                 {
+                    e.RestoreReferences(this.ContainedNodes, this.ContainedFlowNetworks);
+
                     // establish connection to nodes
                     if (e.Start != null)
                     {
@@ -1192,118 +1180,9 @@ namespace SIMULTAN.Data.FlowNetworks
         public override string ToString()
         {
             string fl_net_str = "FlowNetwork " + this.ID.ToString() + " " + this.Name + " " + this.Description + " ";
-            fl_net_str += "[ " + this.NrNodes + " nodes, " + this.NrEdges + " edges ]";
+            fl_net_str += "[ " + this.contained_nodes.Count() + " nodes, " + this.contained_edges.Count() + " edges ]";
 
             return fl_net_str;
-        }
-
-        public override void AddToExport(ref StringBuilder _sb, string _key = null)
-        {
-            if (_sb == null) return;
-
-            _sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_START).ToString()); // 0
-            _sb.AppendLine(ParamStructTypes.FLOWNETWORK);                             // FLOWNETWORK
-
-            if (!(string.IsNullOrEmpty(_key)))
-            {
-                _sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_KEY).ToString());
-                _sb.AppendLine(_key);
-            }
-
-            _sb.AppendLine(((int)ParamStructCommonSaveCode.CLASS_NAME).ToString());
-            _sb.AppendLine(this.GetType().ToString());
-
-            // general: ENTITY_LOCATION, ENTITY_ID, NAME, DESCRIPTION, CONTENT_ID, IS_VALID
-            base.AddPartToExport(ref _sb);
-
-            // node-specific
-            this.AddNodeSpecificPartToExport(ref _sb);
-
-            // flow network-specific: EDITING
-            _sb.AppendLine(((int)FlowNetworkSaveCode.MANAGER).ToString());
-            _sb.AppendLine(ComponentUtils.ComponentManagerTypeToLetter(this.manager));
-
-            _sb.AppendLine(((int)FlowNetworkSaveCode.GEOM_REP).ToString());
-            _sb.AppendLine(this.index_of_geometric_rep_file.ToString());
-
-            // flow network-specific: CONTAINED NODES
-            _sb.AppendLine(((int)FlowNetworkSaveCode.CONTAINED_NODES).ToString());
-            _sb.AppendLine(this.NrNodes.ToString());
-
-            if (this.NrNodes > 0)
-            {
-                _sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_START).ToString()); // 0
-                _sb.AppendLine(ParamStructTypes.ENTITY_SEQUENCE);                         // ENTSEQ
-
-                foreach (var entry in this.contained_nodes)
-                {
-                    if (entry.Value == null) continue;
-                    entry.Value.AddToExport(ref _sb);
-                }
-
-                _sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_START).ToString()); // 0
-                _sb.AppendLine(ParamStructTypes.SEQUENCE_END);                            // SEQEND
-                _sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_START).ToString()); // 0
-                _sb.AppendLine(ParamStructTypes.ENTITY_CONTINUE);                         // ENTCTN
-            }
-
-            // flow network-specific: CONTAINED FLOW NETWORKS
-            _sb.AppendLine(((int)FlowNetworkSaveCode.CONTIANED_NETW).ToString());
-            _sb.AppendLine(this.NrFlNetworks.ToString());
-
-            if (this.NrFlNetworks > 0)
-            {
-                _sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_START).ToString()); // 0
-                _sb.AppendLine(ParamStructTypes.ENTITY_SEQUENCE);                         // ENTSEQ
-
-                foreach (var entry in this.ContainedFlowNetworks)
-                {
-                    if (entry.Value == null) continue;
-                    entry.Value.AddToExport(ref _sb);
-                }
-
-                _sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_START).ToString()); // 0
-                _sb.AppendLine(ParamStructTypes.SEQUENCE_END);                            // SEQEND
-                _sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_START).ToString()); // 0
-                _sb.AppendLine(ParamStructTypes.ENTITY_CONTINUE);                         // ENTCTN
-            }
-
-            // flow network-specific: CONTAINED EDGES
-            // has to come AFTER the contained nodes and networks because the edges reference them
-            _sb.AppendLine(((int)FlowNetworkSaveCode.CONTAINED_EDGES).ToString());
-            _sb.AppendLine(this.NrEdges.ToString());
-
-            if (this.NrEdges > 0)
-            {
-                _sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_START).ToString()); // 0
-                _sb.AppendLine(ParamStructTypes.ENTITY_SEQUENCE);                         // ENTSEQ
-
-                foreach (var entry in this.contained_edges)
-                {
-                    if (entry.Value == null) continue;
-                    entry.Value.AddToExport(ref _sb);
-                }
-
-                _sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_START).ToString()); // 0
-                _sb.AppendLine(ParamStructTypes.SEQUENCE_END);                            // SEQEND
-                _sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_START).ToString()); // 0
-                _sb.AppendLine(ParamStructTypes.ENTITY_CONTINUE);                         // ENTCTN
-            }
-
-            // start and end nodes
-            _sb.AppendLine(((int)FlowNetworkSaveCode.NODE_SOURCE).ToString());
-            _sb.AppendLine(this.node_start_id.ToString());
-            _sb.AppendLine(((int)FlowNetworkSaveCode.NODE_SINK).ToString());
-            _sb.AppendLine(this.node_end_id.ToString());
-
-            // directed / not directed
-            _sb.AppendLine(((int)FlowNetworkSaveCode.IS_DIRECTED).ToString());
-            string tmp_directed = (this.IsDirected) ? "1" : "0";
-            _sb.AppendLine(tmp_directed);
-
-            // signify end of complex entity
-            _sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_START).ToString()); // 0
-            _sb.AppendLine(ParamStructTypes.SEQUENCE_END);                            // SEQEND
         }
 
         #endregion

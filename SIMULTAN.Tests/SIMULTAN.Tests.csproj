@@ -119,6 +119,30 @@
     <Compile Include="Excel\FilterTests.cs" />
     <Compile Include="Excel\MapablePropertiesTests.cs" />
     <Compile Include="Instances\InstanceVolumeGeometryTests.cs" />
+    <Compile Include="IO\ComponentDXFPublicTests.cs" />
+    <Compile Include="IO\ComponentDXFSimNetworkTests.cs" />
+    <Compile Include="IO\ComponentDXFTests.cs" />
+    <Compile Include="IO\ComponentDXFAccessProfileEntryTests.cs" />
+    <Compile Include="IO\ComponentDXFCalculationTests.cs" />
+    <Compile Include="IO\ComponentDXFChatItemTests.cs" />
+    <Compile Include="IO\ComponentDXFComponentTests.cs" />
+    <Compile Include="IO\ComponentDXFExcelMappingTests.cs" />
+    <Compile Include="IO\ComponentDXFInstanceTests.cs" />
+    <Compile Include="IO\ComponentDXFMappingTests.cs" />
+    <Compile Include="IO\ComponentDXFNetworkTests.cs" />
+    <Compile Include="IO\ComponentDxfParameterTests.cs" />
+    <Compile Include="IO\ComponentDXFResourceTests.cs" />
+    <Compile Include="IO\ComponentDXFTestsBase.cs" />
+    <Compile Include="IO\ComponentDXFUserComponentListTests.cs" />
+    <Compile Include="IO\ExcelDxfTests.cs" />
+    <Compile Include="IO\MetaDxfIOTests.cs" />
+    <Compile Include="IO\MultiValueDxfTests.cs" />
+    <Compile Include="IO\GeoMapDxfTests.cs" />
+    <Compile Include="IO\ParameterDXFTests.cs" />
+    <Compile Include="IO\PPathTests.cs" />
+    <Compile Include="IO\SimLinksDXFTests.cs" />
+    <Compile Include="IO\SitePlannerDXFTests.cs" />
+    <Compile Include="IO\SimUserDXFTests.cs" />
     <Compile Include="Mapping\CalculatorMappingTests.cs" />
     <Compile Include="Calculations\CalculationAlgorithmsTests.cs" />
     <Compile Include="Calculations\CalculationTests.cs" />
@@ -127,16 +151,24 @@
     <Compile Include="Parameters\ParameterTests.cs" />
     <Compile Include="Projects\ProjectImportExportTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+    <Compile Include="SimNetworks\SimNetworkTests.cs" />
     <Compile Include="StyleChecks\StyleChecks.cs" />
     <Compile Include="UnitTestSetup.cs" />
     <Compile Include="Util\AssertUtil.cs" />
     <Compile Include="Util\BaseProjectTest.cs" />
     <Compile Include="Util\CollectionChangedEventCounter.cs" />
+    <Compile Include="Util\DummyMachineHashGenerator.cs" />
     <Compile Include="Util\DummyResourceFileEntry.cs" />
     <Compile Include="Util\ProjectUtils.cs" />
     <Compile Include="Util\PropertyChangedEventCounter.cs" />
     <Compile Include="Util\PropertyTestUtils.cs" />
     <Compile Include="Util\SimFactoryEventCounter.cs" />
+    <Compile Include="Util\StringStream.cs" />
     <Compile Include="Util\UnitTestAuthentificationService.cs" />
     <Compile Include="Values\MultiValueFunctionPointerTests.cs" />
     <Compile Include="Values\SimMultiValueBigTableHeaderTests.cs" />
@@ -144,7 +176,7 @@
     <Compile Include="Values\SimMultiValueBigTableTests.cs" />
     <Compile Include="Values\MultiValueField3DPointerTests.cs" />
     <Compile Include="Values\SimMultiValueCollectionTests.cs" />
-    <Compile Include="Values\SimMultiValueField3D.cs" />
+    <Compile Include="Values\SimMultiValueField3DTests.cs" />
     <Compile Include="Values\SimMultiValueFunctionGraphTests.cs" />
     <Compile Include="Values\SimMultiValueFunctionTests.cs" />
   </ItemGroup>
@@ -211,6 +243,9 @@
     <None Include="ReferencesTestProject.simultan">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Include="SimultanSimNetworkUnitTest.simultan">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="SiteplannerTest.simultan">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -238,6 +273,205 @@
       <Project>{B1759717-22CF-4544-81EE-9BD3F046E011}</Project>
       <Name>SIMULTAN.UI</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="IO\MultiValueDXFResults\DXFSerializer_WriteField3D.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <SubType>Designer</SubType>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="IO\MultiValueDXFResults\DXFSerializer_MVDXF_Empty.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="IO\MetaDXFResults\DXFSerializer_METADXF_WriteMetaData.txt" />
+    <None Include="IO\SimLinksDXFResults\DXFSerializer_SIMLINKS_ReadV11.txt" />
+    <None Include="IO\SimLinksDXFResults\DXFSerializer_SIMLINKS_ReadV12.txt" />
+    <None Include="IO\SimLinksDXFResults\DXFSerializer_SIMLINKS_ReadLinkSectionV12.txt" />
+    <None Include="IO\SimLinksDXFResults\DXFSerializer_SIMLINKS_Write.txt" />
+    <None Include="IO\SimLinksDXFResults\DXFSerializer_SIMLINKS_WriteLinkSection.txt" />
+    <None Include="IO\SimLinksDXFResults\DXFSerializer_SIMLINKS_ReadLinkV12.txt" />
+    <None Include="IO\ParameterDXFResults\DXFSerializer_PADXF_ReadV12.txt" />
+    <None Include="IO\ParameterDXFResults\DXFSerializer_PADXF_ReadV11.txt" />
+    <None Include="IO\ParameterDXFResults\DXFSerializer_PADXF_Write.txt" />
+    <None Include="IO\PPathResults\PPathSerializer_Read.txt" />
+    <None Include="IO\PPathResults\PPathSerializer_Write.txt" />
+    <None Include="IO\SimUserDXFResults\DXFSerializer_SIMUSER_UsersV11.txt" />
+    <None Include="IO\SimUserDXFResults\DXFSerializer_SIMUSER_Empty.txt" />
+    <None Include="IO\SimUserDXFResults\DXFSerializer_SIMUSER_UsersV12.txt" />
+    <None Include="IO\SiteplannerDXFResults\DXFSerializer_SPDXF_AssociationsV5.txt" />
+    <None Include="IO\SiteplannerDXFResults\DXFSerializer_SPDXF_AssociationsParseV12.txt" />
+    <None Include="IO\SiteplannerDXFResults\DXFSerializer_SPDXF_AssociationsV12.txt" />
+    <None Include="IO\SiteplannerDXFResults\DXFSerializer_SPDXF_BuildingsV12.txt" />
+    <None Include="IO\SiteplannerDXFResults\DXFSerializer_SPDXF_GeoMapsV12.txt" />
+    <None Include="IO\SiteplannerDXFResults\DXFSerializer_SPDXF_AssociationsV11.txt" />
+    <None Include="IO\SiteplannerDXFResults\DXFSerializer_SPDXF_BuildingsV11.txt" />
+    <None Include="IO\SiteplannerDXFResults\DXFSerializer_SPDXF_GeoMapsV11.txt" />
+    <None Include="IO\SiteplannerDXFResults\DXFSerializer_SPDXF_EmptyV12.txt" />
+    <None Include="IO\SiteplannerDXFResults\DXFSerializer_SPDXF_EmptyV11.txt" />
+    <None Include="IO\ComponentDXFParameterResults\DXFSerializer_WriteMVPointer_BigTableDifferentProject.txt" />
+    <None Include="IO\ComponentDXFParameterResults\DXFSerializer_WriteMVPointer_Field3D.txt" />
+    <None Include="IO\ComponentDXFParameterResults\DXFSerializer_WriteMVPointer_Function.txt" />
+    <None Include="IO\ComponentDXFParameterResults\DXFSerializer_ReadCODXF_ParameterV12.txt" />
+    <None Include="IO\ComponentDXFParameterResults\DXFSerializer_ReadMVPointer_BigTableV12.txt" />
+    <None Include="IO\ComponentDXFParameterResults\DXFSerializer_ReadCODXF_ParameterWithPointerV12.txt" />
+    <None Include="IO\ComponentDXFParameterResults\DXFSerializer_ReadMVPointer_Field3DV12.txt" />
+    <None Include="IO\ComponentDXFParameterResults\DXFSerializer_ReadMVPointer_FunctionV12.txt" />
+    <None Include="IO\ComponentDXFParameterResults\DXFSerializer_ReadCODXF_ParameterV0.txt" />
+    <None Include="IO\ComponentDXFParameterResults\DXFSerializer_ReadCODXF_ParameterV5.txt" />
+    <None Include="IO\ComponentDXFParameterResults\DXFSerializer_ReadMVPointer_BigTableV0a.txt" />
+    <None Include="IO\ComponentDXFComponentResults\DXFSerializer_WriteComponent.txt" />
+    <None Include="IO\ComponentDXFComponentResults\DXFSerializer_CODXF_Empty.txt" />
+    <None Include="IO\ComponentDXFComponentResults\DXFSerializer_ReadCODXF_MultipleV12.txt" />
+    <None Include="IO\ComponentDXFComponentResults\DXFSerializer_CODXF_Multiple.txt" />
+    <Content Include="IO\ComponentDXFAccessProfileEntryResults\DXFSerializer_ReadCODXF_AccessEntryV-1.txt" />
+    <Content Include="IO\ComponentDXFAccessProfileEntryResults\DXFSerializer_ReadCODXF_AccessEntryV11.txt" />
+    <Content Include="IO\ComponentDXFAccessProfileEntryResults\DXFSerializer_ReadCODXF_AccessEntryV12.txt" />
+    <Content Include="IO\ComponentDXFAccessProfileEntryResults\DXFSerializer_WriteAccessEntry.txt" />
+    <Content Include="IO\ComponentDXFCalculationResults\DXFSerializer_ReadCODXF_CalculationV0.txt" />
+    <Content Include="IO\ComponentDXFCalculationResults\DXFSerializer_ReadCODXF_CalculationV5.txt" />
+    <Content Include="IO\ComponentDXFCalculationResults\DXFSerializer_ReadCODXF_VectorCalculationV0.txt" />
+    <Content Include="IO\ComponentDXFCalculationResults\DXFSerializer_ReadCODXF_VectorCalculationV4.txt" />
+    <Content Include="IO\ComponentDXFCalculationResults\DXFSerializer_ReadCODXF_VectorCalculationV12.txt" />
+    <Content Include="IO\ComponentDXFCalculationResults\DXFSerializer_ReadCODXF_CalculationV12.txt" />
+    <Content Include="IO\ComponentDXFCalculationResults\DXFSerializer_WriteVectorCalculation.txt" />
+    <Content Include="IO\ComponentDXFCalculationResults\DXFSerializer_WriteCalculation.txt" />
+    <None Include="IO\ComponentDXFParameterResults\DXFSerializer_ReadMVPointer_BigTableV5.txt" />
+    <Content Include="IO\ComponentDXFChatItemResults\DXFSerializer_ReadCODXF_ChatItemV11.txt" />
+    <Content Include="IO\ComponentDXFChatItemResults\DXFSerializer_ReadCODXF_ChatItemV12.txt" />
+    <Content Include="IO\ComponentDXFChatItemResults\DXFSerializer_WriteChatItem_Multiple.txt" />
+    <Content Include="IO\ComponentDXFChatItemResults\DXFSerializer_WriteChatItem.txt" />
+    <None Include="IO\ComponentDXFComponentResults\DXFSerializer_ReadCODXF_MultipleV11.txt" />
+    <None Include="IO\ComponentDXFComponentResults\DXFSerializer_ReadCODXF_MultipleV7.txt" />
+    <None Include="IO\ComponentDXFComponentResults\DXFSerializer_ReadCODXF_MultipleV10.txt" />
+    <None Include="IO\ComponentDXFComponentResults\DXFSerializer_ReadCODXF_MultipleV9.txt" />
+    <None Include="IO\ComponentDXFComponentResults\DXFSerializer_ReadCODXF_MultipleV8.txt" />
+    <None Include="IO\ComponentDXFComponentResults\DXFSerializer_ReadCODXF_MultipleV6.txt" />
+    <None Include="IO\ComponentDXFComponentResults\DXFSerializer_ReadCODXF_MultipleV4.txt" />
+    <None Include="IO\ComponentDXFComponentResults\DXFSerializer_ReadCODXF_MultipleV1.txt" />
+    <None Include="IO\ComponentDXFComponentResults\DXFSerializer_ReadCODXF_MultipleV0.txt" />
+    <Content Include="IO\ComponentDXFExcelMappingResults\DXFSerializer_ReadCODXF_ExcelMappingV8.txt" />
+    <Content Include="IO\ComponentDXFExcelMappingResults\DXFSerializer_ReadCODXF_ExcelMappingV11.txt" />
+    <Content Include="IO\ComponentDXFExcelMappingResults\DXFSerializer_ReadCODXF_ExcelMappingV12.txt" />
+    <Content Include="IO\ComponentDXFExcelMappingResults\DXFSerializer_WriteExcelMapping.txt" />
+    <Content Include="IO\ComponentDXFFlowNetworkResults\DXFSerializer_ReadCODXF_FlowNetworkEdgeV11.txt" />
+    <Content Include="IO\ComponentDXFFlowNetworkResults\DXFSerializer_ReadCODXF_FlowNetworkNodeV11.txt" />
+    <Content Include="IO\ComponentDXFFlowNetworkResults\DXFSerializer_ReadCODXF_FlowNetworkNodeV12.txt" />
+    <Content Include="IO\ComponentDXFFlowNetworkResults\DXFSerializer_ReadCODXF_FlowNetworkEdgeV12.txt" />
+    <Content Include="IO\ComponentDXFFlowNetworkResults\DXFSerializer_ReadCODXF_FlowNetworkV11.txt" />
+    <Content Include="IO\ComponentDXFFlowNetworkResults\DXFSerializer_ReadCODXF_FlowNetworkV12.txt" />
+    <Content Include="IO\ComponentDXFFlowNetworkResults\DXFSerializer_ReadCODXF_NetworkSectionV11.txt" />
+    <Content Include="IO\ComponentDXFFlowNetworkResults\DXFSerializer_WriteNetworkSection.txt" />
+    <Content Include="IO\ComponentDXFFlowNetworkResults\DXFSerializer_ReadCODXF_NetworkSectionV12.txt" />
+    <Content Include="IO\ComponentDXFFlowNetworkResults\DXFSerializer_WriteFlowNetworkEdge.txt" />
+    <Content Include="IO\ComponentDXFFlowNetworkResults\DXFSerializer_WriteFlowNetwork.txt" />
+    <Content Include="IO\ComponentDXFFlowNetworkResults\DXFSerializer_WriteFlowNetworkNode.txt" />
+    <Content Include="IO\ComponentDXFInstanceResults\DXFSerializer_ReadCODXF_InstanceV6.txt" />
+    <Content Include="IO\ComponentDXFInstanceResults\DXFSerializer_ReadCODXF_InstanceV7.txt" />
+    <Content Include="IO\ComponentDXFInstanceResults\DXFSerializer_ReadCODXF_InstanceV11.txt" />
+    <Content Include="IO\ComponentDXFInstanceResults\DXFSerializer_ReadCODXF_InstanceV12.txt" />
+    <Content Include="IO\ComponentDXFInstanceResults\DXFSerializer_WriteInstance.txt" />
+    <Content Include="IO\ComponentDXFMappingResults\DXFSerializer_ReadCODXF_MappingV0.txt" />
+    <Content Include="IO\ComponentDXFMappingResults\DXFSerializer_ReadCODXF_MappingV3.txt" />
+    <Content Include="IO\ComponentDXFMappingResults\DXFSerializer_ReadCODXF_MappingV7.txt" />
+    <Content Include="IO\ComponentDXFMappingResults\DXFSerializer_ReadCODXF_MappingV11.txt" />
+    <Content Include="IO\ComponentDXFMappingResults\DXFSerializer_ReadCODXF_MappingV12.txt" />
+    <Content Include="IO\ComponentDXFMappingResults\DXFSerializer_WriteMapping.txt" />
+    <Content Include="IO\ComponentDXFParameterResults\DXFSerializer_WriteParameter.txt" />
+    <None Include="IO\ComponentDXFParameterResults\DXFSerializer_WriteParameterWithPointer.txt" />
+    <None Include="IO\GeoMapDXFResults\DXFSerializer_GMDXF_EmptyV11.txt" />
+    <None Include="IO\GeoMapDXFResults\DXFSerializer_ReadGMDXF_GeoReferencesV12.txt" />
+    <None Include="IO\GeoMapDXFResults\DXFSerializer_ReadGMDXF_MapResourceV11.txt" />
+    <None Include="IO\GeoMapDXFResults\DXFSerializer_GMDXF_EmptyV12.txt" />
+    <None Include="IO\GeoMapDXFResults\DXFSerializer_ReadGMDXF_MapResourceV12.txt" />
+    <None Include="IO\GeoMapDXFResults\DXFSerializer_ReadGMDXF_MapResourceOtherProjectV12.txt" />
+    <None Include="IO\ComponentDXFResourceResults\DXFSerializer_WriteResourceDirectory_Simple.txt" />
+    <None Include="IO\ComponentDXFResourceResults\DXFSerializer_WriteResourceDirectory_Multiple.txt" />
+    <None Include="IO\ComponentDXFResourceResults\DXFSerializer_ReadCODXF_ResourceDirectoryV12.txt" />
+    <None Include="IO\ComponentDXFResourceResults\DXFSerializer_WriteContainedResourceFile.txt" />
+    <None Include="IO\ComponentDXFResourceResults\DXFSerializer_ReadCODXF_ContainedFileV12.txt" />
+    <None Include="IO\ComponentDXFResourceResults\DXFSerializer_ReadCODXF_LinkedFileV12.txt" />
+    <None Include="IO\ComponentDXFResourceResults\DXFSerializer_WriteLinkedResourceFile.txt" />
+    <None Include="IO\ComponentDXFResourceResults\DXFSerializer_WriteAssetManager.txt" />
+    <None Include="IO\ComponentDXFResourceResults\DXFSerializer_WriteDocumentAsset.txt" />
+    <None Include="IO\ComponentDXFResourceResults\DXFSerializer_WriteGeometricAsset.txt" />
+    <None Include="IO\ComponentDXFResourceResults\DXFSerializer_ReadCODXF_DocumentAssetV12.txt" />
+    <None Include="IO\ComponentDXFResourceResults\DXFSerializer_ReadCODXF_GeometricAssetV12.txt" />
+    <None Include="IO\ComponentDXFResourceResults\DXFSerializer_ReadCODXF_DocumentAssetV11.txt" />
+    <None Include="IO\ComponentDXFResourceResults\DXFSerializer_ReadCODXF_GeometricAssetV11.txt" />
+    <None Include="IO\ComponentDXFResourceResults\DXFSerializer_ReadCODXF_AssetManagerV12.txt" />
+    <None Include="IO\ComponentDXFResourceResults\DXFSerializer_ReadCODXF_AssetManagerV11.txt" />
+    <None Include="IO\ComponentDXFResourceResults\DXFSerializer_ReadCODXF_ContainedFileV11.txt" />
+    <None Include="IO\ComponentDXFResourceResults\DXFSerializer_ReadCODXF_ResourceDirectoryV11.txt" />
+    <None Include="IO\ComponentDXFResourceResults\DXFSerializer_ReadCODXF_LinkedFileV11.txt" />
+    <None Include="IO\ComponentDXFUserComponentListResults\DXFSerializer_WriteUserComponentList.txt" />
+    <None Include="IO\ComponentDXFUserComponentListResults\DXFSerializer_WriteUserComponentLists.txt" />
+    <None Include="IO\ComponentDXFUserComponentListResults\DXFSerializer_ReadCODXF_UserComponentListV12.txt" />
+    <None Include="IO\ComponentDXFUserComponentListResults\DXFSerializer_ReadCODXF_UserComponentListV11.txt" />
+    <None Include="IO\ComponentDXFUserComponentListResults\DXFSerializer_ReadCODXF_UserComponentListsV12.txt" />
+    <None Include="IO\ComponentDXFUserComponentListResults\DXFSerializer_ReadCODXF_UserComponentListsV11.txt" />
+    <None Include="IO\ComponentDXFResourceResults\DXFSerializer_WriteAssetsSection.txt" />
+    <None Include="IO\ComponentDXFResourceResults\DXFSerializer_ReadCODXF_AssetsSectionV12.txt" />
+    <None Include="IO\ComponentDXFResourceResults\DXFSerializer_ReadCODXF_AssetsSectionV11.txt" />
+    <None Include="IO\ComponentDXFResults\DXFSerializer_Write.txt" />
+    <None Include="IO\ComponentDXFResults\DXFSerializer_ReadCODXFV12.txt" />
+    <None Include="IO\ComponentDXFResults\DXFSerializer_ReadCODXFV11.txt" />
+    <None Include="IO\ComponentDXFResults\DXFSerializer_ReadCODXFPV12.txt" />
+    <None Include="IO\ComponentDXFResults\DXFSerializer_WritePublic.txt" />
+    <None Include="IO\ExcelToolsResults\DXFSerializer_ETDXF_WriteRule.txt" />
+    <None Include="IO\ExcelToolsResults\DXFSerializer_ETDXF_ReadRuleV12.txt" />
+    <None Include="IO\ExcelToolsResults\DXFSerializer_ETDXF_ReadRuleV6.txt" />
+    <None Include="IO\ExcelToolsResults\DXFSerializer_ETDXF_WriteRangeUnmappingRule.txt" />
+    <None Include="IO\ExcelToolsResults\DXFSerializer_ETDXF_ReadRangeUnmappingRuleV12.txt" />
+    <None Include="IO\ExcelToolsResults\DXFSerializer_ETDXF_ReadRangeUnmappingRuleV11.txt" />
+    <None Include="IO\ExcelToolsResults\DXFSerializer_ETDXF_WriteUnmappingRule.txt" />
+    <None Include="IO\ExcelToolsResults\DXFSerializer_ETDXF_ReadUnmappingRuleV12.txt" />
+    <None Include="IO\ExcelToolsResults\DXFSerializer_ETDXF_ReadUnmappingRuleV11.txt" />
+    <None Include="IO\ExcelToolsResults\DXFSerializer_ETDXF_ReadUnmappingRuleV4.txt" />
+    <None Include="IO\ExcelToolsResults\DXFSerializer_ETDXF_WriteTool.txt" />
+    <None Include="IO\ExcelToolsResults\DXFSerializer_ETDXF_ReadToolV12.txt" />
+    <None Include="IO\ExcelToolsResults\DXFSerializer_ETDXF_ReadToolV11.txt" />
+    <None Include="IO\ExcelToolsResults\DXFSerializer_ETDXF_ReadRuleV11.txt" />
+    <None Include="IO\ExcelToolsResults\DXFSerializer_ETDXF_ReadToolV6.txt" />
+    <None Include="IO\ExcelToolsResults\DXFSerializer_ETDXF_ReadToolV4.txt" />
+    <None Include="IO\ExcelToolsResults\DXFSerializer_ETDXF_Write.txt" />
+    <None Include="IO\ExcelToolsResults\DXFSerializer_ETDXF_ReadV12.txt" />
+    <None Include="IO\ExcelToolsResults\DXFSerializer_ETDXF_ReadV11.txt" />
+    <None Include="IO\ExcelToolsResults\DXFSerializer_ETDXF_ReadV6.txt" />
+    <None Include="IO\ExcelToolsResults\DXFSerializer_ETDXF_ReadV4.txt" />
+    <None Include="IO\ComponentDXFSimNetworkResults\DXFSerializer_CODXF_WriteConnector.txt" />
+    <None Include="IO\ComponentDXFSimNetworkResults\DXFSerializer_CODXF_WritePort.txt" />
+    <None Include="IO\ComponentDXFSimNetworkResults\DXFSerializer_CODXF_ReadConnectorV12.txt" />
+    <None Include="IO\ComponentDXFSimNetworkResults\DXFSerializer_CODXF_ReadPortV12.txt" />
+    <None Include="IO\ComponentDXFSimNetworkResults\DXFSerializer_CODXF_WriteBlock.txt" />
+    <None Include="IO\ComponentDXFSimNetworkResults\DXFSerializer_CODXF_ReadBlockV12.txt" />
+    <None Include="IO\ComponentDXFSimNetworkResults\DXFSerializer_CODXF_WriteNetwork.txt" />
+    <None Include="IO\ComponentDXFSimNetworkResults\DXFSerializer_CODXF_ReadNetworkV12.txt" />
+    <None Include="IO\ComponentDXFSimNetworkResults\DXFSerializer_CODXF_WriteNetworkSection.txt" />
+    <None Include="IO\ComponentDXFSimNetworkResults\DXFSerializer_CODXF_ReadNetworkSectionV12.txt" />
+    <None Include="IO\SimLinksDXFResults\DXFSerializer_SIMLINKS_WriteLink.txt" />
+    <None Include="IO\MetaDXFResults\DXFSerializer_METADXF_Write.txt" />
+    <None Include="IO\MetaDXFResults\DXFSerializer_METADXF_ReadMetaDataV12.txt" />
+    <None Include="IO\MetaDXFResults\DXFSerializer_METADXF_ReadV12.txt" />
+    <None Include="IO\MetaDXFResults\DXFSerializer_METADXF_ReadV11.txt" />
+    <Content Include="IO\MultiValueDXFResults\DXFSerializer_ReadMVDXF_BigTableV10.txt" />
+    <Content Include="IO\MultiValueDXFResults\DXFSerializer_ReadMVDXF_MultipleV3.txt" />
+    <Content Include="IO\MultiValueDXFResults\DXFSerializer_ReadMVDXF_MultipleV5.txt" />
+    <Content Include="IO\MultiValueDXFResults\DXFSerializer_ReadMVDXF_MultipleV12.txt" />
+    <None Include="IO\ComponentDXFParameterResults\DXFSerializer_WriteMVPointer_BigTable.txt" />
+    <Content Include="IO\MultiValueDXFResults\DXFSerializer_WriteMVDXF_Multiple.txt" />
+    <Content Include="IO\MultiValueDXFResults\DXFSerializer_ReadMVDXF_FunctionV5.txt" />
+    <Content Include="IO\MultiValueDXFResults\DXFSerializer_ReadMVDXF_FunctionV12.txt" />
+    <Content Include="IO\MultiValueDXFResults\DXFSerializer_ReadMVDXF_Field3DV5.txt" />
+    <Content Include="IO\MultiValueDXFResults\DXFSerializer_ReadMVDXF_Field3DV12.txt" />
+    <Content Include="IO\MultiValueDXFResults\DXFSerializer_ReadMVDXF_BigTableV5.txt" />
+    <Content Include="IO\MultiValueDXFResults\DXFSerializer_ReadMVDXF_BigTableV12.txt" />
+    <None Include="IO\MultiValueDXFResults\DXFSerializer_WriteFunction.txt" />
+    <None Include="IO\MultiValueDXFResults\DXFSerializer_WriteBigTable.txt" />
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(VSToolsPath)\TeamTest\Microsoft.TestTools.targets" Condition="Exists('$(VSToolsPath)\TeamTest\Microsoft.TestTools.targets')" />

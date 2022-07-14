@@ -22,8 +22,8 @@ namespace SIMULTAN.Tests.Components
             Assert.ThrowsException<ArgumentNullException>(() => { new SimSlotBase(null); });
             Assert.ThrowsException<ArgumentException>(() => { new SimSlotBase("asdf"); });
 
-            sb = new SimSlotBase(ComponentUtils.COMP_SLOT_COST);
-            Assert.AreEqual(ComponentUtils.COMP_SLOT_COST, sb.Base);
+            sb = new SimSlotBase(SimDefaultSlots.Cost);
+            Assert.AreEqual(SimDefaultSlots.Cost, sb.Base);
         }
 
         [TestMethod]
@@ -37,9 +37,9 @@ namespace SIMULTAN.Tests.Components
         [TestMethod]
         public void SlotBaseEquals()
         {
-            var sb1 = new SimSlotBase(ComponentUtils.COMP_SLOT_AREAS);
-            var sb2 = new SimSlotBase(ComponentUtils.COMP_SLOT_AREAS);
-            var sb3 = new SimSlotBase(ComponentUtils.COMP_SLOT_COST);
+            var sb1 = new SimSlotBase(SimDefaultSlots.Areas);
+            var sb2 = new SimSlotBase(SimDefaultSlots.Areas);
+            var sb3 = new SimSlotBase(SimDefaultSlots.Cost);
 
             Assert.IsTrue(sb1 == sb2);
             Assert.IsFalse(sb1 == sb3);
@@ -51,9 +51,9 @@ namespace SIMULTAN.Tests.Components
         [TestMethod]
         public void SlotBaseNotEquals()
         {
-            var sb1 = new SimSlotBase(ComponentUtils.COMP_SLOT_AREAS);
-            var sb2 = new SimSlotBase(ComponentUtils.COMP_SLOT_AREAS);
-            var sb3 = new SimSlotBase(ComponentUtils.COMP_SLOT_COST);
+            var sb1 = new SimSlotBase(SimDefaultSlots.Areas);
+            var sb2 = new SimSlotBase(SimDefaultSlots.Areas);
+            var sb3 = new SimSlotBase(SimDefaultSlots.Cost);
 
             Assert.IsFalse(sb1 != sb2);
             Assert.IsTrue(sb1 != sb3);
@@ -78,21 +78,21 @@ namespace SIMULTAN.Tests.Components
             Assert.ThrowsException<ArgumentException>(() => { new SimSlot("asdf", ""); });
 
             //Working
-            slot = new SimSlot(ComponentUtils.COMP_SLOT_COST, "3");
-            Assert.AreEqual(new SimSlotBase(ComponentUtils.COMP_SLOT_COST), slot.SlotBase);
+            slot = new SimSlot(SimDefaultSlots.Cost, "3");
+            Assert.AreEqual(new SimSlotBase(SimDefaultSlots.Cost), slot.SlotBase);
             Assert.AreEqual("3", slot.SlotExtension);
 
             //Extension null
-            slot = new SimSlot(ComponentUtils.COMP_SLOT_COST, null);
-            Assert.AreEqual(new SimSlotBase(ComponentUtils.COMP_SLOT_COST), slot.SlotBase);
+            slot = new SimSlot(SimDefaultSlots.Cost, null);
+            Assert.AreEqual(new SimSlotBase(SimDefaultSlots.Cost), slot.SlotBase);
             Assert.AreEqual("", slot.SlotExtension);
         }
 
         [TestMethod]
         public void CtorCopy()
         {
-            SimSlot slot = new SimSlot(new SimSlot(ComponentUtils.COMP_SLOT_COST, "4"));
-            Assert.AreEqual(new SimSlotBase(ComponentUtils.COMP_SLOT_COST), slot.SlotBase);
+            SimSlot slot = new SimSlot(new SimSlot(SimDefaultSlots.Cost, "4"));
+            Assert.AreEqual(new SimSlotBase(SimDefaultSlots.Cost), slot.SlotBase);
             Assert.AreEqual("4", slot.SlotExtension);
         }
 
@@ -107,10 +107,10 @@ namespace SIMULTAN.Tests.Components
         [TestMethod]
         public void SlotEquals()
         {
-            SimSlot a = new SimSlot(ComponentUtils.COMP_SLOT_COST, "4");
-            SimSlot b = new SimSlot(ComponentUtils.COMP_SLOT_COST, "4");
-            SimSlot c = new SimSlot(ComponentUtils.COMP_SLOT_ABGABE, "4");
-            SimSlot d = new SimSlot(ComponentUtils.COMP_SLOT_COST, "9");
+            SimSlot a = new SimSlot(SimDefaultSlots.Cost, "4");
+            SimSlot b = new SimSlot(SimDefaultSlots.Cost, "4");
+            SimSlot c = new SimSlot(SimDefaultSlots.Distributer, "4");
+            SimSlot d = new SimSlot(SimDefaultSlots.Cost, "9");
 
             Assert.IsTrue(a == b);
             Assert.IsFalse(a == c);
@@ -120,10 +120,10 @@ namespace SIMULTAN.Tests.Components
         [TestMethod]
         public void SlotNotEquals()
         {
-            SimSlot a = new SimSlot(ComponentUtils.COMP_SLOT_COST, "4");
-            SimSlot b = new SimSlot(ComponentUtils.COMP_SLOT_COST, "4");
-            SimSlot c = new SimSlot(ComponentUtils.COMP_SLOT_ABGABE, "4");
-            SimSlot d = new SimSlot(ComponentUtils.COMP_SLOT_COST, "9");
+            SimSlot a = new SimSlot(SimDefaultSlots.Cost, "4");
+            SimSlot b = new SimSlot(SimDefaultSlots.Cost, "4");
+            SimSlot c = new SimSlot(SimDefaultSlots.Distributer, "4");
+            SimSlot d = new SimSlot(SimDefaultSlots.Cost, "9");
 
             Assert.IsFalse(a != b);
             Assert.IsTrue(a != c);
@@ -133,7 +133,7 @@ namespace SIMULTAN.Tests.Components
         [TestMethod]
         public void ToSerializerString()
         {
-            SimSlot slot = new SimSlot(ComponentUtils.COMP_SLOT_COMPOSITE, "17");
+            SimSlot slot = new SimSlot(SimDefaultSlots.Composite, "17");
 
             Assert.AreEqual("Aufbau_017", slot.ToSerializerString());
         }
@@ -145,12 +145,12 @@ namespace SIMULTAN.Tests.Components
             Assert.ThrowsException<ArgumentException>(() => SimSlot.FromSerializerString(""));
             Assert.ThrowsException<ArgumentException>(() => SimSlot.FromSerializerString("asdf_02"));
 
-            var slot = SimSlot.FromSerializerString(ComponentUtils.COMP_SLOT_COST + "_03");
-            Assert.AreEqual(new SimSlotBase(ComponentUtils.COMP_SLOT_COST), slot.SlotBase);
+            var slot = SimSlot.FromSerializerString(SimDefaultSlots.Cost + "_03");
+            Assert.AreEqual(new SimSlotBase(SimDefaultSlots.Cost), slot.SlotBase);
             Assert.AreEqual("3", slot.SlotExtension);
 
-            slot = SimSlot.FromSerializerString(ComponentUtils.COMP_SLOT_COST);
-            Assert.AreEqual(new SimSlotBase(ComponentUtils.COMP_SLOT_COST), slot.SlotBase);
+            slot = SimSlot.FromSerializerString(SimDefaultSlots.Cost);
+            Assert.AreEqual(new SimSlotBase(SimDefaultSlots.Cost), slot.SlotBase);
             Assert.AreEqual("", slot.SlotExtension);
         }
 

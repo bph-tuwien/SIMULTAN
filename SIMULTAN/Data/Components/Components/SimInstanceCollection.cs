@@ -35,13 +35,13 @@ namespace SIMULTAN.Data.Components
 
                 this.owner.RecordWriteAccess();
 
-                SetValues(item);
+                this.SetValues(item);
                 base.InsertItem(index, item);
 
-                owner.OnInstanceStateChanged();
+                this.owner.OnInstanceStateChanged();
 
-                SimComponentInstance.AddAutoParameters(owner);
-                SimComponentInstance.UpdateAutoParameters(owner);
+                SimComponentInstance.AddAutoParameters(this.owner);
+                SimComponentInstance.UpdateAutoParameters(this.owner);
 
                 //Notify geometry
                 if (item.Factory != null)
@@ -61,9 +61,9 @@ namespace SIMULTAN.Data.Components
                 UnsetValues(oldItem);
 
                 base.RemoveItem(index);
-                owner.OnInstanceStateChanged();
+                this.owner.OnInstanceStateChanged();
 
-                SimComponentInstance.UpdateAutoParameters(owner);
+                SimComponentInstance.UpdateAutoParameters(this.owner);
             }
             /// <inheritdoc />
             protected override void ClearItems()
@@ -78,9 +78,9 @@ namespace SIMULTAN.Data.Components
                     UnsetValues(item);
                 }
                 base.ClearItems();
-                owner.OnInstanceStateChanged();
+                this.owner.OnInstanceStateChanged();
 
-                SimComponentInstance.UpdateAutoParameters(owner);
+                SimComponentInstance.UpdateAutoParameters(this.owner);
             }
             /// <inheritdoc />
             protected override void SetItem(int index, SimComponentInstance item)
@@ -100,48 +100,49 @@ namespace SIMULTAN.Data.Components
                 SetValues(item);
                 base.SetItem(index, item);
 
-                owner.OnInstanceStateChanged();
+                this.owner.OnInstanceStateChanged();
 
-                SimComponentInstance.UpdateAutoParameters(owner);
+                SimComponentInstance.UpdateAutoParameters(this.owner);
 
                 //Notify geometry
                 if (item.Factory != null)
                     item.Factory.ProjectData.ComponentGeometryExchange.OnInstanceAdded(item);
             }
 
+
             #endregion
 
             private void SetValues(SimComponentInstance item)
             {
-                if (owner.InstanceType != item.InstanceType)
+                if (this.owner.InstanceType != item.InstanceType)
                     throw new InvalidStateException("Instance type has to match component's instance type");
 
-                if (owner.Factory != null) //Ids are only possible when the component is already attached to a parent/factory.
-                                           //If not the case, Id's have to be handed out when the component get's attached
+                if (this.owner.Factory != null) //Ids are only possible when the component is already attached to a parent/factory.
+                                                //If not the case, Id's have to be handed out when the component get's attached
                 {
                     if (item.Id != SimId.Empty) //Use pre-stored id (only possible inside the same global location)
                     {
-                        if (item.Id.GlobalId != Guid.Empty && item.Id.GlobalId != owner.Factory.CalledFromLocation.GlobalID)
+                        if (item.Id.GlobalId != Guid.Empty && item.Id.GlobalId != this.owner.Factory.CalledFromLocation.GlobalID)
                             throw new InvalidOperationException("Ids are not transferable between Factories. Please reset the Id before adding");
 
-                        item.Id = new SimId(owner.Factory.CalledFromLocation, item.Id.LocalId);
-                        owner.Factory.ProjectData.IdGenerator.Reserve(item, item.Id);
+                        item.Id = new SimId(this.owner.Factory.CalledFromLocation, item.Id.LocalId);
+                        this.owner.Factory.ProjectData.IdGenerator.Reserve(item, item.Id);
                     }
                     else
-                        item.Id = owner.Factory.ProjectData.IdGenerator.NextId(item, owner.Factory.CalledFromLocation);
+                        item.Id = this.owner.Factory.ProjectData.IdGenerator.NextId(item, this.owner.Factory.CalledFromLocation);
 
-                    item.Factory = owner.Factory;
+                    item.Factory = this.owner.Factory;
                 }
 
-                item.Component = owner;
+                item.Component = this.owner;
             }
 
             private void UnsetValues(SimComponentInstance item)
             {
                 item.OnIsBeingDeleted();
 
-                if (owner.Factory != null && owner.Factory.ProjectData.IdGenerator != null)
-                    owner.Factory.ProjectData.IdGenerator.Remove(item);
+                if (this.owner.Factory != null && this.owner.Factory.ProjectData.IdGenerator != null)
+                    this.owner.Factory.ProjectData.IdGenerator.Remove(item);
                 item.Id = new SimId(item.Id.GlobalId, item.Id.LocalId);
                 item.Factory = null;
                 item.Component = null;
@@ -149,15 +150,15 @@ namespace SIMULTAN.Data.Components
 
             internal void NotifyFactoryChanged()
             {
-                if (owner.Factory != null)
+                if (this.owner.Factory != null)
                 {
                     foreach (var item in this)
-                        SetValues(item);
+                        this.SetValues(item);
                 }
                 else
                 {
                     foreach (var item in this)
-                        UnsetValues(item);
+                        this.UnsetValues(item);
                 }
             }
 
@@ -168,7 +169,7 @@ namespace SIMULTAN.Data.Components
                 if (parameter == null)
                     throw new ArgumentNullException(nameof(parameter));
 
-                foreach (var gr in owner.Instances)
+                foreach (var gr in this.owner.Instances)
                     gr.AddParameter(parameter);
             }
 
@@ -177,7 +178,7 @@ namespace SIMULTAN.Data.Components
                 if (parameter == null)
                     throw new ArgumentNullException(nameof(parameter));
 
-                foreach (var gr in owner.Instances)
+                foreach (var gr in this.owner.Instances)
                     gr.RemoveParameter(parameter);
             }
 

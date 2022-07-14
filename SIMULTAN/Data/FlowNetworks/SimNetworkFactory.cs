@@ -63,6 +63,7 @@ namespace SIMULTAN.Data.FlowNetworks
             return network_candidate;
         }
 
+        [Obsolete]
         internal SimFlowNetwork ReconstructNetwork(Guid _location, long _id, string _name, string _description, bool _is_valid, Point _position,
                                                 SimUserRole _manager, int _index_of_geom_rep_file,
                                                 IList<SimFlowNetworkNode> _nodes, IList<SimFlowNetworkEdge> _edges, IList<SimFlowNetwork> _subnetworks,

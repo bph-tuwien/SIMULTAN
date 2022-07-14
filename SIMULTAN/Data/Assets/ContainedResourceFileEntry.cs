@@ -186,45 +186,6 @@ namespace SIMULTAN.Data.Assets
 
         #endregion
 
-        #region METHODS: serialization
-
-        internal override void ExportTo(StringBuilder _sb, int _key)
-        {
-            base.ExportTo(_sb, _key);
-            _sb.AppendLine(((int)AssetSaveCode.APATH_ISCONTAINED).ToString());
-            _sb.AppendLine("1");
-
-            _sb.AppendLine(((int)AssetSaveCode.APATH_FULL_PATH).ToString());
-            _sb.AppendLine(this.CurrentFullPath);
-
-            _sb.AppendLine(((int)AssetSaveCode.APATH_REL_PATH).ToString());
-            _sb.AppendLine(this.Name);
-        }
-
-        internal override void ExportAsObjectTo(StringBuilder _sb)
-        {
-            base.ExportAsObjectTo(_sb);
-
-            _sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_START).ToString()); // 0
-            _sb.AppendLine(ParamStructTypes.RESOURCE_FILE);                           // RESOURCE_CONTAINED_FILE
-
-            _sb.AppendLine(((int)ParamStructCommonSaveCode.CLASS_NAME).ToString());
-            _sb.AppendLine(this.GetType().ToString());
-
-            // export common part
-            base.ExportCommon(_sb, false);
-
-            _sb.AppendLine(((int)ResourceSaveCode.RESOURCE_PROBLEM).ToString());
-            string tmp = (this.FileIsNotReallyContained) ? "1" : "0";
-            _sb.AppendLine(tmp);
-
-            // NOT A COMPLEX ENTITY - but necessary for correct traversal
-            _sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_START).ToString()); // 0
-            _sb.AppendLine(ParamStructTypes.SEQUENCE_END);                            // SEQEND
-        }
-
-        #endregion
-
         #region METHODS: rename, copy
 
         // ------------------------------------------------ CHECKS -------------------------------------------------- //

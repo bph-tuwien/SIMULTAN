@@ -12,6 +12,9 @@ namespace SIMULTAN.Data.FlowNetworks
 {
     public class SimFlowNetworkEdge : SimFlowNetworkElement
     {
+        private long loadingStartId = -1;
+        private long loadingEndId = -1;
+
         #region PROPERTIES: Specific (Start, End)
 
         protected SimFlowNetworkNode start;
@@ -67,7 +70,7 @@ namespace SIMULTAN.Data.FlowNetworks
         internal SimFlowNetworkEdge(IReferenceLocation _location, SimFlowNetworkNode _start, SimFlowNetworkNode _end)
             : base(_location)
         {
-            this.name = "Edge " + this.ID.ToString();
+            this.name = "Edge " + this.ID.LocalId.ToString();
             this.start = _start;
             this.end = _end;
             this.SetValidity();
@@ -104,6 +107,16 @@ namespace SIMULTAN.Data.FlowNetworks
             this.SetValidity();
         }
 
+        internal SimFlowNetworkEdge(Guid location, long id, string name, string description, bool isValid,
+            long startId, long endId)
+            : base(location, id, name, description)
+        {
+            this.is_valid = isValid;
+
+            this.loadingStartId = startId;
+            this.loadingEndId = endId;
+        }
+
         #endregion
 
         #region METHODS: ToString
@@ -111,36 +124,6 @@ namespace SIMULTAN.Data.FlowNetworks
         public override string ToString()
         {
             return "Edge " + this.ID.ToString() + " " + this.ContentToString();
-        }
-
-        public override void AddToExport(ref StringBuilder _sb, string _key = null)
-        {
-            if (_sb == null) return;
-            string tmp = null;
-
-            _sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_START).ToString()); // 0
-            _sb.AppendLine(ParamStructTypes.FLOWNETWORK_EDGE);                        // FLOWNETWORK_EDGE
-
-            if (!(string.IsNullOrEmpty(_key)))
-            {
-                _sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_KEY).ToString());
-                _sb.AppendLine(_key);
-            }
-
-            _sb.AppendLine(((int)ParamStructCommonSaveCode.CLASS_NAME).ToString());
-            _sb.AppendLine(this.GetType().ToString());
-
-            // general: ENTITY_ID, NAME, DESCRIPTION, CONTENT_ID, IS_VALID
-            base.AddPartToExport(ref _sb);
-
-            // edge-specific
-            _sb.AppendLine(((int)FlowNetworkSaveCode.START_NODE).ToString());
-            tmp = (this.Start == null) ? "-1" : this.Start.ID.ToString();
-            _sb.AppendLine(tmp);
-
-            _sb.AppendLine(((int)FlowNetworkSaveCode.END_NODE).ToString());
-            tmp = (this.End == null) ? "-1" : this.End.ID.ToString();
-            _sb.AppendLine(tmp);
         }
 
         #endregion
@@ -167,6 +150,25 @@ namespace SIMULTAN.Data.FlowNetworks
 
         #endregion
 
+        public void RestoreReferences(IDictionary<long, SimFlowNetworkNode> nodes, IDictionary<long, SimFlowNetwork> networks)
+        {
+            this.start = FindNode(this.loadingStartId, nodes, networks);
+            this.end = FindNode(this.loadingEndId, nodes, networks);
+
+            SetValidity();
+
+            this.loadingStartId = -1;
+            this.loadingEndId = -1;
+        }
+        private SimFlowNetworkNode FindNode(long id, IDictionary<long, SimFlowNetworkNode> nodes, IDictionary<long, SimFlowNetwork> networks)
+        {
+            if (nodes.TryGetValue(id, out var node))
+                return node;
+            if (networks.TryGetValue(id, out var nw))
+                return nw;
+
+            return null;
+        }
 
         public void UpdateRealization()
         {

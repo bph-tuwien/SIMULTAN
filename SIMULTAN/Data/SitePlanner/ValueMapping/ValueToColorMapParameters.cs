@@ -30,12 +30,14 @@ namespace SIMULTAN.Data.SitePlanner
         /// Serializes this object into a string representation
         /// </summary>
         /// <returns>String representation of the parameters of this object</returns>
+        // ToDo: remove
         public abstract string Serialize();
 
         /// <summary>
         /// Deserealizes the given string and sets its according parameters
         /// </summary>
         /// <param name="obj">String representation of object</param>
+        // ToDo: remove
         public abstract void Deserialize(string obj);
 
         /// <summary>

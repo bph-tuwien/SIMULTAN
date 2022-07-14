@@ -1,12 +1,6 @@
 ﻿using SIMULTAN.Projects;
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SIMULTAN.Data
 {
@@ -24,6 +18,12 @@ namespace SIMULTAN.Data
         /// Returns the time of the last modification to the collection
         /// </summary>
         DateTime LastChange { get; }
+
+
+        /// <summary>
+        /// The project data this collection belongs to.
+        /// </summary>
+        ProjectData ProjectData { get; }
 
         /// <summary>
         /// Returns True when the factory has changes
@@ -60,7 +60,7 @@ namespace SIMULTAN.Data
                     (this.calledFromLocation != default && value != default && this.calledFromLocation.GlobalID != value.GlobalID))
                 {
                     this.calledFromLocation = value;
-                    OnCalledFromLocationChanged();
+                    this.OnCalledFromLocationChanged();
                 }
             }
         }
@@ -86,12 +86,12 @@ namespace SIMULTAN.Data
         /// <inheritdoc />
         public bool HasChanges
         {
-            get => hasChanges;
+            get => this.hasChanges;
             private set
             {
-                if (hasChanges != value)
+                if (this.hasChanges != value)
                 {
-                    hasChanges = value;
+                    this.hasChanges = value;
                     this.HasChangesChanged?.Invoke(this, EventArgs.Empty);
                 }
             }
@@ -101,8 +101,8 @@ namespace SIMULTAN.Data
         /// <inheritdoc />
         public void NotifyChanged()
         {
-            HasChanges = true;
-            LastChange = DateTime.Now;
+            this.HasChanges = true;
+            this.LastChange = DateTime.Now;
         }
 
         /// <summary>

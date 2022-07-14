@@ -1,0 +1,14 @@
+0
+RESOURCE_CONTAINED_FILE
+100
+SIMULTAN.Data.Assets.ContainedResourceFileEntry
+7201
+H
+7202
+11
+7204
+MyContainedFile.txt
+7212
+AlwaysVisible
+0
+SEQEND

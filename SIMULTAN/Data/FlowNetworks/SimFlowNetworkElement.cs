@@ -298,44 +298,6 @@ namespace SIMULTAN.Data.FlowNetworks
 
         #region METHODS: ToString
 
-        public virtual void AddToExport(ref StringBuilder _sb, string _key = null)
-        { }
-
-        protected void AddPartToExport(ref StringBuilder _sb)
-        {
-            if (_sb == null) return;
-            string tmp = null;
-
-            _sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_LOCATION).ToString());
-            _sb.AppendLine(this.ID.GlobalId.ToString());
-
-            _sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_ID).ToString());
-            _sb.AppendLine(this.ID.LocalId.ToString());
-
-            _sb.AppendLine(((int)FlowNetworkSaveCode.NAME).ToString());
-            _sb.AppendLine(this.Name);
-
-            _sb.AppendLine(((int)FlowNetworkSaveCode.DESCRIPTION).ToString());
-            _sb.AppendLine(this.Description);
-
-            _sb.AppendLine(((int)FlowNetworkSaveCode.CONTENT_ID).ToString());
-            tmp = (this.Content == null) ? "-1" : this.Content.Component.Id.LocalId.ToString();
-            _sb.AppendLine(tmp);
-
-            _sb.AppendLine(((int)FlowNetworkSaveCode.CONTENT_LOCATION).ToString());
-            tmp = (this.Content == null) ? Guid.Empty.ToString() : this.Content.Component.Id.GlobalId.ToString();
-            _sb.AppendLine(tmp);
-
-            _sb.AppendLine(((int)FlowNetworkSaveCode.IS_VALID).ToString());
-            tmp = (this.IsValid) ? "1" : "0";
-            _sb.AppendLine(tmp);
-
-            _sb.AppendLine(((int)FlowNetworkSaveCode.GEOM_REP_NE_FILE_INDEX).ToString());
-            _sb.AppendLine(this.RepresentationReference.FileId.ToString());
-
-            _sb.AppendLine(((int)FlowNetworkSaveCode.GEOM_REP_NE_GEOM_ID).ToString());
-            _sb.AppendLine(this.RepresentationReference.GeometryId.ToString());
-        }
 
         protected string ContentToString()
         {

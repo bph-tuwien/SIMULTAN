@@ -117,51 +117,51 @@ namespace SIMULTAN.Tests.Projects
             var comp = importComp.Components.First(x => x.Component.Name == "ChildTarget2");
             {
                 Assert.AreEqual(0, comp.Component.Components.Count);
-                Assert.AreEqual(ComponentUtils.COMP_SLOT_UNDEFINED, comp.Slot.SlotBase.Base);
+                Assert.AreEqual(SimDefaultSlots.Undefined, comp.Slot.SlotBase.Base);
             }
 
             comp = importComp.Components.First(x => x.Component.Name == "Edge");
             {
                 Assert.AreEqual(1, comp.Component.Components.Count);
-                Assert.AreEqual(ComponentUtils.COMP_SLOT_UNDEFINED, comp.Slot.SlotBase.Base);
+                Assert.AreEqual(SimDefaultSlots.Undefined, comp.Slot.SlotBase.Base);
 
                 var childComp = comp.Component.Components.First(x => x.Component.Name == "Cumulative");
                 Assert.AreEqual(0, childComp.Component.Components.Count);
-                Assert.AreEqual(ComponentUtils.COMP_SLOT_POSITION, childComp.Slot.SlotBase.Base);
+                Assert.AreEqual(SimDefaultSlots.Position, childComp.Slot.SlotBase.Base);
                 Assert.AreEqual("AG0", childComp.Slot.SlotExtension);
             }
 
             comp = importComp.Components.First(x => x.Component.Name == "Node");
             {
                 Assert.AreEqual(2, comp.Component.Components.Count);
-                Assert.AreEqual(ComponentUtils.COMP_SLOT_UNDEFINED, comp.Slot.SlotBase.Base);
+                Assert.AreEqual(SimDefaultSlots.Undefined, comp.Slot.SlotBase.Base);
 
                 var childComp = comp.Component.Components.First(x => x.Component.Name == "Cumulative");
                 Assert.AreEqual(0, childComp.Component.Components.Count);
-                Assert.AreEqual(ComponentUtils.COMP_SLOT_POSITION, childComp.Slot.SlotBase.Base);
+                Assert.AreEqual(SimDefaultSlots.Position, childComp.Slot.SlotBase.Base);
                 Assert.AreEqual("AG0", childComp.Slot.SlotExtension);
 
                 childComp = comp.Component.Components.First(x => x.Component.Name == "NodeChild");
                 Assert.AreEqual(0, childComp.Component.Components.Count);
-                Assert.AreEqual(ComponentUtils.COMP_SLOT_UNDEFINED, childComp.Slot.SlotBase.Base);
+                Assert.AreEqual(SimDefaultSlots.Undefined, childComp.Slot.SlotBase.Base);
                 Assert.AreEqual("0", childComp.Slot.SlotExtension);
             }
 
             comp = importComp.Components.First(x => x.Component.Name == "Node2");
             {
                 Assert.AreEqual(1, comp.Component.Components.Count);
-                Assert.AreEqual(ComponentUtils.COMP_SLOT_UNDEFINED, comp.Slot.SlotBase.Base);
+                Assert.AreEqual(SimDefaultSlots.Undefined, comp.Slot.SlotBase.Base);
 
                 var childComp = comp.Component.Components.First(x => x.Component.Name == "Cumulative");
                 Assert.AreEqual(0, childComp.Component.Components.Count);
-                Assert.AreEqual(ComponentUtils.COMP_SLOT_POSITION, childComp.Slot.SlotBase.Base);
+                Assert.AreEqual(SimDefaultSlots.Position, childComp.Slot.SlotBase.Base);
                 Assert.AreEqual("AG0", childComp.Slot.SlotExtension);
             }
 
             comp = importComp.Components.First(x => x.Component.Name == "Target");
             {
                 Assert.AreEqual(0, comp.Component.Components.Count);
-                Assert.AreEqual(ComponentUtils.COMP_SLOT_SPECIFICATION, comp.Slot.SlotBase.Base);
+                Assert.AreEqual(SimDefaultSlots.Specification, comp.Slot.SlotBase.Base);
             }
 
             //Make sure that all components got unique slot extensions assigned

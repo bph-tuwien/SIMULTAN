@@ -34,6 +34,9 @@ namespace SIMULTAN.Data.Geometry
         private Dictionary<ResourceFileEntry, GeometryModelReference> geometryModels = new Dictionary<ResourceFileEntry, GeometryModelReference>();
         private GeometryImporterCache geometryCache = new GeometryImporterCache();
 
+        /// <summary>
+        /// The project data this collection belongs to
+        /// </summary>
         public ProjectData ProjectData { get; }
 
         /// <summary>

@@ -182,38 +182,6 @@ namespace SIMULTAN.Data.MultiValues
         /// </summary>
         /// <returns></returns>
         public abstract SimMultiValuePointer Clone();
-        /// <summary>
-        /// Stores the information of this pointer into a DXF file.
-        /// Has to call the other AddToExport overload with proper values
-        /// </summary>
-        /// <param name="sb">The target stream</param>
-        public abstract void AddToExport(ref StringBuilder sb);
-        /// <summary>
-        /// Writes structured data of this valuepointer to a DXF file. Should be used by implementations of the abstract AddToExport method
-        /// </summary>
-        /// <param name="sb">The target string</param>
-        /// <param name="axisValueX">ValuePointer X-Value</param>
-        /// <param name="axisValueY">ValuePointer Y-Value</param>
-        /// <param name="axisValueZ">ValuePointer Z-Value</param>
-        /// <param name="graphName">ValuePointer graph name</param>
-        protected void AddToExport(ref StringBuilder sb, double axisValueX, double axisValueY, double axisValueZ, string graphName)
-        {
-            sb.AppendLine(((int)MultiValueSaveCode.MVDisplayVector_MVLOCATION).ToString());
-            sb.AppendLine(this.ValueField.Id.GlobalId.ToString());
-
-            sb.AppendLine(((int)MultiValueSaveCode.MVDisplayVector_MVID).ToString());
-            sb.AppendLine(this.ValueField.Id.LocalId.ToString());
-
-            sb.AppendLine(((int)MultiValueSaveCode.MVDisplayVector_AXIS_VAL_X).ToString());
-            sb.AppendLine(axisValueX.ToString(CultureInfo.InvariantCulture));
-            sb.AppendLine(((int)MultiValueSaveCode.MVDisplayVector_AXIS_VAL_Y).ToString());
-            sb.AppendLine(axisValueY.ToString(CultureInfo.InvariantCulture));
-            sb.AppendLine(((int)MultiValueSaveCode.MVDisplayVector_AXIS_VAL_Z).ToString());
-            sb.AppendLine(axisValueZ.ToString(CultureInfo.InvariantCulture));
-
-            sb.AppendLine(((int)MultiValueSaveCode.MVDisplayVector_GRAPH_NAME).ToString());
-            sb.AppendLine(graphName);
-        }
 
 
         /// <summary>

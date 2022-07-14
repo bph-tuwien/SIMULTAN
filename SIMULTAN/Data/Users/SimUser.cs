@@ -135,30 +135,5 @@ namespace SIMULTAN.Data.Users
                 return passwd;
             }
         }
-
-        /// <summary>
-        /// Writes this user to a DXF format
-        /// </summary>
-        /// <param name="sw">The target stream</param>
-        public void AddToExport(StreamWriter sw)
-        {
-            sw.WriteLine(((int)ParamStructCommonSaveCode.ENTITY_START).ToString()); // 0
-            sw.WriteLine(ParamStructTypes.USER);                                    // USER
-
-            sw.WriteLine(((int)UserSaveCode.USER_ID).ToString());
-            sw.WriteLine(this.Id.ToString("N"));
-
-            sw.WriteLine(((int)UserSaveCode.USER_NAME).ToString());
-            sw.WriteLine(this.Name);
-
-            sw.WriteLine(((int)UserSaveCode.USER_PSW_HASH).ToString());
-            sw.WriteLine(Convert.ToBase64String(this.PasswordHash));
-
-            sw.WriteLine(((int)UserSaveCode.USER_ROLE).ToString());
-            sw.WriteLine(ComponentUtils.ComponentManagerTypeToLetter(this.Role));
-
-            sw.WriteLine(((int)UserSaveCode.USER_ENCRYPTION_KEY).ToString());
-            sw.WriteLine(Convert.ToBase64String(this.EncryptedEncryptionKey));
-        }
     }
 }

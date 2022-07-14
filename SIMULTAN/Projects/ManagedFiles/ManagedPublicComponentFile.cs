@@ -45,8 +45,10 @@ namespace SIMULTAN.Projects.ManagedFiles
                 ProjectData.Components.Clear();
             }
 
-            ProjectIO.OpenComponentFile(this.File, ProjectData,
-                this.owner.Project.GlobalID, this.owner.Project.ImportLogFile, this.owner.Project);
+            //DO NOTHING
+
+            //ProjectIO.OpenComponentFile(this.File, ProjectData,
+            //    this.owner.Project.GlobalID, this.owner.Project.ImportLogFile, this.owner.Project);
         }
     }
 }

@@ -1,10 +1,6 @@
 ﻿using SIMULTAN.Data.Components;
 using SIMULTAN.Data.Geometry;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SIMULTAN.Exchange.GeometryConnectors
 {
@@ -114,7 +110,7 @@ namespace SIMULTAN.Exchange.GeometryConnectors
         /// <summary>
         /// A more specificly typed Geometry
         /// </summary>
-        internal T TypedGeometry 
+        internal T TypedGeometry
         {
             get { return geometry; }
             set
@@ -146,7 +142,6 @@ namespace SIMULTAN.Exchange.GeometryConnectors
         /// </summary>
         /// <param name="geometry">The geometry represented by this connector</param>
         /// <param name="placement">The component instance represented by this connector</param>
-        /// <exception cref="ArgumentNullException"></exception>
         protected BaseGeometryConnector(T geometry, SimInstancePlacementGeometry placement)
             : base(placement)
         {

@@ -64,7 +64,7 @@ namespace SIMULTAN.Serializer.SpecializedExporters
                         SimMultiValueBigTable.SimMultiValueBigTablePointer MVpointer = parameter.MultiValuePointer as SimMultiValueBigTable.SimMultiValueBigTablePointer;
                         if (MVpointer != null && MVpointer.ValueField != null)
                         {
-                            if (MVpointer.ValueField.MVType == MultiValueType.TABLE)
+                            if (MVpointer.ValueField.MVType == SimMultiValueType.BigTable)
                             {
                                 SimMultiValueBigTable table = MVpointer.ValueField as SimMultiValueBigTable;
 
@@ -173,7 +173,7 @@ namespace SIMULTAN.Serializer.SpecializedExporters
                         SimMultiValueBigTable.SimMultiValueBigTablePointer MVpointer = parameter.MultiValuePointer as SimMultiValueBigTable.SimMultiValueBigTablePointer;
                         if (MVpointer != null && MVpointer.ValueField != null)
                         {
-                            if (MVpointer.ValueField.MVType == MultiValueType.TABLE)
+                            if (MVpointer.ValueField.MVType == SimMultiValueType.BigTable)
                             {
                                 SimMultiValueBigTable table = MVpointer.ValueField as SimMultiValueBigTable;
 

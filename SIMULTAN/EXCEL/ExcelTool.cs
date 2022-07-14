@@ -1,5 +1,4 @@
-﻿using SIMULTAN;
-using SIMULTAN.Data;
+﻿using SIMULTAN.Data;
 using SIMULTAN.Data.Components;
 using SIMULTAN.Serializer.DXF;
 using System;
@@ -10,7 +9,6 @@ using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Windows;
-using System.Windows.Media.Media3D;
 
 namespace SIMULTAN.Excel
 {
@@ -35,21 +33,6 @@ namespace SIMULTAN.Excel
                         RenameToolInComponents(Factory.ProjectData.Components, old_value, this.name);
 
                     NotifyPropertyChanged(nameof(Name));
-                }
-            }
-        }
-
-        private string last_path_to_file;
-        [Obsolete]
-        public string LastPathToFile
-        {
-            get { return this.last_path_to_file; }
-            set
-            {
-                if (this.last_path_to_file != value)
-                {
-                    var old_value = this.last_path_to_file;
-                    this.last_path_to_file = value;
                 }
             }
         }
@@ -158,7 +141,6 @@ namespace SIMULTAN.Excel
         internal ExcelTool()
         {
             this.name = "";
-            this.last_path_to_file = null;
 
             this.inputRules = new ObservableCollection<ExcelMappingNode> { ExcelMappingNode.Nothing_Rule() };
             var default_rule = ExcelMappingNode.Default_Rule(null);
@@ -173,11 +155,12 @@ namespace SIMULTAN.Excel
             this.outputRules.CollectionChanged += OutputRules_CollectionChanged;
         }
 
-        internal ExcelTool(string _name, List<ExcelMappingNode> _rules, List<KeyValuePair<ExcelMappedData, Type>> _results, List<ExcelUnmappingRule> _result_unmappings,
-                            string _macro_name, string _last_path_to_file = null)
+        internal ExcelTool(string _name, IEnumerable<ExcelMappingNode> _rules, 
+            IEnumerable<KeyValuePair<ExcelMappedData, Type>> _results, 
+            IEnumerable<ExcelUnmappingRule> _result_unmappings,
+            string _macro_name)
         {
             this.name = _name;
-            this.last_path_to_file = _last_path_to_file;
 
             this.inputRules = new ObservableCollection<ExcelMappingNode> { ExcelMappingNode.Nothing_Rule() };
             foreach (var r in _rules)
@@ -213,7 +196,6 @@ namespace SIMULTAN.Excel
         internal ExcelTool(ExcelTool _original, string nameCopyFormat = "{0}")
         {
             this.name = "";//Do not copy name, otherwise you'll get problems when you rename it since excel tools are identified by name
-            this.last_path_to_file = null;
 
             this.inputRules = new ObservableCollection<ExcelMappingNode>();
             foreach (ExcelMappingNode rule in _original.inputRules)
@@ -370,113 +352,6 @@ namespace SIMULTAN.Excel
             return this.name + " [" + (this.inputRules.Count - 1).ToString() + "]";
         }
 
-        /// <summary>
-        /// Serializer.
-        /// </summary>
-        /// <param name="_sb"></param>
-        public void AddToExport(ref StringBuilder _sb)
-        {
-            string tmp = string.Empty;
-
-            // general
-            _sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_START).ToString()); // 0
-            _sb.AppendLine(ParamStructTypes.EXCEL_TOOL);                              // EXCEL_TOOL
-
-            _sb.AppendLine(((int)ParamStructCommonSaveCode.CLASS_NAME).ToString());
-            _sb.AppendLine(this.GetType().ToString());
-
-            // tool - main
-            _sb.AppendLine(((int)ExcelMappingSaveCode.TOOL_NAME).ToString());
-            _sb.AppendLine(this.name);
-
-            _sb.AppendLine(((int)ExcelMappingSaveCode.TOOL_LAST_PATH_TO_FILE).ToString());
-            tmp = (string.IsNullOrEmpty(this.last_path_to_file)) ? string.Empty : this.last_path_to_file;
-            _sb.AppendLine(tmp);
-
-            // tool - input rules
-            _sb.AppendLine(((int)ExcelMappingSaveCode.TOOL_RULES).ToString());
-            if (this.inputRules != null && this.inputRules.Count > 1)
-            {
-                _sb.AppendLine((this.inputRules.Count - 1).ToString());
-
-                _sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_START).ToString()); // 0
-                _sb.AppendLine(ParamStructTypes.ENTITY_SEQUENCE);                         // ENTSEQ
-
-                for (int i = 1; i < this.inputRules.Count; i++)
-                {
-                    ExcelMappingNode chN = this.inputRules[i];
-                    chN.AddToExport(ref _sb);
-                }
-
-                _sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_START).ToString()); // 0
-                _sb.AppendLine(ParamStructTypes.SEQUENCE_END);                            // SEQEND
-                _sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_START).ToString()); // 0
-                _sb.AppendLine(ParamStructTypes.ENTITY_CONTINUE);                         // ENTCTN
-            }
-            else
-            {
-                _sb.AppendLine("0");
-            }
-
-            _sb.AppendLine(((int)ExcelMappingSaveCode.TOOL_MACRO_NAME).ToString());
-            _sb.AppendLine(this.macro_name);
-
-            // tool - output results
-            _sb.AppendLine(((int)ExcelMappingSaveCode.TOOL_RESULTS).ToString());
-            if (this.outputRangeRules != null && this.outputRangeRules.Count > 1)
-            {
-                _sb.AppendLine((this.outputRangeRules.Count).ToString());
-
-                _sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_START).ToString()); // 0
-                _sb.AppendLine(ParamStructTypes.ENTITY_SEQUENCE);                         // ENTSEQ
-
-                for (int i = 0; i < this.outputRangeRules.Count; i++)
-                {
-                    ExcelMappedData map = this.outputRangeRules[i].Key;
-                    Type data_type = this.outputRangeRules[i].Value;
-                    map.AddToExport(ref _sb, data_type);
-                }
-
-                _sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_START).ToString()); // 0
-                _sb.AppendLine(ParamStructTypes.SEQUENCE_END);                            // SEQEND
-                _sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_START).ToString()); // 0
-                _sb.AppendLine(ParamStructTypes.ENTITY_CONTINUE);                         // ENTCTN
-            }
-            else
-            {
-                _sb.AppendLine("0");
-            }
-
-            // tool - output result unmappings
-            _sb.AppendLine(((int)ExcelMappingSaveCode.TOOL_RESULT_UNMAPPINGS).ToString());
-            if (this.outputRules != null && this.outputRules.Count > 0)
-            {
-                _sb.AppendLine((this.outputRules.Count).ToString());
-
-                _sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_START).ToString()); // 0
-                _sb.AppendLine(ParamStructTypes.ENTITY_SEQUENCE);                         // ENTSEQ
-
-                for (int i = 0; i < this.outputRules.Count; i++)
-                {
-                    ExcelUnmappingRule um_rule = this.outputRules[i];
-                    um_rule.AddToExport(ref _sb);
-                }
-
-                _sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_START).ToString()); // 0
-                _sb.AppendLine(ParamStructTypes.SEQUENCE_END);                            // SEQEND
-                _sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_START).ToString()); // 0
-                _sb.AppendLine(ParamStructTypes.ENTITY_CONTINUE);                         // ENTCTN
-            }
-            else
-            {
-                _sb.AppendLine("0");
-            }
-
-            // signify end of complex entity
-            _sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_START).ToString()); // 0
-            _sb.AppendLine(ParamStructTypes.SEQUENCE_END);                            // SEQEND
-        }
-
         #endregion
 
         #region UTILS
@@ -515,7 +390,7 @@ namespace SIMULTAN.Excel
                         c.MappingsPerExcelTool.Remove(m.Key);
 
                         // add new
-                        ExcelComponentMapping new_mapping = new ExcelComponentMapping(new List<long>(old_mapping.Path), nameNew, old_mapping.ToolFilePath, old_mapping.RuleName, old_mapping.RuleIndexInTool);
+                        ExcelComponentMapping new_mapping = new ExcelComponentMapping(new List<long>(old_mapping.Path), nameNew, old_mapping.RuleName, old_mapping.RuleIndexInTool);
                         string new_key = new_mapping.ConstructKey();
                         RemoveDuplicateMapping(c, new_key, new_mapping);
                         c.MappingsPerExcelTool.Add(new_key, new_mapping);
@@ -547,7 +422,7 @@ namespace SIMULTAN.Excel
                         c.MappingsPerExcelTool.Remove(m.Key);
 
                         // add new
-                        ExcelComponentMapping new_mapping = new ExcelComponentMapping(new List<long>(old_mapping.Path), toolName, old_mapping.ToolFilePath, ruleNameNew, old_mapping.RuleIndexInTool);
+                        ExcelComponentMapping new_mapping = new ExcelComponentMapping(new List<long>(old_mapping.Path), toolName, ruleNameNew, old_mapping.RuleIndexInTool);
                         string new_key = new_mapping.ConstructKey();
                         RemoveDuplicateMapping(c, new_key, new_mapping);
                         c.MappingsPerExcelTool.Add(new_key, new_mapping);

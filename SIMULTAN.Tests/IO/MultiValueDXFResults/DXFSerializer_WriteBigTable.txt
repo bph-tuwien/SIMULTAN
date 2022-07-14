@@ -1,0 +1,58 @@
+0
+BIG_TABLE
+100
+SIMULTAN.Data.MultiValues.SimMultiValueBigTable
+900
+99
+1101
+2
+1103
+table name
+1102
+0
+1104
+unit column
+1105
+unit row
+1106
+-
+1116
+2
+909
+column header 1
+909
+column header 2
+1117
+2
+909
+column unit 1
+909
+column unit 2
+1120
+3
+909
+row header 1
+909
+row header 2
+909
+row header 3
+1123
+3
+909
+row unit 1
+909
+row unit 2
+909
+row unit 3
+1119
+3
+901
+2
+1122
+1.00000000_|_2.00000000
+1122
+3.00000000_|_4.00000000
+1122
+5.00000000_|_6.00000000
+1121
+Additional Text[NewLine]With New Line

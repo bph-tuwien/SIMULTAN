@@ -132,7 +132,7 @@ namespace SIMULTAN.Data.Assets
             if (string.IsNullOrEmpty(_full_path))
                 throw new ArgumentNullException("The new path cannot be Null!", nameof(_full_path));
 
-            int local_hash = GetLocalHash();
+            int local_hash = MultiLinkManager.MachineHashGenerator.GetMachineHash();
             if (representations.ContainsKey(local_hash))
                 return false;
 
@@ -151,7 +151,7 @@ namespace SIMULTAN.Data.Assets
             if (string.IsNullOrEmpty(_full_path))
                 throw new ArgumentNullException("The path to remove cannot be Null!", nameof(_full_path));
 
-            int local_hash = GetLocalHash();
+            int local_hash = MultiLinkManager.MachineHashGenerator.GetMachineHash();
             return representations.Remove(local_hash);
         }
 
@@ -162,17 +162,11 @@ namespace SIMULTAN.Data.Assets
         public string GetLink()
         {
             // construct the hash for the look-up
-            int local_hash = GetLocalHash();
+            int local_hash = MultiLinkManager.MachineHashGenerator.GetMachineHash();
             if (representations.ContainsKey(local_hash))
                 return representations[local_hash];
             else
                 return null;
-        }
-
-        private int GetLocalHash()
-        {
-            string local = Environment.MachineName + "_" + Environment.UserDomainName + "_" + Environment.UserName;
-            return local.GetHashCode();
         }
 
         /// <summary>
@@ -224,28 +218,6 @@ namespace SIMULTAN.Data.Assets
         }
 
         #endregion
-
-        /// <summary>
-        /// Serializes the link in the DXF format.
-        /// </summary>
-        /// <param name="_sw">the target stream</param>
-        public void AddToExport(StreamWriter _sw)
-        {
-            _sw.WriteLine(((int)ParamStructCommonSaveCode.ENTITY_START).ToString()); // 0
-            _sw.WriteLine(ParamStructTypes.MULTI_LINK);                              // MULTI_LINK
-
-            _sw.WriteLine(((int)ParamStructCommonSaveCode.NUMBER_OF).ToString());   // 901
-            string tmp = (representations == null) ? "0" : representations.Count.ToString();
-            _sw.WriteLine(tmp);
-
-            foreach (var entry in representations)
-            {
-                _sw.WriteLine(((int)ParamStructCommonSaveCode.COORDS_X).ToString());   // 10
-                _sw.WriteLine(entry.Key.ToString());
-                _sw.WriteLine(((int)ParamStructCommonSaveCode.COORDS_Y).ToString());   // 20
-                _sw.WriteLine(entry.Value);
-            }
-        }
 
         #region EVENT HANDLERS
 

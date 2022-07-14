@@ -1,0 +1,10 @@
+﻿0
+SIMNETWORK_PORT
+100
+SIMULTAN.Data.SimNetworks.SimNetworkPort
+900
+65004
+2
+My Port A
+9506
+1

@@ -8,7 +8,7 @@ using SIMULTAN.Data.SitePlanner;
 using SIMULTAN.Data.Users;
 using SIMULTAN.Excel;
 using SIMULTAN.Exchange;
-using System;
+using static SIMULTAN.Data.SimNetworks.SimNetwork;
 
 namespace SIMULTAN.Projects
 {
@@ -32,6 +32,13 @@ namespace SIMULTAN.Projects
         /// Stores all root components in the project
         /// </summary>
         public SimComponentCollection Components { get; }
+
+        /// <summary>
+        /// Stores all root networks in the project
+        /// </summary>
+        public SimNetworkCollection SimNetworks { get; }
+
+
         /// <summary>
         /// Stores all user defined component lists
         /// </summary>
@@ -52,11 +59,6 @@ namespace SIMULTAN.Projects
         /// Manages a library of parameters, external to any component.
         /// </summary>
         public ParameterFactory ParameterLibraryManager { get; }
-
-        /// <summary>
-        /// Manages a library of raster images that can be referenced by any component.
-        /// </summary>
-        public ImageRecordManager ImageLibraryManager { get; }
 
         /// <summary>
         /// Manages a collection of valid users for the project.
@@ -105,6 +107,8 @@ namespace SIMULTAN.Projects
             this.NetworkManager = new SimNetworkFactory(this);
 
             this.Components = new SimComponentCollection(this);
+            this.SimNetworks = new SimNetworkCollection(this);
+
             this.UserComponentLists = new SimUserComponentListCollection();
 
             this.MultiLinkManager.SecondaryDataManager = this.AssetManager;
@@ -115,8 +119,6 @@ namespace SIMULTAN.Projects
             this.ExcelToolMappingManager = new ExcelToolFactory(this);
 
             this.ParameterLibraryManager = new ParameterFactory();
-
-            this.ImageLibraryManager = new ImageRecordManager();
 
             this.GeometryModels = new SimGeometryModelCollection(this);
             this.SitePlannerManager = new SitePlannerManager(this);
@@ -134,6 +136,7 @@ namespace SIMULTAN.Projects
             using (AccessCheckingDisabler.Disable(this.Components))
             {
                 this.SitePlannerManager.ClearRecord();
+                this.SitePlannerManager.SetCallingLocation(null);
                 this.MultiLinkManager.Clear();
                 this.NetworkManager.ClearRecord();
                 this.AssetManager.Reset();
@@ -144,9 +147,11 @@ namespace SIMULTAN.Projects
                 this.Components.Clear();
                 this.Components.SetCallingLocation(null);
 
+                this.SimNetworks.Clear();
+                this.SimNetworks.SetCallingLocation(null);
+
                 this.ExcelToolMappingManager.ClearRecord();
                 this.ParameterLibraryManager.ClearRecord();
-                this.ImageLibraryManager.ClearRecord();
 
                 this.UserComponentLists.Clear();
 
@@ -165,6 +170,8 @@ namespace SIMULTAN.Projects
             this.ValueManager.SetCallingLocation(caller);
             this.NetworkManager.SetCallingLocation(caller);
             this.Components.SetCallingLocation(caller);
+            this.SitePlannerManager.SetCallingLocation(caller);
+            this.SimNetworks.SetCallingLocation(caller);
         }
     }
 }

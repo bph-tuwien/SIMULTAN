@@ -38,7 +38,7 @@ namespace SIMULTAN.Tests.Components
             Assert.AreEqual(string.Empty, component.Name);
             Assert.AreEqual(string.Empty, component.Description);
             Assert.AreEqual(Color.FromArgb(255, 0, 255, 0), component.ComponentColor);
-            Assert.AreEqual(new SimSlotBase(ComponentUtils.COMP_SLOT_UNDEFINED), component.CurrentSlot);
+            Assert.AreEqual(new SimSlotBase(SimDefaultSlots.Undefined), component.CurrentSlot);
             Assert.AreEqual(SimComponentVisibility.VisibleInProject, component.Visibility);
             Assert.AreEqual(SimComponentContentSorting.ByName, component.SortingType);
             Assert.AreEqual(false, component.IsAutomaticallyGenerated);
@@ -96,7 +96,7 @@ namespace SIMULTAN.Tests.Components
 
             //Placeholder
             var placeholder = copy.Components.First(x => x.Component == null);
-            Assert.AreEqual(new SimSlot(new SimSlotBase(ComponentUtils.COMP_SLOT_COST), "17"), placeholder.Slot);
+            Assert.AreEqual(new SimSlot(new SimSlotBase(SimDefaultSlots.Cost), "17"), placeholder.Slot);
         }
 
         [TestMethod]
@@ -120,21 +120,21 @@ namespace SIMULTAN.Tests.Components
             Assert.AreEqual(2, copychild1.ReferencedComponents.Count);
             //Internal reference
             var reference = copychild1.ReferencedComponents.First(x => x.Target != null);
-            Assert.AreEqual(new SimSlot(new SimSlotBase(ComponentUtils.COMP_SLOT_UNDEFINED), "5"), reference.Slot);
+            Assert.AreEqual(new SimSlot(new SimSlotBase(SimDefaultSlots.Undefined), "5"), reference.Slot);
             Assert.AreEqual(copychildchild3, reference.Target);
             //Placeholder
             reference = copychild1.ReferencedComponents.First(x => x.Target == null);
-            Assert.AreEqual(new SimSlot(new SimSlotBase(ComponentUtils.COMP_SLOT_JOINT), "8"), reference.Slot);
+            Assert.AreEqual(new SimSlot(new SimSlotBase(SimDefaultSlots.Joint), "8"), reference.Slot);
             Assert.AreEqual(null, reference.Target);
 
             Assert.AreEqual(2, copychildchild1.ReferencedComponents.Count);
             //Internal reference
             reference = copychildchild1.ReferencedComponents.First(x => x.Slot.SlotExtension == "0");
-            Assert.AreEqual(new SimSlot(new SimSlotBase(ComponentUtils.COMP_SLOT_UNDEFINED), "0"), reference.Slot);
+            Assert.AreEqual(new SimSlot(new SimSlotBase(SimDefaultSlots.Undefined), "0"), reference.Slot);
             Assert.AreEqual(copychildchild4, reference.Target);
             //External reference
             reference = copychildchild1.ReferencedComponents.First(x => x.Slot.SlotExtension == "1");
-            Assert.AreEqual(new SimSlot(new SimSlotBase(ComponentUtils.COMP_SLOT_UNDEFINED), "1"), reference.Slot);
+            Assert.AreEqual(new SimSlot(new SimSlotBase(SimDefaultSlots.Undefined), "1"), reference.Slot);
             Assert.AreEqual(target, reference.Target);
         }
 
@@ -199,7 +199,7 @@ namespace SIMULTAN.Tests.Components
         public void PropertyCurrentSlot()
         {
             SimComponent component = new SimComponent();
-            PropertyTestUtils.CheckProperty(component, nameof(SimComponent.CurrentSlot), new SimSlotBase(ComponentUtils.COMP_SLOT_JOINT));
+            PropertyTestUtils.CheckProperty(component, nameof(SimComponent.CurrentSlot), new SimSlotBase(SimDefaultSlots.Joint));
         }
 
         [TestMethod]
@@ -265,7 +265,7 @@ namespace SIMULTAN.Tests.Components
         [TestMethod]
         public void PropertyCurrentSlotAccess()
         {
-            CheckComponentPropertyAccess(nameof(SimComponent.CurrentSlot), new SimSlotBase(ComponentUtils.COMP_SLOT_JOINT));
+            CheckComponentPropertyAccess(nameof(SimComponent.CurrentSlot), new SimSlotBase(SimDefaultSlots.Joint));
         }
 
         [TestMethod]
@@ -328,7 +328,7 @@ namespace SIMULTAN.Tests.Components
         [TestMethod]
         public void PropertyCurrentSlotChanges()
         {
-            CheckComponentPropertyChanges(nameof(SimComponent.CurrentSlot), new SimSlotBase(ComponentUtils.COMP_SLOT_JOINT));
+            CheckComponentPropertyChanges(nameof(SimComponent.CurrentSlot), new SimSlotBase(SimDefaultSlots.Joint));
         }
 
         [TestMethod]

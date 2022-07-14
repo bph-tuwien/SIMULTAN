@@ -149,6 +149,9 @@ namespace SIMULTAN.Data.Geometry
         /// </summary>
         public ObservableCollection<GeometryModel> LinkedModels { get; private set; }
 
+        /// <summary>
+        /// The <see cref="ComponentGeometryExchange"/> associated with this model
+        /// </summary>
         public ComponentGeometryExchange Exchange 
         {
             get 

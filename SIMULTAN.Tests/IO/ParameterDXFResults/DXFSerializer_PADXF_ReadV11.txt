@@ -1,0 +1,64 @@
+﻿0
+SECTION
+2
+ENTITIES
+0
+PARAMETER
+100
+SIMULTAN.Data.Components.SimParameter
+900
+99
+1001
+Parameter X
+1002
+Unit
+1003
+abcdeFghijKlmnopQ
+1004
+?
+1014
+2
+1005
+-12.30000000
+1006
++∞
+1007
+45.67000000
+1010
+text value with spaces
+1012
+EditValue, EditName
+1013
+1
+0
+PARAMETER
+100
+SIMULTAN.Data.Components.SimParameter
+900
+100
+1001
+Parameter Y
+1002
+Unit
+1003
+abcdeFghijklmnopq
+1004
+?
+1014
+1
+1005
+-12.30000000
+1006
++∞
+1007
+55.67000000
+1010
+text value with spaces
+1012
+EditValue
+1013
+1
+0
+ENDSEC
+0
+EOF

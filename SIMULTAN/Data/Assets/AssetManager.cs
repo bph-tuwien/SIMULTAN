@@ -44,11 +44,6 @@ namespace SIMULTAN.Data.Assets
         /// </summary>
         public PathsToLinkedResourcesCollection PathsToResourceFiles { get; private set; }
 
-        private void PathsToResourceFiles_AttemptedToAddInadmissible(object sender, int index, string item)
-        {
-            // do we need this?
-        }
-
         private void PathsToResourceFiles_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
             if (this.isResetting) return;
@@ -158,29 +153,27 @@ namespace SIMULTAN.Data.Assets
 
         private void Resources_ElectiveCollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
-            object old_item = e.OldItems?[0];
-            object new_item = e.NewItems?[0];
-            if (e.Action == NotifyCollectionChangedAction.Add && new_item is ResourceEntry)
+            if (e.Action == NotifyCollectionChangedAction.Add)
             {
-                foreach (var item in e.NewItems)
+                foreach (var item in e.NewItems.OfType<ResourceEntry>())
                 {
                     this.AddResourceToLookup(item);
                 }
             }
-            else if (e.Action == NotifyCollectionChangedAction.Remove && old_item is ResourceEntry)
+            else if (e.Action == NotifyCollectionChangedAction.Remove)
             {
-                foreach (var item in e.OldItems)
+                foreach (var item in e.OldItems.OfType<ResourceEntry>())
                 {
                     this.RemoveResourceFromLookup(item);
                 }
             }
-            else if (e.Action == NotifyCollectionChangedAction.Replace && new_item is ResourceEntry && old_item is ResourceEntry)
+            else if (e.Action == NotifyCollectionChangedAction.Replace)
             {
-                foreach (var item in e.OldItems)
+                foreach (var item in e.OldItems.OfType<ResourceEntry>())
                 {
                     this.RemoveResourceFromLookup(item);
                 }
-                foreach (var item in e.NewItems)
+                foreach (var item in e.NewItems.OfType<ResourceEntry>())
                 {
                     this.AddResourceToLookup(item);
                 }
@@ -189,14 +182,14 @@ namespace SIMULTAN.Data.Assets
             {
                 if (e.OldItems != null)
                 {
-                    foreach (var item in e.OldItems)
+                    foreach (var item in e.OldItems.OfType<ResourceEntry>())
                     {
                         this.RemoveResourceFromLookup(item);
                     }
                 }
                 if (e.NewItems != null)
                 {
-                    foreach (var item in e.NewItems)
+                    foreach (var item in e.NewItems.OfType<ResourceEntry>())
                     {
                         this.AddResourceToLookup(item);
                     }
@@ -208,9 +201,9 @@ namespace SIMULTAN.Data.Assets
         {
             object old_item = e.OldItems?[0];
             object new_item = e.NewItems?[0];
-            if (e.Action == NotifyCollectionChangedAction.Add && new_item is ResourceEntry)
+            if (e.Action == NotifyCollectionChangedAction.Add)
             {
-                foreach (var item in e.NewItems)
+                foreach (var item in e.NewItems.OfType<ResourceEntry>())
                 {
                     this.AddResourceToLookup(item);
 
@@ -222,7 +215,7 @@ namespace SIMULTAN.Data.Assets
             }
             else if (e.Action == NotifyCollectionChangedAction.Remove && old_item is ResourceEntry)
             {
-                foreach (var item in e.OldItems)
+                foreach (var item in e.OldItems.OfType<ResourceEntry>())
                 {
                     this.RemoveResourceFromLookup(item);
 
@@ -234,12 +227,12 @@ namespace SIMULTAN.Data.Assets
             }
             else if (e.Action == NotifyCollectionChangedAction.Replace && new_item is ResourceEntry && old_item is ResourceEntry)
             {
-                foreach (var item in e.OldItems)
+                foreach (var item in e.OldItems.OfType<ResourceEntry>())
                 {
                     this.RemoveResourceFromLookup(item);
                     this.OnChildResourceCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, item));
                 }
-                foreach (var item in e.NewItems)
+                foreach (var item in e.NewItems.OfType<ResourceEntry>())
                 {
                     this.AddResourceToLookup(item);
                     this.OnChildResourceCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, item));
@@ -249,7 +242,7 @@ namespace SIMULTAN.Data.Assets
             {
                 if (e.OldItems != null)
                 {
-                    foreach (var item in e.OldItems)
+                    foreach (var item in e.OldItems.OfType<ResourceEntry>())
                     {
                         this.RemoveResourceFromLookup(item);
                         this.OnChildResourceCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, item));
@@ -257,7 +250,7 @@ namespace SIMULTAN.Data.Assets
                 }
                 if (e.NewItems != null)
                 {
-                    foreach (var item in e.NewItems)
+                    foreach (var item in e.NewItems.OfType<ResourceEntry>())
                     {
                         this.AddResourceToLookup(item);
                         this.OnChildResourceCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, item));
@@ -266,32 +259,34 @@ namespace SIMULTAN.Data.Assets
             }
         }
 
-        private void RemoveResourceFromLookup(object _item)
+        private void RemoveResourceFromLookup(ResourceEntry _item)
         {
-            ResourceEntry re = _item as ResourceEntry;
             List<int> contained_keys = new List<int>();
-            if (re is ResourceDirectoryEntry)
+            if (_item is ResourceDirectoryEntry dir)
             {
-                contained_keys = (re as ResourceDirectoryEntry).GetContainedKeys();
-                (re as ResourceDirectoryEntry).Children.CollectionChanged -= DirectoryChildren_CollectionChanged;
+                contained_keys = dir.GetContainedKeys();
+                dir.Children.CollectionChanged -= DirectoryChildren_CollectionChanged;
             }
-            this.resource_look_up.Remove(re.Key);
+            this.resource_look_up.Remove(_item.Key);
             foreach (int key in contained_keys)
                 this.resource_look_up.Remove(key);
             this.OnUpToDate();
         }
 
-        private void AddResourceToLookup(object _item)
+        private void AddResourceToLookup(ResourceEntry _item, bool isRootCaller = true)
         {
-            ResourceEntry re = _item as ResourceEntry;
-            if (re is ResourceDirectoryEntry)
+            if (!this.resource_look_up.ContainsKey(_item.Key))
+                this.resource_look_up.Add(_item.Key, _item);
+
+            if (_item is ResourceDirectoryEntry dir)
             {
-                (re as ResourceDirectoryEntry).Children.CollectionChanged -= DirectoryChildren_CollectionChanged;
-                (re as ResourceDirectoryEntry).Children.CollectionChanged += DirectoryChildren_CollectionChanged;
+                dir.Children.CollectionChanged += DirectoryChildren_CollectionChanged;
+                foreach (var item in dir.Children)
+                    AddResourceToLookup(item, false);
             }
-            if (!this.resource_look_up.ContainsKey(re.Key))
-                this.resource_look_up.Add(re.Key, re);
-            this.OnUpToDate();
+
+            if (isRootCaller)
+                this.OnUpToDate();
         }
 
         /// <summary>
@@ -335,7 +330,7 @@ namespace SIMULTAN.Data.Assets
 
 
         /// <summary>
-        /// Hanlder for the ChildResourceCollectionChanged event.
+        /// Handler for the ChildResourceCollectionChanged event.
         /// </summary>
         /// <param name="sender">object which emitted the event</param>
         /// <param name="args">information about the event</param>
@@ -388,9 +383,8 @@ namespace SIMULTAN.Data.Assets
                 throw new ArgumentNullException(nameof(projectData));
 
             this.ProjectData = projectData;
-            this.PathsToResourceFiles = new PathsToLinkedResourcesCollection(this.WorkingDirectory ?? AssetManager.PATH_NOT_FOUND, true);
+            this.PathsToResourceFiles = new PathsToLinkedResourcesCollection(this.WorkingDirectory ?? AssetManager.PATH_NOT_FOUND);
             this.PathsToResourceFiles.CollectionChanged += PathsToResourceFiles_CollectionChanged;
-            this.PathsToResourceFiles.AttemptedToAddInadmissible += PathsToResourceFiles_AttemptedToAddInadmissible;
             this.Resources_Internal = new ElectivelyObservableCollection<ResourceEntry>();
             this.Resources_Internal.ElectiveCollectionChanged += Resources_ElectiveCollectionChanged;
             this.resource_look_up = new Dictionary<int, ResourceEntry>();
@@ -462,6 +456,82 @@ namespace SIMULTAN.Data.Assets
 
         #region PARSING: resources according to type
 
+
+        internal void AddParsedResource(ResourceEntry resource)
+        {
+            this.Resources_Internal.SuppressNotification = true;
+            this.Resources_Internal.Add(resource);
+
+            AddResourceToLookup(resource);
+            
+            this.OnUpToDate();
+
+            this.Resources_Internal.SuppressNotification = false;
+        }
+
+        internal ResourceDirectoryEntry ParseResourceDirectoryEntry(SimUserRole _user, string _rel_path, int _key, 
+            SimComponentVisibility visibility)
+        {
+            var path = this.CorrectPathInput(AssetManager.PATH_NOT_FOUND, _rel_path, true);
+
+            AssetManager.LAST_KEY = Math.Max(AssetManager.LAST_KEY, _key);
+            this.Resources_Internal.SuppressNotification = true;
+
+            ResourceDirectoryEntry rde = new ResourceDirectoryEntry(this, _user, path.corrected_full, true, _key, true)
+            {
+                Visibility = visibility
+            };
+
+            this.Resources_Internal.SuppressNotification = false;
+
+            return rde;
+        }
+
+        internal ContainedResourceFileEntry ParseContainedResourceFileEntry(SimUserRole _user, string _rel_path, int _key,
+            SimComponentVisibility visibility)
+        {
+            // bool consistent, string corrected_full, string corrected_relative, bool? corrected_is_contained
+            var check = this.CorrectPathInput(AssetManager.PATH_NOT_FOUND, _rel_path, true);
+
+            AssetManager.LAST_KEY = Math.Max(AssetManager.LAST_KEY, _key);
+            this.Resources_Internal.SuppressNotification = true;
+
+            ContainedResourceFileEntry cre = new ContainedResourceFileEntry(this, _user, check.corrected_full, true, _key, true)
+            {
+                Visibility = visibility
+            };
+            this.Resources_Internal.SuppressNotification = false;
+
+            return cre;
+        }
+
+        internal LinkedResourceFileEntry ParseLinkedResourceFileEntry(SimUserRole _user, string _rel_path, int _key,
+            SimComponentVisibility visibility)
+        {
+            var check = this.CorrectPathInput(AssetManager.PATH_NOT_FOUND, _rel_path, false);
+
+            AssetManager.LAST_KEY = Math.Max(AssetManager.LAST_KEY, _key);
+            this.Resources_Internal.SuppressNotification = true;
+
+            string path = check.corrected_full;
+            bool path_is_absolute = true;
+            if (string.IsNullOrEmpty(path) || path == AssetManager.PATH_NOT_FOUND)
+            {
+                path = check.corrected_relative;
+                path_is_absolute = false;
+            }
+            LinkedResourceFileEntry lre = new LinkedResourceFileEntry(this, _user, path, path_is_absolute, _key)
+            {
+                Visibility = visibility
+            };
+
+
+            this.Resources_Internal.SuppressNotification = false;
+
+            return lre;
+        }
+
+
         internal ResourceDirectoryEntry AddParsedResourceDirectoryEntry(SimUserRole _user, string _rel_path, string _full_path, int _key, bool _add_to_record, bool _check_for_existence = true)
         {
             // check and correct the input, if necessary           
@@ -476,6 +546,7 @@ namespace SIMULTAN.Data.Assets
 
             ResourceDirectoryEntry rde = (_check_for_existence) ? new ResourceDirectoryEntry(this, _user, check.corrected_full, true, _key, _check_for_existence) :
                                                                   new ResourceDirectoryEntry(this, _user, check.corrected_relative, false, _key, _check_for_existence);
+
             if (_add_to_record)
             {
                 this.Resources_Internal.Add(rde);
@@ -564,7 +635,7 @@ namespace SIMULTAN.Data.Assets
 
 
         /// <summary>
-        /// Makes sure the resource files and directories are properly organised. Post-provessing for resources that were not saved as objects.
+        /// Makes sure the resource files and directories are properly organised. Post-processing for resources that were not saved as objects.
         /// </summary>
         internal void OrganizeResourceFileEntries()
         {
@@ -672,19 +743,21 @@ namespace SIMULTAN.Data.Assets
 
         #region PARSING: assets
 
-        internal void AddParsedGeometricAsset(List<long> _caller_ids, int _path_code_to_asset, string _id)
+        internal GeometricAsset AddParsedGeometricAsset(IEnumerable<long> _caller_ids, int _path_code_to_asset, string _id)
         {
             GeometricAsset ga = new GeometricAsset(this, _caller_ids, _path_code_to_asset, _id);
             this.AddAssetToInternalContainers(ga, _caller_ids);
+            return ga;
         }
 
-        internal void AddParsedDocumentAsset(List<long> _caller_ids, int _path_code_to_asset, string _id)
+        internal DocumentAsset AddParsedDocumentAsset(IEnumerable<long> _caller_ids, int _path_code_to_asset, string _id)
         {
             DocumentAsset da = new DocumentAsset(this, _caller_ids, _path_code_to_asset, _id);
             this.AddAssetToInternalContainers(da, _caller_ids);
+            return da;
         }
 
-        private void AddAssetToInternalContainers(Asset _a, List<long> _caller_ids)
+        private void AddAssetToInternalContainers(Asset _a, IEnumerable<long> _caller_ids)
         {
             // fill in the lookup table
             if (this.Assets == null)
@@ -725,7 +798,7 @@ namespace SIMULTAN.Data.Assets
             _comp.ReferencedAssets_Internal.AddRange(this.tmp_parsed_asset_record[_comp.Id.LocalId]);
         }
 
-        public void ReleaseTmpParseRecord()
+        internal void ReleaseTmpParseRecord()
         {
             this.tmp_parsed_asset_record = null;
         }
@@ -756,6 +829,29 @@ namespace SIMULTAN.Data.Assets
                 this.AddResourceEntry(file.FullName, preconditions.is_file, preconditions.is_contained, preconditions.is_properly_linked, AssetManager.LAST_KEY);
                 return AssetManager.LAST_KEY;
             }
+        }
+
+        public void AddResourceEntry(ResourceFileEntry file, ResourceDirectoryEntry parent)
+        {
+            if (file is LinkedResourceFileEntry)
+            {
+                if (parent != null)
+                    parent.Children.Add(file);
+                else
+                    this.Resources_Internal.Add(file);
+            }
+            else //Contained
+            {
+                bool attached_as_child = this.PlaceResourceEntryInHierarchy(file);
+                if (!attached_as_child)
+                    this.Resources_Internal.Add(file);
+            }
+        }
+        public void AddResourceEntry(ResourceDirectoryEntry directory)
+        {
+            bool attached_as_child = this.PlaceResourceEntryInHierarchy(directory);
+            if (!attached_as_child)
+                this.Resources_Internal.Add(directory);
         }
 
         /// <summary>
@@ -2159,6 +2255,9 @@ namespace SIMULTAN.Data.Assets
 
         public DocumentAsset CreateDocumentAsset(SimComponent Component, ResourceFileEntry file, string _id_contained)
         {
+            if (!this.resource_look_up.ContainsKey(file.Key))
+                throw new ArgumentException("Resource key does not exist");
+
             if (Component == null)
                 throw new ArgumentNullException(string.Format("{0} may not be null", nameof(Component)));
             if (file == null)
@@ -2222,130 +2321,6 @@ namespace SIMULTAN.Data.Assets
 
         #endregion
 
-        #region ToString
-
-        /// <summary>
-        /// Export the entire content of the manager.
-        /// </summary>
-        /// <param name="_sb">write the conent here</param>
-        public void AddToExport(ref StringBuilder _sb)
-        {
-            Dictionary<int, List<Asset>> all_assets = this.Assets.ToDictionary(x => x.Key, x => x.Value.ToList());
-            Dictionary<int, ResourceEntry> all_resources = this.Resources.ToDictionary(x => x.Key, x => x);
-            AssetManager.Serialize(ref _sb, this.PathsToResourceFiles, this.WorkingDirectory, all_resources, all_assets, true);
-        }
-
-        internal List<string> AddToPublicExport(ref StringBuilder _sb_public)
-        {
-            var split = this.SplitIntoPublicAndPrivateItems();
-            List<string> publicPaths = new List<string>();
-            if (split.resPublic.Count > 0)
-            {
-                // publicPaths = split.resPublic.Select(x => x.CurrentRelativePath).ToList();
-                foreach (var p in split.resPublic)
-                {
-                    if (p is ResourceDirectoryEntry pD)
-                        publicPaths.Add(p.CurrentRelativePath + Path.DirectorySeparatorChar);
-                    else if (p is ContainedResourceFileEntry pC)
-                        publicPaths.Add(p.CurrentRelativePath);
-                    // the linked resource entries are not included as they do not need to be unpacked 
-                }
-            }
-            if (split.resPublic.Count > 0 || split.assetsPublic.Count > 0)
-            {
-                AssetManager.Serialize(ref _sb_public, this.PathsToResourceFiles, this.WorkingDirectory, split.resPublic.ToDictionary(x => x.Key, x => x), new Dictionary<int, List<Asset>>() { { 0, split.assetsPublic } }, true);
-            }
-            return publicPaths;
-        }
-
-        private static void Serialize(ref StringBuilder _sb, IList<string> _paths_to_resource_files, string _working_directory,
-                                IDictionary<int, ResourceEntry> _some_resource_files, IDictionary<int, List<Asset>> _some_assets, bool _save_resources_as_objects = false)
-        {
-            _sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_START).ToString()); // 0
-            _sb.AppendLine(ParamStructTypes.ASSET_MANAGER);                           // ASSET_MANAGER
-
-            _sb.AppendLine(((int)ParamStructCommonSaveCode.CLASS_NAME).ToString());
-            _sb.AppendLine(typeof(AssetManager).ToString());
-
-            // save the paths where resource files might reside
-            _sb.AppendLine(((int)AssetSaveCode.WORKING_PATHS).ToString());
-            _sb.AppendLine(_paths_to_resource_files.Count.ToString());
-
-            if (_paths_to_resource_files.Count > 0)
-            {
-                foreach (string path in _paths_to_resource_files)
-                {
-                    _sb.AppendLine(((int)ParamStructCommonSaveCode.STRING_VALUE).ToString());
-                    _sb.AppendLine(path);
-                }
-            }
-
-            // save the working directory
-            _sb.AppendLine(((int)AssetSaveCode.WORKING_DIR).ToString());
-            _sb.AppendLine(_working_directory);
-
-            // save the paths to asset files:
-            _sb.AppendLine(((int)AssetSaveCode.APATHS_AS_OBJECTS).ToString());
-            string tmp = (_save_resources_as_objects) ? "1" : "0";
-            _sb.AppendLine(tmp);
-
-            _sb.AppendLine(((int)AssetSaveCode.APATH_COLLECTION).ToString());
-            _sb.AppendLine(_some_resource_files.Count.ToString());
-
-            if (_some_resource_files != null && _some_resource_files.Count > 0)
-            {
-                if (_save_resources_as_objects)
-                {
-                    _sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_START).ToString()); // 0
-                    _sb.AppendLine(ParamStructTypes.ENTITY_SEQUENCE);                         // ENTSEQ
-
-                    foreach (var entry in _some_resource_files)
-                    {
-                        entry.Value.ExportAsObjectTo(_sb);
-                    }
-
-                    _sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_START).ToString()); // 0
-                    _sb.AppendLine(ParamStructTypes.SEQUENCE_END);                            // SEQEND
-                    _sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_START).ToString()); // 0
-                    _sb.AppendLine(ParamStructTypes.ENTITY_CONTINUE);                         // ENTCTN
-                }
-                else
-                {
-                    foreach (var entry in _some_resource_files)
-                    {
-                        entry.Value.ExportTo(_sb, entry.Key);
-                    }
-                }
-            }
-
-            // save the assets
-            List<Asset> flat_assets = _some_assets.SelectMany(x => x.Value).ToList();
-            _sb.AppendLine(((int)AssetSaveCode.ASSET_COLLECTION).ToString());
-            _sb.AppendLine(flat_assets.Count().ToString());
-
-            if (flat_assets.Count() > 0)
-            {
-                _sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_START).ToString()); // 0
-                _sb.AppendLine(ParamStructTypes.ENTITY_SEQUENCE);                         // ENTSEQ
-
-                foreach (Asset a in flat_assets)
-                {
-                    a.AddToExport(ref _sb);
-                }
-
-                _sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_START).ToString()); // 0
-                _sb.AppendLine(ParamStructTypes.SEQUENCE_END);                            // SEQEND
-                _sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_START).ToString()); // 0
-                _sb.AppendLine(ParamStructTypes.ENTITY_CONTINUE);                         // ENTCTN
-            }
-
-            // signify end of complex entity - not necessary as it is packed in a section
-            _sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_START).ToString()); // 0
-            _sb.AppendLine(ParamStructTypes.SEQUENCE_END);                            // SEQEND
-        }
-
-        #endregion
-
         #region SPLITTING for PUBLIC and PRIVATE SAVING
 
         internal (List<ResourceEntry> resPublic, List<ResourceEntry> resPrivate, List<Asset> assetsPublic, List<Asset> assetsPrivate) SplitIntoPublicAndPrivateItems()
@@ -2382,8 +2357,13 @@ namespace SIMULTAN.Data.Assets
                             .Where(x => x != null).Distinct();
                         foreach (SimComponent c in cs)
                         {
-                            var parent_chain = ComponentWalker.GetParents(c);
-                            if (parent_chain.Any(x => x.Visibility == SimComponentVisibility.AlwaysVisible))
+                            bool isPublic = false;
+                            if (c.Parent == null)
+                                isPublic = c.Visibility == SimComponentVisibility.AlwaysVisible;
+                            else
+                                isPublic = ComponentWalker.GetParents(c).Last().Visibility == SimComponentVisibility.AlwaysVisible;
+
+                            if (isPublic)
                             {
                                 if (!assetsPublic.Contains(a))
                                     assetsPublic.Add(a);

@@ -1,0 +1,74 @@
+﻿0
+SECTION
+2
+VERSION_SECTION
+0
+FILE_VERSION
+10
+5
+0
+ENDSEC
+0
+SECTION
+2
+ENTITIES
+0
+BIG_TABLE
+100
+SIMULTAN.Data.MultiValues.SimMultiValueBigTable
+899
+00000000-0000-0000-0000-000000000000
+900
+99
+1101
+2
+1103
+table name
+1102
+1
+1104
+unit column
+1105
+unit row
+1106
+-
+1116
+3
+910
+column header 1
+910
+column header 2
+910
+column header 3
+1117
+3
+910
+column unit 1
+910
+column unit 2
+910
+column unit 3
+1120
+1
+909
+row header 1
+1123
+1
+909
+row unit 1
+1119
+3
+901
+2
+1122
+1.00000000_|_2.00000000
+1122
+3.00000000_|_4.00000000
+1122
+5.00000000_|_6.00000000
+1121
+Additional Text[NewLine]With New Line
+0
+ENDSEC
+0
+EOF

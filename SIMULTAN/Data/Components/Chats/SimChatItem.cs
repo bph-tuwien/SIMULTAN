@@ -19,41 +19,41 @@ namespace SIMULTAN.Data.Components
         /// <summary>
         /// A question that can be answered by the users determined by the author.
         /// </summary>
-        QUESTION,
+        QUESTION = 0,
         /// <summary>
         /// An answer to a question. Can be delivered by users determined by the author of the question.
         /// </summary>
-        ANSWER,
+        ANSWER = 1,
         /// <summary>
         /// Positive reaction to the answer to a question. The author of the question and the reacting user are the same.
         /// This type of ChatItem cannot have any more reactions.
         /// </summary>
-        ANSWER_ACCEPT,
+        ANSWER_ACCEPT = 2,
         /// <summary>
         /// Negative reaction to the answer to a question. The author of the question and the reacting user are the same.
         /// This type of ChatItem cannot have any more reactions.
         /// </summary>
-        ANSWER_REJECT,
+        ANSWER_REJECT = 3,
         /// <summary>
         /// A voting session that can be recorded on a block-chain. The voting session closes automatically
         /// as soon as all voters have placed a vote.
         /// </summary>
-        VOTING_SESSION,
+        VOTING_SESSION = 4,
         /// <summary>
         /// A positive vote as a child to voting session.
         /// </summary>
-        VOTE_ACCEPT,
+        VOTE_ACCEPT = 5,
         /// <summary>
         /// A negative vote as a child to voting session.
         /// </summary>
-        VOTE_REJECT
+        VOTE_REJECT = 6
     }
 
     //Warning: String names are serialized
     public enum SimChatItemState
     {
-        OPEN,
-        CLOSED
+        OPEN = 0,
+        CLOSED = 1
     }
     #endregion
 
@@ -390,7 +390,7 @@ namespace SIMULTAN.Data.Components
         /// <summary>
         /// Block-Chain specific: account private key for setting up of voting sessions and for voting.
         /// </summary>
-        private SecureString VotingRegistration_Password;
+        public SecureString VotingRegistration_Password { get; private set; }
 
         /// <summary>
         /// The Git commit key of the currently loaded version of the component record.
@@ -443,18 +443,6 @@ namespace SIMULTAN.Data.Components
         /// The list of users that can react to this chat item.
         /// </summary>
         public List<SimUserRole> ExpectsReacionsFrom { get; private set; }
-        /// <summary>
-        /// Derived: a string representation of the users that are expected to or can react to the chat item.
-        /// </summary>
-        public string ExpectsReactionsFromString
-        {
-            get
-            {
-                if (this.ExpectsReacionsFrom.Count == 0)
-                    return string.Empty;
-                return this.ExpectsReacionsFrom.Select(x => ComponentUtils.ComponentManagerTypeToLetter(x)).Aggregate((x, y) => x + y);
-            }
-        }
 
         private SimChatItem reaction_to;
         /// <summary>
@@ -571,7 +559,7 @@ namespace SIMULTAN.Data.Components
 
         internal SimChatItem(SimChatItemType _type, SimUserRole _author, string _voting_registration_address, string _voting_registration_password,
                            string _commit_key, DateTime _timestamp, string _message, SimChatItemState _state,
-                           List<SimUserRole> _expects_reactions_from, IEnumerable<SimChatItem> _children)
+                           IEnumerable<SimUserRole> _expects_reactions_from, IEnumerable<SimChatItem> _children)
         {
             this.Type = _type;
             this.Author = _author;
@@ -584,7 +572,7 @@ namespace SIMULTAN.Data.Components
             this.Message = _message;
             this.state = _state;
 
-            this.ExpectsReacionsFrom = _expects_reactions_from;
+            this.ExpectsReacionsFrom = _expects_reactions_from.ToList();
             this.children = new List<SimChatItem>();
             foreach (SimChatItem child in _children)
             {
@@ -594,106 +582,6 @@ namespace SIMULTAN.Data.Components
 
         #endregion
 
-        #region ToString
-
-        public override string ToString()
-        {
-            string offset = (this.GetDepth() == 0) ? string.Empty : Enumerable.Repeat("\t", this.GetDepth()).Aggregate((x, y) => x + y);
-            string rep = offset + this.TimeStamp.ToString() + " ";
-            rep += ComponentUtils.ComponentManagerTypeToLetter(this.Author) + ": ";
-            rep += this.Type.ToString() + " ";
-            rep += this.Message + " ";
-            rep += (this.state == SimChatItemState.CLOSED) ? "x" : "o";
-
-            rep += Environment.NewLine;
-            foreach (SimChatItem child in this.Children)
-            {
-                rep += child.ToString();
-            }
-
-            return rep;
-        }
-
-        public void AddToExport(ref StringBuilder _sb, string _key = null)
-        {
-            if (_sb == null) return;
-
-            // head
-            _sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_START).ToString()); // 0
-            _sb.AppendLine(ParamStructTypes.CHAT_ITEM);                               // CHAT_ITEM
-
-            if (!string.IsNullOrEmpty(_key))
-            {
-                _sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_KEY).ToString());
-                _sb.AppendLine(_key);
-            }
-
-            _sb.AppendLine(((int)ParamStructCommonSaveCode.CLASS_NAME).ToString());
-            _sb.AppendLine(this.GetType().ToString());
-
-            // body
-            _sb.AppendLine(((int)ChatItemSaveCode.TYPE).ToString());
-            _sb.AppendLine(this.Type.ToString());
-
-            _sb.AppendLine(((int)ChatItemSaveCode.AUTHOR).ToString());
-            _sb.AppendLine(ComponentUtils.ComponentManagerTypeToLetter(this.Author));
-
-            _sb.AppendLine(((int)ChatItemSaveCode.VR_ADDRESS).ToString());
-            _sb.AppendLine(this.VotingRegistration_Address);
-
-            _sb.AppendLine(((int)ChatItemSaveCode.VR_PASSWORD).ToString());
-            _sb.AppendLine(ChatUtils.SecureStringToString(this.VotingRegistration_Password));
-
-            _sb.AppendLine(((int)ChatItemSaveCode.GIT_COMMIT).ToString());
-            _sb.AppendLine(this.GitCommitKey);
-
-            _sb.AppendLine(((int)ChatItemSaveCode.TIMESTAMP).ToString());
-            _sb.AppendLine(this.TimeStamp.ToString(ParamStructTypes.DT_FORMATTER));
-
-            _sb.AppendLine(((int)ChatItemSaveCode.MESSAGE).ToString());
-            _sb.AppendLine(this.Message);
-
-            _sb.AppendLine(((int)ChatItemSaveCode.STATE).ToString());
-            _sb.AppendLine(this.state.ToString());
-
-            _sb.AppendLine(((int)ChatItemSaveCode.EXPECTED_REACTIONS_FROM).ToString());
-            _sb.AppendLine(this.ExpectsReacionsFrom.Count.ToString());
-
-            if (this.ExpectsReacionsFrom.Count > 0)
-            {
-                foreach (var user in this.ExpectsReacionsFrom)
-                {
-                    _sb.AppendLine(((int)ParamStructCommonSaveCode.X_VALUE).ToString());
-                    _sb.AppendLine(ComponentUtils.ComponentManagerTypeToLetter(user));
-                }
-            }
-
-            _sb.AppendLine(((int)ChatItemSaveCode.CHILDREN).ToString());
-            _sb.AppendLine(this.children.Count.ToString());
-
-            if (this.children.Count > 0)
-            {
-                _sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_START).ToString()); // 0
-                _sb.AppendLine(ParamStructTypes.ENTITY_SEQUENCE);                         // ENTSEQ
-
-                foreach (SimChatItem child in this.children)
-                {
-                    child.AddToExport(ref _sb);
-                }
-
-                _sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_START).ToString()); // 0
-                _sb.AppendLine(ParamStructTypes.SEQUENCE_END);                            // SEQEND
-                _sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_START).ToString()); // 0
-                _sb.AppendLine(ParamStructTypes.ENTITY_CONTINUE);                         // ENTCTN
-
-            }
-
-            // signify end of complex entity
-            _sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_START).ToString()); // 0
-            _sb.AppendLine(ParamStructTypes.SEQUENCE_END);                            // SEQEND
-        }
-
-        #endregion
 
         #region METHODS
 

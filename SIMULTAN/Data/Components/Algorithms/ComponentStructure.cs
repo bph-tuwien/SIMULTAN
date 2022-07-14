@@ -170,48 +170,6 @@ namespace SIMULTAN.Data.Components
             return found;
         }
 
-        /// <summary>
-        /// Returns all geometry ids from the given geometry file found in the instances of the component as a collection.
-        /// If the file id entries in the geometric relationships are empty, they have been realized by the old geometry 
-        /// viewer -> the file id will be set to the one provided by '_from_file_with_id'.
-        /// </summary>
-        /// <param name="_comp">the calling component</param>
-        /// <param name="_from_file_with_id">the file id in the ressource manager, where the currently loaded geometry resides</param>
-        /// <returns>a collection of ulong ids</returns>
-        public static IEnumerable<ulong> GetAllAssociatedGeometryIds(this SimComponent _comp, int _from_file_with_id)
-        {
-            var matchingPlacements = PlacementsMatchingFile(_comp, _from_file_with_id);
-            if (matchingPlacements.Count == 0)
-            {
-                foreach (var gr in _comp.Instances)
-                {
-                    foreach (var placement in gr.Placements)
-                        if (placement is SimInstancePlacementGeometry gp && gp.FileId == -1)
-                            gp.FileId = _from_file_with_id;
-                }
-
-                matchingPlacements = PlacementsMatchingFile(_comp, _from_file_with_id);
-            }
-
-            return matchingPlacements.Select(x => x.GeometryId).ToList();
-        }
-
-        private static List<SimInstancePlacementGeometry> PlacementsMatchingFile(SimComponent component, int fileId)
-        {
-            List<SimInstancePlacementGeometry> result = new List<SimInstancePlacementGeometry>();
-
-            foreach (var inst in component.Instances)
-            {
-                foreach (var placement in inst.Placements)
-                {
-                    if (placement is SimInstancePlacementGeometry pg && pg.FileId == fileId)
-                        result.Add(pg);
-                }
-            }
-
-            return result;
-        }
-
         #endregion
 
         #region Utils

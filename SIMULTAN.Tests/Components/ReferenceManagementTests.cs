@@ -25,7 +25,7 @@ namespace SIMULTAN.Tests.Components
         {
             LoadProject(referencesProject, "admin", "admin");
 
-            var slot = new SimSlot(new SimSlotBase(ComponentUtils.COMP_SLOT_COST), "a1");
+            var slot = new SimSlot(new SimSlotBase(SimDefaultSlots.Cost), "a1");
             var target = projectData.Components.First(x => x.Name == "Root1").Components.First(x => x.Component.Name == "Child1").Component;
             var owner = projectData.Components.First(x => x.Name == "Root3");
 
@@ -72,7 +72,7 @@ namespace SIMULTAN.Tests.Components
         {
             LoadProject(referencesProject, "admin", "admin");
 
-            var slot = new SimSlot(new SimSlotBase(ComponentUtils.COMP_SLOT_COST), "a1");
+            var slot = new SimSlot(new SimSlotBase(SimDefaultSlots.Cost), "a1");
             var target = projectData.Components.First(x => x.Name == "Root1").Components.First(x => x.Component.Name == "Child1").Component;
             var target2 = projectData.Components.First(x => x.Name == "Root3");
             var owner = projectData.Components.First(x => x.Name == "Root2");
@@ -113,7 +113,7 @@ namespace SIMULTAN.Tests.Components
         {
             LoadProject(referencesProject, "admin", "admin");
 
-            var slot = new SimSlot(new SimSlotBase(ComponentUtils.COMP_SLOT_COST), "a1");
+            var slot = new SimSlot(new SimSlotBase(SimDefaultSlots.Cost), "a1");
             var target = projectData.Components.First(x => x.Name == "Root1").Components.First(x => x.Component.Name == "Child1").Component;
             var target2 = projectData.Components.First(x => x.Name == "Root3");
             var owner = projectData.Components.First(x => x.Name == "Root2");
@@ -171,7 +171,7 @@ namespace SIMULTAN.Tests.Components
             //Arch doesn't have write access to owner
             LoadProject(referencesProject, "arch", "arch");
 
-            var slot = new SimSlot(new SimSlotBase(ComponentUtils.COMP_SLOT_COST), "a1");
+            var slot = new SimSlot(new SimSlotBase(SimDefaultSlots.Cost), "a1");
             var target = projectData.Components.First(x => x.Name == "Root1").Components.First(x => x.Component.Name == "Child1").Component;
             var owner = projectData.Components.First(x => x.Name == "Root3");
 
@@ -235,7 +235,7 @@ namespace SIMULTAN.Tests.Components
             //Arch doesn't have write access to owner
             LoadProject(referencesProject, "arch", "arch");
 
-            var slot = new SimSlot(new SimSlotBase(ComponentUtils.COMP_SLOT_COST), "a1");
+            var slot = new SimSlot(new SimSlotBase(SimDefaultSlots.Cost), "a1");
             var target = projectData.Components.First(x => x.Name == "Root1").Components.First(x => x.Component.Name == "Child1").Component;
             var target2 = projectData.Components.First(x => x.Name == "Root3");
             var owner = projectData.Components.First(x => x.Name == "Root2");
@@ -338,7 +338,7 @@ namespace SIMULTAN.Tests.Components
             var startTime = DateTime.Now;
             Thread.Sleep(5);
 
-            var slot = new SimSlot(new SimSlotBase(ComponentUtils.COMP_SLOT_COST), "a1");
+            var slot = new SimSlot(new SimSlotBase(SimDefaultSlots.Cost), "a1");
             var target = projectData.Components.First(x => x.Name == "Root1").Components.First(x => x.Component.Name == "Child1").Component;
             var owner = projectData.Components.First(x => x.Name == "Root3");
 
@@ -367,7 +367,7 @@ namespace SIMULTAN.Tests.Components
             var startTime = DateTime.Now;
             Thread.Sleep(5);
 
-            var slot = new SimSlot(new SimSlotBase(ComponentUtils.COMP_SLOT_COST), "a1");
+            var slot = new SimSlot(new SimSlotBase(SimDefaultSlots.Cost), "a1");
             var target = projectData.Components.First(x => x.Name == "Root1").Components.First(x => x.Component.Name == "Child1").Component;
             var owner = projectData.Components.First(x => x.Name == "Root2");
 
@@ -395,7 +395,7 @@ namespace SIMULTAN.Tests.Components
             var startTime = DateTime.Now;
             Thread.Sleep(5);
 
-            var slot = new SimSlot(new SimSlotBase(ComponentUtils.COMP_SLOT_COST), "a1");
+            var slot = new SimSlot(new SimSlotBase(SimDefaultSlots.Cost), "a1");
             var target = projectData.Components.First(x => x.Name == "Root1").Components.First(x => x.Component.Name == "Child1").Component;
             var target2 = projectData.Components.First(x => x.Name == "Root3");
             var owner = projectData.Components.First(x => x.Name == "Root2");

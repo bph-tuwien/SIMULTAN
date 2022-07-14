@@ -21,7 +21,7 @@ namespace SIMULTAN.Data.Assets
 
         #region PARSING .CTOR
 
-        internal GeometricAsset(AssetManager _manger, List<long> _caller_ids, int _path_code_to_asset, string _id)
+        internal GeometricAsset(AssetManager _manger, IEnumerable<long> _caller_ids, int _path_code_to_asset, string _id)
             : base(_manger, _caller_ids, _path_code_to_asset, _id)
         {
 
@@ -41,19 +41,5 @@ namespace SIMULTAN.Data.Assets
 
         #endregion
 
-        #region ToString
-
-        public override void AddToExport(ref StringBuilder _sb)
-        {
-            _sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_START).ToString()); // 0
-            _sb.AppendLine(ParamStructTypes.ASSET_GEOM);                              // ASSET_GEOMETRIC
-
-            _sb.AppendLine(((int)ParamStructCommonSaveCode.CLASS_NAME).ToString());
-            _sb.AppendLine(this.GetType().ToString());
-
-            base.AddToExport(ref _sb);
-        }
-
-        #endregion
     }
 }

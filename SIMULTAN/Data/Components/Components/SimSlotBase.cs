@@ -9,7 +9,7 @@ namespace SIMULTAN.Data.Components
 {
     /// <summary>
     /// Stores the base of a slot, usually a string describing it's function.
-    /// Only values contained in <see cref="ComponentUtils.COMP_SLOTS_ALL"/> are accepted.
+    /// Only values contained in <see cref="SimDefaultSlots.AllSlots"/> are accepted.
     /// This class is often used in combination with the <see cref="SimSlot"/> class.
     /// </summary>
     [DebuggerDisplay("SlotBase {Base}")]
@@ -28,12 +28,12 @@ namespace SIMULTAN.Data.Components
         /// <summary>
         /// Initializes a new instance of the SlotBase class
         /// </summary>
-        /// <param name="slotBase">The slot base string. Only values contained in <see cref="ComponentUtils.COMP_SLOTS_ALL"/> are accepted.</param>
+        /// <param name="slotBase">The slot base string. Only values contained in <see cref="SimDefaultSlots.AllSlots"/> are accepted.</param>
         public SimSlotBase(string slotBase)
         {
             if (slotBase == null)
                 throw new ArgumentNullException(nameof(slotBase));
-            if (!ComponentUtils.COMP_SLOTS_ALL.Contains(slotBase))
+            if (!SimDefaultSlots.AllSlots.Contains(slotBase))
                 throw new ArgumentException("Invalid base slot");
 
             this.Base = slotBase;

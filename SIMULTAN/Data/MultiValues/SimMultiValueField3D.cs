@@ -225,7 +225,11 @@ namespace SIMULTAN.Data.MultiValues
 
 
         #region Properties & Members
-
+        
+        /// <summary>
+        /// Returns the data entries in the field. Index is the index along the axis, the value is the value at that index.
+        /// </summary>
+        public IEnumerable<KeyValuePair<IntIndex3D, double>> Field => field;
         private Dictionary<IntIndex3D, double> field; //x => index in XAxis, y => index in YAxis, z => index ZAxis
 
         /// <summary>
@@ -269,7 +273,7 @@ namespace SIMULTAN.Data.MultiValues
         }
 
         /// <inheritdoc />
-        public override MultiValueType MVType => MultiValueType.FIELD_3D;
+        public override SimMultiValueType MVType => SimMultiValueType.Field3D;
 
         /// <summary>
         /// Stores the axis entries along the X-Axis
@@ -504,73 +508,6 @@ namespace SIMULTAN.Data.MultiValues
             return mvt_string;
         }
 
-        /// <summary>
-        /// Adds the data from this instance to the export (DXF format)
-        /// </summary>
-        /// <param name="sb">The StringBuilder to which the data should be added</param>
-        public override void AddToExport(ref StringBuilder sb)
-        {
-            if (sb == null) return;
-
-            sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_START).ToString()); // 0
-            sb.AppendLine(ParamStructTypes.VALUE_FIELD);                             // VALUE_FIELD
-
-            sb.AppendLine(((int)ParamStructCommonSaveCode.CLASS_NAME).ToString());
-            sb.AppendLine(this.GetType().ToString());
-
-            // common, common display, common info   
-            base.AddToExport(ref sb);
-
-            // common TABLE Info
-            sb.AppendLine(((int)MultiValueSaveCode.NrX).ToString());
-            sb.AppendLine(this.XAxis.Count.ToString());
-            sb.AppendLine(((int)MultiValueSaveCode.NrY).ToString());
-            sb.AppendLine(this.YAxis.Count.ToString());
-            sb.AppendLine(((int)MultiValueSaveCode.NrZ).ToString());
-            sb.AppendLine(this.ZAxis.Count.ToString());
-
-            // common TABLE VALUE Info
-            sb.AppendLine(((int)MultiValueSaveCode.XS).ToString());
-            sb.AppendLine(this.XAxis.Count.ToString());
-            for (int i = 0; i < this.XAxis.Count; i++)
-            {
-                sb.AppendLine(((int)ParamStructCommonSaveCode.X_VALUE).ToString());
-                sb.AppendLine(DXFDecoder.DoubleToString(this.XAxis[i], "F8"));
-            }
-
-            sb.AppendLine(((int)MultiValueSaveCode.YS).ToString());
-            sb.AppendLine(this.YAxis.Count.ToString());
-            for (int i = 0; i < this.YAxis.Count; i++)
-            {
-                sb.AppendLine(((int)ParamStructCommonSaveCode.X_VALUE).ToString());
-                sb.AppendLine(DXFDecoder.DoubleToString(this.YAxis[i], "F8"));
-            }
-
-            sb.AppendLine(((int)MultiValueSaveCode.ZS).ToString());
-            sb.AppendLine(this.ZAxis.Count.ToString());
-            for (int i = 0; i < this.ZAxis.Count; i++)
-            {
-                sb.AppendLine(((int)ParamStructCommonSaveCode.X_VALUE).ToString()); ;
-                sb.AppendLine(DXFDecoder.DoubleToString(this.ZAxis[i], "F8"));
-            }
-
-            sb.AppendLine(((int)MultiValueSaveCode.FIELD).ToString());
-            sb.AppendLine(this.field.Count.ToString());
-            for (int i = 0; i < this.field.Count; i++)
-            {
-                var coords = this.field.ElementAt(i).Key;
-                double value = this.field.ElementAt(i).Value;
-                sb.AppendLine(((int)ParamStructCommonSaveCode.X_VALUE).ToString());
-                sb.AppendLine(DXFDecoder.DoubleToString(coords.X, "F8"));
-                sb.AppendLine(((int)ParamStructCommonSaveCode.Y_VALUE).ToString());
-                sb.AppendLine(DXFDecoder.DoubleToString(coords.Y, "F8"));
-                sb.AppendLine(((int)ParamStructCommonSaveCode.Z_VALUE).ToString());
-                sb.AppendLine(DXFDecoder.DoubleToString(coords.Z, "F8"));
-                sb.AppendLine(((int)ParamStructCommonSaveCode.W_VALUE).ToString());
-                sb.AppendLine(DXFDecoder.DoubleToString(value, "F8"));
-            }
-        }
-
         #endregion
 
         #region External Pointer
@@ -685,12 +622,6 @@ namespace SIMULTAN.Data.MultiValues
             public override SimMultiValuePointer Clone()
             {
                 return new SimMultiValueField3DPointer(table, axisValueX, axisValueY, axisValueZ);
-            }
-
-            /// <inheritdoc />
-            public override void AddToExport(ref StringBuilder sb)
-            {
-                base.AddToExport(ref sb, axisValueX, axisValueY, axisValueZ, "");
             }
 
             /// <inheritdoc />

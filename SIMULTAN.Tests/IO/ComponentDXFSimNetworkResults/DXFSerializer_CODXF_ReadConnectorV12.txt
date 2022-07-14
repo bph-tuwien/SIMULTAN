@@ -1,0 +1,14 @@
+﻿0
+SIMNETWORK_CONNECTOR
+100
+SIMULTAN.Data.SimNetworks.SimNetworkConnector
+900
+65007
+2
+My Connector
+9511
+65004
+9512
+65006
+0
+EOF

@@ -91,7 +91,11 @@ namespace SIMULTAN.Data.Components
         /// <returns>A copy of the current object</returns>
         public SimInstanceSizeTransferDefinitionItem Clone()
         {
-            return new SimInstanceSizeTransferDefinitionItem(Source, Parameter, Addend);
+            return new SimInstanceSizeTransferDefinitionItem(Source, Parameter, Addend)
+            {
+                loadingParameterId = this.loadingParameterId,
+                loadingParameterName = this.loadingParameterName,
+            };
         }
     }
 }

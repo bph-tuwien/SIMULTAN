@@ -9,20 +9,20 @@ namespace SIMULTAN.Data.MultiValues
     /// <summary>
     /// Describes the type of a value field
     /// </summary>
-    public enum MultiValueType
+    public enum SimMultiValueType : int
     {
         /// <summary>
         /// Holds a function filed with multiple function graphs.
         /// </summary>
-        FUNCTION_ND,
+        Function = 0,
         /// <summary>
         /// A 3D value field that allows for interpolation
         /// </summary>
-        FIELD_3D,
+        Field3D = 1,
         /// <summary>
         /// A large 2D value field without interpolation support (but can perform matrix operations)
         /// </summary>
-        TABLE
+        BigTable = 2,
     }
 
     #endregion
@@ -45,7 +45,7 @@ namespace SIMULTAN.Data.MultiValues
         /// Gets or sets the type of the value field.
         /// This value is redundant since types have a 1-1 mapping to C# types
         /// </summary>
-        public abstract MultiValueType MVType { get; }
+        public abstract SimMultiValueType MVType { get; }
 
         /// <summary>
         /// Returns true when the value field supports interpolation between values.
@@ -180,49 +180,6 @@ namespace SIMULTAN.Data.MultiValues
         /// Creates a deep copy of this instance
         /// </summary>
         public abstract SimMultiValue Clone();
-
-        #endregion
-
-        #region METHODS: To and From String
-
-        /// <summary>
-        /// Adds the data of this class ot the DXF exporter
-        /// </summary>
-        /// <param name="sb">The string builder that contains the DXF file content</param>
-        public virtual void AddToExport(ref StringBuilder sb)
-
-        {
-            if (sb == null) return;
-            string tmp = null;
-
-            // common
-            sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_LOCATION).ToString());
-            sb.AppendLine(this.Id.GlobalId.ToString());
-
-            sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_ID).ToString());
-            sb.AppendLine(this.Id.LocalId.ToString());
-
-            sb.AppendLine(((int)MultiValueSaveCode.MVType).ToString());
-            sb.AppendLine(((int)this.MVType).ToString());
-
-            sb.AppendLine(((int)MultiValueSaveCode.MVName).ToString());
-            sb.AppendLine(this.Name);
-
-            sb.AppendLine(((int)MultiValueSaveCode.MVCanInterpolate).ToString());
-            tmp = (this.CanInterpolate) ? "1" : "0";
-            sb.AppendLine(tmp);
-
-            // common info
-            sb.AppendLine(((int)MultiValueSaveCode.MVUnitX).ToString());
-            sb.AppendLine(this.UnitX);
-
-            sb.AppendLine(((int)MultiValueSaveCode.MVUnitY).ToString());
-            sb.AppendLine(this.UnitY);
-
-            sb.AppendLine(((int)MultiValueSaveCode.MVUnitZ).ToString());
-            sb.AppendLine(this.UnitZ);
-
-        }
 
         #endregion
 

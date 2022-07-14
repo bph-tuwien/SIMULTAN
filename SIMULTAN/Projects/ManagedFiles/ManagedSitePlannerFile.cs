@@ -35,7 +35,7 @@ namespace SIMULTAN.Projects.ManagedFiles
         /// <inheritdoc />
         public override void Save()
         {
-            ProjectIO.SaveSitePlannerFile(this.File, ProjectData.SitePlannerManager);
+            ProjectIO.SaveSitePlannerFile(this.File, ProjectData.SitePlannerManager, ProjectData);
             this.OnFileUpToDateChanged(true);
         }
 

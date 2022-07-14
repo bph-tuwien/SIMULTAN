@@ -11,11 +11,8 @@ using SIMULTAN.Serializer.SimGeo;
 using SIMULTAN.Utils;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SIMULTAN.Exchange
 {
@@ -29,9 +26,9 @@ namespace SIMULTAN.Exchange
         /// Supresses the <see cref="GeometryInvalidated"/> event when set to False.
         /// The default value is True
         /// </summary>
-        internal bool EnableNotifyGeometryInvalidated 
+        internal bool EnableNotifyGeometryInvalidated
         {
-            get => notifyGeometryInvalidated; 
+            get => notifyGeometryInvalidated;
             set { notifyGeometryInvalidated = value; }
         }
         private bool notifyGeometryInvalidated = true;
@@ -42,7 +39,7 @@ namespace SIMULTAN.Exchange
         /// This property helps when a large number of events in short time is expected, for example,
         /// while a UI operation for moving vertices is ongoing.
         /// </summary>
-        public bool EnableGeometryEvents 
+        public bool EnableGeometryEvents
         {
             get => enableGeometryEvents;
             set
@@ -51,7 +48,7 @@ namespace SIMULTAN.Exchange
                 {
                     enableGeometryEvents = value;
                     if (enableGeometryEvents)
-                        Synchronize(); 
+                        Synchronize();
                 }
             }
         }
@@ -505,7 +502,7 @@ namespace SIMULTAN.Exchange
                 for (int p = 0; p < inst.Placements.Count; ++p)
                 {
                     var placement = inst.Placements[p];
-                    if (placement is SimInstancePlacementGeometry pg && 
+                    if (placement is SimInstancePlacementGeometry pg &&
                         pg.FileId == geometry.ModelGeometry.Model.File.Key && pg.GeometryId == geometry.Id)
                     {
                         inst.Placements.RemoveAt(p);
@@ -544,7 +541,7 @@ namespace SIMULTAN.Exchange
 
                 for (int j = 0; j < inst.Placements.Count; j++)
                 {
-                    if (inst.Placements[j] is SimInstancePlacementGeometry pg && 
+                    if (inst.Placements[j] is SimInstancePlacementGeometry pg &&
                         pg.FileId == building.Project.SitePlannerFile.Key &&
                         pg.GeometryId == building.ID)
                     {

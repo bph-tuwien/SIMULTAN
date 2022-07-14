@@ -1,0 +1,10 @@
+﻿0
+MULTI_LINK
+901
+1
+10
+1136910687
+20
+C:\something
+0
+EOF

@@ -68,56 +68,6 @@ namespace SIMULTAN.Data.Components
 
         #endregion
 
-        #region METHODS: DXF Export
-
-        /// <summary>
-        /// Exports the Parameters in DFX format. If it gets "parametersToExport" s null, it exports the parameters in the ParameterFactory.ParameterRecord
-        /// </summary>
-        public StringBuilder ExportRecord(List<SimParameter> parametersToExport = null, bool _finalize = false)
-        {
-            StringBuilder sb = new StringBuilder();
-            sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_START).ToString());
-            sb.AppendLine(ParamStructTypes.SECTION_START);
-            sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_NAME).ToString());
-            sb.AppendLine(ParamStructTypes.ENTITY_SECTION);
-
-            if (parametersToExport != null)
-            {
-                if (parametersToExport.Count > 0)
-                {
-                    foreach (SimParameter record in parametersToExport)
-                    {
-                        record.AddToExport(ref sb);
-                    }
-                }
-            }
-            else
-            {
-                if (this.ParameterRecord.Count > 0)
-                {
-                    foreach (SimParameter record in this.ParameterRecord)
-                    {
-                        record.AddToExport(ref sb);
-                    }
-                }
-            }
-
-
-            sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_START).ToString());
-            sb.AppendLine(ParamStructTypes.SECTION_END);
-
-            if (_finalize)
-            {
-                sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_START).ToString());
-                sb.AppendLine(ParamStructTypes.EOF);
-            }
-
-            return sb;
-        }
-
-
-        #endregion
-
         #region METHODS: Record Management
 
         [Obsolete("... and inefficient")]

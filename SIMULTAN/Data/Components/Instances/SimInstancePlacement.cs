@@ -93,5 +93,7 @@ namespace SIMULTAN.Data.Components
         /// This method is never called twice without calling <see cref="AddToTarget"/> in between.
         /// </summary>
         public abstract void RemoveFromTarget();
+
+        internal abstract bool RestoreReferences(Dictionary<SimObjectId, SimFlowNetworkElement> networkElements);
     }
 }

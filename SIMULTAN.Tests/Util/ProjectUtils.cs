@@ -6,6 +6,7 @@ using SIMULTAN.Data.Users;
 using SIMULTAN.Projects;
 using SIMULTAN.Serializer.Projects;
 using SIMULTAN.Serializer.SimGeo;
+using SIMULTAN.UI.Services;
 using SIMULTAN.Utils;
 using System.Collections.Generic;
 using System.IO;
@@ -29,9 +30,9 @@ namespace SIMULTAN.Tests.Utils
             ServicesProvider servicesProvider = new ServicesProvider();
             servicesProvider.AddService<IAuthenticationService>(new UnitTestAuthentificationService(user, password));
 
-            CompactProject project = ZipProjectIO.Load(projectFile, projectDataManager, servicesProvider) as CompactProject;
+            CompactProject project = ZipProjectIO.Load(projectFile, projectDataManager) as CompactProject;
 
-            var authenticated = ZipProjectIO.AuthenticateUserAfterLoading(project, projectDataManager, Encoding.ASCII.GetBytes("ThWmZq4t6w9z$C&F"));
+            ZipProjectIO.AuthenticateUserAfterLoading(project, projectDataManager, Encoding.ASCII.GetBytes("ThWmZq4t6w9z$C&F"), servicesProvider);
             ZipProjectIO.OpenAfterAuthentication(project, projectDataManager);
 
             Assert.IsFalse(projectDataManager.ValueManager.HasChanges);

@@ -30,7 +30,7 @@ namespace SIMULTAN.Projects.ManagedFiles
         /// <inheritdoc/>
         public override void Save()
         {
-            ProjectIO.SaveLinksFile(this.File, ProjectData.MultiLinkManager);
+            ProjectIO.SaveLinksFile(this.File, ProjectData);
             this.OnFileUpToDateChanged(true);
         }
 
@@ -40,9 +40,9 @@ namespace SIMULTAN.Projects.ManagedFiles
             if (_clear_before_open)
                 ProjectData.MultiLinkManager.Clear();
 
-            ProjectIO.OpenLinksFile(this.File, ProjectData.MultiLinkManager);
+            ProjectIO.OpenLinksFile(this.File, this.owner.Project.GlobalID, ProjectData);
 
-            // TODO: synchronize the links with the asset manager of the component factory
+            //Synchronize the links with the asset manager of the component factory
         }
 
         /// <inheritdoc/>

@@ -252,37 +252,6 @@ namespace SIMULTAN.Data.Components
 
         #endregion
 
-        #region TO STRING
-
-        public void AddToExport(ref StringBuilder _sb, string _key = null)
-        {
-            if (_sb == null) return;
-
-            _sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_START).ToString()); // 0
-            _sb.AppendLine(ParamStructTypes.ACCESS_TRACKER);                          // ACCESS_TRACKER
-
-            if (!(string.IsNullOrEmpty(_key)))
-            {
-                _sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_KEY).ToString());
-                _sb.AppendLine(_key);
-            }
-
-            _sb.AppendLine(((int)ComponentAccessTrackerSaveCode.FLAGS).ToString());
-            _sb.AppendLine(ComponentUtils.ComponentAccessTypeToString(this.access));
-
-
-            _sb.AppendLine(((int)ComponentAccessTrackerSaveCode.WRITE_LAST).ToString());
-            _sb.AppendLine(this.lastAccessWrite.ToUniversalTime().Ticks.ToString());
-
-            _sb.AppendLine(((int)ComponentAccessTrackerSaveCode.SUPERVIZE_LAST).ToString());
-            _sb.AppendLine(this.lastAccessSupervize.ToUniversalTime().Ticks.ToString());
-
-            _sb.AppendLine(((int)ComponentAccessTrackerSaveCode.RELEASE_LAST).ToString());
-            _sb.AppendLine(this.lastAccessRelease.ToUniversalTime().Ticks.ToString());
-        }
-
-        #endregion
-
         #region COMPARISON
 
         /// <inheritdoc/>

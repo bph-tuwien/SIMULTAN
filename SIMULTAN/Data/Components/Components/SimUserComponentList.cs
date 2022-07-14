@@ -104,7 +104,7 @@ namespace SIMULTAN.Data.Components
         /// </summary>
         /// <param name="name">The name of the list</param>
         /// <param name="rootComponents">The root component of the list</param>
-        public SimUserComponentList(string name, ObservableCollection<SimComponent> rootComponents)
+        public SimUserComponentList(string name, IEnumerable<SimComponent> rootComponents)
         {
             if (rootComponents == null)
             {
@@ -123,43 +123,13 @@ namespace SIMULTAN.Data.Components
         /// Constructs a UserComponentList
         /// </summary>
         /// <param name="name">The name of the list</param>
-        public SimUserComponentList(string name) : this(name, new ObservableCollection<SimComponent>())
+        public SimUserComponentList(string name) : this(name, Enumerable.Empty<SimComponent>())
         {
         }
 
         #endregion
 
         #region Methods
-
-        /// <summary>
-        /// Adds (serializes) this UserComponentList to the export StringBuilder.
-        /// </summary>
-        /// <param name="sb">The StringBuilder to export to.</param>
-        public void AddToExport(StringBuilder sb)
-        {
-            sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_START).ToString()); // 0
-            sb.AppendLine(ParamStructTypes.USER_LIST);
-
-            sb.AppendLine(((int)ParamStructCommonSaveCode.CLASS_NAME).ToString());
-            sb.AppendLine(this.GetType().ToString());
-
-            sb.AppendLine(((int)UserComponentListSaveCode.NAME).ToString());
-            sb.AppendLine(this.Name);
-
-            sb.AppendLine(((int)UserComponentListSaveCode.NR_OF_ROOT_COMPONENTS).ToString());
-            sb.AppendLine(this.RootComponents.Count.ToString());
-
-
-            foreach (var comp in RootComponents)
-            {
-                sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_ID).ToString());
-                sb.AppendLine(comp.Id.ToString());
-            }
-
-            sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_START).ToString());
-            sb.AppendLine(ParamStructTypes.ENTITY_CONTINUE);
-
-        }
 
         /// <summary>
         /// Returns the content id of the UserComponentList

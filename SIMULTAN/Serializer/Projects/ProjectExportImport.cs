@@ -2,7 +2,9 @@
 using SIMULTAN.Data.FlowNetworks;
 using SIMULTAN.Data.MultiValues;
 using SIMULTAN.Projects;
+using SIMULTAN.Serializer.CODXF;
 using SIMULTAN.Serializer.DXF;
+using SIMULTAN.Serializer.MVDXF;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -50,25 +52,15 @@ namespace SIMULTAN.Serializer.Projects
             // export the values
             if (all_values.Count() > 0)
             {
-                StringBuilder export_v = SimMultiValueCollection.ExportSome(all_values, true);
-                string content_v = export_v.ToString();
-                using (FileStream fs = File.Create(path_to_MVFile))
-                {
-                    byte[] content_B = Encoding.UTF8.GetBytes(content_v);
-                    fs.Write(content_B, 0, content_B.Length);
-                }
-                files_to_pack.Add(new FileInfo(path_to_MVFile));
+                var mvFile = new FileInfo(path_to_MVFile);
+                MultiValueDxfIO.Write(mvFile, all_values);
+                files_to_pack.Add(mvFile);
             }
 
             // export the components
-            StringBuilder export_c = projectData.Components.ExportSome(all_components, all_networks, true);
-            string content_c = export_c.ToString();
-            using (FileStream fs = File.Create(path_to_CompFile))
-            {
-                byte[] content_B = Encoding.UTF8.GetBytes(content_c);
-                fs.Write(content_B, 0, content_B.Length);
-            }
-            files_to_pack.Add(new FileInfo(path_to_CompFile));
+            var compFile = new FileInfo(path_to_CompFile);
+            ComponentDxfIO.WriteLibrary(compFile, all_components, all_networks);
+            files_to_pack.Add(compFile);
 
             // put both files in a Zip archive and delete them from the file system
             ZipUtils.CreateArchiveFrom(_file, new List<DirectoryInfo>(), files_to_pack, _file.DirectoryName);
@@ -99,9 +91,9 @@ namespace SIMULTAN.Serializer.Projects
             ExtendedProjectData mergeData = new ExtendedProjectData();
             if (vfile != null)
             {
-                // 1b. load the values to a clean factory                
-                DXFDecoder dxf_decoder_V = new DXFDecoder(mergeData, DXFDecoderMode.MultiValue);
-                dxf_decoder_V.LoadFromFile(vfile.FullName);
+                // 1b. load the values to a clean factory
+                DXFParserInfo info = new DXFParserInfo(Guid.Empty, mergeData);
+                MultiValueDxfIO.Read(vfile, info);
 
                 // 1c. add the import description to their name
                 foreach (SimMultiValue mv in mergeData.ValueManager)
@@ -115,12 +107,11 @@ namespace SIMULTAN.Serializer.Projects
             // 2a. load the components and networks
             if (cfile != null)
             {
-                DXFDecoder dxf_decoder_C = new DXFDecoder(mergeData, DXFDecoderMode.Components);
-                dxf_decoder_C.LoadFromFile(cfile.FullName);
-                mergeData.Components.RestoreReferences(mergeData.NetworkManager.GetAllNetworkElements());
+                //DXFDecoder dxf_decoder_C = new DXFDecoder(mergeData, DXFDecoderMode.Components);
+                //dxf_decoder_C.LoadFromFile(cfile.FullName);
+                ComponentDxfIO.ReadLibrary(cfile, new DXFParserInfo(Guid.Empty, mergeData));
 
                 // 2b. restore interdependencies
-                mergeData.AssetManager.ReleaseTmpParseRecord();
                 mergeData.Components.RemoveAllAssets();
                 mergeData.NetworkManager.RemoveReferencesToGeometryWithinRecord();
 
@@ -128,7 +119,7 @@ namespace SIMULTAN.Serializer.Projects
                 List<SimComponent> to_transfer = new List<SimComponent>(mergeData.Components);
 
                 import_parent = new SimComponent(_project.AllProjectDataManagers.UsersManager.CurrentUser.Role);
-                import_parent.CurrentSlot = new SimSlotBase(ComponentUtils.COMP_SLOT_IMPORT);
+                import_parent.CurrentSlot = new SimSlotBase(SimDefaultSlots.Import);
 
                 foreach (SimComponent c in to_transfer)
                 {
@@ -177,13 +168,7 @@ namespace SIMULTAN.Serializer.Projects
             // export the values
             if (_values.Count() > 0)
             {
-                StringBuilder export_v = SimMultiValueCollection.ExportSome(_values, true);
-                string content_v = export_v.ToString();
-                using (FileStream fs = File.Create(_file.FullName))
-                {
-                    byte[] content_B = System.Text.Encoding.UTF8.GetBytes(content_v);
-                    fs.Write(content_B, 0, content_B.Length);
-                }
+                MultiValueDxfIO.Write(_file, _values);
             }
         }
 
@@ -201,12 +186,10 @@ namespace SIMULTAN.Serializer.Projects
 
             // 1a. reconstruct the values file
             var projectData = new ExtendedProjectData();
-            Dictionary<long, long> value_merge_record = new Dictionary<long, long>();
-            if (File.Exists(_value_file.FullName))
+            if (_value_file.Exists)
             {
                 // 1b. load the values to a clean factory                
-                DXFDecoder dxf_decoder_V = new DXFDecoder(projectData, DXFDecoderMode.MultiValue);
-                dxf_decoder_V.LoadFromFile(_value_file.FullName);
+                MultiValueDxfIO.Read(_value_file, new DXFParserInfo(_project.GlobalID, projectData));
 
                 // 1c. add the import description to their name
                 foreach (SimMultiValue mv in projectData.ValueManager)
@@ -216,7 +199,7 @@ namespace SIMULTAN.Serializer.Projects
             }
 
             // 3a. merge the values with the existing
-            value_merge_record = _project.AllProjectDataManagers.ValueManager.Merge(projectData.ValueManager);
+            _project.AllProjectDataManagers.ValueManager.Merge(projectData.ValueManager);
         }
 
 

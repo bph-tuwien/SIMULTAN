@@ -23,9 +23,9 @@ namespace SIMULTAN.Tests.Components
         [TestMethod]
         public void AddInstance()
         {
-            LoadProject(testProject);
+            this.LoadProject(testProject);
             var component = new SimComponent();
-            projectData.Components.Add(component);
+            this.projectData.Components.Add(component);
             var lastWrite = component.AccessLocal.LastAccess(SimComponentAccessPrivilege.Write);
             Thread.Sleep(5);
 
@@ -41,7 +41,7 @@ namespace SIMULTAN.Tests.Components
 
             Assert.AreEqual(1, component.Instances.Count);
             Assert.AreEqual(component, instance.Component);
-            Assert.AreEqual(projectData.Components, instance.Factory);
+            Assert.AreEqual(this.projectData.Components, instance.Factory);
             Assert.AreNotEqual(0, instance.Id.LocalId);
             Assert.IsTrue(write.lastAccess > lastWrite.lastAccess);
 
@@ -51,9 +51,9 @@ namespace SIMULTAN.Tests.Components
         [TestMethod]
         public void RemoveInstance()
         {
-            LoadProject(testProject);
+            this.LoadProject(testProject);
 
-            var component = projectData.Components.First(x => x.Name == "Wall 2");
+            var component = this.projectData.Components.First(x => x.Name == "Wall 2");
             var lastWrite = component.AccessLocal.LastAccess(SimComponentAccessPrivilege.Write);
             Thread.Sleep(5);
 
@@ -69,14 +69,14 @@ namespace SIMULTAN.Tests.Components
             Assert.AreEqual(null, instance.Id.Location);
             Assert.AreEqual(instanceId, instance.Id.LocalId);
             Assert.IsTrue(write.lastAccess > lastWrite.lastAccess);
-            Assert.AreEqual(null, projectData.IdGenerator.GetById<SimComponentInstance>(instance.Id));
+            Assert.AreEqual(null, this.projectData.IdGenerator.GetById<SimComponentInstance>(instance.Id));
         }
         [TestMethod]
         public void ClearInstances()
         {
-            LoadProject(testProject);
+            this.LoadProject(testProject);
 
-            var component = projectData.Components.First(x => x.Name == "Wall 2");
+            var component = this.projectData.Components.First(x => x.Name == "Wall 2");
             var lastWrite = component.AccessLocal.LastAccess(SimComponentAccessPrivilege.Write);
             Thread.Sleep(5);
 
@@ -93,16 +93,16 @@ namespace SIMULTAN.Tests.Components
                 Assert.AreEqual(null, instance.Component);
                 Assert.AreEqual(null, instance.Factory);
                 Assert.AreEqual(null, instance.Id.Location);
-                Assert.AreEqual(null, projectData.IdGenerator.GetById<SimComponentInstance>(instance.Id));
+                Assert.AreEqual(null, this.projectData.IdGenerator.GetById<SimComponentInstance>(instance.Id));
             }
         }
 
         [TestMethod]
         public void MemoryLeakTest()
         {
-            LoadProject(testProject);
+            this.LoadProject(testProject);
 
-            var component = projectData.Components.First(x => x.Name == "Wall 2");
+            var component = this.projectData.Components.First(x => x.Name == "Wall 2");
             WeakReference instanceRef = new WeakReference(component.Instances.First());
 
             Assert.IsTrue(instanceRef.IsAlive);
@@ -119,10 +119,10 @@ namespace SIMULTAN.Tests.Components
         [TestMethod]
         public void InstanceStateChanged()
         {
-            LoadProject(emptyProject);
+            this.LoadProject(emptyProject);
 
             var component = new SimComponent();
-            projectData.Components.Add(component);
+            this.projectData.Components.Add(component);
             var param1 = new SimParameter("param1", "m", 1.8)
             {
                 Propagation = SimInfoFlow.Input
@@ -184,10 +184,10 @@ namespace SIMULTAN.Tests.Components
         [TestMethod]
         public void AccessTestManagement()
         {
-            LoadProject(accessProject, "bph", "bph");
+            this.LoadProject(accessProject, "bph", "bph");
 
-            var archComp = projectData.Components.First(x => x.Name == "ArchComp");
-            var bphComp = projectData.Components.First(x => x.Name == "BPHComp");
+            var archComp = this.projectData.Components.First(x => x.Name == "ArchComp");
+            var bphComp = this.projectData.Components.First(x => x.Name == "BPHComp");
 
             var instance = new SimComponentInstance(SimInstanceType.NetworkNode);
 
@@ -206,11 +206,11 @@ namespace SIMULTAN.Tests.Components
         [TestMethod]
         public void AccessTestPlacements()
         {
-            LoadProject(accessProject, "bph", "bph");
+            this.LoadProject(accessProject, "bph", "bph");
 
-            var archComp = projectData.Components.First(x => x.Name == "ArchComp");
-            var bphComp = projectData.Components.First(x => x.Name == "BPHComp");
-            var node = projectData.NetworkManager.NetworkRecord.First().ContainedNodes.Values.First(x => x.Content == null);
+            var archComp = this.projectData.Components.First(x => x.Name == "ArchComp");
+            var bphComp = this.projectData.Components.First(x => x.Name == "BPHComp");
+            var node = this.projectData.NetworkManager.NetworkRecord.First().ContainedNodes.Values.First(x => x.Content == null);
 
             //Add placement to instance outside of tree
             var instance = new SimComponentInstance(SimInstanceType.NetworkNode);
@@ -221,6 +221,7 @@ namespace SIMULTAN.Tests.Components
             instance = archComp.Instances.First();
             Assert.ThrowsException<AccessDeniedException>(() => { instance.Placements.Add(new SimInstancePlacementNetwork(node)); });
             Assert.ThrowsException<AccessDeniedException>(() => { instance.Placements.RemoveAt(0); });
+
 
             //Placement in writable component
             instance = new SimComponentInstance(SimInstanceType.NetworkNode);
@@ -234,10 +235,10 @@ namespace SIMULTAN.Tests.Components
         [TestMethod]
         public void AccessTestProperties()
         {
-            LoadProject(accessProject, "bph", "bph");
+            this.LoadProject(accessProject, "bph", "bph");
 
-            var archComp = projectData.Components.First(x => x.Name == "ArchComp");
-            var bphComp = projectData.Components.First(x => x.Name == "BPHComp");
+            var archComp = this.projectData.Components.First(x => x.Name == "ArchComp");
+            var bphComp = this.projectData.Components.First(x => x.Name == "BPHComp");
             var instance = new SimComponentInstance(SimInstanceType.NetworkNode);
 
             //Instance not in tree
@@ -275,10 +276,10 @@ namespace SIMULTAN.Tests.Components
         [TestMethod]
         public void AccessTestParametersPersistent()
         {
-            LoadProject(accessProject, "bph", "bph");
+            this.LoadProject(accessProject, "bph", "bph");
 
-            var archComp = projectData.Components.First(x => x.Name == "ArchComp");
-            var bphComp = projectData.Components.First(x => x.Name == "BPHComp");
+            var archComp = this.projectData.Components.First(x => x.Name == "ArchComp");
+            var bphComp = this.projectData.Components.First(x => x.Name == "BPHComp");
             var param1 = archComp.Parameters.First(x => x.Name == "Parameter1");
             var param2 = bphComp.Parameters.First(x => x.Name == "Parameter2");
 
@@ -297,10 +298,10 @@ namespace SIMULTAN.Tests.Components
         [TestMethod]
         public void AccessTestParametersTemporary()
         {
-            LoadProject(accessProject, "bph", "bph");
+            this.LoadProject(accessProject, "bph", "bph");
 
-            var archComp = projectData.Components.First(x => x.Name == "ArchComp");
-            var bphComp = projectData.Components.First(x => x.Name == "BPHComp");
+            var archComp = this.projectData.Components.First(x => x.Name == "ArchComp");
+            var bphComp = this.projectData.Components.First(x => x.Name == "BPHComp");
             var param1 = archComp.Parameters.First(x => x.Name == "Parameter1");
             var param2 = bphComp.Parameters.First(x => x.Name == "Parameter2");
 
@@ -322,16 +323,16 @@ namespace SIMULTAN.Tests.Components
         [TestMethod]
         public void RemoveComponentCheckInstances()
         {
-            LoadProject(instanceProject);
+            this.LoadProject(instanceProject);
 
-            var nodeComponent = projectData.Components.First(x => x.Name == "Edge");
-            var network = projectData.NetworkManager.NetworkRecord.First(x => x.Name == "Network");
+            var nodeComponent = this.projectData.Components.First(x => x.Name == "Edge");
+            var network = this.projectData.NetworkManager.NetworkRecord.First(x => x.Name == "Network");
             var edge = network.ContainedEdges.Values.First(x => x.Name == "Edge 4");
 
             var instance = new SimComponentInstance(edge, new Point(0, 0));
             nodeComponent.Instances.Add(instance);
 
-            projectData.Components.Remove(nodeComponent);
+            this.projectData.Components.Remove(nodeComponent);
 
             Assert.AreEqual(null, edge.Content);
         }

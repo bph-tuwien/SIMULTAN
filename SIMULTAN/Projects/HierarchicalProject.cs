@@ -8,8 +8,10 @@ using SIMULTAN.Data.Users;
 using SIMULTAN.Exceptions;
 using SIMULTAN.Projects.ManagedFiles;
 using SIMULTAN.Serializer.DXF;
+using SIMULTAN.Serializer.GMDXF;
 using SIMULTAN.Serializer.Projects;
 using SIMULTAN.Serializer.SimGeo;
+using SIMULTAN.Serializer.SPDXF;
 using SIMULTAN.Utils;
 using SIMULTAN.Utils.Files;
 using System;
@@ -107,11 +109,6 @@ namespace SIMULTAN.Projects
         /// </summary>
         public ChildProjectCollection Children { get; }
 
-        /// <summary>
-        /// The service provider of this project
-        /// </summary>
-        public IServicesProvider ServiceProvider { get; }
-
         internal IEnumerable<string> loadingChildren;
 
         #endregion
@@ -151,16 +148,6 @@ namespace SIMULTAN.Projects
         /// Returns the id of the currently loaded meta data.
         /// </summary>
         public Guid GlobalID { get; }
-        /// <summary>
-        /// The hierarchical project may not have an absolute path, so this property return null.
-        /// </summary>
-        public virtual string AbsolutePath
-        {
-            get
-            {
-                return string.Empty;
-            }
-        }
 
         /// <summary>
         ///  The project name
@@ -494,11 +481,10 @@ namespace SIMULTAN.Projects
         /// <param name="_non_managed_files">the files saved but not managed by the project instance</param>
         /// <param name="_contained_dirs">the resource directories</param>
         /// <param name="_associated_files">the files that are simply associated but not saved or managed by the project instance</param>
-        /// <param name="serviceProvider">The service provider</param>
         protected HierarchicalProject(Guid id, ManagedFileCollection _files, ExtendedProjectData projectData,
             DirectoryInfo unpackFolder,
             IEnumerable<FileInfo> _non_managed_files, IEnumerable<DirectoryInfo> _contained_dirs,
-            IEnumerable<FileInfo> _associated_files, IServicesProvider serviceProvider)
+            IEnumerable<FileInfo> _associated_files)
         {
             this.GlobalID = id;
             this.ProjectUnpackFolder = unpackFolder;
@@ -506,7 +492,6 @@ namespace SIMULTAN.Projects
             this.AllProjectDataManagers = projectData;
             this.AllProjectDataManagers.AssetManager.WorkingDirectory = ProjectUnpackFolder.FullName;
 
-            this.ServiceProvider = serviceProvider;
             this.parentProjects = new List<HierarchicalProject>();
 
             this.Children = new ChildProjectCollection(this);
@@ -1030,7 +1015,7 @@ namespace SIMULTAN.Projects
             // create the file
             FileInfo file = new FileInfo(fileNameUnique);
 
-            SitePlannerIO.CreateEmptySitePlannerProject(file);
+            SiteplannerDxfIO.CreateEmptySitePlannerProject(file, AllProjectDataManagers);
 
             // add as a resource
             AssetManager asset_manager = this.AllProjectDataManagers.AssetManager;
@@ -1070,18 +1055,16 @@ namespace SIMULTAN.Projects
 
             // create the file
             FileInfo file = new FileInfo(fileNameUnique);
-            SitePlannerIO.CreateEmptyGeoMap(file);
+
+            GeoMapDxfIO.CreateEmptyGeoMap(file, AllProjectDataManagers);
 
             // add as a resource
             AssetManager asset_manager = this.AllProjectDataManagers.AssetManager;
             if (asset_manager == null)
                 throw new Exception("The Asset Manager cannot be accessed!");
+            // Add to Assets, also creates geomap and adds it to the manager
             int newResourceKey = asset_manager.AddResourceEntry(file);
             var resFileEntry = asset_manager.GetResource(newResourceKey) as ResourceFileEntry;
-
-            // create GeoMap
-            GeoMap gm = new GeoMap(resFileEntry);
-            this.AllProjectDataManagers.SitePlannerManager.GeoMaps.Add(gm);
 
             EnableProjectUnpackFolderWatcher();
 
@@ -1579,7 +1562,7 @@ namespace SIMULTAN.Projects
                         // a parameter file needs to be created and saved
                         string file_path_param_lib = Path.Combine(this.ProjectUnpackFolder.FullName, "ParameterRecord" + ParamStructFileExtensions.FILE_EXT_PARAMETERS);
                         FileInfo file_param_lib = new FileInfo(file_path_param_lib);
-                        ProjectIO.SaveParameterLibraryFile(file_param_lib, this.AllProjectDataManagers.ParameterLibraryManager);
+                        ProjectIO.SaveParameterLibraryFile(file_param_lib, this.AllProjectDataManagers);
                         this.ManagedFiles.AddFile(file_param_lib, this.AllProjectDataManagers);
                     }
                 }
@@ -1598,7 +1581,7 @@ namespace SIMULTAN.Projects
                 {
                     if (this.ManagedFiles.ExcelToolEntries.Count() == 0)
                     {
-                        // an excel tool lobrary file needs to be created and saved
+                        // an excel tool library file needs to be created and saved
                         string file_path_excel_lib = Path.Combine(this.ProjectUnpackFolder.FullName, "ExcelToolLibrary" + ParamStructFileExtensions.FILE_EXT_EXCEL_TOOL_COLLECTION);
                         FileInfo file_excel_lib = new FileInfo(file_path_excel_lib);
                         ProjectIO.SaveExcelToolCollectionFile(file_excel_lib, this.AllProjectDataManagers);
@@ -2210,9 +2193,6 @@ namespace SIMULTAN.Projects
 
             if (this.ManagedFiles.ExcelToolEntry != null)
                 this.ManagedFiles.RemoveFile(ParamStructFileExtensions.FILE_EXT_EXCEL_TOOL_COLLECTION);
-
-            if (this.ManagedFiles.ImageLibraryEntry != null)
-                this.ManagedFiles.RemoveFile(ParamStructFileExtensions.FILE_EXT_IMAGES);
 
             if (this.ManagedFiles.ComponentEntry != null)
                 this.ManagedFiles.RemoveFile(ParamStructFileExtensions.FILE_EXT_COMPONENTS);

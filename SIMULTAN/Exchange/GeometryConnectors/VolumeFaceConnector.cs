@@ -171,7 +171,7 @@ namespace SIMULTAN.Exchange.GeometryConnectors
                     SetComponentName(faceComp, hole.Value);
 
                     faceComp.Description = "Representation";
-                    faceComp.CurrentSlot = new SimSlotBase(ComponentUtils.COMP_SLOT_AREAS);
+                    faceComp.CurrentSlot = new SimSlotBase(SimDefaultSlots.Areas);
                     faceComp.IsAutomaticallyGenerated = true;
                     faceComp.AccessLocal = new SimAccessProfile(component.AccessLocal);
 

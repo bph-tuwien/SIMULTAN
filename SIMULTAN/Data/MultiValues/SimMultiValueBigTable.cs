@@ -1,6 +1,5 @@
 ﻿using SIMULTAN;
 using SIMULTAN.Data.Components;
-using SIMULTAN.Projects.Serializers;
 using SIMULTAN.Serializer.DXF;
 using SIMULTAN.Utils;
 using System;
@@ -439,7 +438,7 @@ namespace SIMULTAN.Data.MultiValues
         private string additionalInfo;
 
         /// <inheritdoc />
-        public override MultiValueType MVType => MultiValueType.TABLE;
+        public override SimMultiValueType MVType => SimMultiValueType.BigTable;
 
         #endregion
 
@@ -782,84 +781,6 @@ namespace SIMULTAN.Data.MultiValues
             return t_string;
         }
 
-        /// <inheritdoc />
-        public override void AddToExport(ref StringBuilder _sb)
-        {
-            if (_sb == null) return;
-
-            _sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_START).ToString()); // 0
-            _sb.AppendLine(ParamStructTypes.BIG_TABLE);                               // BIG_TABLE
-
-            _sb.AppendLine(((int)ParamStructCommonSaveCode.CLASS_NAME).ToString());
-            _sb.AppendLine(this.GetType().ToString());
-
-            // common, common display, common info   
-            base.AddToExport(ref _sb);
-
-            // names
-            _sb.AppendLine(((int)MultiValueSaveCode.XS).ToString());
-            _sb.AppendLine(this.ColumnHeaders.Count.ToString());
-            for (int i = 0; i < this.ColumnHeaders.Count; i++)
-            {
-                _sb.AppendLine(((int)ParamStructCommonSaveCode.X_VALUE).ToString());
-                _sb.AppendLine(this.ColumnHeaders[i].Name);
-            }
-
-            // units
-            _sb.AppendLine(((int)MultiValueSaveCode.YS).ToString());
-            _sb.AppendLine(this.ColumnHeaders.Count.ToString());
-            for (int i = 0; i < this.ColumnHeaders.Count; i++)
-            {
-                _sb.AppendLine(((int)ParamStructCommonSaveCode.X_VALUE).ToString());
-                _sb.AppendLine(this.ColumnHeaders[i].Unit);
-            }
-
-            // values
-            _sb.AppendLine(((int)MultiValueSaveCode.FIELD).ToString());
-            _sb.AppendLine(this.values.Count.ToString());
-            _sb.AppendLine(((int)ParamStructCommonSaveCode.NUMBER_OF).ToString());
-            _sb.AppendLine(this.values[0].Count.ToString());
-
-            // NEW: updated 29.10.2019 to speed up saving (takes about 10 sec for 900 MB)
-            ParallelBigTableSerializer ps = new ParallelBigTableSerializer(this.values, 1000, "F8", (int)MultiValueSaveCode.MVBT_COMPLETE_VALUE_ROW);
-            StringBuilder sb1 = _sb; // passes a pointer, does not copy
-            Task value_task = Task.Run(async () => await ps.SerializeValuesDXFStyleAsync(sb1));
-            value_task.Wait();
-
-            // row names/units
-            if (this.RowHeaders != null)
-            {
-                _sb.AppendLine(((int)MultiValueSaveCode.ROW_NAMES).ToString());
-                _sb.AppendLine(this.RowHeaders.Count.ToString());
-                foreach (var rh in this.RowHeaders)
-                {
-                    _sb.AppendLine(((int)ParamStructCommonSaveCode.STRING_VALUE).ToString());
-                    _sb.AppendLine(rh.Name);
-                }
-
-                _sb.AppendLine(((int)MultiValueSaveCode.ROW_UNITS).ToString());
-                _sb.AppendLine(this.RowHeaders.Count.ToString());
-                foreach (var rh in this.RowHeaders)
-                {
-                    _sb.AppendLine(((int)ParamStructCommonSaveCode.STRING_VALUE).ToString());
-                    _sb.AppendLine(rh.Unit);
-                }
-            }
-            else
-            {
-                _sb.AppendLine(((int)MultiValueSaveCode.ROW_NAMES).ToString());
-                _sb.AppendLine("0");
-            }
-
-            // additional info
-            if (this.AdditionalInfo != null)
-            {
-                _sb.AppendLine(((int)MultiValueSaveCode.ADDITIONAL_INFO).ToString());
-                string all_lines = this.AdditionalInfo.Replace(Environment.NewLine, SimMultiValue.NEWLINE_PLACEHOLDER);
-                _sb.AppendLine(all_lines);
-            }
-        }
-
         #endregion
 
 
@@ -936,11 +857,6 @@ namespace SIMULTAN.Data.MultiValues
             public override SimMultiValuePointer Clone()
             {
                 return new SimMultiValueBigTablePointer(table, Row, Column);
-            }
-            /// <inheritdoc />
-            public override void AddToExport(ref StringBuilder sb)
-            {
-                base.AddToExport(ref sb, Column, Row, 0, "");
             }
             /// <inheritdoc />
             public override void SetFromParameters(double axisValueX, double axisValueY, double axisValueZ, string gs)

@@ -1,4 +1,5 @@
 ﻿using SIMULTAN.Data.Components;
+using SIMULTAN.Data.FlowNetworks;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -65,6 +66,12 @@ namespace SIMULTAN.Data.Components
         public override void RemoveFromTarget()
         {
             this.Instance.Component.RemoveAsset(this.FileId, this.GeometryId.ToString());
+        }
+
+        internal override bool RestoreReferences(Dictionary<SimObjectId, SimFlowNetworkElement> networkElements)
+        {
+            //No init to do
+            return true;
         }
     }
 }

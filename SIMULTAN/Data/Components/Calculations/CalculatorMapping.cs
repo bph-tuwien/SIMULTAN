@@ -227,7 +227,7 @@ namespace SIMULTAN.Data.Components
                 if (value != null && value != calculator)
                 {
                     this.calculator = value;
-                    this.ParsingCalculatorID = SimId.Empty;
+                    this.parsingCalculatorID = SimId.Empty;
                     NotifyPropertyChanged(nameof(Calculator));
                 }
             }
@@ -244,14 +244,9 @@ namespace SIMULTAN.Data.Components
         public OutputParametersCollection OutputMapping { get { return outputMapping; } }
         private OutputParametersCollectionPrivate outputMapping;
 
-        [Obsolete("Only needed during loading. Shouldn't be stored here")]
-        private List<(long dataParameterId, long calculatorParameterId)> ParsingInputMappings { get; set; }
-        [Obsolete("Only needed during loading. Shouldn't be stored here")]
-        private List<(long dataParameterId, long calculatorParameterId)> ParsingOutputMapping { get; set; }
-        [Obsolete("Only needed during loading. Shouldn't be stored here")]
-        public SimId ParsingCalculatorID { get; private set; }
-        [Obsolete("Only needed during loading. Shouldn't be stored here")]
-        private Dictionary<(Type, long), long> loadIdTranslation { get; set; }
+        private IEnumerable<(SimId dataParameterId, SimId calculatorParameterId)> parsingInputMappings;
+        private IEnumerable<(SimId dataParameterId, SimId calculatorParameterId)> parsingOutputMapping;
+        private SimId parsingCalculatorID;
 
         #endregion
 
@@ -310,17 +305,14 @@ namespace SIMULTAN.Data.Components
         /// <param name="calculatorId">The id of the calculator component. Will be resolved after loading</param>
         /// <param name="inputMapping">A list of id tuples of parameter mappings. Will be resolved after loading</param>
         /// <param name="outputMapping">A list of id tuples of parameter mappings. Will be resolved after loading</param>
-        /// <param name="loadIdTranslation">Additional dictionary which contains a translation between old and new Ids. When the dictionary is empty,
-        /// no translation happens and the ids are used directly.</param>
-        internal CalculatorMapping(string name, SimId calculatorId, List<(long dataParameterId, long calculatorParameterId)> inputMapping,
-            List<(long dataParameterId, long calculatorParameterId)> outputMapping, Dictionary<(Type, long), long> loadIdTranslation)
+        internal CalculatorMapping(string name, SimId calculatorId, IEnumerable<(SimId dataParameterId, SimId calculatorParameterId)> inputMapping,
+            IEnumerable<(SimId dataParameterId, SimId calculatorParameterId)> outputMapping)
         {
             this.Name = name;
 
-            this.ParsingCalculatorID = calculatorId;
-            this.ParsingInputMappings = inputMapping;
-            this.ParsingOutputMapping = outputMapping;
-            this.loadIdTranslation = loadIdTranslation;
+            this.parsingCalculatorID = calculatorId;
+            this.parsingInputMappings = inputMapping;
+            this.parsingOutputMapping = outputMapping;
 
             this.InputMapping = new InputParametersCollection();
             this.outputMapping = new OutputParametersCollectionPrivate();
@@ -383,61 +375,54 @@ namespace SIMULTAN.Data.Components
         /// Restores the parameters and the calculator component based on the id's stored in the loader variables
         /// </summary>
         /// <param name="dataComponent">The data component</param>
-        /// <param name="calculatorComponent">The calculator component</param>
-        internal void Restore(SimComponent dataComponent, SimComponent calculatorComponent)
+        internal void RestoreReferences(SimComponent dataComponent)
         {
-            this.Calculator = calculatorComponent;
-            this.Calculator.MappedToBy.Add(dataComponent);
+            this.Calculator = dataComponent.Factory.ProjectData.IdGenerator.GetById<SimComponent>(this.parsingCalculatorID);
 
-            if (this.ParsingInputMappings != null)
+            if (this.Calculator != null)
             {
-                foreach (var map in this.ParsingInputMappings)
+                this.Calculator.MappedToBy.Add(dataComponent);
+
+                if (this.parsingInputMappings != null)
                 {
-                    var dataParameterId = map.dataParameterId;
-                    if (loadIdTranslation.TryGetValue((typeof(SimParameter), dataParameterId), out var replaceId))
-                        dataParameterId = replaceId;
-
-                    var calculatorParameterId = map.calculatorParameterId;
-                    if (loadIdTranslation.TryGetValue((typeof(SimParameter), calculatorParameterId), out replaceId))
-                        calculatorParameterId = replaceId;
-
-                    var dataParameter = dataComponent.Factory.ProjectData.IdGenerator.GetById<SimParameter>(new SimId(dataComponent.GlobalID, dataParameterId));
-                    var calcParameter = Calculator.Factory.ProjectData.IdGenerator.GetById<SimParameter>(new SimId(Calculator.GlobalID, calculatorParameterId));
-
-                    if (dataParameter != null && calcParameter != null)
+                    foreach (var map in this.parsingInputMappings)
                     {
-                        this.InputMapping.Add(new MappingParameterTuple(dataParameter, calcParameter));
+                        var dataParameterId = map.dataParameterId;
+                        var calculatorParameterId = map.calculatorParameterId;
+
+                        var dataParameter = dataComponent.Factory.ProjectData.IdGenerator.GetById<SimParameter>(dataParameterId);
+                        var calcParameter = Calculator.Factory.ProjectData.IdGenerator.GetById<SimParameter>(calculatorParameterId);
+
+                        if (dataParameter != null && calcParameter != null)
+                        {
+                            this.InputMapping.Add(new MappingParameterTuple(dataParameter, calcParameter));
+                        }
                     }
+
+                    this.parsingInputMappings = null;
                 }
 
-                this.ParsingInputMappings = null;
-            }
-
-            this.outputMapping.ValidatePropagation = false;
-            if (this.ParsingOutputMapping != null)
-            {
-                foreach (var map in this.ParsingOutputMapping)
+                this.outputMapping.ValidatePropagation = false;
+                if (this.parsingOutputMapping != null)
                 {
-                    var dataParameterId = map.dataParameterId;
-                    if (loadIdTranslation.TryGetValue((typeof(SimParameter), dataParameterId), out var replaceId))
-                        dataParameterId = replaceId;
-
-                    var calculatorParameterId = map.calculatorParameterId;
-                    if (loadIdTranslation.TryGetValue((typeof(SimParameter), calculatorParameterId), out replaceId))
-                        calculatorParameterId = replaceId;
-
-                    var dataParameter = dataComponent.Factory.ProjectData.IdGenerator.GetById<SimParameter>(new SimId(dataComponent.GlobalID, dataParameterId));
-                    var calcParameter = Calculator.Factory.ProjectData.IdGenerator.GetById<SimParameter>(new SimId(Calculator.GlobalID, calculatorParameterId));
-
-                    if (dataParameter != null && calcParameter != null)
+                    foreach (var map in this.parsingOutputMapping)
                     {
-                        this.OutputMapping.Add(new MappingParameterTuple(dataParameter, calcParameter));
-                    }
-                }
+                        var dataParameterId = map.dataParameterId;
+                        var calculatorParameterId = map.calculatorParameterId;
 
-                this.ParsingOutputMapping = null;
+                        var dataParameter = dataComponent.Factory.ProjectData.IdGenerator.GetById<SimParameter>(dataParameterId);
+                        var calcParameter = Calculator.Factory.ProjectData.IdGenerator.GetById<SimParameter>(calculatorParameterId);
+
+                        if (dataParameter != null && calcParameter != null)
+                        {
+                            this.OutputMapping.Add(new MappingParameterTuple(dataParameter, calcParameter));
+                        }
+                    }
+
+                    this.parsingOutputMapping = null;
+                }
+                this.outputMapping.ValidatePropagation = true;
             }
-            this.outputMapping.ValidatePropagation = true;
         }
 
         /// <summary>
@@ -474,54 +459,6 @@ namespace SIMULTAN.Data.Components
         public override string ToString()
         {
             return this.Name + " to " + this.Calculator.ToInfoString();
-        }
-
-        /// <summary>
-        /// Serializes the mapping into a dxf string
-        /// </summary>
-        /// <param name="_sb">The stringbuilder for the result</param>
-        public void AddToExport(ref StringBuilder _sb)
-        {
-            if (_sb == null) return;
-
-            _sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_START).ToString()); // 0
-            _sb.AppendLine(ParamStructTypes.MAPPING_TO_COMP);                         // MAPPING2COMPONENT
-
-            _sb.AppendLine(((int)ParamStructCommonSaveCode.CLASS_NAME).ToString());
-            _sb.AppendLine(this.GetType().ToString());
-
-            // name
-            _sb.AppendLine(((int)Mapping2ComponentSaveCode.NAME).ToString());
-            _sb.AppendLine(this.Name);
-
-            // calculator
-            _sb.AppendLine(((int)Mapping2ComponentSaveCode.CALCULATOR).ToString());
-            _sb.AppendLine(this.Calculator.Id.ToString());
-
-            // input mapping
-            _sb.AppendLine(((int)Mapping2ComponentSaveCode.INPUT_MAPPING).ToString());
-            _sb.AppendLine(this.InputMapping.Count.ToString());
-
-            foreach (var entry in this.InputMapping)
-            {
-                _sb.AppendLine(((int)Mapping2ComponentSaveCode.INPUT_MAPPING_KEY).ToString());
-                _sb.AppendLine(entry.DataParameter.Id.LocalId.ToString());
-
-                _sb.AppendLine(((int)Mapping2ComponentSaveCode.INPUT_MAPPING_VALUE).ToString());
-                _sb.AppendLine(entry.CalculatorParameter.Id.LocalId.ToString());
-            }
-
-            // output mapping
-            _sb.AppendLine(((int)Mapping2ComponentSaveCode.OUTPUT_MAPPING).ToString());
-            _sb.AppendLine(this.OutputMapping.Count.ToString());
-            foreach (var entry in this.OutputMapping)
-            {
-                _sb.AppendLine(((int)Mapping2ComponentSaveCode.OUTPUT_MAPPING_KEY).ToString());
-                _sb.AppendLine(entry.DataParameter.Id.LocalId.ToString());
-
-                _sb.AppendLine(((int)Mapping2ComponentSaveCode.OUTPUT_MAPPING_VALUE).ToString());
-                _sb.AppendLine(entry.CalculatorParameter.Id.LocalId.ToString());
-            }
         }
 
         #endregion

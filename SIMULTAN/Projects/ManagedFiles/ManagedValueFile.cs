@@ -56,7 +56,7 @@ namespace SIMULTAN.Projects.ManagedFiles
             // public save
             if (this.PublicCounterpart != null && System.IO.File.Exists(this.PublicCounterpart.File.FullName))
             {
-                ProjectIO.SavePublicMultiValueFile(this.PublicCounterpart.File, ProjectData.ValueManager, ProjectData.Components);
+                ProjectIO.SavePublicMultiValueFile(this.PublicCounterpart.File, ProjectData);
                 this.PublicCounterpart.OnFileUpToDateChanged(true);
             }
         }

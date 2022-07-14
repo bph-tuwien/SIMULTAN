@@ -13,18 +13,14 @@ namespace SIMULTAN.Data
     {
         /// <inheritdoc/>
         public Guid GlobalID { get; }
-        /// <inheritdoc/>
-        public string AbsolutePath { get; }
 
         /// <summary>
-        /// Instantiates a minimal implementation of the IReferenceLocation interface w/o any behaviour.
+        /// Instantiates a minimal implementation of the IReferenceLocation interface w/o any behavior.
         /// </summary>
-        /// <param name="globalId">the golbal id</param>
-        /// <param name="absolutePath">the absolute path to the location</param>
-        public DummyReferenceLocation(Guid globalId, string absolutePath)
+        /// <param name="globalId">the global id</param>
+        public DummyReferenceLocation(Guid globalId)
         {
             this.GlobalID = globalId;
-            this.AbsolutePath = absolutePath;
         }
     }
 }

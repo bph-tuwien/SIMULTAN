@@ -79,44 +79,6 @@ namespace SIMULTAN.Projects
         }
 
         /// <summary>
-        /// Converts this reference into a string for writing to a DXF file
-        /// </summary>
-        /// <param name="res">Reference to convert to string representation</param>
-        /// <returns>Reference in string representation suitable for DXF export</returns>
-        public static string ToDXF(ResourceReference res)
-        {
-            if (res == null)
-                return string.Empty;
-
-            return string.Format("{0} {1}", res.ProjectId.ToString(), res.ResourceIndex);
-        }
-
-        /// <summary>
-        /// Converts a given string read from a DXF file to a resource reference.
-        /// </summary>
-        /// <param name="dxf">Reference in string representation read from DXF file</param>
-        /// <param name="assetManager">AssetManager which contains</param>
-        /// <returns>ResourceReference converted from DXF string or null if it is an empty reference</returns>
-        public static ResourceReference FromDXF(string dxf, AssetManager assetManager)
-        {
-            if (dxf == string.Empty)
-                return null;
-
-            try
-            {
-                string[] parts = dxf.Split(' ');
-                Guid projectId = new Guid(parts[0]);
-                int resourceIndex = int.Parse(parts[1]);
-
-                return new ResourceReference(projectId, resourceIndex, assetManager);
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        /// <summary>
         /// Compares resource reference using project ID and resource key.
         /// </summary>
         /// <param name="obj">Other ResourceReference</param>

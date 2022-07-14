@@ -32,7 +32,7 @@ namespace SIMULTAN.Tests.Components
             projectData.Components.Add(root);
 
             SimComponent child = new SimComponent();
-            var childSlot = new SimSlot(ComponentUtils.COMP_SLOT_COST, "3");
+            var childSlot = new SimSlot(SimDefaultSlots.Cost, "3");
             child.CurrentSlot = childSlot.SlotBase;
 
             var childEntry = new SimChildComponentEntry(childSlot, child);
@@ -58,7 +58,7 @@ namespace SIMULTAN.Tests.Components
             projectData.Components.Add(root);
 
             SimComponent child = new SimComponent();
-            var childSlot = new SimSlot(ComponentUtils.COMP_SLOT_COST, "3");
+            var childSlot = new SimSlot(SimDefaultSlots.Cost, "3");
             child.CurrentSlot = childSlot.SlotBase;
 
             var childEntry = new SimChildComponentEntry(childSlot);
@@ -89,7 +89,7 @@ namespace SIMULTAN.Tests.Components
             Assert.ThrowsException<ArgumentNullException>(() => { root.Components.Add(null); });
 
             //Add twice
-            var childSlot = new SimSlot(ComponentUtils.COMP_SLOT_COST, "3");
+            var childSlot = new SimSlot(SimDefaultSlots.Cost, "3");
             var childEntry = new SimChildComponentEntry(childSlot);
             root.Components.Add(childEntry);
 
@@ -105,7 +105,7 @@ namespace SIMULTAN.Tests.Components
             projectData.Components.Add(root);
 
             SimComponent child = new SimComponent();
-            var childSlot = new SimSlot(ComponentUtils.COMP_SLOT_COST, "3");
+            var childSlot = new SimSlot(SimDefaultSlots.Cost, "3");
             child.CurrentSlot = childSlot.SlotBase;
             var childEntry = new SimChildComponentEntry(childSlot, child);
 
@@ -149,7 +149,7 @@ namespace SIMULTAN.Tests.Components
             projectData.Components.Add(root);
 
             SimComponent child = new SimComponent();
-            var childSlot = new SimSlot(ComponentUtils.COMP_SLOT_COST, "3");
+            var childSlot = new SimSlot(SimDefaultSlots.Cost, "3");
             child.CurrentSlot = childSlot.SlotBase;
             var childEntry = new SimChildComponentEntry(childSlot, child);
 
@@ -187,7 +187,7 @@ namespace SIMULTAN.Tests.Components
             projectData.Components.Add(root);
 
             SimComponent child = new SimComponent();
-            var childSlot = new SimSlot(ComponentUtils.COMP_SLOT_COST, "3");
+            var childSlot = new SimSlot(SimDefaultSlots.Cost, "3");
             child.CurrentSlot = childSlot.SlotBase;
 
             var childEntry = new SimChildComponentEntry(childSlot, child);
@@ -238,7 +238,7 @@ namespace SIMULTAN.Tests.Components
             projectData.Components.Add(root);
 
             SimComponent child = new SimComponent();
-            var childSlot = new SimSlot(ComponentUtils.COMP_SLOT_COST, "3");
+            var childSlot = new SimSlot(SimDefaultSlots.Cost, "3");
             child.CurrentSlot = childSlot.SlotBase;
 
             var childEntry = new SimChildComponentEntry(childSlot, child);
@@ -249,7 +249,7 @@ namespace SIMULTAN.Tests.Components
             //Test
 
             SimComponent child2 = new SimComponent();
-            var child2Slot = new SimSlot(ComponentUtils.COMP_SLOT_JOINT, "4");
+            var child2Slot = new SimSlot(SimDefaultSlots.Joint, "4");
             child2.CurrentSlot = child2Slot.SlotBase;
             SimChildComponentEntry child2Entry = new SimChildComponentEntry(child2Slot, child2);
 
@@ -296,9 +296,9 @@ namespace SIMULTAN.Tests.Components
             };
             SimSlot[] childSlots = new SimSlot[]
             {
-                new SimSlot(ComponentUtils.COMP_SLOT_COST, "3"),
-                new SimSlot(ComponentUtils.COMP_SLOT_COST, "4"),
-                new SimSlot(ComponentUtils.COMP_SLOT_AREAS, "2"),
+                new SimSlot(SimDefaultSlots.Cost, "3"),
+                new SimSlot(SimDefaultSlots.Cost, "4"),
+                new SimSlot(SimDefaultSlots.Areas, "2"),
             };
 
             for (int i = 0; i < children.Length; ++i)
@@ -348,7 +348,7 @@ namespace SIMULTAN.Tests.Components
             projectData.Components.Add(root);
 
             SimComponent child = new SimComponent();
-            var childSlot = new SimSlot(ComponentUtils.COMP_SLOT_COST, "3");
+            var childSlot = new SimSlot(SimDefaultSlots.Cost, "3");
             child.CurrentSlot = childSlot.SlotBase;
             var childEntry = new SimChildComponentEntry(childSlot, child);
             root.Components.Add(childEntry);
@@ -388,23 +388,23 @@ namespace SIMULTAN.Tests.Components
             projectData.Components.Add(root);
 
             SimComponent child = new SimComponent();
-            var childSlot = new SimSlot(ComponentUtils.COMP_SLOT_COST, "3");
+            var childSlot = new SimSlot(SimDefaultSlots.Cost, "3");
             child.CurrentSlot = childSlot.SlotBase;
             var childEntry = new SimChildComponentEntry(childSlot, child);
             root.Components.Add(childEntry);
 
-            Assert.AreEqual(ComponentUtils.COMP_SLOT_COST, childEntry.Slot.SlotBase.Base);
+            Assert.AreEqual(SimDefaultSlots.Cost, childEntry.Slot.SlotBase.Base);
             Assert.AreEqual("3", childEntry.Slot.SlotExtension);
-            Assert.AreEqual(ComponentUtils.COMP_SLOT_COST, child.CurrentSlot.Base);
+            Assert.AreEqual(SimDefaultSlots.Cost, child.CurrentSlot.Base);
 
             PropertyChangedEventCounter childPC = new PropertyChangedEventCounter(child);
             PropertyChangedEventCounter entryPC = new PropertyChangedEventCounter(childEntry);
 
-            child.CurrentSlot = new SimSlotBase(ComponentUtils.COMP_SLOT_JOINT);
+            child.CurrentSlot = new SimSlotBase(SimDefaultSlots.Joint);
 
-            Assert.AreEqual(ComponentUtils.COMP_SLOT_JOINT, childEntry.Slot.SlotBase.Base);
+            Assert.AreEqual(SimDefaultSlots.Joint, childEntry.Slot.SlotBase.Base);
             Assert.AreEqual("3", childEntry.Slot.SlotExtension);
-            Assert.AreEqual(ComponentUtils.COMP_SLOT_JOINT, child.CurrentSlot.Base);
+            Assert.AreEqual(SimDefaultSlots.Joint, child.CurrentSlot.Base);
 
             childPC.AssertEventCount(1);
             entryPC.AssertEventCount(1);
@@ -419,23 +419,23 @@ namespace SIMULTAN.Tests.Components
             projectData.Components.Add(root);
 
             SimComponent child = new SimComponent();
-            var childSlot = new SimSlot(ComponentUtils.COMP_SLOT_COST, "3");
+            var childSlot = new SimSlot(SimDefaultSlots.Cost, "3");
             child.CurrentSlot = childSlot.SlotBase;
             var childEntry = new SimChildComponentEntry(childSlot, child);
             root.Components.Add(childEntry);
 
-            Assert.AreEqual(ComponentUtils.COMP_SLOT_COST, childEntry.Slot.SlotBase.Base);
+            Assert.AreEqual(SimDefaultSlots.Cost, childEntry.Slot.SlotBase.Base);
             Assert.AreEqual("3", childEntry.Slot.SlotExtension);
-            Assert.AreEqual(ComponentUtils.COMP_SLOT_COST, child.CurrentSlot.Base);
+            Assert.AreEqual(SimDefaultSlots.Cost, child.CurrentSlot.Base);
 
             PropertyChangedEventCounter childPC = new PropertyChangedEventCounter(child);
             PropertyChangedEventCounter entryPC = new PropertyChangedEventCounter(childEntry);
 
-            childEntry.Slot = new SimSlot(ComponentUtils.COMP_SLOT_JOINT, "4");
+            childEntry.Slot = new SimSlot(SimDefaultSlots.Joint, "4");
 
-            Assert.AreEqual(ComponentUtils.COMP_SLOT_JOINT, childEntry.Slot.SlotBase.Base);
+            Assert.AreEqual(SimDefaultSlots.Joint, childEntry.Slot.SlotBase.Base);
             Assert.AreEqual("4", childEntry.Slot.SlotExtension);
-            Assert.AreEqual(ComponentUtils.COMP_SLOT_JOINT, child.CurrentSlot.Base);
+            Assert.AreEqual(SimDefaultSlots.Joint, child.CurrentSlot.Base);
 
             childPC.AssertEventCount(1);
             entryPC.AssertEventCount(1);
@@ -450,8 +450,8 @@ namespace SIMULTAN.Tests.Components
             projectData.Components.Add(root);
 
             SimComponent child = new SimComponent();
-            var childSlot = new SimSlot(ComponentUtils.COMP_SLOT_COST, "3");
-            child.CurrentSlot = new SimSlotBase(ComponentUtils.COMP_SLOT_CALCULATION);
+            var childSlot = new SimSlot(SimDefaultSlots.Cost, "3");
+            child.CurrentSlot = new SimSlotBase(SimDefaultSlots.Calculation);
 
             Assert.ThrowsException<ArgumentException>(() => { new SimChildComponentEntry(childSlot, child); });
         }
@@ -471,7 +471,7 @@ namespace SIMULTAN.Tests.Components
             {
                 var root = projectData.Components.First(x => x.Name == "BPHRoot");
 
-                var slot = new SimSlot(ComponentUtils.COMP_SLOT_COST, "4");
+                var slot = new SimSlot(SimDefaultSlots.Cost, "4");
                 var comp = new SimComponent();
                 comp.CurrentSlot = slot.SlotBase;
 
@@ -491,7 +491,7 @@ namespace SIMULTAN.Tests.Components
 
                 var root = projectData.Components.First(x => x.Name == "ArchRoot");
 
-                var slot = new SimSlot(ComponentUtils.COMP_SLOT_COST, "4");
+                var slot = new SimSlot(SimDefaultSlots.Cost, "4");
                 var comp = new SimComponent();
                 comp.CurrentSlot = slot.SlotBase;
 
@@ -517,7 +517,7 @@ namespace SIMULTAN.Tests.Components
 
                 var root = projectData.Components.First(x => x.Name == "ArchRoot");
 
-                var slot = new SimSlot(ComponentUtils.COMP_SLOT_COST, "4");
+                var slot = new SimSlot(SimDefaultSlots.Cost, "4");
                 var entry = new SimChildComponentEntry(slot);
 
                 var startAccess = root.AccessLocal.LastAccess(SimComponentAccessPrivilege.Write);
@@ -776,7 +776,7 @@ namespace SIMULTAN.Tests.Components
                 var comp = entry.Component;
                 var index = root.Components.IndexOf(entry);
 
-                var newSlot = new SimSlot(ComponentUtils.COMP_SLOT_REGULATION, "argh");
+                var newSlot = new SimSlot(SimDefaultSlots.Regulation, "argh");
                 var newComp = new SimComponent()
                 {
                     CurrentSlot = newSlot.SlotBase
@@ -813,7 +813,7 @@ namespace SIMULTAN.Tests.Components
                 var rootStartAccess = root.AccessLocal.LastAccess(SimComponentAccessPrivilege.Write);
                 var compStartAccess = comp.AccessLocal.LastAccess(SimComponentAccessPrivilege.Write);
 
-                var newSlot = new SimSlot(ComponentUtils.COMP_SLOT_REGULATION, "argh");
+                var newSlot = new SimSlot(SimDefaultSlots.Regulation, "argh");
                 var newComp = new SimComponent()
                 {
                     CurrentSlot = newSlot.SlotBase
@@ -855,7 +855,7 @@ namespace SIMULTAN.Tests.Components
                 var rootStartAccess = root.AccessLocal.LastAccess(SimComponentAccessPrivilege.Write);
                 var compStartAccess = comp.AccessLocal.LastAccess(SimComponentAccessPrivilege.Write);
 
-                var newSlot = new SimSlot(ComponentUtils.COMP_SLOT_REGULATION, "argh");
+                var newSlot = new SimSlot(SimDefaultSlots.Regulation, "argh");
                 var newComp = new SimComponent()
                 {
                     CurrentSlot = newSlot.SlotBase
@@ -1195,7 +1195,7 @@ namespace SIMULTAN.Tests.Components
             projectData.Components.Add(root);
 
             SimComponent child = new SimComponent();
-            var childSlot = new SimSlot(ComponentUtils.COMP_SLOT_COST, "3");
+            var childSlot = new SimSlot(SimDefaultSlots.Cost, "3");
             child.CurrentSlot = childSlot.SlotBase;
 
             var startTime = DateTime.Now;
@@ -1230,7 +1230,7 @@ namespace SIMULTAN.Tests.Components
             projectData.Components.Add(root);
 
             SimComponent child = new SimComponent();
-            var childSlot = new SimSlot(ComponentUtils.COMP_SLOT_COST, "3");
+            var childSlot = new SimSlot(SimDefaultSlots.Cost, "3");
             child.CurrentSlot = childSlot.SlotBase;
 
             var childEntry = new SimChildComponentEntry(childSlot);
@@ -1270,7 +1270,7 @@ namespace SIMULTAN.Tests.Components
 
             SimComponent child = new SimComponent();
             child.AccessLocal[SimUserRole.BUILDING_PHYSICS].Access = SimComponentAccessPrivilege.Read | SimComponentAccessPrivilege.Write;
-            var childSlot = new SimSlot(ComponentUtils.COMP_SLOT_COST, "3");
+            var childSlot = new SimSlot(SimDefaultSlots.Cost, "3");
             child.CurrentSlot = childSlot.SlotBase;
             var childEntry = new SimChildComponentEntry(childSlot, child);
 
@@ -1310,7 +1310,7 @@ namespace SIMULTAN.Tests.Components
 
             SimComponent child = new SimComponent();
             child.AccessLocal[SimUserRole.BUILDING_PHYSICS].Access = SimComponentAccessPrivilege.Read | SimComponentAccessPrivilege.Write;
-            var childSlot = new SimSlot(ComponentUtils.COMP_SLOT_COST, "3");
+            var childSlot = new SimSlot(SimDefaultSlots.Cost, "3");
             child.CurrentSlot = childSlot.SlotBase;
             var childEntry = new SimChildComponentEntry(childSlot, child);
 
@@ -1349,14 +1349,14 @@ namespace SIMULTAN.Tests.Components
 
             SimComponent child = new SimComponent();
             child.AccessLocal[SimUserRole.BUILDING_PHYSICS].Access = SimComponentAccessPrivilege.Read | SimComponentAccessPrivilege.Write;
-            var childSlot = new SimSlot(ComponentUtils.COMP_SLOT_COST, "3");
+            var childSlot = new SimSlot(SimDefaultSlots.Cost, "3");
             child.CurrentSlot = childSlot.SlotBase;
 
             var childEntry = new SimChildComponentEntry(childSlot, child);
             root.Components.Add(childEntry);
 
             SimComponent child2 = new SimComponent();
-            var child2Slot = new SimSlot(ComponentUtils.COMP_SLOT_JOINT, "4");
+            var child2Slot = new SimSlot(SimDefaultSlots.Joint, "4");
             child2.CurrentSlot = child2Slot.SlotBase;
             SimChildComponentEntry child2Entry = new SimChildComponentEntry(child2Slot, child2);
 
@@ -1399,7 +1399,7 @@ namespace SIMULTAN.Tests.Components
 
             SimComponent child = new SimComponent();
             child.AccessLocal[SimUserRole.BUILDING_PHYSICS].Access = SimComponentAccessPrivilege.Read | SimComponentAccessPrivilege.Write;
-            var childSlot = new SimSlot(ComponentUtils.COMP_SLOT_COST, "3");
+            var childSlot = new SimSlot(SimDefaultSlots.Cost, "3");
             child.CurrentSlot = childSlot.SlotBase;
 
             var childEntry = new SimChildComponentEntry(childSlot, child);
@@ -1452,9 +1452,9 @@ namespace SIMULTAN.Tests.Components
             };
             SimSlot[] childSlots = new SimSlot[]
             {
-                new SimSlot(ComponentUtils.COMP_SLOT_COST, "3"),
-                new SimSlot(ComponentUtils.COMP_SLOT_COST, "4"),
-                new SimSlot(ComponentUtils.COMP_SLOT_AREAS, "2"),
+                new SimSlot(SimDefaultSlots.Cost, "3"),
+                new SimSlot(SimDefaultSlots.Cost, "4"),
+                new SimSlot(SimDefaultSlots.Areas, "2"),
             };
 
             for (int i = 0; i < children.Length; ++i)
@@ -1506,7 +1506,7 @@ namespace SIMULTAN.Tests.Components
 
             SimComponent child = new SimComponent();
             child.AccessLocal[SimUserRole.BUILDING_PHYSICS].Access = SimComponentAccessPrivilege.Read | SimComponentAccessPrivilege.Write;
-            var childSlot = new SimSlot(ComponentUtils.COMP_SLOT_COST, "3");
+            var childSlot = new SimSlot(SimDefaultSlots.Cost, "3");
             child.CurrentSlot = childSlot.SlotBase;
             var childEntry = new SimChildComponentEntry(childSlot, child);
             root.Components.Add(childEntry);

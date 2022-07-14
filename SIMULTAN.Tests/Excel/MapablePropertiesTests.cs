@@ -120,8 +120,8 @@ namespace SIMULTAN.Tests.Excel
             projectData.Components.Add(comp);
 
             var subcomp = new SimComponent();
-            subcomp.CurrentSlot = new SimSlotBase(ComponentUtils.COMP_SLOT_COST);
-            var slot = new SimSlot(ComponentUtils.COMP_SLOT_COST, "2");
+            subcomp.CurrentSlot = new SimSlotBase(SimDefaultSlots.Cost);
+            var slot = new SimSlot(SimDefaultSlots.Cost, "2");
             comp.Components.Add(new SimChildComponentEntry(slot, subcomp));
 
             var result = ExcelMappingNode.GetPropertyValues(subcomp, new Dictionary<string, Type> { { "CurrentSlot", typeof(string) } });

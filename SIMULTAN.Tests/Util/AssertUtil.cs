@@ -3,6 +3,7 @@ using SIMULTAN.Data.MultiValues;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Media.Media3D;
@@ -233,6 +234,44 @@ namespace SIMULTAN.Tests.Utils
         public static void ContainEqualValuesDifferentStart(IEnumerable<Point3D> expected, IEnumerable<Point3D> actual)
         {
             ContainEqualValuesDifferentStart(expected, actual, Compare);
+        }
+    
+        public static void AreEqualMultiline(string expected, string actual)
+        {
+            int count = Math.Min(expected.Length, actual.Length);
+            int lineCount = 0;
+
+            for (int i = 0; i < count; ++i)
+            {
+                if (expected[i] != actual[i])
+                {
+                    int start = Math.Max(i - 10, 0);
+                    string expectedPrint = 
+                        expected.Substring(start, Math.Min(10, expected.Length - start))
+                        + "--> " + expected.Substring(i, Math.Min(20, expected.Length - i));
+                    string actualPrint =
+                        actual.Substring(start, Math.Min(10, actual.Length - start))
+                        + "--> " + actual.Substring(i, Math.Min(20, actual.Length - i));
+
+
+                    Assert.Fail("Strings are not equal.\nMismatch in line {0} around\n--- Expected ---\n{1}\n\n--- Actual ---\n{2}",
+                        lineCount,
+                        expectedPrint,
+                        actualPrint
+                        );
+                }
+                else if (expected[i] == '\n')
+                    lineCount++;
+            }
+
+            if (expected.Length != actual.Length)
+            {
+                int start = Math.Max(0, count - 10);
+
+                Assert.Fail("String length doesn't match. Expected={0}, Actual={1}\n--- Expected ---\n{2}\n\n--- Actual ---\n{3}",
+                    expected.Length, actual.Length,
+                    expected.Substring(start), actual.Substring(start));
+            }
         }
     }
 }

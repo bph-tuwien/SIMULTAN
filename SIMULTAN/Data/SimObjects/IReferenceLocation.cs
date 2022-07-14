@@ -15,10 +15,5 @@ namespace SIMULTAN.Data
         /// An id of type Guid.
         /// </summary>
         Guid GlobalID { get; }
-
-        /// <summary>
-        /// The absolute path in the file system.
-        /// </summary>
-        string AbsolutePath { get; }
     }
 }

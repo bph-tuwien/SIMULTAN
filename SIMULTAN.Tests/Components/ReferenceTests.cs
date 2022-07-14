@@ -21,7 +21,7 @@ namespace SIMULTAN.Tests.Components
         [TestMethod]
         public void CtorNoTarget()
         {
-            var slot = new SimSlot(new SimSlotBase(ComponentUtils.COMP_SLOT_COST), "a1");
+            var slot = new SimSlot(new SimSlotBase(SimDefaultSlots.Cost), "a1");
             var guid = Guid.NewGuid();
 
             SimComponentReference ref1 = new SimComponentReference(slot);
@@ -41,7 +41,7 @@ namespace SIMULTAN.Tests.Components
         {
             LoadProject(referencesProject, "admin", "admin");
 
-            var slot = new SimSlot(new SimSlotBase(ComponentUtils.COMP_SLOT_COST), "a1");
+            var slot = new SimSlot(new SimSlotBase(SimDefaultSlots.Cost), "a1");
             var target = projectData.Components.First(x => x.Name == "Root1");
 
             var ref1 = new SimComponentReference(slot, target);
@@ -59,7 +59,7 @@ namespace SIMULTAN.Tests.Components
         {
             LoadProject(referencesProject, "admin", "admin");
 
-            var slot = new SimSlot(new SimSlotBase(ComponentUtils.COMP_SLOT_COST), "a1");
+            var slot = new SimSlot(new SimSlotBase(SimDefaultSlots.Cost), "a1");
             var target1 = projectData.Components.First(x => x.Name == "Root1");
             var target2 = target1.Components.First(x => x.Component.Name == "Child1").Component;
 
@@ -77,13 +77,13 @@ namespace SIMULTAN.Tests.Components
         {
             LoadProject(referencesProject, "admin", "admin");
 
-            var slot = new SimSlot(new SimSlotBase(ComponentUtils.COMP_SLOT_COST), "a1");
+            var slot = new SimSlot(new SimSlotBase(SimDefaultSlots.Cost), "a1");
             var target1 = projectData.Components.First(x => x.Name == "Root1");
 
             var ref1 = new SimComponentReference(slot, target1);
             Assert.AreEqual(slot, ref1.Slot);
 
-            var slot2 = new SimSlot(new SimSlotBase(ComponentUtils.COMP_SLOT_JOINT), "b2");
+            var slot2 = new SimSlot(new SimSlotBase(SimDefaultSlots.Joint), "b2");
             ref1.Slot = slot2;
             Assert.AreEqual(slot2, ref1.Slot);
         }

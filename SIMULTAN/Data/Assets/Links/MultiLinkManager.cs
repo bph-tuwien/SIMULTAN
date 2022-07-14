@@ -1,4 +1,5 @@
-﻿using SIMULTAN.Data.Users;
+﻿using SIMULTAN.Data.Assets.Links;
+using SIMULTAN.Data.Users;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -15,6 +16,8 @@ namespace SIMULTAN.Data.Assets
     /// </summary>
     public class MultiLinkManager
     {
+        internal static IMachineHashGenerator MachineHashGenerator { get; set; } = new DefaultMachineHashGenerator();
+
         /// <summary>
         /// Contains all links for a project.
         /// </summary>
@@ -65,19 +68,6 @@ namespace SIMULTAN.Data.Assets
         }
 
         /// <summary>
-        /// Retrieves the MultiLink instance corresponding to the given path on the local machine.
-        /// </summary>
-        /// <param name="_local_full_path">the full link path</param>
-        /// <returns>the MultiLink object or Null</returns>
-        public MultiLink GetMultiLink(string _local_full_path)
-        {
-            if (this.local_links.ContainsKey(_local_full_path))
-                return this.local_links[_local_full_path];
-            else
-                return null;
-        }
-
-        /// <summary>
         /// Forces a synchronization where the links in the asset manager are added to the current content.
         /// </summary>
         public void GetLinksFromAssetManager()
@@ -88,46 +78,33 @@ namespace SIMULTAN.Data.Assets
 
         #region EVENT HANDLER
 
-        private void Links_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+        private void Links_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
-            object old_item = (e.OldItems == null) ? null : e.OldItems[0];
-            object new_item = (e.NewItems == null) ? null : e.NewItems[0];
-            if (e.Action == NotifyCollectionChangedAction.Add && new_item is MultiLink)
+            if (e.Action == NotifyCollectionChangedAction.Add)
             {
-                foreach (var item in e.NewItems)
+                foreach (var item in e.NewItems.OfType<MultiLink>())
                 {
-                    string local_path = (item as MultiLink).GetLink();
+                    string local_path = item.GetLink();
                     if (!string.IsNullOrEmpty(local_path))
                         this.local_links.Add(local_path, item as MultiLink);
                 }
             }
-            else if (e.Action == NotifyCollectionChangedAction.Remove && old_item is MultiLink)
+            else if (e.Action == NotifyCollectionChangedAction.Remove)
             {
-                foreach (var item in e.OldItems)
+                foreach (var item in e.OldItems.OfType<MultiLink>())
                 {
                     string local_path = (item as MultiLink).GetLink();
                     if (!string.IsNullOrEmpty(local_path))
                         this.local_links.Remove(local_path);
                 }
             }
-            else if (e.Action == NotifyCollectionChangedAction.Replace && new_item is MultiLink && old_item is MultiLink)
-            {
-                foreach (var item in e.OldItems)
-                {
-                    string local_path_old = (item as MultiLink).GetLink();
-                    if (!string.IsNullOrEmpty(local_path_old))
-                        this.local_links.Remove(local_path_old);
-                }
-                foreach (var item in e.NewItems)
-                {
-                    string local_path_new = (item as MultiLink).GetLink();
-                    if (!string.IsNullOrEmpty(local_path_new))
-                        this.local_links.Add(local_path_new, item as MultiLink);
-                }
-            }
             else if (e.Action == NotifyCollectionChangedAction.Reset)
             {
                 this.local_links.Clear();
+            }
+            else
+            {
+                throw new NotSupportedException("Operation not supported");
             }
         }
 

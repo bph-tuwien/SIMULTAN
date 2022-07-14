@@ -22,7 +22,6 @@ namespace SIMULTAN.Data.Assets
     {
         #region PROPERTIES
 
-        private string directory_name_internal;
         private DirectoryInfo directory;
 
         /// <summary>
@@ -33,11 +32,10 @@ namespace SIMULTAN.Data.Assets
         /// <inheritdoc/>
         public override string Name
         {
-            get { return this.directory_name_internal; }
+            get { return directory.Name; }
             protected set
             {
-                this.directory_name_internal = value;
-                this.NotifyPropertyChanged(nameof(Name));
+                
             }
         }
         /// <inheritdoc/>
@@ -62,13 +60,12 @@ namespace SIMULTAN.Data.Assets
             if (_path_is_absolute)
             {
                 this.directory = new DirectoryInfo(_dir_path);
-                this.Name = this.directory.Name;
                 if (_exists)
                 {
                     if (Directory.Exists(_dir_path))
                         this.current_full_path = _dir_path;
                     else
-                        throw new ArgumentException("The given absolute path is not valid!");
+                        throw new ArgumentException("A folder with the given name does not exist");
                 }
                 else
                 {
@@ -229,68 +226,9 @@ namespace SIMULTAN.Data.Assets
                 string new_full_path = this.Parent.CurrentFullPath + Path.DirectorySeparatorChar + this.directory.Name;
 
                 this.directory = new DirectoryInfo(new_full_path);
-                this.Name = this.directory.Name;
                 this.CurrentFullPath = new_full_path;
                 this.SetRelativeResourcePath(new_full_path, this.manager.WorkingDirectory, false);
             }
-        }
-
-        #endregion
-
-        #region METHODS: serialization
-
-        internal override void ExportTo(StringBuilder _sb, int _key)
-        {
-            base.ExportTo(_sb, _key);
-
-            _sb.AppendLine(((int)AssetSaveCode.APATH_ISCONTAINED).ToString());
-            _sb.AppendLine("1");
-
-            _sb.AppendLine(((int)AssetSaveCode.APATH_FULL_PATH).ToString());
-            _sb.AppendLine(this.CurrentFullPath);
-
-            _sb.AppendLine(((int)AssetSaveCode.APATH_REL_PATH).ToString());
-            _sb.AppendLine(this.Name);
-        }
-
-        internal override void ExportAsObjectTo(StringBuilder _sb)
-        {
-            base.ExportAsObjectTo(_sb);
-
-            _sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_START).ToString()); // 0
-            _sb.AppendLine(ParamStructTypes.RESOURCE_DIR);                            // RESOURCE_DIRECTORY
-
-            _sb.AppendLine(((int)ParamStructCommonSaveCode.CLASS_NAME).ToString());
-            _sb.AppendLine(this.GetType().ToString());
-
-            // export common part
-            base.ExportCommon(_sb, false);
-
-            // export specific part - children
-            _sb.AppendLine(((int)ResourceSaveCode.RESOURCE_CHILDREN).ToString());
-            _sb.AppendLine(this.Children.Count.ToString());
-            if (this.Children.Count > 0)
-            {
-                _sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_START).ToString()); // 0
-                _sb.AppendLine(ParamStructTypes.ENTITY_SEQUENCE);                         // ENTSEQ
-
-                foreach (var entry in this.Children)
-                {
-                    entry.ExportAsObjectTo(_sb);
-                }
-
-                _sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_START).ToString()); // 0
-                _sb.AppendLine(ParamStructTypes.SEQUENCE_END);                            // SEQEND
-                _sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_START).ToString()); // 0
-                _sb.AppendLine(ParamStructTypes.ENTITY_CONTINUE);                         // ENTCTN
-            }
-
-            // signify end of complex entity!!!
-            //if (this.Children.Count > 0)
-            //{
-            _sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_START).ToString()); // 0
-            _sb.AppendLine(ParamStructTypes.SEQUENCE_END);                            // SEQEND
-            //}
         }
 
         #endregion
@@ -356,7 +294,6 @@ namespace SIMULTAN.Data.Assets
 
                 // no change in structure
                 this.directory = dir_new;
-                this.Name = this.directory.Name;
                 this.CurrentFullPath = dir_new.FullName;
                 this.SetRelativeResourcePath(dir_new.FullName, this.manager.WorkingDirectory, false);
 
@@ -387,7 +324,6 @@ namespace SIMULTAN.Data.Assets
 
                 // 2c. change the entry itself
                 this.directory = dir_new;
-                this.Name = this.directory.Name;
                 this.CurrentFullPath = dir_new.FullName;
                 this.SetRelativeResourcePath(dir_new.FullName, this.manager.WorkingDirectory, false);
                 // change for the children happens in the Parent setter called in the CollectionChanged Event Handler for Children

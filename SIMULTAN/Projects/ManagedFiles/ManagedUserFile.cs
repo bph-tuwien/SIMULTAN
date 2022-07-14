@@ -41,7 +41,7 @@ namespace SIMULTAN.Projects.ManagedFiles
             if (_clear_before_open)
                 ProjectData.UsersManager.Clear();
 
-            ProjectIO.OpenUserFile(this.File, ProjectData.UsersManager);
+            ProjectIO.OpenUserFile(this.File, ProjectData);
         }
     }
 }

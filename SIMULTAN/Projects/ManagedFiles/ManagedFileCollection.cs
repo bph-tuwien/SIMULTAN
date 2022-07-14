@@ -21,10 +21,6 @@ namespace SIMULTAN.Projects.ManagedFiles
         #region FIELDS
 
         private List<ManagedFile> files;
-        /// <summary>
-        /// Service provider for this project
-        /// </summary>
-        public IServicesProvider ServiceProvider { get; }
 
         /// <summary>
         /// Returns the file extensions that have to be handled both as resources and as managed file.
@@ -46,11 +42,8 @@ namespace SIMULTAN.Projects.ManagedFiles
         /// </summary>
         /// <param name="_files">the files to manage</param>
         /// <param name="_project_data_manager">holds all data managers in the project</param>
-		/// <param name="serviceProvider">The service provider for this project</param>
-        public ManagedFileCollection(List<FileInfo> _files, ExtendedProjectData _project_data_manager, IServicesProvider serviceProvider)
+        public ManagedFileCollection(List<FileInfo> _files, ExtendedProjectData _project_data_manager)
         {
-            this.ServiceProvider = serviceProvider;
-
             this.files = new List<ManagedFile>();
             if (_files != null)
             {
@@ -190,9 +183,6 @@ namespace SIMULTAN.Projects.ManagedFiles
 
             this.ParameterLibraryEntry = this.files.FirstOrDefault(x => x is ManagedParameterFile) as ManagedParameterFile;
             this.ParameterLibraryEntries = this.files.Where(x => x is ManagedParameterFile).Select(x => x as ManagedParameterFile).ToList();
-
-            this.ImageLibraryEntry = this.files.FirstOrDefault(x => x is ManagedImageFile) as ManagedImageFile;
-            this.ImageLibraryEntries = this.files.Where(x => x is ManagedImageFile).Select(x => x as ManagedImageFile).ToList();
 
             this.UserFileEntry = this.files.FirstOrDefault(x => x is ManagedUserFile) as ManagedUserFile;
             this.LinksFileEntry = this.files.FirstOrDefault(x => x is ManagedLinksFile) as ManagedLinksFile;
@@ -376,12 +366,10 @@ namespace SIMULTAN.Projects.ManagedFiles
                 ProjectIO.CreateMissingLinkFile(this.Project);
             if (this.LinksFileEntry != null)
                 this.LinksFileEntry.Open(_clear_before_open);
+
             // 3. load the components and networks
             if (this.ComponentEntry != null)
                 this.ComponentEntry.Open(_clear_before_open);
-            // 4. load symbols, if any such exist, and update the components referencing them
-            if (this.ImageLibraryEntry != null)
-                this.ImageLibraryEntry.Open(_clear_before_open);
             // 5. load the mapping rules to excel tools and restore the components' associations to them
             if (this.ExcelToolEntry != null)
                 this.ExcelToolEntry.Open(_clear_before_open);
@@ -428,9 +416,6 @@ namespace SIMULTAN.Projects.ManagedFiles
 
                 // 5. unload the mapping rules to excel tools
                 Project.AllProjectDataManagers.ExcelToolMappingManager.ClearRecord();
-
-                // 4. unload the symbols
-                Project.AllProjectDataManagers.ImageLibraryManager.ClearRecord();
 
                 // pre 3. unload the links for linked resources (happens in 3 anyway...)
                 Project.AllProjectDataManagers.AssetManager.ResetLinks();
@@ -557,15 +542,6 @@ namespace SIMULTAN.Projects.ManagedFiles
         public IEnumerable<ManagedParameterFile> ParameterLibraryEntries { get; private set; }
 
         /// <summary>
-        /// Returns the first image library file entry or Null.
-        /// </summary>
-        public ManagedImageFile ImageLibraryEntry { get; private set; }
-        /// <summary>
-        /// Returns all image library file entries or an empty collection.
-        /// </summary>
-        public IEnumerable<ManagedImageFile> ImageLibraryEntries { get; private set; }
-
-        /// <summary>
         /// Returns the first user file entry or Null.
         /// </summary>
         public ManagedUserFile UserFileEntry { get; private set; }
@@ -657,7 +633,7 @@ namespace SIMULTAN.Projects.ManagedFiles
             else if (string.Equals(_file.Extension, ParamStructFileExtensions.FILE_EXT_IMAGES, StringComparison.InvariantCultureIgnoreCase))
             {
                 // BIN
-                created = new ManagedImageFile(projectDataManager, _owner, _file);
+                // Obsolete
             }
             else if (string.Equals(_file.Extension, ParamStructFileExtensions.FILE_EXT_USERS, StringComparison.InvariantCultureIgnoreCase))
             {

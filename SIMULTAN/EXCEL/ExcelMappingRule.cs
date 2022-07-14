@@ -1,9 +1,7 @@
-﻿using SIMULTAN;
-using SIMULTAN.Data;
+﻿using SIMULTAN.Data;
 using SIMULTAN.Data.Components;
 using SIMULTAN.Data.MultiValues;
-using SIMULTAN.Serializer.DXF;
-using SIMULTAN.Serializer.DXF.DXFEntities;
+using SIMULTAN.Serializer;
 using SIMULTAN.Utils;
 using SIMULTAN.Utils.Collections;
 using System;
@@ -29,15 +27,15 @@ namespace SIMULTAN.Excel
         /// <summary>
         /// Traverses only subcomponents.
         /// </summary>
-        SUBTREE_ONLY,
+        SUBTREE_ONLY = 0,
         /// <summary>
         /// Traverses only references.
         /// </summary>
-        REFERENCES_ONLY,
+        REFERENCES_ONLY = 1,
         /// <summary>
         /// Traverses both subcomponents (first) and references (second).
         /// </summary>
-        SUBTREE_AND_REFERENCES
+        SUBTREE_AND_REFERENCES = 2
     }
 
     [Flags]
@@ -61,9 +59,9 @@ namespace SIMULTAN.Excel
 
     public enum ExcelMappingRange
     {
-        SINGLE_VALUE = 0,
-        VECTOR_VALUES = 1,
-        MATRIX_VALUES = 2
+        SingleValue = 0,
+        VectorValues = 1,
+        MatrixValues = 2
     }
 
     public class ExcelMappingNode : INotifyPropertyChanged
@@ -147,7 +145,7 @@ namespace SIMULTAN.Excel
                 if (this.sheet_name != value)
                 {
                     this.sheet_name = value;
-                    NotifyPropertyChanged(nameof(SheetName));
+                    this.NotifyPropertyChanged(nameof(this.SheetName));
                 }
             }
         }
@@ -161,7 +159,7 @@ namespace SIMULTAN.Excel
                 if (this.offset_from_parent != value)
                 {
                     this.offset_from_parent = value;
-                    NotifyPropertyChanged(nameof(OffsetFromParent));
+                    this.NotifyPropertyChanged(nameof(this.OffsetFromParent));
                 }
             }
         }
@@ -178,10 +176,10 @@ namespace SIMULTAN.Excel
                     var old_value = this.node_name;
                     this.node_name = value;
 
-                    if (Tool != null && Tool.Factory != null)
-                        ExcelTool.RenameRuleInComponents(Tool.Factory.ProjectData.Components, this.Tool.Name, old_value, this.node_name);
+                    if (this.Tool != null && this.Tool.Factory != null)
+                        ExcelTool.RenameRuleInComponents(this.Tool.Factory.ProjectData.Components, this.Tool.Name, old_value, this.node_name);
 
-                    NotifyPropertyChanged(nameof(NodeName));
+                    this.NotifyPropertyChanged(nameof(this.NodeName));
                 }
             }
         }
@@ -195,17 +193,17 @@ namespace SIMULTAN.Excel
                 if (this.subject != value)
                 {
                     this.subject = value;
-                    if (this.subject == MappingSubject.INSTANCE &&
+                    if (this.subject == MappingSubject.Instance &&
                         this.properties != null &&
                         (this.properties.ContainsKey(nameof(SimComponentInstance.InstanceParameterValuesTemporary)) || this.properties.ContainsKey(nameof(SimComponentInstance.InstanceParameterValuesPersistent))))
                     {
-                        this.range_of_values_pre_property = ExcelMappingRange.VECTOR_VALUES;
+                        this.range_of_values_pre_property = ExcelMappingRange.VectorValues;
                     }
 
                     this.Properties = new ObservableDictionary<string, Type>();
                     this.PatternsToMatchInProperty.Clear();
 
-                    NotifyPropertyChanged(nameof(Subject));
+                    this.NotifyPropertyChanged(nameof(this.Subject));
                 }
             }
         }
@@ -217,23 +215,23 @@ namespace SIMULTAN.Excel
             set
             {
                 if (this.properties != null)
-                    this.properties.CollectionChanged -= Properties_CollectionChanged;
+                    this.properties.CollectionChanged -= this.Properties_CollectionChanged;
 
                 this.properties = value;
 
                 if (this.properties != null)
-                    this.properties.CollectionChanged += Properties_CollectionChanged;
+                    this.properties.CollectionChanged += this.Properties_CollectionChanged;
 
-                NotifyPropertyChanged(nameof(Properties));
+                this.NotifyPropertyChanged(nameof(this.Properties));
             }
         }
 
         private void Properties_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
-            if (this.subject == MappingSubject.INSTANCE &&
+            if (this.subject == MappingSubject.Instance &&
                         this.properties != null &&
                         (this.properties.ContainsKey(nameof(SimComponentInstance.InstanceParameterValuesTemporary)) || this.properties.ContainsKey(nameof(SimComponentInstance.InstanceParameterValuesPersistent))))
-                this.range_of_values_pre_property = ExcelMappingRange.VECTOR_VALUES;
+                this.range_of_values_pre_property = ExcelMappingRange.VectorValues;
         }
 
         private ExcelMappingRange range_of_values_pre_property;
@@ -245,7 +243,7 @@ namespace SIMULTAN.Excel
                 if (this.range_of_values_pre_property != value)
                 {
                     this.range_of_values_pre_property = value;
-                    NotifyPropertyChanged(nameof(RangeOfValuesPerProperty));
+                    this.NotifyPropertyChanged(nameof(this.RangeOfValuesPerProperty));
                 }
             }
         }
@@ -259,7 +257,7 @@ namespace SIMULTAN.Excel
                 if (this.order_horizontally != value)
                 {
                     this.order_horizontally = value;
-                    NotifyPropertyChanged(nameof(OrderHorizontally));
+                    this.NotifyPropertyChanged(nameof(this.OrderHorizontally));
                 }
             }
         }
@@ -273,7 +271,7 @@ namespace SIMULTAN.Excel
                 if (this.prepend_content_to_children != value)
                 {
                     this.prepend_content_to_children = value;
-                    NotifyPropertyChanged(nameof(PrependContentToChildren));
+                    this.NotifyPropertyChanged(nameof(this.PrependContentToChildren));
                 }
             }
         }
@@ -285,7 +283,7 @@ namespace SIMULTAN.Excel
             private set
             {
                 this.patterns_to_match_in_property = value;
-                NotifyPropertyChanged(nameof(PatternsToMatchInProperty));
+                this.NotifyPropertyChanged(nameof(this.PatternsToMatchInProperty));
             }
         }
         private ObservableCollection<(string propertyName, object filter)> patterns_to_match_in_property;
@@ -301,7 +299,7 @@ namespace SIMULTAN.Excel
                 if (this.offset_btw_applications != value)
                 {
                     this.offset_btw_applications = value;
-                    this.NotifyPropertyChanged(nameof(OffsetBtwApplications));
+                    this.NotifyPropertyChanged(nameof(this.OffsetBtwApplications));
                 }
             }
         }
@@ -316,7 +314,7 @@ namespace SIMULTAN.Excel
                 if (this.max_elements_to_map != value)
                 {
                     this.max_elements_to_map = value.Clamp(0, 20000);
-                    NotifyPropertyChanged(nameof(MaxElementsToMap));
+                    this.NotifyPropertyChanged(nameof(this.MaxElementsToMap));
                 }
             }
         }
@@ -330,7 +328,7 @@ namespace SIMULTAN.Excel
                 if (this.max_hierarchy_levels_to_traverse != value)
                 {
                     this.max_hierarchy_levels_to_traverse = value.Clamp(0, 10);
-                    NotifyPropertyChanged(nameof(MaxHierarchyLevelsToTraverse));
+                    this.NotifyPropertyChanged(nameof(this.MaxHierarchyLevelsToTraverse));
                 }
             }
         }
@@ -354,7 +352,7 @@ namespace SIMULTAN.Excel
                 if (this.strategy != value)
                 {
                     this.strategy = value;
-                    NotifyPropertyChanged(nameof(Strategy));
+                    this.NotifyPropertyChanged(nameof(this.Strategy));
                 }
             }
         }
@@ -372,7 +370,7 @@ namespace SIMULTAN.Excel
                 if (this.node_is_active != value)
                 {
                     this.node_is_active = value;
-                    NotifyPropertyChanged(nameof(NodeIsActive));
+                    this.NotifyPropertyChanged(nameof(this.NodeIsActive));
                 }
             }
         }
@@ -520,14 +518,14 @@ namespace SIMULTAN.Excel
             this.properties = (_properties == null) ? null : new ObservableDictionary<string, Type>(_properties);
             if (this.properties != null)
             {
-                this.properties.CollectionChanged -= Properties_CollectionChanged;
-                this.properties.CollectionChanged += Properties_CollectionChanged;
+                this.properties.CollectionChanged -= this.Properties_CollectionChanged;
+                this.properties.CollectionChanged += this.Properties_CollectionChanged;
             }
             this.range_of_values_pre_property = _accepted_range;
-            if (_subject == MappingSubject.INSTANCE &&
+            if (_subject == MappingSubject.Instance &&
                 _properties != null &&
                 (_properties.ContainsKey(nameof(SimComponentInstance.InstanceParameterValuesTemporary)) || _properties.ContainsKey(nameof(SimComponentInstance.InstanceParameterValuesPersistent))))
-                this.range_of_values_pre_property = ExcelMappingRange.VECTOR_VALUES;
+                this.range_of_values_pre_property = ExcelMappingRange.VectorValues;
             this.order_horizontally = _order_hrz;
 
             this.prepend_content_to_children = false;
@@ -582,8 +580,8 @@ namespace SIMULTAN.Excel
                 {
                     this.properties.Add(entry.Key, entry.Value);
                 }
-                this.properties.CollectionChanged -= Properties_CollectionChanged;
-                this.properties.CollectionChanged += Properties_CollectionChanged;
+                this.properties.CollectionChanged -= this.Properties_CollectionChanged;
+                this.properties.CollectionChanged += this.Properties_CollectionChanged;
             }
 
             this.range_of_values_pre_property = _original.range_of_values_pre_property;
@@ -662,268 +660,6 @@ namespace SIMULTAN.Excel
             }
 
             return info;
-        }
-
-        /// <summary>
-        /// Serializer.
-        /// </summary>
-        /// <param name="_sb"></param>
-        public void AddToExport(ref StringBuilder _sb)
-        {
-            string tmp = string.Empty;
-
-            // general
-            _sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_START).ToString()); // 0
-            _sb.AppendLine(ParamStructTypes.EXCEL_RULE);                              // EXCEL_RULE
-
-            _sb.AppendLine(((int)ParamStructCommonSaveCode.CLASS_NAME).ToString());
-            _sb.AppendLine(this.GetType().ToString());
-
-            // rule - main
-            _sb.AppendLine(((int)ExcelMappingSaveCode.RULE_NODE_NAME).ToString());
-            _sb.AppendLine(this.node_name);
-
-            _sb.AppendLine(((int)ExcelMappingSaveCode.RULE_SHEET_NAME).ToString());
-            _sb.AppendLine(this.sheet_name);
-
-            _sb.AppendLine(((int)ExcelMappingSaveCode.RULE_OFFSET_FROM_PARENT_X).ToString());
-            _sb.AppendLine(((int)this.offset_from_parent.X).ToString());
-            _sb.AppendLine(((int)ExcelMappingSaveCode.RULE_OFFSET_FROM_PARENT_Y).ToString());
-            _sb.AppendLine(((int)this.offset_from_parent.Y).ToString());
-
-            _sb.AppendLine(((int)ExcelMappingSaveCode.RULE_SUBJECT).ToString());
-            _sb.AppendLine(this.subject.ToString());
-
-            _sb.AppendLine(((int)ExcelMappingSaveCode.RULE_PROPERTIES).ToString());
-            if (this.properties != null && this.properties.Count > 0)
-            {
-                _sb.AppendLine(this.properties.Count.ToString());
-
-                foreach (var entry in this.properties)
-                {
-                    _sb.AppendLine(((int)ParamStructCommonSaveCode.STRING_VALUE).ToString());
-                    _sb.AppendLine(entry.Key);
-                    _sb.AppendLine(((int)ParamStructCommonSaveCode.V10_VALUE).ToString());
-
-                    var typeNameAttrib = entry.Value.GetCustomAttribute<DXFSerializerTypeNameAttribute>();
-                    if (typeNameAttrib != null)
-                        _sb.AppendLine(typeNameAttrib.Name);
-                    else
-                        _sb.AppendLine(entry.Value.ToString());
-                }
-            }
-            else
-            {
-                _sb.AppendLine("0");
-            }
-
-            _sb.AppendLine(((int)ExcelMappingSaveCode.RULE_ACCEPT_MULTI_VAL_PER_PROPERTY).ToString());
-            _sb.AppendLine(((int)this.range_of_values_pre_property).ToString());
-
-            _sb.AppendLine(((int)ExcelMappingSaveCode.RULE_ORDER_HORIZONTALLY).ToString());
-            tmp = (this.order_horizontally) ? "1" : "0";
-            _sb.AppendLine(tmp);
-
-            _sb.AppendLine(((int)ExcelMappingSaveCode.RULE_FILTER).ToString());
-            if (this.PatternsToMatchInProperty != null && this.patterns_to_match_in_property.Count > 0)
-            {
-                _sb.AppendLine(this.patterns_to_match_in_property.Count.ToString());
-
-                foreach (var entry in this.PatternsToMatchInProperty)
-                {
-                    _sb.AppendLine(((int)ParamStructCommonSaveCode.V10_VALUE).ToString());
-                    _sb.AppendLine(ExcelMappingNode.SerializeFilterObject(entry.filter));
-                    _sb.AppendLine(((int)ParamStructCommonSaveCode.STRING_VALUE).ToString());
-                    _sb.AppendLine(entry.propertyName.ToString());
-                }
-            }
-            else
-            {
-                _sb.AppendLine("0");
-            }
-
-            _sb.AppendLine(((int)ExcelMappingSaveCode.RULE_OFFSET_BTW_APPLICATIONS_X).ToString());
-            _sb.AppendLine(((int)this.offset_btw_applications.X).ToString());
-            _sb.AppendLine(((int)ExcelMappingSaveCode.RULE_OFFSET_BTW_APPLICATIONS_Y).ToString());
-            _sb.AppendLine(((int)this.offset_btw_applications.Y).ToString());
-
-            // hierarchical structure
-            _sb.AppendLine(((int)ExcelMappingSaveCode.RULE_CHILDREN).ToString());
-            if (this.children != null && this.children.Count > 0)
-            {
-                _sb.AppendLine(this.children.Count.ToString());
-
-                _sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_START).ToString()); // 0
-                _sb.AppendLine(ParamStructTypes.ENTITY_SEQUENCE);                         // ENTSEQ
-
-                foreach (ExcelMappingNode chN in this.children)
-                {
-                    chN.AddToExport(ref _sb);
-                }
-
-                _sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_START).ToString()); // 0
-                _sb.AppendLine(ParamStructTypes.SEQUENCE_END);                            // SEQEND
-                _sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_START).ToString()); // 0
-                _sb.AppendLine(ParamStructTypes.ENTITY_CONTINUE);                         // ENTCTN
-            }
-            else
-            {
-                _sb.AppendLine("0");
-            }
-
-            _sb.AppendLine(((int)ExcelMappingSaveCode.RULE_PREPEND_CONTENT_TO_CHILDREN).ToString());
-            tmp = (this.prepend_content_to_children) ? "1" : "0";
-            _sb.AppendLine(tmp);
-
-            _sb.AppendLine(((int)ExcelMappingSaveCode.TRAVERSE_MAX_ELEM).ToString());
-            _sb.AppendLine(this.MaxElementsToMap.ToString());
-
-            _sb.AppendLine(((int)ExcelMappingSaveCode.TRAVERSE_MAX_LEVELS).ToString());
-            _sb.AppendLine(this.MaxHierarchyLevelsToTraverse.ToString());
-
-            _sb.AppendLine(((int)ExcelMappingSaveCode.TRAVERSE_STRATEGY).ToString());
-            _sb.AppendLine(this.Strategy.ToString());
-
-            _sb.AppendLine(((int)ExcelMappingSaveCode.TRAVERSAL_ACTIVATED).ToString());
-            tmp = (this.node_is_active) ? "1" : "0";
-            _sb.AppendLine(tmp);
-
-            _sb.AppendLine(((int)ExcelMappingSaveCode.VERSION).ToString());
-            _sb.AppendLine(this.Version.ToString());
-
-            // signify end of complex entity
-            _sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_START).ToString()); // 0
-            _sb.AppendLine(ParamStructTypes.SEQUENCE_END);                            // SEQEND
-        }
-
-        private static Dictionary<string, SimInstanceType> instanceTypeTranslation = new Dictionary<string, SimInstanceType>
-        {
-            { "NONE", SimInstanceType.None },
-            { "DESCRIBES", SimInstanceType.Entity3D },
-            { "DESCRIBES_3D", SimInstanceType.GeometricVolume },
-            { "DESCRIBES_2DorLESS", SimInstanceType.GeometricSurface },
-            { "ALIGNED_WITH", SimInstanceType.AttributesFace },
-            { "CONTAINED_IN", SimInstanceType.NetworkNode },
-            { "CONNECTS", SimInstanceType.NetworkEdge },
-            { "GROUPS", SimInstanceType.Group },
-            { "PARAMETERIZES", SimInstanceType.BuiltStructure },
-        };
-
-        /// <summary>
-        /// Handles only likely types, NOT ALL TYPES of objects:
-        /// string, int, long, double, Geometry.Relation2GeomState
-        /// </summary>
-        public static string SerializeFilterObject(object _o)
-        {
-            if (_o == null) return string.Empty;
-
-            if (_o is string) return _o.ToString() + ParamStructTypes.DELIMITER_WITHIN_ENTRY + typeof(string).ToString();
-            if (_o is int) return _o.ToString() + ParamStructTypes.DELIMITER_WITHIN_ENTRY + typeof(int).ToString();
-            if (_o is long) return _o.ToString() + ParamStructTypes.DELIMITER_WITHIN_ENTRY + typeof(long).ToString();
-            if (_o is double) return DXFDecoder.DoubleToString((double)_o, "F8") + ParamStructTypes.DELIMITER_WITHIN_ENTRY + typeof(double).ToString();
-            if (_o is bool b) return b.ToString() + ParamStructTypes.DELIMITER_WITHIN_ENTRY + typeof(bool).ToString();
-
-            if (_o is SimCategory)
-                return ((SimCategory)_o).ToString() + ParamStructTypes.DELIMITER_WITHIN_ENTRY
-                    + typeof(SimCategory).GetCustomAttribute<DXFSerializerTypeNameAttribute>().Name;
-            if (_o is SimInfoFlow)
-                return ((SimInfoFlow)_o).ToString() + ParamStructTypes.DELIMITER_WITHIN_ENTRY
-                    + typeof(SimInfoFlow).GetCustomAttribute<DXFSerializerTypeNameAttribute>().Name;
-
-            StringBuilder sb_o = new StringBuilder();
-            if (_o is InstanceStateFilter _of)
-            {
-                sb_o.Append(((int)ComponentInstanceSaveCode.STATE_TYPE).ToString()); sb_o.Append(ParamStructTypes.DELIMITER_WITHIN_ENTRY);
-                sb_o.Append(DXFComponentInstance.InstanceTypeToString(_of.Type)); sb_o.Append(ParamStructTypes.DELIMITER_WITHIN_ENTRY);
-
-                sb_o.Append(((int)ComponentInstanceSaveCode.STATE_ISREALIZED).ToString()); sb_o.Append(ParamStructTypes.DELIMITER_WITHIN_ENTRY);
-                string tmp = (_of.IsRealized) ? "1" : "0";
-                sb_o.Append(tmp); sb_o.Append(ParamStructTypes.DELIMITER_WITHIN_ENTRY);
-
-                sb_o.Append(typeof(SimInstanceState).GetCustomAttribute<DXFSerializerTypeNameAttribute>().Name);
-
-                return sb_o.ToString();
-            }
-
-            return string.Empty;
-        }
-
-        public static object DeserializeFilterObject(string _record)
-        {
-            if (string.IsNullOrEmpty(_record)) return null;
-
-            string[] to_parse = _record.Split(new string[] { ParamStructTypes.DELIMITER_WITHIN_ENTRY }, StringSplitOptions.RemoveEmptyEntries);
-            if (to_parse == null) return null;
-            if (to_parse.Length == 0) return null;
-
-            // reconstruct the type:
-            string type_str = to_parse[to_parse.Length - 1];
-
-            if (type_str == "ParameterStructure.Geometry.GeometryRelationState" || type_str == "ParameterStructure.EXCEL.InstanceStateFilter")
-                type_str = "SIMULTAN.Excel.InstanceStateFilter";
-
-            Type type = null;
-
-            if (!DXFExcelMappingNode.DeserializerTypename.TryGetValue(type_str, out type))
-            {
-                type = Type.GetType(type_str, false);
-                if (type == null)
-                    type = Type.GetType(type_str + ", " + Assembly.GetExecutingAssembly().FullName);
-            }
-            if (type == null)
-                throw new Exception(string.Format("Failed to deserialize typename \"{0}\"", type_str));
-
-            // reconstruct the object
-            if (type == typeof(string))
-            {
-                return to_parse[0];
-            }
-            else if (type == typeof(int))
-            {
-                int i = 0;
-                int.TryParse(to_parse[0], out i);
-                return i;
-            }
-            else if (type == typeof(long))
-            {
-                long l = 0;
-                long.TryParse(to_parse[0], out l);
-                return l;
-            }
-            else if (type == typeof(double))
-            {
-                return DXFDecoder.StringToDouble(to_parse[0]);
-            }
-            else if (type == typeof(bool))
-            {
-                bool b = false;
-                bool.TryParse(to_parse[0], out b);
-                return b;
-            }
-            else if (type == typeof(SimCategory))
-            {
-                return (SimCategory)(Enum.Parse(typeof(SimCategory), to_parse[0]));
-            }
-            else if (type == typeof(SimInfoFlow))
-            {
-                return (SimInfoFlow)(Enum.Parse(typeof(SimInfoFlow), to_parse[0]));
-            }
-            else if ((type == typeof(SimInstanceState) || type == typeof(InstanceStateFilter))
-                && to_parse.Length > 4)
-            {
-                SimInstanceType instanceType;
-
-                bool success1 = instanceTypeTranslation.TryGetValue(to_parse[1], out instanceType);
-                if (!success1)
-                    success1 = Enum.TryParse<SimInstanceType>(to_parse[1], out instanceType);
-
-                bool success2 = int.TryParse(to_parse[3], out var r2gsr_as_int);
-                bool r2gsr = (r2gsr_as_int == 1);
-                if (success1 && success2)
-                    return new InstanceStateFilter(instanceType, r2gsr);
-            }
-
-            return null;
         }
 
         internal static object CopyFilterObject(object _o)
@@ -1040,11 +776,11 @@ namespace SIMULTAN.Excel
             #endregion
             switch (this.subject)
             {
-                case MappingSubject.COMPONENT:
+                case MappingSubject.Component:
                     #region TRACE
                     _trace.AddStep(this.GetRuleDepth(), this.node_name, _comp.ToInfoString(), "APPLYING...", false, false);
                     #endregion
-                    (node_result, node_was_applied) = ApplyMappingToSingleComponent(_comp, offset_start, _tracker, _check_if_visited, _trace, ref _all_visits_to_comps, out offset_next);
+                    (node_result, node_was_applied) = this.ApplyMappingToSingleComponent(_comp, offset_start, _tracker, _check_if_visited, _trace, ref _all_visits_to_comps, out offset_next);
                     if (node_was_applied)
                     {
                         this.nr_applications++;
@@ -1151,8 +887,8 @@ namespace SIMULTAN.Excel
                         #endregion
                     }
                     break;
-                case MappingSubject.PARAMETER:
-                    (node_result, node_was_applied) = ApplyMappingToSingleParameter(_comp, offset_start, _tracker, _trace, ref _all_visited_params, out offset_next);
+                case MappingSubject.Parameter:
+                    (node_result, node_was_applied) = this.ApplyMappingToSingleParameter(_comp, offset_start, _tracker, _trace, ref _all_visited_params, out offset_next);
                     if (node_was_applied)
                     {
                         this.nr_applications++;
@@ -1162,12 +898,12 @@ namespace SIMULTAN.Excel
                         #endregion
                     }
                     break;
-                case MappingSubject.GEOMETRY:
-                case MappingSubject.GEOMETRY_POINT:
-                case MappingSubject.GEOMETRY_AREA:
-                case MappingSubject.GEOMETRY_INCLINE:
-                case MappingSubject.GEOMETRY_ORIENTATION:
-                    (node_result, node_was_applied) = ApplyMappingToSingleGeomR(_comp, offset_start, _tracker, _trace, ref _all_visited_geom, out offset_next);
+                case MappingSubject.Geometry:
+                case MappingSubject.GeometryPoint:
+                case MappingSubject.GeometryArea:
+                case MappingSubject.GeometricIncline:
+                case MappingSubject.GeometricOrientation:
+                    (node_result, node_was_applied) = this.ApplyMappingToSingleGeomR(_comp, offset_start, _tracker, _trace, ref _all_visited_geom, out offset_next);
                     if (node_was_applied)
                     {
                         this.nr_applications++;
@@ -1177,16 +913,16 @@ namespace SIMULTAN.Excel
                         #endregion
                     }
                     break;
-                case MappingSubject.INSTANCE:
+                case MappingSubject.Instance:
                     var offset_start_i = offset_start;
                     int counter = 0;
                     foreach (var instance in _comp.Instances)
                     {
                         if (counter == 0)
-                            (node_result, node_was_applied) = ApplyMappingToSingleInstance(_comp, offset_start_i, _tracker, _trace, ref _all_visited_instanes, true, out offset_next);
+                            (node_result, node_was_applied) = this.ApplyMappingToSingleInstance(_comp, offset_start_i, _tracker, _trace, ref _all_visited_instanes, true, out offset_next);
                         else
                         {
-                            (var tmp_result, var tmp_was_applied) = ApplyMappingToSingleInstance(_comp, offset_start_i, _tracker, _trace, ref _all_visited_instanes, false, out offset_next);
+                            (var tmp_result, var tmp_was_applied) = this.ApplyMappingToSingleInstance(_comp, offset_start_i, _tracker, _trace, ref _all_visited_instanes, false, out offset_next);
                             if (tmp_was_applied)
                                 node_result.AddRange(tmp_result);
                             node_was_applied |= tmp_was_applied;
@@ -1240,7 +976,7 @@ namespace SIMULTAN.Excel
                 foreach (ExcelMappingNode sN in this.children)
                 {
                     List<ExcelMappedData> to_prepend = (this.prepend_content_to_children) ? new List<ExcelMappedData>(node_result) : null;
-                    if (sN.subject == MappingSubject.COMPONENT)
+                    if (sN.subject == MappingSubject.Component)
                     {
                         // ------------------------------------------ DOUBLE RECURSION ------------------------------------- //
                         if (sN.Strategy != TraversalStrategy.REFERENCES_ONLY)
@@ -1396,7 +1132,7 @@ namespace SIMULTAN.Excel
             List<ExcelMappedData> result = new List<ExcelMappedData>();
             position_after = _starting_position;
 
-            if (this.subject != MappingSubject.COMPONENT) return (result, false);
+            if (this.subject != MappingSubject.Component) return (result, false);
             if (_comp == null) return (result, false);
 
             // ................................................ visits global ..................................... //
@@ -1548,7 +1284,7 @@ namespace SIMULTAN.Excel
             List<ExcelMappedData> result = new List<ExcelMappedData>();
             position_after = _starting_position;
 
-            if (this.subject != MappingSubject.PARAMETER) return (result, false);
+            if (this.subject != MappingSubject.Parameter) return (result, false);
             if (_comp_parent == null) return (result, false);
 
             // check if the parent passed the filter of the parent rule added 12.09.2018
@@ -1588,7 +1324,7 @@ namespace SIMULTAN.Excel
             List<object> property_values = ExcelMappingNode.GetPropertyValues<SimParameter>(p, this.properties);
             // 2. get table values, if required
             double[,] values = null;
-            if (this.range_of_values_pre_property != ExcelMappingRange.SINGLE_VALUE &&
+            if (this.range_of_values_pre_property != ExcelMappingRange.SingleValue &&
                 p.MultiValuePointer != null && p.MultiValuePointer is SimMultiValueBigTable.SimMultiValueBigTablePointer && this.properties.ContainsKey("ValueCurrent"))
             {
                 var all_values = ExcelMappingNode.GetCurrentValueTableOf(_comp_parent, p);
@@ -1597,7 +1333,7 @@ namespace SIMULTAN.Excel
                 if (this.order_horizontally)
                 {
                     // take column
-                    if (this.range_of_values_pre_property == ExcelMappingRange.VECTOR_VALUES)
+                    if (this.range_of_values_pre_property == ExcelMappingRange.VectorValues)
                     {
                         values = new double[all_values.GetLength(0), 1];
                         for (int i = 0; i < all_values.GetLength(0); ++i)
@@ -1609,7 +1345,7 @@ namespace SIMULTAN.Excel
                 else
                 {
                     // take row
-                    if (this.range_of_values_pre_property == ExcelMappingRange.VECTOR_VALUES)
+                    if (this.range_of_values_pre_property == ExcelMappingRange.VectorValues)
                     {
                         values = new double[1, all_values.GetLength(1)];
                         for (int i = 0; i < all_values.GetLength(1); ++i)
@@ -1659,7 +1395,7 @@ namespace SIMULTAN.Excel
             List<ExcelMappedData> result = new List<ExcelMappedData>();
             position_after = _starting_position;
 
-            if (this.subject != MappingSubject.INSTANCE) return (result, false);
+            if (this.subject != MappingSubject.Instance) return (result, false);
             if (_comp_parent == null) return (result, false);
 
             // check if the parent passed the filter of the parent rule
@@ -1699,7 +1435,7 @@ namespace SIMULTAN.Excel
             // 2. get parameter instance values, if required
             List<List<string>> all_labels = new List<List<string>>();
             double[,] all_values;
-            if (this.range_of_values_pre_property != ExcelMappingRange.SINGLE_VALUE &&
+            if (this.range_of_values_pre_property != ExcelMappingRange.SingleValue &&
                 (this.properties.ContainsKey(nameof(SimComponentInstance.InstanceParameterValuesTemporary)) ||
                  this.properties.ContainsKey(nameof(SimComponentInstance.InstanceParameterValuesPersistent))))
             {
@@ -1826,8 +1562,8 @@ namespace SIMULTAN.Excel
             List<ExcelMappedData> result = new List<ExcelMappedData>();
             position_after = _starting_position;
 
-            if (this.subject == MappingSubject.COMPONENT ||
-                this.subject == MappingSubject.PARAMETER) return (result, false);
+            if (this.subject == MappingSubject.Component ||
+                this.subject == MappingSubject.Parameter) return (result, false);
             if (_comp_parent == null) return (result, false);
 
             // apply filter
@@ -1856,7 +1592,7 @@ namespace SIMULTAN.Excel
 
             // get property values (size 1x1 only)
             List<object> property_values = new List<object>();
-            if (this.subject == MappingSubject.GEOMETRY)
+            if (this.subject == MappingSubject.Geometry)
                 property_values = ExcelMappingNode.GetPropertyValues<SimComponentInstance>(gr, this.properties);
             else
                 property_values = GetGeometryAttribute(gr, this.subject);
@@ -1892,17 +1628,17 @@ namespace SIMULTAN.Excel
         {
             switch (_subject)
             {
-                case MappingSubject.GEOMETRY:
+                case MappingSubject.Geometry:
                     return 0;
-                case MappingSubject.GEOMETRY_AREA:
+                case MappingSubject.GeometryArea:
                     return 1;
-                case MappingSubject.GEOMETRY_INCLINE:
+                case MappingSubject.GeometricIncline:
                     return 2;
-                case MappingSubject.GEOMETRY_ORIENTATION:
+                case MappingSubject.GeometricOrientation:
                     return 3;
-                case MappingSubject.GEOMETRY_POINT:
+                case MappingSubject.GeometryPoint:
                     return 4;
-                case MappingSubject.INSTANCE:
+                case MappingSubject.Instance:
                     return 5;
                 default:
                     return -1;
@@ -1978,7 +1714,7 @@ namespace SIMULTAN.Excel
                     else if (p_info.Name == nameof(SimComponent.CurrentSlot) && _instance is SimComponent comp2)
                     {
                         bool slotMatches = false;
-                        var filterSplit = ComponentUtils.SplitExtensionSlot((string)entry.filter);
+                        var filterSplit = SimDefaultSlots.SplitExtensionSlot((string)entry.filter);
 
                         if (comp2.ParentContainer == null)
                             slotMatches |= comp2.CurrentSlot.Base == filterSplit.slot;
@@ -2085,7 +1821,7 @@ namespace SIMULTAN.Excel
 
         public static ExcelMappingNode Nothing_Rule()
         {
-            ExcelMappingNode root = new ExcelMappingNode(null, RULE_NO_RULE_NAME, new Point(0, 0), RULE_NO_RULE_NAME, MappingSubject.COMPONENT, null, ExcelMappingRange.SINGLE_VALUE, true, null, new Point(0, 0));
+            ExcelMappingNode root = new ExcelMappingNode(null, RULE_NO_RULE_NAME, new Point(0, 0), RULE_NO_RULE_NAME, MappingSubject.Component, null, ExcelMappingRange.SingleValue, true, null, new Point(0, 0));
             return root;
         }
 
@@ -2099,8 +1835,8 @@ namespace SIMULTAN.Excel
         {
             string sheet_name = (_parent == null) ? "" : _parent.sheet_name;
             ExcelMappingNode default_rule = new ExcelMappingNode(_parent, sheet_name, new Point(0, 0), "",
-                MappingSubject.COMPONENT, new Dictionary<string, Type> { { "Name", typeof(string) } },
-                ExcelMappingRange.SINGLE_VALUE, true, null, new Point(0, 0));
+                MappingSubject.Component, new Dictionary<string, Type> { { "Name", typeof(string) } },
+                ExcelMappingRange.SingleValue, true, null, new Point(0, 0));
             return default_rule;
         }
 
@@ -2304,16 +2040,16 @@ namespace SIMULTAN.Excel
             double tolerance = 0.01;
             switch (_subject)
             {
-                case MappingSubject.GEOMETRY_AREA:
+                case MappingSubject.GeometryArea:
                     double area = Math.Abs(CalculatePolygonLargestSignedProjectedArea(instance.InstancePath));
                     attribs.Add(area);
                     break;
-                case MappingSubject.GEOMETRY_INCLINE:
+                case MappingSubject.GeometricIncline:
                     Vector3D normal_1 = GetPolygonNormalNewell(instance.InstancePath);
                     double incline = TranslateToExcelIncline(normal_1);
                     attribs.Add(incline);
                     break;
-                case MappingSubject.GEOMETRY_ORIENTATION:
+                case MappingSubject.GeometricOrientation:
                     Vector3D normal_2 = GetPolygonNormalNewell(instance.InstancePath);
                     double incline_ctrl = TranslateToExcelIncline(normal_2);
                     double orientation = TranslateToExcelOrientation(normal_2);
@@ -2321,7 +2057,7 @@ namespace SIMULTAN.Excel
                         orientation = 0;
                     attribs.Add(orientation);
                     break;
-                case MappingSubject.GEOMETRY_POINT:
+                case MappingSubject.GeometryPoint:
                     // just for completeness: get the first actual point of the path
                     if (_index >= 0 && _index < instance.InstancePath.Count)
                         attribs.Add(instance.InstancePath[_index].ToString());

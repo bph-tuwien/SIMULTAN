@@ -39,6 +39,7 @@ namespace SIMULTAN.Excel
         }
 
         private Type data_type;
+        public Type DataType => data_type;
 
         private ExcelMappedData excel_data;
         public ExcelMappedData ExcelData
@@ -216,101 +217,6 @@ namespace SIMULTAN.Excel
             return content;
         }
 
-        public void AddToExport(ref StringBuilder _sb)
-        {
-            string tmp = string.Empty;
-
-            // general
-            _sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_START).ToString()); // 0
-            _sb.AppendLine(ParamStructTypes.EXCEL_UNMAPPING);                         // EXCEL_UN_MAPPING
-
-            _sb.AppendLine(((int)ParamStructCommonSaveCode.CLASS_NAME).ToString());
-            _sb.AppendLine(this.GetType().ToString());
-
-            // rule name
-            _sb.AppendLine(((int)ExcelMappingSaveCode.RULE_NODE_NAME).ToString());
-            _sb.AppendLine(this.node_name);
-
-            // data
-            _sb.AppendLine(((int)ExcelMappingSaveCode.UNMAP_DATA).ToString());
-            _sb.AppendLine("1");
-
-            _sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_START).ToString()); // 0
-            _sb.AppendLine(ParamStructTypes.ENTITY_SEQUENCE);                         // ENTSEQ
-
-            this.excel_data.AddToExport(ref _sb, this.data_type);
-
-            _sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_START).ToString()); // 0
-            _sb.AppendLine(ParamStructTypes.SEQUENCE_END);                            // SEQEND
-            _sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_START).ToString()); // 0
-            _sb.AppendLine(ParamStructTypes.ENTITY_CONTINUE);                         // ENTCTN
-
-
-            // filter
-            _sb.AppendLine(((int)ExcelMappingSaveCode.UNMAP_FILTER_SWITCH).ToString());
-            tmp = (this.UnmapByFilter) ? "1" : "0";
-            _sb.AppendLine(tmp);
-
-            _sb.AppendLine(((int)ExcelMappingSaveCode.UNMAP_FILTER_COMP).ToString());
-            if (this.patterns_to_match_in_property_of_comp != null && this.patterns_to_match_in_property_of_comp.Count > 0)
-            {
-                _sb.AppendLine(this.patterns_to_match_in_property_of_comp.Count.ToString());
-
-                foreach (var entry in this.patterns_to_match_in_property_of_comp)
-                {
-                    _sb.AppendLine(((int)ParamStructCommonSaveCode.V10_VALUE).ToString());
-                    _sb.AppendLine(ExcelMappingNode.SerializeFilterObject(entry.filter));
-                    _sb.AppendLine(((int)ParamStructCommonSaveCode.STRING_VALUE).ToString());
-                    _sb.AppendLine(entry.propertyName);
-                }
-            }
-            else
-            {
-                _sb.AppendLine("0");
-            }
-
-            _sb.AppendLine(((int)ExcelMappingSaveCode.UNMAP_FILTER_PARAM).ToString());
-            if (this.patterns_to_match_in_property_of_param != null && this.patterns_to_match_in_property_of_param.Count > 0)
-            {
-                _sb.AppendLine(this.patterns_to_match_in_property_of_param.Count.ToString());
-
-                foreach (var entry in this.patterns_to_match_in_property_of_param)
-                {
-                    _sb.AppendLine(((int)ParamStructCommonSaveCode.V10_VALUE).ToString());
-                    _sb.AppendLine(ExcelMappingNode.SerializeFilterObject(entry.filter));
-                    _sb.AppendLine(((int)ParamStructCommonSaveCode.STRING_VALUE).ToString());
-                    _sb.AppendLine(entry.propertyName);
-                }
-            }
-            else
-            {
-                _sb.AppendLine("0");
-            }
-
-            // targets
-            _sb.AppendLine(((int)ExcelMappingSaveCode.UNMAP_TARGET_COMP_ID).ToString());
-            tmp = (this.TargetParameter == null) ? "-1" : this.TargetParameter.Component.Id.LocalId.ToString();
-            _sb.AppendLine(tmp);
-
-            _sb.AppendLine(((int)ExcelMappingSaveCode.UNMAP_TARGET_COMP_LOCATION).ToString());
-            tmp = (this.TargetParameter == null) ? Guid.Empty.ToString() : this.TargetParameter.Component.Id.GlobalId.ToString();
-            _sb.AppendLine(tmp);
-
-            _sb.AppendLine(((int)ExcelMappingSaveCode.UNMAP_TARGET_PARAM).ToString());
-            tmp = (this.TargetParameter == null) ? "-1" : this.TargetParameter.Id.LocalId.ToString();
-            _sb.AppendLine(tmp);
-
-            _sb.AppendLine(((int)ExcelMappingSaveCode.UNMAP_PARAM_POINTER_X).ToString());
-            _sb.AppendLine(((int)this.target_pointer.X).ToString());
-
-            _sb.AppendLine(((int)ExcelMappingSaveCode.UNMAP_PARAM_POINTER_Y).ToString());
-            _sb.AppendLine(((int)this.target_pointer.Y).ToString());
-
-            // signify end of complex entity
-            _sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_START).ToString()); // 0
-            _sb.AppendLine(ParamStructTypes.SEQUENCE_END);                            // SEQEND
-        }
-
         #endregion
 
         #region Rule Application
@@ -395,7 +301,7 @@ namespace SIMULTAN.Excel
         {
             ExcelMappedData excel_data_container = ExcelMappedData.CreateEmpty("Tabelle mit Ergebnissen", new System.Windows.Media.Media3D.Point4D(1, 1, 10, 2));
 
-            var filter_c = new ObservableCollection<(string propertyName, object filter)> { ("CurrentSlot", ComponentUtils.COMP_SLOT_UNDEFINED) };
+            var filter_c = new ObservableCollection<(string propertyName, object filter)> { ("CurrentSlot", SimDefaultSlots.Undefined) };
             var filter_p = new ObservableCollection<(string propertyName, object filter)> { ("Name", "pattern in name"), ("Unit", "pattern in unit") };
 
             ExcelUnmappingRule rule = new ExcelUnmappingRule("New Unmapping", typeof(string), excel_data_container, filter_c, filter_p, new Point(1, 1));

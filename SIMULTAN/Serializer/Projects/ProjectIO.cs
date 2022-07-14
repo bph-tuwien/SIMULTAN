@@ -6,9 +6,17 @@ using SIMULTAN.Data.SitePlanner;
 using SIMULTAN.Data.Users;
 using SIMULTAN.Projects;
 using SIMULTAN.Projects.ManagedFiles;
-using SIMULTAN.Projects.Serializers;
+using SIMULTAN.Serializer.CODXF;
 using SIMULTAN.Serializer.DXF;
+using SIMULTAN.Serializer.GMDXF;
+using SIMULTAN.Serializer.METADXF;
+using SIMULTAN.Serializer.MVDXF;
+using SIMULTAN.Serializer.PADXF;
+using SIMULTAN.Serializer.PPATH;
 using SIMULTAN.Serializer.SimGeo;
+using SIMULTAN.Serializer.SIMLINKS;
+using SIMULTAN.Serializer.SIMUSER;
+using SIMULTAN.Serializer.SPDXF;
 using SIMULTAN.Utils;
 using System;
 using System.Collections.Generic;
@@ -31,27 +39,21 @@ namespace SIMULTAN.Serializer.Projects
             if (_file == null || !File.Exists(_file.FullName))
                 return null;
 
-            DXFDecoderMeta dxf_decoder = new DXFDecoderMeta();
-            dxf_decoder.LoadFromFile(_file.FullName);
-            return dxf_decoder.ParsedMetaData;
+            DXFParserInfo info = new DXFParserInfo(Guid.Empty, null); //Does not exist at this point
+
+            return MetaDxfIO.Read(_file, info);
         }
 
         internal static void SaveMetaDataFile(FileInfo _file, HierarchicProjectMetaData _meta_data)
         {
-            StringBuilder export = _meta_data.ExportAsSingleFile();
-            string content = export.ToString();
-            using (FileStream fs = File.Create(_file.FullName))
-            {
-                byte[] content_B = System.Text.Encoding.UTF8.GetBytes(content);
-                fs.Write(content_B, 0, content_B.Length);
-            }
+            MetaDxfIO.Write(_file, _meta_data);
         }
 
         #endregion
 
         #region VALUES
 
-        internal static void OpenMultiValueFile(FileInfo _file, ProjectData _projectData,
+        internal static void OpenMultiValueFile(FileInfo _file, ExtendedProjectData _projectData,
                                                 Guid _calling_global_id, FileInfo logFile, IReferenceLocation _calling_reference = default)
         {
             if (_file == null || !File.Exists(_file.FullName))
@@ -62,50 +64,53 @@ namespace SIMULTAN.Serializer.Projects
                 if (_calling_reference != default && _calling_reference.GlobalID == _calling_global_id)
                     _projectData.ValueManager.SetCallingLocation(_calling_reference);
                 else
-                    _projectData.ValueManager.SetCallingLocation(new DummyReferenceLocation(_calling_global_id, _file.FullName));
+                    _projectData.ValueManager.SetCallingLocation(new DummyReferenceLocation(_calling_global_id));
             }
 
-            DXFDecoder dxf_decoder = new DXFDecoder(_projectData, DXFDecoderMode.MultiValue);
-            dxf_decoder.LogFile = logFile;
-            dxf_decoder.LoadFromFile(_file.FullName);
+            DXFParserInfo parserInfo = new DXFParserInfo(_calling_global_id, _projectData);
+            MultiValueDxfIO.Read(_file, parserInfo);
         }
 
         internal static void SaveMultiValueFile(FileInfo _file, SimMultiValueCollection _value_factory)
         {
-            StringBuilder export = _value_factory.ExportRecord(true);
-            string content = export.ToString();
-            using (FileStream fs = File.Create(_file.FullName))
-            {
-                byte[] content_B = System.Text.Encoding.UTF8.GetBytes(content);
-                fs.Write(content_B, 0, content_B.Length);
-            }
+            MultiValueDxfIO.Write(_file, _value_factory);
             _file.LastWriteTime = DateTime.Now;
         }
 
-        internal static void SavePublicMultiValueFile(FileInfo _file, SimMultiValueCollection _value_factory, SimComponentCollection _component_factory)
+        internal static void SavePublicMultiValueFile(FileInfo _file, ProjectData projectData)
         {
-            StringBuilder export = _value_factory.ExportPublicRecord(_component_factory, true);
-            string content = export.ToString();
-            using (FileStream fs = File.Create(_file.FullName))
+            HashSet<SimMultiValue> exportedMVs = new HashSet<SimMultiValue>();
+
+            ComponentWalker.ForeachComponent(projectData.Components, x =>
             {
-                byte[] content_B = System.Text.Encoding.UTF8.GetBytes(content);
-                fs.Write(content_B, 0, content_B.Length);
-            }
+                if (x.Visibility == SimComponentVisibility.AlwaysVisible)
+                {
+                    foreach (var param in x.Parameters)
+                    {
+                        if (param.MultiValuePointer != null && !exportedMVs.Contains(param.MultiValuePointer.ValueField))
+                        {
+                            exportedMVs.Add(param.MultiValuePointer.ValueField);
+                        }
+                    }
+                }
+            });
+
+            MultiValueDxfIO.Write(_file, exportedMVs);
             _file.LastWriteTime = DateTime.Now;
         }
 
         internal static void OpenMultiValueFileAlone(HierarchicalProject _caller, FileInfo _file, ExtendedProjectData targetData)
         {
             targetData.SetCallingLocation(_caller);
-            DXFDecoder dxf_decoder_MV = new DXFDecoder(targetData, DXFDecoderMode.MultiValue);
-            dxf_decoder_MV.LoadFromFile(_file.FullName);
+            DXFParserInfo info = new DXFParserInfo(_caller.GlobalID, targetData);
+            MultiValueDxfIO.Read(_file, info);
         }
 
         #endregion
 
         #region COMPONENTS
 
-        internal static void OpenComponentFile(FileInfo _file, ProjectData projectData, Guid _calling_global_id,
+        internal static void OpenComponentFile(FileInfo _file, ExtendedProjectData projectData, Guid _calling_global_id,
                                                FileInfo logFile, IReferenceLocation _calling_reference = default)
         {
             if (_file == null)
@@ -122,19 +127,16 @@ namespace SIMULTAN.Serializer.Projects
                 if (_calling_reference != default && _calling_reference.GlobalID == _calling_global_id)
                     projectData.NetworkManager.SetCallingLocation(_calling_reference);
                 else
-                    projectData.NetworkManager.SetCallingLocation(new DummyReferenceLocation(_calling_global_id, _file.FullName));
+                    projectData.NetworkManager.SetCallingLocation(new DummyReferenceLocation(_calling_global_id));
             }
-            DXFDecoder dxf_decoder = new DXFDecoder(projectData, DXFDecoderMode.Components);
-            dxf_decoder.LogFile = logFile;
-            dxf_decoder.LoadFromFile(_file.FullName);
-            projectData.Components.RestoreReferences(projectData.NetworkManager.GetAllNetworkElements());
-            projectData.AssetManager.ReleaseTmpParseRecord();
+
+            ComponentDxfIO.Read(_file, new DXFParserInfo(projectData.Owner.GlobalID, projectData));
         }
 
         internal static void SaveComponentFile(FileInfo _file, ProjectData projectData)
         {
             // create the export string
-            StringBuilder export = ComponentFactorySerialization.ExportRecord(projectData.NetworkManager, projectData.Components,
+            /*StringBuilder export = ComponentFactorySerialization.ExportRecord(projectData.NetworkManager, projectData.Components,
                 projectData.AssetManager, projectData.UserComponentLists, true);
             string content = export.ToString();
             using (FileStream fs = File.Create(_file.FullName))
@@ -142,59 +144,51 @@ namespace SIMULTAN.Serializer.Projects
                 byte[] content_B = Encoding.UTF8.GetBytes(content);
                 fs.Write(content_B, 0, content_B.Length);
             }
-            _file.LastWriteTime = DateTime.Now;
+            _file.LastWriteTime = DateTime.Now;*/
         }
 
         internal static void SavePublicComponentFile(FileInfo _file, ProjectData projectData)
         {
             // create the export string and save the component file
-            (StringBuilder export, List<string> public_paths) = ComponentFactorySerialization.ExportPublic(projectData.NetworkManager,
-                projectData.Components,
-                projectData.AssetManager, true);
-            string content = export.ToString();
-            using (FileStream fs = File.Create(_file.FullName))
-            {
-                byte[] content_B = System.Text.Encoding.UTF8.GetBytes(content);
-                fs.Write(content_B, 0, content_B.Length);
-            }
+            //(StringBuilder export, List<string> public_paths) = ComponentFactorySerialization.ExportPublic(projectData.NetworkManager,
+            //    projectData.Components,
+            //    projectData.AssetManager, true);
+            //string content = export.ToString();
+            //using (FileStream fs = File.Create(_file.FullName))
+            //{
+            //    byte[] content_B = System.Text.Encoding.UTF8.GetBytes(content);
+            //    fs.Write(content_B, 0, content_B.Length);
+            //}
+            ComponentDxfIO.WritePublic(_file, projectData);
             _file.LastWriteTime = DateTime.Now;
 
-            // save a separate text file containing the paths to the public resources that need to be unpacked during loading
-            string path_content = string.Empty;
-            if (public_paths.Count == 1)
-                path_content += public_paths[0];
-            else if (public_paths.Count >= 2)
-                path_content = public_paths.Aggregate((x, y) => x + Environment.NewLine + y);
-            string file_paths_name = _file.FullName.Substring(0, _file.FullName.Length - ParamStructFileExtensions.FILE_EXT_COMPONENTS_PUBLIC.Length) +
+
+            var file_paths_name = new FileInfo(_file.FullName.Substring(0, _file.FullName.Length - ParamStructFileExtensions.FILE_EXT_COMPONENTS_PUBLIC.Length) +
                                      ParamStructFileExtensions.PUBLIC_PROJECT_PATHS_SUFFIX +
-                                     ParamStructFileExtensions.FILE_EXT_PUBLIC_PROJECT_PATHS;
-            using (FileStream fs = File.Create(file_paths_name))
-            {
-                byte[] content_P = System.Text.Encoding.UTF8.GetBytes(path_content);
-                fs.Write(content_P, 0, content_P.Length);
-            }
-        }
+                                     ParamStructFileExtensions.FILE_EXT_PUBLIC_PROJECT_PATHS);
+            PPathIO.Write(file_paths_name, projectData);
 
-        internal static void OpenComponentFileAlone(HierarchicalProject _caller, FileInfo _file,
-            ExtendedProjectData projectData)
-        {
-            if (_caller == null)
-                throw new ArgumentNullException(string.Format("{0} may not be null", nameof(_caller)));
-            if (_file == null)
-                throw new ArgumentNullException(string.Format("{0} may not be null", nameof(_file)));
-
-            DXFDecoder dxf_decoder = new DXFDecoder(projectData, DXFDecoderMode.Components, false);
-            dxf_decoder.LoadFromFile(_file.FullName);
-            projectData.AssetManager.ReleaseTmpParseRecord();
-            projectData.Components.RestoreReferences(projectData.NetworkManager.GetAllNetworkElements());
-            // restoring the parameter references here is not necessary
+            // save a separate text file containing the paths to the public resources that need to be unpacked during loading
+            //string path_content = string.Empty;
+            //if (public_paths.Count == 1)
+            //    path_content += public_paths[0];
+            //else if (public_paths.Count >= 2)
+            //    path_content = public_paths.Aggregate((x, y) => x + Environment.NewLine + y);
+            //string file_paths_name = _file.FullName.Substring(0, _file.FullName.Length - ParamStructFileExtensions.FILE_EXT_COMPONENTS_PUBLIC.Length) +
+            //                         ParamStructFileExtensions.PUBLIC_PROJECT_PATHS_SUFFIX +
+            //                         ParamStructFileExtensions.FILE_EXT_PUBLIC_PROJECT_PATHS;
+            //using (FileStream fs = File.Create(file_paths_name))
+            //{
+            //    byte[] content_P = System.Text.Encoding.UTF8.GetBytes(path_content);
+            //    fs.Write(content_P, 0, content_P.Length);
+            //}
         }
 
         #endregion
 
         #region EXCEL TOOLS
 
-        internal static void OpenExcelToolCollectionFile(FileInfo _file, ProjectData projectData)
+        internal static void OpenExcelToolCollectionFile(FileInfo _file, ExtendedProjectData projectData)
         {
             if (projectData == null)
                 throw new ArgumentNullException(string.Format("{0} may not be null", nameof(projectData)));
@@ -206,22 +200,17 @@ namespace SIMULTAN.Serializer.Projects
 
 
             projectData.ExcelToolMappingManager.ClearRecord();
-            //imports the DXF file
-            DXFDecoder dxf_decoder = new DXFDecoder(projectData, DXFDecoderMode.ExcelTools);
-            dxf_decoder.LoadFromFile(_file.FullName);
-            projectData.ExcelToolMappingManager.RestoreDependencies(projectData); // for unmapping rules with specific components as targets
+            var info = new DXFParserInfo(projectData.Owner.GlobalID, projectData)
+            {
+                //FileVersion = ComponentDxfIO.LastParsedFileVersion
+                FileVersion = Math.Min(11, ComponentDxfIO.LastParsedFileVersion) //This is needed because version sections are only present starting from version 12
+            };
+            ExcelDxfIO.Read(_file, info);
         }
 
         internal static void SaveExcelToolCollectionFile(FileInfo _file, ProjectData projectData)
         {
-            // create the export string
-            StringBuilder export = projectData.ExcelToolMappingManager.Export();
-            string content = export.ToString();
-            using (FileStream fs = File.Create(_file.FullName))
-            {
-                byte[] content_B = System.Text.Encoding.UTF8.GetBytes(content);
-                fs.Write(content_B, 0, content_B.Length);
-            }
+            ExcelDxfIO.Write(_file, projectData);
             _file.LastWriteTime = DateTime.Now;
         }
 
@@ -229,50 +218,19 @@ namespace SIMULTAN.Serializer.Projects
 
         #region PARAMETERS
 
-        internal static void OpenParameterLibraryFile(FileInfo _file, ProjectData projectData)
+        internal static void OpenParameterLibraryFile(FileInfo _file, ExtendedProjectData projectData)
         {
             if (_file == null || !File.Exists(_file.FullName))
                 return;
 
             //imports the DXF file
-            DXFDecoder dxf_decoder = new DXFDecoder(projectData, DXFDecoderMode.Parameters);
-            dxf_decoder.LoadFromFile(_file.FullName);
+            DXFParserInfo info = new DXFParserInfo(projectData.Owner.GlobalID, projectData);
+            ParameterDxfIO.Read(_file, info);
         }
 
-        internal static void SaveParameterLibraryFile(FileInfo _file, ParameterFactory _parameter_factory)
+        internal static void SaveParameterLibraryFile(FileInfo _file, ExtendedProjectData projectData)
         {
-            // create the export string
-            StringBuilder export = _parameter_factory.ExportRecord(null, true);
-            string content = export.ToString();
-            using (FileStream fs = File.Create(_file.FullName))
-            {
-                byte[] content_B = System.Text.Encoding.UTF8.GetBytes(content);
-                fs.Write(content_B, 0, content_B.Length);
-            }
-            _file.LastWriteTime = DateTime.Now;
-        }
-
-        #endregion
-
-        #region IMAGES
-
-        internal static void OpenImageLibraryFile(FileInfo _file, ImageRecordManager _image_manager)
-        {
-            if (_file == null)
-                throw new ArgumentNullException(string.Format("{0} may not be null", nameof(_file)));
-            if (_image_manager == null)
-                throw new ArgumentNullException(string.Format("{0} may not be null", nameof(_image_manager)));
-
-            if (!File.Exists(_file.FullName))
-                throw new ArgumentException(string.Format("File {0} does not exist", _file.FullName));
-
-            _image_manager.LoadRecordsFromFile(_file.FullName);
-        }
-
-        internal static void SaveImageLibraryFile(FileInfo _file, ImageRecordManager _image_manager)
-        {
-            // create the export string
-            _image_manager.SaveRecordToFile(_file.FullName);
+            ParameterDxfIO.Write(_file, projectData);
             _file.LastWriteTime = DateTime.Now;
         }
 
@@ -300,17 +258,19 @@ namespace SIMULTAN.Serializer.Projects
         // TODO... solve better (otherwise key is in memory until the application closes!)
         internal static byte[] ENCR_KEY = new byte[0];
 
-        internal static void OpenUserFile(FileInfo _file, SimUsersManager _user_manager)
+        internal static void OpenUserFile(FileInfo _file, ExtendedProjectData _projectData)
         {
             if (_file == null)
                 throw new ArgumentNullException(string.Format("{0} may not be null", nameof(_file)));
-            if (_user_manager == null)
-                throw new ArgumentNullException(string.Format("{0} may not be null", nameof(_user_manager)));
+            if (_projectData == null)
+                throw new ArgumentNullException(string.Format("{0} may not be null", nameof(_projectData)));
 
             if (!File.Exists(_file.FullName))
                 throw new ArgumentException(string.Format("File {0} does not exist", _file.FullName));
 
-            var users = UserFileIO.Load(_file, ProjectIO.ENCR_KEY);
+            var userManager = _projectData.UsersManager;
+
+            var users = SimUserDxfIO.Read(_file, ProjectIO.ENCR_KEY, new DXFParserInfo(_projectData.Project.GlobalID, _projectData));
 
             if (users.Any(x => x.EncryptedEncryptionKey == null)) //For legacy projects where no key was present -> reset passwords of ALL users and create key
             {
@@ -328,17 +288,17 @@ namespace SIMULTAN.Serializer.Projects
 
             foreach (SimUser u in users)
             {
-                _user_manager.Users.Add(u);
+                userManager.Users.Add(u);
             }
 
-            if (_user_manager.Users.Count == 0)
+            if (userManager.Users.Count == 0)
             {
                 //Generate encryption key for project
                 byte[] key = new byte[32];
                 RandomNumberGenerator.Create().GetBytes(key);
                 var passwd = Encoding.UTF8.GetBytes("admin");
 
-                _user_manager.Users.Add(
+                userManager.Users.Add(
                     new SimUser(Guid.NewGuid(), "Admin",
                     SimUsersManager.HashPassword(passwd),
                     SimUsersManager.EncryptEncryptionKey(key, passwd),
@@ -351,7 +311,7 @@ namespace SIMULTAN.Serializer.Projects
         {
             // copied from SaveProjectVM
             ProjectIO.ENCR_KEY = _encryption_key;
-            UserFileIO.Save(_user_manager.Users, _file, ProjectIO.ENCR_KEY);
+            SimUserDxfIO.Write(_user_manager.Users, _file, ProjectIO.ENCR_KEY);
 
             _file.LastWriteTime = DateTime.Now;
         }
@@ -360,31 +320,32 @@ namespace SIMULTAN.Serializer.Projects
 
         #region LINKS FILE
 
-        internal static void OpenLinksFile(FileInfo _file, MultiLinkManager _links_manager)
+        internal static void OpenLinksFile(FileInfo _file, Guid _calling_global_id, ExtendedProjectData projectData)
         {
             if (_file == null)
                 throw new ArgumentNullException(string.Format("{0} may not be null", nameof(_file)));
-            if (_links_manager == null)
-                throw new ArgumentNullException(string.Format("{0} may not be null", nameof(_links_manager)));
+            if (projectData == null)
+                throw new ArgumentNullException(string.Format("{0} may not be null", nameof(projectData)));
 
             if (!File.Exists(_file.FullName))
                 throw new ArgumentException(string.Format("File {0} does not exist", _file.FullName));
 
-            var links = MultiLinksFileIO.Load(_file, _links_manager.UserEncryptionUtiliy.EncryptionKey);
+            DXFParserInfo info = new DXFParserInfo(_calling_global_id, projectData);
+            var links = SimLinksDxfIO.Read(_file, projectData.MultiLinkManager.UserEncryptionUtiliy.EncryptionKey, info);
             foreach (var link in links)
             {
-                _links_manager.Links.Add(link);
+                projectData.MultiLinkManager.Links.Add(link);
             }
         }
 
-        internal static void SaveLinksFile(FileInfo _file, MultiLinkManager _manager)
+        internal static void SaveLinksFile(FileInfo _file, ExtendedProjectData projectData)
         {
             FileCanBeOverwritten(_file); // throws exceptions, if there are time stamp inconsistencies
 
-            if (_manager.UserEncryptionUtiliy == null)
+            if (projectData.MultiLinkManager.UserEncryptionUtiliy == null)
                 throw new Exception("Encryption key utility cannot be found!");
 
-            MultiLinksFileIO.Save(_manager.Links, _file, _manager.UserEncryptionUtiliy.EncryptionKey);
+            SimLinksDxfIO.Write(projectData.MultiLinkManager.Links, _file, projectData.MultiLinkManager.UserEncryptionUtiliy.EncryptionKey);
 
             _file.LastWriteTime = DateTime.Now;
         }
@@ -393,7 +354,7 @@ namespace SIMULTAN.Serializer.Projects
 
         #region SITEPLANNER
 
-        internal static void OpenGeoMapFile(FileInfo file, ResourceFileEntry fileResource, SitePlannerManager manager, AssetManager assetManager)
+        internal static void OpenGeoMapFile(FileInfo file, ResourceFileEntry fileResource, ExtendedProjectData projectData)
         {
             if (file == null)
                 throw new ArgumentNullException(nameof(file));
@@ -401,47 +362,33 @@ namespace SIMULTAN.Serializer.Projects
                 throw new ArgumentException("file must exist");
             if (fileResource == null)
                 throw new ArgumentNullException(nameof(fileResource));
-            if (manager == null)
-                throw new ArgumentNullException(nameof(manager));
-            if (assetManager == null)
-                throw new ArgumentNullException(nameof(assetManager));
+            if (projectData == null)
+                throw new ArgumentNullException(nameof(projectData));
 
-
-            using (FileStream fs = new FileStream(file.FullName, FileMode.Open))
-            {
-                DXFDecoderGeoReferences decoder = new DXFDecoderGeoReferences(fileResource, assetManager);
-                decoder.LoadFromFile(fs);
-                manager.GeoMaps.Add(decoder.Map);
-            }
+            var parseInfo = new DXFParserInfo(projectData.Project.GlobalID, projectData) { CurrentFile = file};
+            GeoMapDxfIO.Read(file, parseInfo);
         }
 
-        internal static void SaveGeoMapFile(FileInfo _file, SitePlannerManager _manager)
+        internal static void SaveGeoMapFile(FileInfo _file, SitePlannerManager _manager, ProjectData _projectData)
         {
-            SitePlannerIO.SaveGeoMap(_file, _manager.GetGeoMapByFile(_file));
+            GeoMapDxfIO.Write(_file, _manager.GetGeoMapByFile(_file), _projectData);
 
             _file.LastWriteTime = DateTime.Now;
         }
 
-        internal static void OpenSitePlannerFile(ResourceFileEntry fileResource, ProjectData projectData)
+        internal static void OpenSitePlannerFile(ResourceFileEntry fileResource, ExtendedProjectData projectData)
         {
             if (fileResource == null || !File.Exists(fileResource.CurrentFullPath))
                 return;
 
-            using (FileStream fs = new FileStream(fileResource.CurrentFullPath, FileMode.Open))
-            {
-                DXFDecoderSitePlanner decoder = new DXFDecoderSitePlanner(fileResource, projectData.AssetManager,
-                    projectData.SitePlannerManager, projectData.ValueManager);
-                projectData.SitePlannerManager.SitePlannerProjects.Add(decoder.Project);
-                decoder.LoadFromFile(fs);
-
-                //Register to exchange
-                projectData.ComponentGeometryExchange.AddSiteplannerProject(decoder.Project);
-            }
+            var file = new FileInfo(fileResource.CurrentFullPath);
+            var parseInfo = new DXFParserInfo(projectData.Owner.GlobalID, projectData) { CurrentFile = file};
+            SiteplannerDxfIO.Read(file, parseInfo);
         }
 
-        internal static void SaveSitePlannerFile(FileInfo _file, SitePlannerManager _manager)
+        internal static void SaveSitePlannerFile(FileInfo _file, SitePlannerManager _manager, ProjectData _projectData)
         {
-            SitePlannerIO.SaveSitePlannerProject(_file, _manager.GetSitePlannerProjectByFile(_file));
+            SiteplannerDxfIO.Write(_file, _manager.GetSitePlannerProjectByFile(_file), _projectData);
 
             _file.LastWriteTime = DateTime.Now;
         }
@@ -459,13 +406,11 @@ namespace SIMULTAN.Serializer.Projects
         /// <param name="_associated_files">the files linked in the project but not associated with it</param>
         /// <param name="_project_data_manager">the manager of all relevant data</param>
         /// <param name="_encryption_key">the key for encrypting the user file</param>
-        /// <param name="serviceProvider">The service provider</param>
         /// <returns>The created project</returns>
         /// <exception cref="CreateProjectException">Thrown when one of the required files is missing</exception>
         public static CompactProject CreateFromSeparateFiles(FileInfo _project_file, IEnumerable<FileInfo> _files_to_convert_to_project,
-                                                                                     IEnumerable<FileInfo> _non_managed_files, IEnumerable<FileInfo> _associated_files,
-                                                                                     ExtendedProjectData _project_data_manager, byte[] _encryption_key,
-                                                                                     IServicesProvider serviceProvider)
+            IEnumerable<FileInfo> _non_managed_files, IEnumerable<FileInfo> _associated_files,
+            ExtendedProjectData _project_data_manager, byte[] _encryption_key)
         {
             if (_files_to_convert_to_project == null)
                 throw new ArgumentNullException(nameof(_files_to_convert_to_project));
@@ -516,13 +461,13 @@ namespace SIMULTAN.Serializer.Projects
 
             string file_path_links = Path.Combine(unpacking_dir.FullName, "Links" + ParamStructFileExtensions.FILE_EXT_LINKS);
             FileInfo file_links = new FileInfo(file_path_links);
-            ProjectIO.SaveLinksFile(file_links, links);
+            ProjectIO.SaveLinksFile(file_links, _project_data_manager);
             project_content_files.Add(file_links);
 
             // 1d. SAVE the public values file
             string file_path_public_values = Path.Combine(unpacking_dir.FullName, "PublicValueRecord" + ParamStructFileExtensions.FILE_EXT_MULTIVALUES_PUBLIC);
             FileInfo file_public_values = new FileInfo(file_path_public_values);
-            ProjectIO.SavePublicMultiValueFile(file_public_values, _project_data_manager.ValueManager, _project_data_manager.Components);
+            ProjectIO.SavePublicMultiValueFile(file_public_values, _project_data_manager);
             project_content_files.Add(file_public_values);
 
             // 1e. SAVE the public component file
@@ -551,13 +496,13 @@ namespace SIMULTAN.Serializer.Projects
             // 4. DO NOT COPY the associated files (pdf, xml, docx, etc.) to the project's directory!
 
             // 5. create the project
-            ManagedFileCollection managed_files = new ManagedFileCollection(project_content_files.ToList(), _project_data_manager, serviceProvider);
+            ManagedFileCollection managed_files = new ManagedFileCollection(project_content_files.ToList(), _project_data_manager);
             var metaDataFile = managed_files.Files.FirstOrDefault(x => x is ManagedMetaData);
             HierarchicProjectMetaData metaData = ProjectIO.OpenMetaDataFile(metaDataFile.File);
 
             CompactProject project = new CompactProject(metaData.ProjectId, _project_file, _project_data_manager, managed_files,
                 non_managed_files, new List<DirectoryInfo>(),
-                _associated_files, unpacking_dir, serviceProvider);
+                _associated_files, unpacking_dir);
 
             return project;
         }
@@ -594,7 +539,7 @@ namespace SIMULTAN.Serializer.Projects
             OpenComponentFile(file_comps, _project_data_manager, Guid.Empty, null);
 
             var created = ProjectIO.CreateFromSeparateFiles(_project_file, files_to_convert_to_project,
-                new List<FileInfo>(), new List<FileInfo>(), _project_data_manager, _encryption_key, serviceProvider);
+                new List<FileInfo>(), new List<FileInfo>(), _project_data_manager, _encryption_key);
 
             // delete the files from the temporary folder
             file_values.Delete();
@@ -620,7 +565,7 @@ namespace SIMULTAN.Serializer.Projects
                 links.GetLinksFromAssetManager();
             string file_path_links = Path.Combine(_project.ProjectUnpackFolder.FullName, "Links" + ParamStructFileExtensions.FILE_EXT_LINKS);
             FileInfo file_links = new FileInfo(file_path_links);
-            ProjectIO.SaveLinksFile(file_links, links);
+            ProjectIO.SaveLinksFile(file_links, _project.AllProjectDataManagers);
             _project.ManagedFiles.AddFile(file_links, _project.AllProjectDataManagers);
         }
 

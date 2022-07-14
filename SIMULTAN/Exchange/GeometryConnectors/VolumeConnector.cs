@@ -164,7 +164,7 @@ namespace SIMULTAN.Exchange.GeometryConnectors
                     volumeComponent.InstanceType = SimInstanceType.GeometricVolume;
                     volumeComponent.Name = TypedGeometry.Name + " 3D";
                     volumeComponent.Description = "Representation";
-                    volumeComponent.CurrentSlot = new SimSlotBase(ComponentUtils.COMP_SLOT_VOLUMES);
+                    volumeComponent.CurrentSlot = new SimSlotBase(SimDefaultSlots.Volumes);
                     volumeComponent.IsAutomaticallyGenerated = true;
                     volumeComponent.AccessLocal = new SimAccessProfile(component.AccessLocal);
 
@@ -221,7 +221,7 @@ namespace SIMULTAN.Exchange.GeometryConnectors
                     faceComp.InstanceType = SimInstanceType.GeometricSurface;
                     faceComp.Name = face.Value.Name + " 2D";
                     faceComp.Description = "Representation";
-                    faceComp.CurrentSlot = new SimSlotBase(ComponentUtils.COMP_SLOT_AREAS);
+                    faceComp.CurrentSlot = new SimSlotBase(SimDefaultSlots.Areas);
                     faceComp.IsAutomaticallyGenerated = true;
                     faceComp.AccessLocal = new SimAccessProfile(component.AccessLocal);
 

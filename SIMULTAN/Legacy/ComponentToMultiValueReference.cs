@@ -34,7 +34,7 @@ namespace SIMULTAN.Legacy
         /// <summary>
         /// The type of the multivalue field.
         /// </summary>
-        public MultiValueType Type { get; }
+        public SimMultiValueType Type { get; }
 
         /// <summary>
         /// Descriptive information about the component (global).
@@ -60,7 +60,7 @@ namespace SIMULTAN.Legacy
         /// <param name="parameterId">the parameter id</param>
         /// <param name="valueId">the id of the value field</param>
         /// <param name="type">the type of the value field</param>
-        protected ComponentToMultiValueReference(SimId componentId, long parameterId, long valueId, MultiValueType type)
+        protected ComponentToMultiValueReference(SimId componentId, long parameterId, long valueId, SimMultiValueType type)
         {
             this.ComponentId = componentId;
             this.ParameterId = parameterId;
@@ -101,12 +101,12 @@ namespace SIMULTAN.Legacy
                 bool p1b = long.TryParse(components[1], out long idC_local);
                 bool p2 = long.TryParse(components[2], out long idP);
                 bool p3 = long.TryParse(components[3], out long idMV);
-                bool p4 = Enum.TryParse(components[3], out MultiValueType type);
+                bool p4 = Enum.TryParse(components[3], out SimMultiValueType type);
                 if (p1a && p1b && p2 && p3 && p4)
                 {
                     switch (type)
                     {
-                        case MultiValueType.TABLE:
+                        case SimMultiValueType.BigTable:
                             if (components.Length >= 6)
                             {
                                 bool p5 = int.TryParse(components[4], out int rInd);
@@ -115,7 +115,7 @@ namespace SIMULTAN.Legacy
                                     return new ComponentToMultiValueBigTableReference(new SimId(idC_global, idC_local), idP, idMV, rInd, cInd);
                             }
                             break;
-                        case MultiValueType.FUNCTION_ND:
+                        case SimMultiValueType.Function:
                             if (components.Length >= 7)
                             {
                                 string gN = components[4];
@@ -125,7 +125,7 @@ namespace SIMULTAN.Legacy
                                     return new ComponentToMultiValueFunctionReference(new SimId(idC_global, idC_local), idP, idMV, gN, aX, aY);
                             }
                             break;
-                        case MultiValueType.FIELD_3D:
+                        case SimMultiValueType.Field3D:
                             if (components.Length >= 7)
                             {
                                 bool p5 = double.TryParse(components[4], NumberStyles.Float, new NumberFormatInfo(), out double aX);
@@ -264,7 +264,7 @@ namespace SIMULTAN.Legacy
         /// <param name="rowIndex">the row index of the table</param>
         /// <param name="columnIndex">the column index of the table</param>
         public ComponentToMultiValueBigTableReference(SimId componentId, long parameterId, long valueId, int rowIndex, int columnIndex)
-            : base(componentId, parameterId, valueId, MultiValueType.TABLE)
+            : base(componentId, parameterId, valueId, SimMultiValueType.BigTable)
         {
             this.RowIndex = rowIndex;
             this.ColumnIndex = columnIndex;
@@ -304,7 +304,7 @@ namespace SIMULTAN.Legacy
         /// <param name="axisValueX">the value along the x axis</param>
         /// <param name="axisValueY">the value along the y axis</param>
         public ComponentToMultiValueFunctionReference(SimId componentId, long parameterId, long valueId, string graphName, double axisValueX, double axisValueY)
-            : base(componentId, parameterId, valueId, MultiValueType.FUNCTION_ND)
+            : base(componentId, parameterId, valueId, SimMultiValueType.Function)
         {
             this.GraphName = graphName;
             this.AxisValueX = axisValueX;
@@ -345,7 +345,7 @@ namespace SIMULTAN.Legacy
         /// <param name="axisValueY">the value along the Y axis</param>
         /// <param name="axisValueZ">the value along the Z axis</param>
         public ComponentToMultiValueTableReference(SimId componentId, long parameterId, long valueId, double axisValueX, double axisValueY, double axisValueZ)
-            : base(componentId, parameterId, valueId, MultiValueType.FIELD_3D)
+            : base(componentId, parameterId, valueId, SimMultiValueType.Field3D)
         {
             this.AxisValueX = axisValueX;
             this.AxisValueY = axisValueY;

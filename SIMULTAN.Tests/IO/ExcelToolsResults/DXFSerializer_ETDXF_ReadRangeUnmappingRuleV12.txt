@@ -1,0 +1,18 @@
+﻿0
+EXCEL_RESULT
+100
+SIMULTAN.Excel.ExcelMappedData
+6501
+Sheet A
+6502
+1
+6503
+2
+6504
+3
+6505
+4
+6506
+System.Double
+0
+EOF

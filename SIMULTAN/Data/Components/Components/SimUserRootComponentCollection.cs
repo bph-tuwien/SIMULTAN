@@ -131,7 +131,7 @@ namespace SIMULTAN.Data.Components
         /// </summary>
         /// <param name="owner">The owner of this collection.</param>
         /// <param name="components">Starting components to initialize it with</param>
-        public SimUserRootComponentCollection(SimUserComponentList owner, ObservableCollection<SimComponent> components) : this(owner)
+        public SimUserRootComponentCollection(SimUserComponentList owner, IEnumerable<SimComponent> components) : this(owner)
         {
             if (components == null)
             {

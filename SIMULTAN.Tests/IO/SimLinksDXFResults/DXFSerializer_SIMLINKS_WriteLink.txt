@@ -1,0 +1,8 @@
+﻿0
+MULTI_LINK
+901
+1
+10
+11223344
+20
+C:\something

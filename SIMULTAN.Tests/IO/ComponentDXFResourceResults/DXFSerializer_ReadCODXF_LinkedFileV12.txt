@@ -1,0 +1,14 @@
+0
+RESOURCE_LINKED_FILE
+100
+SIMULTAN.Data.Assets.LinkedResourceFileEntry
+7201
+4
+7202
+12
+7204
+MyLinkedFile.txt
+7212
+0
+0
+SEQEND

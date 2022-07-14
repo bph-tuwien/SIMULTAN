@@ -1,0 +1,16 @@
+0
+RESOURCE_DIRECTORY
+100
+SIMULTAN.Data.Assets.ResourceDirectoryEntry
+7201
+8
+7202
+3
+7204
+RootFolder
+7212
+0
+7207
+0
+0
+SEQEND

@@ -236,7 +236,7 @@ namespace SIMULTAN.Data.MultiValues
         }
 
         /// <inheritdoc />
-        public override MultiValueType MVType => MultiValueType.FUNCTION_ND;
+        public override SimMultiValueType MVType => SimMultiValueType.Function;
 
         /// <summary>
         /// Stores a list of all graphs in this ValueField
@@ -343,83 +343,6 @@ namespace SIMULTAN.Data.MultiValues
             return mvf_string;
         }
 
-        /// <inheritdoc />
-        public override void AddToExport(ref StringBuilder sb)
-        {
-            if (sb == null) return;
-
-            sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_START).ToString()); // 0
-            sb.AppendLine(ParamStructTypes.FUNCTION_FIELD);                          // FUNCTION_FIELD
-
-            sb.AppendLine(((int)ParamStructCommonSaveCode.CLASS_NAME).ToString());
-            sb.AppendLine(this.GetType().ToString());
-
-            // common, common display, common info   
-            base.AddToExport(ref sb);
-
-            // common FUNCTION Info
-            sb.AppendLine(((int)MultiValueSaveCode.MinX).ToString());
-            sb.AppendLine(DXFDecoder.DoubleToString(this.Range.Minimum.X, "F8"));
-            sb.AppendLine(((int)MultiValueSaveCode.MaxX).ToString());
-            sb.AppendLine(DXFDecoder.DoubleToString(this.Range.Maximum.X, "F8"));
-
-            sb.AppendLine(((int)MultiValueSaveCode.MinY).ToString());
-            sb.AppendLine(DXFDecoder.DoubleToString(this.Range.Minimum.Y, "F8"));
-            sb.AppendLine(((int)MultiValueSaveCode.MaxY).ToString());
-            sb.AppendLine(DXFDecoder.DoubleToString(this.Range.Maximum.Y, "F8"));
-
-            sb.AppendLine(((int)MultiValueSaveCode.NrZ).ToString());
-            sb.AppendLine(this.ZAxis.Count.ToString());
-            sb.AppendLine(((int)MultiValueSaveCode.MinZ).ToString());
-            sb.AppendLine(DXFDecoder.DoubleToString(this.Range.Minimum.Z, "F8"));
-            sb.AppendLine(((int)MultiValueSaveCode.MaxZ).ToString());
-            sb.AppendLine(DXFDecoder.DoubleToString(this.Range.Maximum.Z, "F8"));
-
-            // common FUNCTION VALUE Info
-            sb.AppendLine(((int)MultiValueSaveCode.ZS).ToString());
-            sb.AppendLine(this.ZAxis.Count.ToString());
-            for (int i = 0; i < this.ZAxis.Count; i++)
-            {
-                sb.AppendLine(((int)ParamStructCommonSaveCode.X_VALUE).ToString());
-                sb.AppendLine(DXFDecoder.DoubleToString(this.ZAxis[i], "F8"));
-            }
-
-            sb.AppendLine(((int)MultiValueSaveCode.FIELD).ToString());
-            sb.AppendLine(this.Graphs.Count.ToString());
-            for (int gi = 0; gi < this.Graphs.Count; gi++)
-            {
-                var function = this.Graphs[gi].Points;
-                if (function.Count < 1) continue;
-
-                for (int i = 0; i < function.Count; i++)
-                {
-                    sb.AppendLine(((int)ParamStructCommonSaveCode.X_VALUE).ToString());
-                    sb.AppendLine(DXFDecoder.DoubleToString(function[i].X, "F8"));
-
-                    sb.AppendLine(((int)ParamStructCommonSaveCode.Y_VALUE).ToString());
-                    sb.AppendLine(DXFDecoder.DoubleToString(function[i].Y, "F8"));
-
-                    sb.AppendLine(((int)ParamStructCommonSaveCode.Z_VALUE).ToString());
-                    sb.AppendLine(DXFDecoder.DoubleToString(function[i].Z, "F8")); // index of the table the graph belongs to (z-axis)
-
-                    sb.AppendLine(((int)ParamStructCommonSaveCode.W_VALUE).ToString());
-                    if (i < function.Count - 1)
-                        sb.AppendLine(ParamStructTypes.NOT_END_OF_LIST.ToString());
-                    else
-                        sb.AppendLine(ParamStructTypes.END_OF_LIST.ToString());
-                }
-            }
-            sb.AppendLine(((int)MultiValueSaveCode.ROW_NAMES).ToString());
-            sb.AppendLine(this.Graphs.Count.ToString());
-            for (int gi = 0; gi < this.Graphs.Count; gi++)
-            {
-                string fct_name = this.Graphs[gi].Name;
-                sb.AppendLine(((int)ParamStructCommonSaveCode.STRING_VALUE).ToString());
-                sb.AppendLine(fct_name);
-            }
-        }
-
-
         #endregion
 
         #region METHODS: External Pointer
@@ -525,11 +448,6 @@ namespace SIMULTAN.Data.MultiValues
             public override SimMultiValuePointer Clone()
             {
                 return new MultiValueFunctionPointer(function, graphName, axisValueX, axisValueY);
-            }
-            /// <inheritdoc />
-            public override void AddToExport(ref StringBuilder sb)
-            {
-                base.AddToExport(ref sb, axisValueX, axisValueY, 0, graphName);
             }
             /// <inheritdoc />
             public override void SetFromParameters(double axisValueX, double axisValueY, double axisValueZ, string gs)

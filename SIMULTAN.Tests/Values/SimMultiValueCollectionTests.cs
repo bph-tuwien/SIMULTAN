@@ -189,7 +189,7 @@ namespace SIMULTAN.Tests.Values
             //Working
             {
                 var newId = Guid.NewGuid();
-                var newLocation = new DummyReferenceLocation(newId, "");
+                var newLocation = new DummyReferenceLocation(newId);
                 projectData.ValueManager.SetCallingLocation(newLocation);
 
                 Assert.AreEqual(newLocation, projectData.ValueManager.CalledFromLocation);
@@ -200,7 +200,7 @@ namespace SIMULTAN.Tests.Values
             //Working: Existing file
             {
                 var newId = Guid.NewGuid();
-                var newLocation = new DummyReferenceLocation(newId, bigTableProject.FullName);
+                var newLocation = new DummyReferenceLocation(newId);
                 projectData.ValueManager.SetCallingLocation(newLocation);
 
                 Assert.AreEqual(newLocation, projectData.ValueManager.CalledFromLocation);
@@ -211,7 +211,7 @@ namespace SIMULTAN.Tests.Values
             //Working: Existing folder
             {
                 var newId = Guid.NewGuid();
-                var newLocation = new DummyReferenceLocation(newId, bigTableProject.Directory.FullName);
+                var newLocation = new DummyReferenceLocation(newId);
                 projectData.ValueManager.SetCallingLocation(newLocation);
 
                 Assert.AreEqual(newLocation, projectData.ValueManager.CalledFromLocation);

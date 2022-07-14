@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace SIMULTAN.Data.Components
+﻿namespace SIMULTAN.Data.Components
 {
     /// <summary>
     /// Describes the type of relationship possible for the component
@@ -56,6 +50,14 @@ namespace SIMULTAN.Data.Components
         /// </summary>
         BuiltStructure = 8,
         /// <summary>
+        /// Component which represents an InPort
+        /// </summary>
+        InPort = 9,
+        /// <summary>
+        /// Component which represents an OutPort
+        /// </summary>
+        OutPort = 10,
+        /// <summary>
         /// Attached to a geometric edge
         /// </summary>
         AttributesEdge = 11,
@@ -63,5 +65,9 @@ namespace SIMULTAN.Data.Components
         /// Attached to a geometric vertex
         /// </summary>
         AttributesPoint = 12,
+        /// <summary>
+        /// Attached to a SimNetworkBlock
+        /// </summary>
+        SimNetworkBlock = 13,
     }
 }

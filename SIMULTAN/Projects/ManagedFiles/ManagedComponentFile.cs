@@ -1,4 +1,5 @@
 ﻿using SIMULTAN.Data.Components;
+using SIMULTAN.Serializer.CODXF;
 using SIMULTAN.Serializer.Projects;
 using System;
 using System.IO;
@@ -50,7 +51,10 @@ namespace SIMULTAN.Projects.ManagedFiles
         public override void Save()
         {
             // general save
-            ProjectIO.SaveComponentFile(this.File, ProjectData);
+            //ProjectIO.SaveComponentFile(this.File, ProjectData);
+            ComponentDxfIO.Write(this.File, ProjectData);
+            this.File.LastWriteTime = DateTime.Now;
+
             this.OnFileUpToDateChanged(true);
             // public save
             if (this.PublicCounterpart != null && System.IO.File.Exists(this.PublicCounterpart.File.FullName))
@@ -68,6 +72,14 @@ namespace SIMULTAN.Projects.ManagedFiles
                 ProjectData.Components.Clear();
                 ProjectData.NetworkManager.ClearRecord();
                 ProjectData.AssetManager.Reset();
+            }
+
+            //Copy links to AssetManager
+            foreach (var link in ProjectData.MultiLinkManager.Links)
+            {
+                var path = link.GetLink();
+                if (path != null)
+                    ProjectData.AssetManager.PathsToResourceFiles.Add(path);
             }
 
             ProjectIO.OpenComponentFile(this.File, ProjectData,

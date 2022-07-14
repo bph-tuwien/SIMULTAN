@@ -25,7 +25,7 @@ namespace SIMULTAN.Data.Components
         {
             if (_path == null || _tool == null || _rule == null) return false;
 
-            ExcelComponentMapping record = new ExcelComponentMapping(_path, _tool.Name, _tool.LastPathToFile, _rule.NodeName, _tool.GetIndexOfRule(_rule));
+            ExcelComponentMapping record = new ExcelComponentMapping(_path, _tool.Name, _rule.NodeName, _tool.GetIndexOfRule(_rule));
             string key = record.ConstructKey();
             if (_comp.MappingsPerExcelTool.ContainsKey(key)) return false;
 
@@ -345,7 +345,6 @@ namespace SIMULTAN.Data.Components
         /// <param name="_path_code">the integer code that corresponds to a file nam in the asset manager</param>
         /// <param name="_content_id">the id of the asset in the file found at the coded location</param>
         /// <returns></returns>
-        [Obsolete]
         public static Asset RemoveAsset(this SimComponent _comp, int _path_code, string _content_id)
         {
             Asset found = _comp.ReferencedAssets.FirstOrDefault(x => x.ResourceKey == _path_code && x.ContainedObjectId == _content_id);

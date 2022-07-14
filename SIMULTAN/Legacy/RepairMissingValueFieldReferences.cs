@@ -207,21 +207,21 @@ namespace SIMULTAN.Legacy
             {
                 switch (_reference.Type)
                 {
-                    case MultiValueType.FIELD_3D:
+                    case SimMultiValueType.Field3D:
                         if (_mv is SimMultiValueField3D && _reference is ComponentToMultiValueTableReference)
                         {
                             ComponentToMultiValueTableReference tref = _reference as ComponentToMultiValueTableReference;
                             p.MultiValuePointer = new SimMultiValueField3D.SimMultiValueField3DPointer(_mv as SimMultiValueField3D, tref.AxisValueX, tref.AxisValueY, tref.AxisValueZ);
                         }
                         break;
-                    case MultiValueType.FUNCTION_ND:
+                    case SimMultiValueType.Function:
                         if (_mv is SimMultiValueFunction && _reference is ComponentToMultiValueFunctionReference)
                         {
                             ComponentToMultiValueFunctionReference fref = _reference as ComponentToMultiValueFunctionReference;
                             p.MultiValuePointer = new SimMultiValueFunction.MultiValueFunctionPointer(_mv as SimMultiValueFunction, fref.GraphName, fref.AxisValueX, fref.AxisValueY);
                         }
                         break;
-                    case MultiValueType.TABLE:
+                    case SimMultiValueType.BigTable:
                         if (_mv is SimMultiValueBigTable && _reference is ComponentToMultiValueBigTableReference)
                         {
                             ComponentToMultiValueBigTableReference bref = _reference as ComponentToMultiValueBigTableReference;

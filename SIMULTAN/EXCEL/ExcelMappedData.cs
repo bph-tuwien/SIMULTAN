@@ -92,7 +92,7 @@ namespace SIMULTAN.Excel
         #endregion
 
         #region .CTOR
-        protected ExcelMappedData(string _sheet_name, Point4D _range)
+        public ExcelMappedData(string _sheet_name, Point4D _range)
         {
             this.sheet_name = _sheet_name;
             this.range = _range;
@@ -209,38 +209,6 @@ namespace SIMULTAN.Excel
                 content = this.TextData[0][0];
 
             return content;
-        }
-
-        internal void AddToExport(ref StringBuilder _sb, Type _type)
-        {
-            // general
-            _sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_START).ToString()); // 0
-            _sb.AppendLine(ParamStructTypes.EXCEL_DATA_RESULT);                       // EXCEL_RESULT
-
-            _sb.AppendLine(((int)ParamStructCommonSaveCode.CLASS_NAME).ToString());
-            _sb.AppendLine(this.GetType().ToString());
-
-            // mapping: sheet name
-            _sb.AppendLine(((int)ExcelMappingSaveCode.DATA_MAP_SHEET_NAME).ToString());
-            _sb.AppendLine(this.sheet_name);
-
-            // mapping: Range
-            _sb.AppendLine(((int)ExcelMappingSaveCode.DATA_MAP_RANGE_X).ToString());
-            _sb.AppendLine(this.range.X.ToString());
-
-            _sb.AppendLine(((int)ExcelMappingSaveCode.DATA_MAP_RANGE_Y).ToString());
-            _sb.AppendLine(this.range.Y.ToString());
-
-            _sb.AppendLine(((int)ExcelMappingSaveCode.DATA_MAP_RANGE_Z).ToString());
-            _sb.AppendLine(this.range.Z.ToString());
-
-            _sb.AppendLine(((int)ExcelMappingSaveCode.DATA_MAP_RANGE_W).ToString());
-            _sb.AppendLine(this.range.W.ToString());
-
-            // mapping: type
-            _sb.AppendLine(((int)ExcelMappingSaveCode.DATA_MAP_TYPE).ToString());
-            _sb.AppendLine(_type.FullName);
-
         }
 
         #endregion

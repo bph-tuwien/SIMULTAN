@@ -41,11 +41,11 @@ namespace SIMULTAN.Data.Components
         /// <summary>
         /// The average of all calculations is calculated
         /// </summary>
-        Average,
+        Average = 1,
         /// <summary>
         /// No aggregation happens, all results are stored
         /// </summary>
-        Separate,
+        Separate = 0,
     }
 
     #endregion
@@ -75,12 +75,12 @@ namespace SIMULTAN.Data.Components
         /// Input parameters
         /// A dictionary matching variable symbols with parameters local ids
         /// </summary>
-        public Dictionary<string, long?> InputParamsPreview { get; }
+        public Dictionary<string, SimId> InputParameters { get; }
         /// <summary>
         /// Return parameters
         /// A dictionary matching variable symbols with parameters local ids
         /// </summary>
-        public Dictionary<string, long?> ReturnParamsPreview { get; }
+        public Dictionary<string, SimId> ReturnParameters { get; }
 
         /// <summary>
         /// In-Order list of all vector operations (only includes binary operations)
@@ -112,46 +112,44 @@ namespace SIMULTAN.Data.Components
         /// Initializes a new instance of the CalculationPreview class
         /// </summary>
         /// <param name="localId">The local id</param>
-        /// <param name="_name">The name of the calculation</param>
-        /// <param name="_expression">The expression of the calculation (may be valid or invalid)</param>
-        /// <param name="_input_params_preview">Input parameters. A dictionary matching variable symbols with parameters local ids</param>
-        /// <param name="_return_params_preview">Return parameters. A dictionary matching variable symbols with parameters local ids</param>
-        /// <param name="_vector_operation_list">In-Order list of all vector operations (only includes binary operations)</param>
-        /// <param name="_metaData">Meta data for variables. Dictionary which matches variable symbol to meta data</param>
-        /// <param name="_nr_executions">The number of executions for MultiValue calculations</param>
+        /// <param name="name">The name of the calculation</param>
+        /// <param name="expression">The expression of the calculation (may be valid or invalid)</param>
+        /// <param name="inputParameters">Input parameters. A dictionary matching variable symbols with parameters local ids</param>
+        /// <param name="returnParameters">Return parameters. A dictionary matching variable symbols with parameters local ids</param>
+        /// <param name="vectorOperations">In-Order list of all vector operations (only includes binary operations)</param>
+        /// <param name="metaData">Meta data for variables. Dictionary which matches variable symbol to meta data</param>
+        /// <param name="executionCount">The number of executions for MultiValue calculations</param>
         /// <param name="aggregationMethod">Method used to aggregate multiple iterations in MultiValue calculations</param>
-        /// <param name="_override_vector_result">When set to True, the calculation will override existing MultiValues</param>
-        public CalculationInitializationData(long localId, string _name, string _expression,
-                                    IDictionary<string, long?> _input_params_preview,
-                                    IDictionary<string, long?> _return_params_preview,
-                                    List<MultiValueCalculationBinaryOperation> _vector_operation_list,
-                                    IDictionary<string, CalculationParameterMetaData> _metaData,
-                                    int _nr_executions, SimResultAggregationMethod aggregationMethod, bool _override_vector_result)
+        /// <param name="overrideResults">When set to True, the calculation will override existing MultiValues</param>
+        public CalculationInitializationData(long localId, string name, string expression,
+                                    IDictionary<string, SimId> inputParameters,
+                                    IDictionary<string, SimId> returnParameters,
+                                    IEnumerable<MultiValueCalculationBinaryOperation> vectorOperations,
+                                    IDictionary<string, CalculationParameterMetaData> metaData,
+                                    int executionCount, SimResultAggregationMethod aggregationMethod, bool overrideResults)
         {
+            if (inputParameters == null)
+                throw new ArgumentNullException(nameof(inputParameters));
+            if (returnParameters == null)
+                throw new ArgumentNullException(nameof(inputParameters));
+
             this.LocalID = localId;
-            this.Name = _name;
-            this.Expression = _expression;
+            this.Name = name;
+            this.Expression = expression;
 
-            if (_input_params_preview == null)
-                this.InputParamsPreview = new Dictionary<string, long?>();
-            else
-                this.InputParamsPreview = new Dictionary<string, long?>(_input_params_preview);
+            this.InputParameters = new Dictionary<string, SimId>(inputParameters);
+            this.ReturnParameters = new Dictionary<string, SimId>(returnParameters);
 
-            if (_return_params_preview == null)
-                this.ReturnParamsPreview = new Dictionary<string, long?>();
-            else
-                this.ReturnParamsPreview = new Dictionary<string, long?>(_return_params_preview);
-
-            if (_vector_operation_list == null || _vector_operation_list.Count == 0)
+            if (vectorOperations == null || !vectorOperations.Any())
                 this.VectorOperationList = null;
             else
-                this.VectorOperationList = new List<MultiValueCalculationBinaryOperation>(_vector_operation_list);
+                this.VectorOperationList = new List<MultiValueCalculationBinaryOperation>(vectorOperations);
 
-            this.MetaData = _metaData;
+            this.MetaData = metaData;
 
-            this.NrExecutions = _nr_executions;
+            this.NrExecutions = executionCount;
             this.AggregationMethod = aggregationMethod;
-            this.OverrideVectorResult = _override_vector_result;
+            this.OverrideVectorResult = overrideResults;
         }
     }
 
@@ -819,160 +817,6 @@ namespace SIMULTAN.Data.Components
             output += " {" + this.Expression + "} ";
 
             return output;
-        }
-
-        /// <summary>
-        /// Serializes the calculation
-        /// </summary>
-        /// <param name="_sb">The output string builder</param>
-        public void AddToExport(ref StringBuilder _sb)
-        {
-            if (_sb == null) return;
-
-            _sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_START).ToString()); // 0
-            _sb.AppendLine(ParamStructTypes.CALCULATION);                             // CALCULATION
-
-            _sb.AppendLine(((int)ParamStructCommonSaveCode.CLASS_NAME).ToString());
-            _sb.AppendLine(this.GetType().ToString());
-
-            // general
-            _sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_ID).ToString());
-            _sb.AppendLine(this.Id.LocalId.ToString());
-
-            _sb.AppendLine(((int)CalculationSaveCode.NAME).ToString());
-            _sb.AppendLine(this.Name);
-
-            _sb.AppendLine(((int)CalculationSaveCode.EXPRESSION).ToString());
-            _sb.AppendLine(this.Expression);
-
-            // parameter: input -> saves only REFERENCES
-            _sb.AppendLine(((int)CalculationSaveCode.PARAMS_INPUT).ToString());
-            _sb.AppendLine(this.InputParams.Count.ToString());
-
-            foreach (var entry in this.InputParams)
-            {
-                SimParameter p = entry.Value;
-
-                _sb.AppendLine(((int)ParamStructCommonSaveCode.STRING_VALUE).ToString());
-                _sb.AppendLine(entry.Key);
-
-                _sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_REF).ToString());
-                if (p == null)
-                    _sb.AppendLine("NULL");
-                else
-                    _sb.AppendLine(p.Id.LocalId.ToString());
-            }
-
-            // parameter: output -> saves only REFERENCES
-            _sb.AppendLine(((int)CalculationSaveCode.PARAMS_OUTPUT).ToString());
-            _sb.AppendLine(this.ReturnParams.Count.ToString());
-
-            foreach (var entry in this.ReturnParams)
-            {
-                SimParameter p = entry.Value;
-
-                _sb.AppendLine(((int)ParamStructCommonSaveCode.STRING_VALUE).ToString());
-                _sb.AppendLine(entry.Key);
-
-                _sb.AppendLine(((int)ParamStructCommonSaveCode.ENTITY_REF).ToString());
-                if (p == null)
-                    _sb.AppendLine("NULL");
-                else
-                    _sb.AppendLine(p.Id.LocalId.ToString());
-            }
-
-            string tmp;
-
-            // ------------------------- vector calculations -------------------------------
-            if (this.MultiValueCalculation != null)
-            {
-                List<MultiValueCalculationBinaryOperation> operations = new List<MultiValueCalculationBinaryOperation>();
-                InOrderOperationSequence(this.MultiValueCalculation, operations);
-
-                if (operations.Count > 0)
-                {
-                    _sb.AppendLine(((int)CalculationSaveCode.VECTOR_CALC_OPERATIONS).ToString());
-                    _sb.AppendLine(operations.Count.ToString());
-                    foreach (MultiValueCalculationBinaryOperation op in operations)
-                    {
-                        _sb.AppendLine(((int)ParamStructCommonSaveCode.X_VALUE).ToString());
-                        _sb.AppendLine(((int)op).ToString());
-                    }
-                }
-
-                if (this.InputParams.Count > 0)
-                {
-                    //Range
-                    _sb.AppendLine(((int)CalculationSaveCode.VECTOR_CALC_RANGES).ToString());
-                    _sb.AppendLine(this.InputParams.Count.ToString());
-
-                    foreach (var symbol in this.InputParams)
-                    {
-                        var meta = this.InputParams.GetMetaData(symbol.Key);
-
-                        _sb.AppendLine(((int)ParamStructCommonSaveCode.V5_VALUE).ToString());
-                        _sb.AppendLine(symbol.Key);
-
-                        _sb.AppendLine(((int)ParamStructCommonSaveCode.X_VALUE).ToString()); //Row Start
-                        _sb.AppendLine(meta.Range.RowStart.ToString());
-                        _sb.AppendLine(((int)ParamStructCommonSaveCode.Y_VALUE).ToString()); //Row Count
-                        _sb.AppendLine(meta.Range.RowCount.ToString());
-                        _sb.AppendLine(((int)ParamStructCommonSaveCode.Z_VALUE).ToString()); //Column Start
-                        _sb.AppendLine(meta.Range.ColumnStart.ToString());
-                        _sb.AppendLine(((int)ParamStructCommonSaveCode.W_VALUE).ToString()); //Column Count
-                        _sb.AppendLine(meta.Range.ColumnCount.ToString());
-                    }
-
-                    //Randomize
-                    _sb.AppendLine(((int)CalculationSaveCode.VECTOR_CALC_RANDOM).ToString());
-                    _sb.AppendLine(this.InputParams.Count.ToString());
-
-                    foreach (var symbol in this.InputParams)
-                    {
-                        var meta = this.InputParams.GetMetaData(symbol.Key);
-
-                        _sb.AppendLine(((int)ParamStructCommonSaveCode.V5_VALUE).ToString());
-                        _sb.AppendLine(symbol.Key);
-
-                        _sb.AppendLine(((int)ParamStructCommonSaveCode.X_VALUE).ToString());
-                        _sb.AppendLine(DXFDecoder.DoubleToString(meta.RandomizeRelativeMean, "F8")); //Mean
-                        _sb.AppendLine(((int)ParamStructCommonSaveCode.Y_VALUE).ToString());
-                        _sb.AppendLine(DXFDecoder.DoubleToString(meta.RandomizeDeviation, "F8")); //Deviation
-                        _sb.AppendLine(((int)ParamStructCommonSaveCode.Z_VALUE).ToString());
-                        _sb.AppendLine(((int)meta.RandomizeDeviationMode).ToString()); //Deviation Mode
-                        _sb.AppendLine(((int)ParamStructCommonSaveCode.W_VALUE).ToString());
-                        _sb.AppendLine(meta.IsRandomized ? "1" : "0"); //IsRandomized
-                        _sb.AppendLine(((int)ParamStructCommonSaveCode.V6_VALUE).ToString());
-                        _sb.AppendLine(meta.RandomizeIsClamping ? "1" : "0"); //IsClamping
-                        _sb.AppendLine(((int)ParamStructCommonSaveCode.V7_VALUE).ToString());
-                        _sb.AppendLine(DXFDecoder.DoubleToString(meta.RandomizeClampDeviation, "F8")); //ClampDeviation
-                    }
-                }
-            }
-
-            // nr of executions
-            _sb.AppendLine(((int)CalculationSaveCode.VECTOR_CALC_NR_EXEC).ToString());
-            _sb.AppendLine(this.IterationCount.ToString());
-
-            // what to do with the results of multiple executions
-            _sb.AppendLine(((int)CalculationSaveCode.VECTOR_CALC_AVERAGE).ToString());
-            tmp = (this.ResultAggregation == SimResultAggregationMethod.Average) ? "1" : "0";
-            _sb.AppendLine(tmp);
-            _sb.AppendLine(((int)CalculationSaveCode.VECTOR_CALC_OVERRIDE).ToString());
-            tmp = (this.OverrideResult) ? "1" : "0";
-            _sb.AppendLine(tmp);
-        }
-
-        private void InOrderOperationSequence(SimMultiValueExpression operand, List<MultiValueCalculationBinaryOperation> result)
-        {
-            if (operand is SimMultiValueExpressionBinary step)
-            {
-                InOrderOperationSequence(step.Left, result);
-
-                result.Add(step.Operation);
-
-                InOrderOperationSequence(step.Right, result);
-            }
         }
 
         #endregion

@@ -87,18 +87,8 @@ namespace SIMULTAN.Data.Components
 
                 SetValues(item, true);
                 base.InsertItem(index, item);
-
-                //Sync with geometric instances
-                //if (owner.Factory != null && owner.Factory.EnableAsyncUpdates)
-                //{
-                //    this.batchOperationTimer.Stop();
-                //    this.batchAddedParameters.Add(item);
-                //    this.batchOperationTimer.Start();
-                //}
-                //else
-                {
-                    SynchronizeParameterAdd(item);
-                }
+                
+                SynchronizeParameterAdd(item);
             }
             /// <inheritdoc />
             protected override void RemoveItem(int index)
@@ -107,18 +97,10 @@ namespace SIMULTAN.Data.Components
 
                 this.owner.RecordWriteAccess();
 
-                UnsetValues(oldItem, owner.Factory?.ProjectData.IdGenerator);
+                UnsetValues(oldItem, owner.Factory?.ProjectData.IdGenerator, true);
                 base.RemoveItem(index);
 
-                //Sync with geometric instances
-                //if (owner.Factory != null && owner.Factory.EnableAsyncUpdates)
-                //{
-                //    this.batchOperationTimer.Stop();
-                //    this.batchRemovedParameters.Add(oldItem);
-                //    this.batchOperationTimer.Start();
-                //}
-                //else
-                    SynchronizeParameterRemove(oldItem);
+                SynchronizeParameterRemove(oldItem);
 
             }
             /// <inheritdoc />
@@ -128,21 +110,11 @@ namespace SIMULTAN.Data.Components
 
                 foreach (var item in this)
                 {
-                    UnsetValues(item, owner.Factory?.ProjectData.IdGenerator);
+                    UnsetValues(item, owner.Factory?.ProjectData.IdGenerator, true);
                 }
 
-                //Sync with geometric instances
-                //if (owner.Factory != null && owner.Factory.EnableAsyncUpdates)
-                //{
-                //    this.batchOperationTimer.Stop();
-                //    this.batchRemovedParameters.AddRange(this);
-                //    this.batchOperationTimer.Start();
-                //}
-                //else
-                {
-                    foreach (var item in this)
-                        SynchronizeParameterRemove(item);
-                }
+                foreach (var item in this)
+                    SynchronizeParameterRemove(item);
 
                 base.ClearItems();
             }
@@ -155,31 +127,15 @@ namespace SIMULTAN.Data.Components
                 this.owner.RecordWriteAccess();
 
                 var oldItem = this[index];
-                UnsetValues(oldItem, owner.Factory?.ProjectData.IdGenerator);
+                UnsetValues(oldItem, owner.Factory?.ProjectData.IdGenerator, true);
+                SynchronizeParameterRemove(oldItem);                
 
-                //Sync with geometric instances
-                //if (owner.Factory != null && owner.Factory.EnableAsyncUpdates)
-                //{
-                //    this.batchOperationTimer.Stop();
-                //    this.batchRemovedParameters.Add(oldItem);
-                //}
-                //else
-                {
-                    SynchronizeParameterRemove(oldItem);
-                }
+                SynchronizeParameterRemove(oldItem);
 
                 SetValues(item, true);
                 base.SetItem(index, item);
-
-                //if (owner.Factory != null && owner.Factory.EnableAsyncUpdates)
-                //{
-                //    this.batchAddedParameters.Add(item);
-                //    this.batchOperationTimer.Start();
-                //}
-                //else
-                {
-                    SynchronizeParameterAdd(item);
-                }
+                
+                SynchronizeParameterAdd(item);
             }
 
             #endregion
@@ -210,7 +166,7 @@ namespace SIMULTAN.Data.Components
                 }
             }
 
-            private void UnsetValues(SimParameter item, SimIdGenerator idGenerator)
+            private void UnsetValues(SimParameter item, SimIdGenerator idGenerator, bool isRemoved)
             {
                 if (idGenerator != null)
                     idGenerator.Remove(item);
@@ -218,8 +174,12 @@ namespace SIMULTAN.Data.Components
                 item.OnIsBeingDeleted();
                 item.Id = new SimId(item.Id.GlobalId, item.Id.LocalId);
                 item.Factory = null;
-                item.Component = null;
-                item.PropertyChanged -= Item_PropertyChanged;
+
+                if (isRemoved)
+                {
+                    item.Component = null;
+                    item.PropertyChanged -= Item_PropertyChanged;
+                }
             }
 
             /// <summary>
@@ -230,7 +190,7 @@ namespace SIMULTAN.Data.Components
                 if (oldValue != null)
                 {
                     foreach (var item in this)
-                        UnsetValues(item, oldValue.ProjectData.IdGenerator);
+                        UnsetValues(item, oldValue.ProjectData.IdGenerator, false);
                 }
 
                 if (newValue != null)
@@ -241,9 +201,6 @@ namespace SIMULTAN.Data.Components
             }
 
             #region Delayed add/remove (has to be reworked completely)
-
-            private List<SimParameter> batchAddedParameters = new List<SimParameter>();
-            private List<SimParameter> batchRemovedParameters = new List<SimParameter>();
 
             private void SynchronizeParameterAdd(SimParameter param)
             {

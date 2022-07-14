@@ -21,9 +21,9 @@ namespace SIMULTAN.Tests.Excel
         [TestMethod]
         public void ComponentCategoryFilter()
         {
-            LoadProject(emptyProject);
+            this.LoadProject(emptyProject);
             var comp = new SimComponent();
-            projectData.Components.Add(comp);
+            this.projectData.Components.Add(comp);
 
             comp.Parameters.Add(new SimParameter("param", "unit", 1.0)
             {
@@ -45,32 +45,32 @@ namespace SIMULTAN.Tests.Excel
         [TestMethod]
         public void ComponentCurrentSlotFilter()
         {
-            LoadProject(emptyProject);
+            this.LoadProject(emptyProject);
             var comp = new SimComponent();
-            projectData.Components.Add(comp);
+            this.projectData.Components.Add(comp);
 
-            comp.CurrentSlot = new SimSlotBase(ComponentUtils.COMP_SLOT_COST);
+            comp.CurrentSlot = new SimSlotBase(SimDefaultSlots.Cost);
 
-            Assert.IsTrue(ExcelMappingNode.InstancePassesFilter(comp, new List<(string, object)> { ("CurrentSlot", ComponentUtils.COMP_SLOT_COST) }, null));
-            Assert.IsTrue(ExcelMappingNode.InstancePassesFilter(comp, new List<(string, object)> { ("CurrentSlot", ComponentUtils.COMP_SLOT_COST + "_0Ext3") }, null));
+            Assert.IsTrue(ExcelMappingNode.InstancePassesFilter(comp, new List<(string, object)> { ("CurrentSlot", SimDefaultSlots.Cost) }, null));
+            Assert.IsTrue(ExcelMappingNode.InstancePassesFilter(comp, new List<(string, object)> { ("CurrentSlot", SimDefaultSlots.Cost + "_0Ext3") }, null));
             Assert.IsFalse(ExcelMappingNode.InstancePassesFilter(comp, new List<(string, object)> { ("CurrentSlot", "test") }, null));
 
             var childComp = new SimComponent();
-            childComp.CurrentSlot = new SimSlotBase(ComponentUtils.COMP_SLOT_JOINT);
+            childComp.CurrentSlot = new SimSlotBase(SimDefaultSlots.Joint);
 
             comp.Components.Add(new SimChildComponentEntry(new SimSlot(childComp.CurrentSlot, "Ext3"), childComp));
 
-            Assert.IsTrue(ExcelMappingNode.InstancePassesFilter(childComp, new List<(string, object)> { ("CurrentSlot", ComponentUtils.COMP_SLOT_JOINT + "_0Ext3") }, null));
-            Assert.IsTrue(ExcelMappingNode.InstancePassesFilter(childComp, new List<(string, object)> { ("CurrentSlot", ComponentUtils.COMP_SLOT_JOINT) }, null));
+            Assert.IsTrue(ExcelMappingNode.InstancePassesFilter(childComp, new List<(string, object)> { ("CurrentSlot", SimDefaultSlots.Joint + "_0Ext3") }, null));
+            Assert.IsTrue(ExcelMappingNode.InstancePassesFilter(childComp, new List<(string, object)> { ("CurrentSlot", SimDefaultSlots.Joint) }, null));
             Assert.IsFalse(ExcelMappingNode.InstancePassesFilter(childComp, new List<(string, object)> { ("CurrentSlot", "asdf") }, null));
         }
 
         [TestMethod]
         public void ComponentInstanceStateFilter()
         {
-            LoadProject(filterProject);
+            this.LoadProject(filterProject);
 
-            var node = projectData.Components.First(x => x.Name == "Node");
+            var node = this.projectData.Components.First(x => x.Name == "Node");
 
             // ToDo: find out how to set that
             Assert.IsTrue(ExcelMappingNode.InstancePassesFilter(node,
@@ -84,10 +84,11 @@ namespace SIMULTAN.Tests.Excel
         [TestMethod]
         public void ComponentIsBoundInNWFilter()
         {
-            LoadProject(filterProject);
+            this.LoadProject(filterProject);
 
-            var node = projectData.Components.First(x => x.Name == "Node");
-            var node2 = projectData.Components.First(x => x.Name == "Node2");
+            var node = this.projectData.Components.First(x => x.Name == "Node");
+            var node2 = this.projectData.Components.First(x => x.Name == "Node2");
+
 
             Assert.IsTrue(ExcelMappingNode.InstancePassesFilter(node, new List<(string, object)> { ("IsBoundInNetwork", true) }, null));
             Assert.IsFalse(ExcelMappingNode.InstancePassesFilter(node, new List<(string, object)> { ("IsBoundInNetwork", false) }, null));
@@ -99,10 +100,10 @@ namespace SIMULTAN.Tests.Excel
         [TestMethod]
         public void ComponentIsAutomaticallyGeneratedFilter()
         {
-            LoadProject(emptyProject);
+            this.LoadProject(emptyProject);
 
             var comp = new SimComponent();
-            projectData.Components.Add(comp);
+            this.projectData.Components.Add(comp);
             Assert.IsTrue(ExcelMappingNode.InstancePassesFilter(comp, new List<(string, object)> { ("IsAutomaticallyGenerated", false) }, null));
             Assert.IsFalse(ExcelMappingNode.InstancePassesFilter(comp, new List<(string, object)> { ("IsAutomaticallyGenerated", true) }, null));
 
@@ -110,7 +111,7 @@ namespace SIMULTAN.Tests.Excel
             {
                 IsAutomaticallyGenerated = true
             };
-            projectData.Components.Add(comp2);
+            this.projectData.Components.Add(comp2);
             Assert.IsTrue(ExcelMappingNode.InstancePassesFilter(comp2, new List<(string, object)> { ("IsAutomaticallyGenerated", true) }, null));
             Assert.IsFalse(ExcelMappingNode.InstancePassesFilter(comp2, new List<(string, object)> { ("IsAutomaticallyGenerated", false) }, null));
         }
@@ -118,9 +119,9 @@ namespace SIMULTAN.Tests.Excel
         [TestMethod]
         public void ComponentNameFilter()
         {
-            LoadProject(emptyProject);
+            this.LoadProject(emptyProject);
             var comp = new SimComponent();
-            projectData.Components.Add(comp);
+            this.projectData.Components.Add(comp);
 
             comp.Name = "This is a Name!";
 
@@ -131,9 +132,9 @@ namespace SIMULTAN.Tests.Excel
         [TestMethod]
         public void ComponentDescriptionFilter()
         {
-            LoadProject(emptyProject);
+            this.LoadProject(emptyProject);
             var comp = new SimComponent();
-            projectData.Components.Add(comp);
+            this.projectData.Components.Add(comp);
 
             comp.Description = "This is a Description!";
 
@@ -145,9 +146,9 @@ namespace SIMULTAN.Tests.Excel
         [TestMethod]
         public void ComponentLocalIDFilter()
         {
-            LoadProject(emptyProject);
+            this.LoadProject(emptyProject);
             var comp = new SimComponent();
-            projectData.Components.Add(comp);
+            this.projectData.Components.Add(comp);
 
             comp.Id = new SimId(Guid.NewGuid(), 42L);
 
@@ -163,9 +164,9 @@ namespace SIMULTAN.Tests.Excel
         [TestMethod]
         public void ParameterCategoryFilter()
         {
-            LoadProject(emptyProject);
+            this.LoadProject(emptyProject);
             var comp = new SimComponent();
-            projectData.Components.Add(comp);
+            this.projectData.Components.Add(comp);
 
             var param = new SimParameter("Test", "m", 42);
             comp.Parameters.Add(param);
@@ -178,9 +179,9 @@ namespace SIMULTAN.Tests.Excel
         [TestMethod]
         public void ParameterDescriptionFilter()
         {
-            LoadProject(emptyProject);
+            this.LoadProject(emptyProject);
             var comp = new SimComponent();
-            projectData.Components.Add(comp);
+            this.projectData.Components.Add(comp);
 
             var param = new SimParameter("Test", "m", 42);
             comp.Parameters.Add(param);
@@ -195,9 +196,9 @@ namespace SIMULTAN.Tests.Excel
         [TestMethod]
         public void ParameterLocalIDFilter()
         {
-            LoadProject(emptyProject);
+            this.LoadProject(emptyProject);
             var comp = new SimComponent();
-            projectData.Components.Add(comp);
+            this.projectData.Components.Add(comp);
 
             var param = new SimParameter("Test", "m", 42);
             comp.Parameters.Add(param);
@@ -211,9 +212,9 @@ namespace SIMULTAN.Tests.Excel
         [TestMethod]
         public void ParameterValueMaxFilter()
         {
-            LoadProject(emptyProject);
+            this.LoadProject(emptyProject);
             var comp = new SimComponent();
-            projectData.Components.Add(comp);
+            this.projectData.Components.Add(comp);
 
             var param = new SimParameter("Test", "m", 42);
             comp.Parameters.Add(param);
@@ -227,9 +228,9 @@ namespace SIMULTAN.Tests.Excel
         [TestMethod]
         public void ParameterValueMinFilter()
         {
-            LoadProject(emptyProject);
+            this.LoadProject(emptyProject);
             var comp = new SimComponent();
-            projectData.Components.Add(comp);
+            this.projectData.Components.Add(comp);
 
             var param = new SimParameter("Test", "m", 42);
             comp.Parameters.Add(param);
@@ -243,9 +244,9 @@ namespace SIMULTAN.Tests.Excel
         [TestMethod]
         public void ParameterNameFilter()
         {
-            LoadProject(emptyProject);
+            this.LoadProject(emptyProject);
             var comp = new SimComponent();
-            projectData.Components.Add(comp);
+            this.projectData.Components.Add(comp);
 
             var param = new SimParameter("Test", "m", 42);
             comp.Parameters.Add(param);
@@ -258,9 +259,9 @@ namespace SIMULTAN.Tests.Excel
         [TestMethod]
         public void ParameterPropagationFilter()
         {
-            LoadProject(emptyProject);
+            this.LoadProject(emptyProject);
             var comp = new SimComponent();
-            projectData.Components.Add(comp);
+            this.projectData.Components.Add(comp);
 
             var param = new SimParameter("Test", "m", 42);
             comp.Parameters.Add(param);
@@ -274,9 +275,9 @@ namespace SIMULTAN.Tests.Excel
         [TestMethod]
         public void ParameterTextValueFilter()
         {
-            LoadProject(emptyProject);
+            this.LoadProject(emptyProject);
             var comp = new SimComponent();
-            projectData.Components.Add(comp);
+            this.projectData.Components.Add(comp);
 
             var param = new SimParameter("Test", "m", 42);
             comp.Parameters.Add(param);
@@ -290,9 +291,9 @@ namespace SIMULTAN.Tests.Excel
         [TestMethod]
         public void ParameterUnitFilter()
         {
-            LoadProject(emptyProject);
+            this.LoadProject(emptyProject);
             var comp = new SimComponent();
-            projectData.Components.Add(comp);
+            this.projectData.Components.Add(comp);
 
             var param = new SimParameter("Test", "m", 42);
             comp.Parameters.Add(param);
@@ -305,9 +306,9 @@ namespace SIMULTAN.Tests.Excel
         [TestMethod]
         public void ParameterValueCurrentFilter()
         {
-            LoadProject(emptyProject);
+            this.LoadProject(emptyProject);
             var comp = new SimComponent();
-            projectData.Components.Add(comp);
+            this.projectData.Components.Add(comp);
 
             var param = new SimParameter("Test", "m", 42);
             comp.Parameters.Add(param);
@@ -323,9 +324,9 @@ namespace SIMULTAN.Tests.Excel
         [TestMethod]
         public void InstanceNameFilter()
         {
-            LoadProject(filterProject);
+            this.LoadProject(filterProject);
 
-            var node = projectData.Components.FirstOrDefault(x => x.Name == "Node");
+            var node = this.projectData.Components.FirstOrDefault(x => x.Name == "Node");
             var instance = node.Instances.FirstOrDefault();
 
             Assert.IsTrue(ExcelMappingNode.InstancePassesFilter(instance, new List<(string, object)> { ("Name", "Geometry") }, null));

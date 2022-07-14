@@ -20,13 +20,6 @@ namespace SIMULTAN.Projects
 		/// The file holding the project (a Zip Archive file).
 		/// </summary>
 		public FileInfo ProjectFile { get; }
-        /// <summary>
-        /// Returns the absolute path of the project file in the local file system.
-        /// </summary>
-        public override string AbsolutePath
-        {
-            get { return this.ProjectUnpackFolder?.FullName; }
-        }
 
         /// <inheritdoc/>
         public override string Name => this.ProjectFile.Name;
@@ -46,11 +39,10 @@ namespace SIMULTAN.Projects
         /// <param name="_contained_dirs"></param>
         /// <param name="_associated_files"></param>
         /// <param name="_unpack_folder">the folder for unpacking the project's contents</param>
-        /// <param name="serviceProvider">The service provider</param>
         public CompactProject(Guid id, FileInfo _project_file, ExtendedProjectData _all_managers, ManagedFileCollection _files,
             IEnumerable<FileInfo> _non_managed_files, IEnumerable<DirectoryInfo> _contained_dirs, IEnumerable<FileInfo> _associated_files,
-            DirectoryInfo _unpack_folder, IServicesProvider serviceProvider)
-            : base(id, _files, _all_managers, _unpack_folder, _non_managed_files, _contained_dirs, _associated_files, serviceProvider)
+            DirectoryInfo _unpack_folder)
+            : base(id, _files, _all_managers, _unpack_folder, _non_managed_files, _contained_dirs, _associated_files)
         {
             this.ProjectFile = _project_file;
         }

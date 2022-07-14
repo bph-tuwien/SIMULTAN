@@ -6,6 +6,7 @@ using SIMULTAN.Exceptions;
 using SIMULTAN.Projects;
 using SIMULTAN.Projects.ManagedFiles;
 using SIMULTAN.Serializer.DXF;
+using SIMULTAN.Serializer.PPATH;
 using SIMULTAN.Utils;
 using SIMULTAN.Utils.Files;
 using System;
@@ -112,7 +113,7 @@ namespace SIMULTAN.Serializer.Projects
             // 3. create the project
             var created = ProjectIO.CreateFromSeparateFiles(_project_file, _files_to_convert_to_project,
                 _non_managed_files, _associated_files, _project_data_manager,
-                _encryption_key, serviceProvider);
+                _encryption_key);
             if (created != null)
             {
                 // Zip the project                
@@ -140,14 +141,9 @@ namespace SIMULTAN.Serializer.Projects
         /// </summary>
         /// <param name="_project_file">The project file containing all information</param>
         /// <param name="_data_manager">The data manager capable of loading all types of project data</param>
-        /// <param name="serviceProvider">The services provider</param>
         /// <returns>the loaded project</returns>
-        public static HierarchicalProject Load(FileInfo _project_file, ExtendedProjectData _data_manager, IServicesProvider serviceProvider)
+        public static HierarchicalProject Load(FileInfo _project_file, ExtendedProjectData _data_manager)
         {
-            //Reset Id provider and ID Translation tables
-            DXFDecoder.ResetV5IdTranslation();
-
-
             // Console.WriteLine("-LOADING START...");
             // 1. check for an existing folder and offer recovery
 
@@ -162,28 +158,18 @@ namespace SIMULTAN.Serializer.Projects
                 ParamStructFileExtensions.FILE_EXT_PUBLIC_PROJECT_PATHS, StringComparison.InvariantCultureIgnoreCase));
             if (additional_stuff_to_unpack_file != null && additional_stuff_to_unpack_file.Exists)
             {
-                List<string> paths_to_unpack = new List<string>();
-                using (StreamReader sr = new StreamReader(additional_stuff_to_unpack_file.FullName))
-                {
-                    string line;
-                    while ((line = sr.ReadLine()) != null)
-                    {
-                        if (!string.IsNullOrEmpty(line))
-                            paths_to_unpack.Add(line);
-                    }
-                    sr.Close();
-                }
+                List<string> paths_to_unpack = PPathIO.Read(additional_stuff_to_unpack_file);
 
                 var additional_stuff = ZipUtils.PartialUnpackPaths(_project_file, paths_to_unpack, unpacked_folder);
             }
 
             // 3. create the project instance and the managed file infrastructure
-            ManagedFileCollection managed_files = new ManagedFileCollection(files.ToList(), _data_manager, serviceProvider);
+            ManagedFileCollection managed_files = new ManagedFileCollection(files.ToList(), _data_manager);
             var metaDataFile = managed_files.Files.FirstOrDefault(x => x is ManagedMetaData);
             HierarchicProjectMetaData metaData = ProjectIO.OpenMetaDataFile(metaDataFile.File);
 
             var project = new CompactProject(metaData.ProjectId, _project_file, _data_manager, managed_files,
-                null, null, null, unpacked_folder, serviceProvider);
+                null, null, null, unpacked_folder);
             project.ImportLogFile = new FileInfo(string.Format(@".\ImportLog_{0}_{1:dd_MM_yyyy-HH_mm_ss}.txt",
                 Path.GetFileNameWithoutExtension(_project_file.Name), DateTime.Now));
 
@@ -203,8 +189,10 @@ namespace SIMULTAN.Serializer.Projects
         /// <param name="_project">the loaded project</param>
         /// <param name="_data_manager">the corresponding data manager</param>
         /// <param name="_encryption_key">the key for encrypting the user file</param>
+        /// <param name="serviceProvider">The service provider that should be used to query the <see cref="IAuthenticationService"/></param>
         /// <returns>true, if the project can be opened; false otherwise</returns>
-        public static bool AuthenticateUserAfterLoading(HierarchicalProject _project, ExtendedProjectData _data_manager, byte[] _encryption_key)
+        public static bool AuthenticateUserAfterLoading(HierarchicalProject _project, ExtendedProjectData _data_manager, byte[] _encryption_key,
+            IServicesProvider serviceProvider)
         {
             if (!(_project is CompactProject cproject))
                 throw new ArgumentException("The project must be of type compact!");
@@ -221,7 +209,7 @@ namespace SIMULTAN.Serializer.Projects
             if (user_file != null)
             {
                 _project.PreAuthenticate(user_file, _data_manager, _encryption_key);
-                var authService = _project.ServiceProvider.GetService<IAuthenticationService>();
+                var authService = serviceProvider.GetService<IAuthenticationService>();
                 if (authService == null)
                     throw new ProjectIOException(ProjectErrorCode.ERR_AUTHSERVICE_NOT_FOUND, "IAuthService not found in service provider");
 
@@ -339,13 +327,13 @@ namespace SIMULTAN.Serializer.Projects
                     {
                         FileInfo child_file = new FileInfo(full_path);
                         var child_pdm = new ExtendedProjectData();
-                        HierarchicalProject child_project = Load(child_file, child_pdm, _project.ServiceProvider);
+                        HierarchicalProject child_project = Load(child_file, child_pdm);
                         cproject.Children.Add(child_project);
                     }
                     else
                     {
                         // look for the project
-                        FileInfo project_candidate = FindProject(entry.Key, entry.Value, cproject.AllProjectDataManagers.AssetManager, _project.ServiceProvider);
+                        FileInfo project_candidate = FindProject(entry.Key, entry.Value, cproject.AllProjectDataManagers.AssetManager);
                         if (project_candidate == null)
                         {
                             // ask the user for the correct target folder? ... TODO
@@ -356,9 +344,6 @@ namespace SIMULTAN.Serializer.Projects
                 _project.AllProjectDataManagers.ValueManager.ResetChanges();
                 _project.AllProjectDataManagers.Components.ResetChanges();
             }
-
-            //Try to prevent memory leak
-            DXFDecoder.ResetV5IdTranslation();
         }
 
         #endregion
@@ -548,20 +533,22 @@ namespace SIMULTAN.Serializer.Projects
             FileInfo comp_file_copy = files_copy.FirstOrDefault(x => string.Equals(x.Extension, ParamStructFileExtensions.FILE_EXT_COMPONENTS, StringComparison.InvariantCultureIgnoreCase));
 
             // ~5b. unpack the component file in order to change the paths for the contained resources and the locations of the components
-            if (comp_file_copy != null && value_file_copy != null)
+            /*if (comp_file_copy != null && value_file_copy != null)
             {
                 var projectData = new ExtendedProjectData();
                 projectData.Project = cproject;
 
                 projectData.AssetManager.WorkingDirectory = unpack_dir_copy.FullName;
+
+#warning Parser Rework: Check if this is necessary
                 ProjectIO.OpenMultiValueFileAlone(cproject, value_file_copy, projectData);
-                projectData.ValueManager.SetCallingLocation(new DummyReferenceLocation(location_new, _new_project_file.FullName));
+                projectData.ValueManager.SetCallingLocation(new DummyReferenceLocation(location_new));
                 ProjectIO.SaveMultiValueFile(value_file_copy, projectData.ValueManager);
 
                 ProjectIO.OpenComponentFileAlone(cproject, comp_file_copy, projectData);
-                projectData.NetworkManager.SetCallingLocation(new DummyReferenceLocation(location_new, _new_project_file.FullName));
+                projectData.NetworkManager.SetCallingLocation(new DummyReferenceLocation(location_new));
                 ProjectIO.SaveComponentFile(comp_file_copy, projectData);
-            }
+            }*/
 
             // 6. pack everything in the new project
             if (File.Exists(_new_project_file.FullName))
@@ -605,9 +592,8 @@ namespace SIMULTAN.Serializer.Projects
         /// <param name="projectId">the Guid of the project</param>
         /// <param name="projectRelPath">the last known relative path of the project (relative to the parent)</param>
         /// <param name="resources">the resource manager of the parent project</param>
-        /// <param name="serviceProvider">The service provider</param>
         /// <returns>A file info pointing to the matching project file, or Null when no project could be found</returns>
-        private static FileInfo FindProject(Guid projectId, string projectRelPath, AssetManager resources, IServicesProvider serviceProvider)
+        private static FileInfo FindProject(Guid projectId, string projectRelPath, AssetManager resources)
         {
             if (projectId == Guid.Empty)
                 throw new ArgumentException(string.Format("The {0} has its default value!", nameof(projectId)));
@@ -625,7 +611,7 @@ namespace SIMULTAN.Serializer.Projects
                     if (File.Exists(reconstructed))
                     {
                         FileInfo projectFile = new FileInfo(reconstructed);
-                        bool found = ProjectHasExpectedId(projectId, projectFile, serviceProvider);
+                        bool found = ProjectHasExpectedId(projectId, projectFile);
                         if (found)
                             return projectFile;
                     }
@@ -640,9 +626,8 @@ namespace SIMULTAN.Serializer.Projects
         /// </summary>
         /// <param name="projectId">the expected project Id</param>
         /// <param name="projectFile">the project file location</param>
-        /// <param name="serviceProvider">The service provider</param>
         /// <returns>True, if the project could be located, loaded and its id was the expected one; False otherwise</returns>
-        private static bool ProjectHasExpectedId(Guid projectId, FileInfo projectFile, IServicesProvider serviceProvider)
+        private static bool ProjectHasExpectedId(Guid projectId, FileInfo projectFile)
         {
             if (projectFile == null)
                 throw new ArgumentNullException(string.Format("The project file {0} cannot be null", nameof(projectFile)));
@@ -651,7 +636,7 @@ namespace SIMULTAN.Serializer.Projects
 
             // attempt to load and read out the meta-data
             var pdm = new ExtendedProjectData();
-            HierarchicalProject project = ZipProjectIO.Load(projectFile, pdm, serviceProvider);
+            HierarchicalProject project = ZipProjectIO.Load(projectFile, pdm);
             if (project != null)
             {
                 if (project.ManagedFiles.MetaDataEntry != null)

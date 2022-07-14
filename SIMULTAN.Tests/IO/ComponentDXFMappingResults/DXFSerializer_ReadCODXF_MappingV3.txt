@@ -1,0 +1,22 @@
+﻿0
+MAPPING2COMPONENT
+100
+SIMULTAN.Data.Components.CalculatorMapping
+1701
+My Custom Mapping
+1702
+da7d8f7c-8eec-423b-b127-9d6e17f52522: 123
+1703
+1
+1704
+202
+1705
+200
+1706
+1
+1707
+203
+1708
+201
+0
+EOF

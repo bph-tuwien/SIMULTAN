@@ -1,0 +1,38 @@
+﻿0
+FLOWNETWORK_NODE
+900
+9950
+1507
+Network Node
+1508
+Description Text
+1502
+1
+1531
+3
+1532
+66
+1503
+33.40000000
+1504
+-7.60000000
+1516
+2
+1517
+suf op
+1518
+suf result
+1519
+1
+1520
+:=
+1517
+suf op 2
+1518
+suf result 2
+1519
+0
+1520
+-
+0
+EOF

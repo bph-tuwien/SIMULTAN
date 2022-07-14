@@ -45,7 +45,7 @@ namespace SIMULTAN.Tests.Values
         {
             Assert.AreEqual(data.name, function.Name);
             Assert.AreEqual(true, function.CanInterpolate);
-            Assert.AreEqual(MultiValueType.FUNCTION_ND, function.MVType);
+            Assert.AreEqual(SimMultiValueType.Function, function.MVType);
 
             Assert.AreEqual(data.unitX, function.UnitX);
             Assert.AreEqual(data.unitY, function.UnitY);
