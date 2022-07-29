@@ -1,8 +1,5 @@
-﻿using SIMULTAN.Serializer.DXF;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Windows;
 using static SIMULTAN.Data.SimNetworks.SimNetworkConnector;
 using static SIMULTAN.Data.SimNetworks.SimNetworkPort;
@@ -118,6 +115,11 @@ namespace SIMULTAN.Data.SimNetworks
         {
             if (block == null)
                 throw new ArgumentNullException(nameof(block));
+
+            if (block.ComponentInstance != null)
+            {
+                block.RemoveComponentInstance();
+            }
             var subNetwork = new SimNetwork(block.Name)
             {
                 Position = block.Position,

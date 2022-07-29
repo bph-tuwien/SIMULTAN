@@ -8,6 +8,7 @@ using SIMULTAN.Data.SitePlanner;
 using SIMULTAN.Data.Users;
 using SIMULTAN.Excel;
 using SIMULTAN.Exchange;
+using System.IO;
 using static SIMULTAN.Data.SimNetworks.SimNetwork;
 
 namespace SIMULTAN.Projects
@@ -173,5 +174,7 @@ namespace SIMULTAN.Projects
             this.SitePlannerManager.SetCallingLocation(caller);
             this.SimNetworks.SetCallingLocation(caller);
         }
+
+        public FileInfo ImportLogFile { get; set; }
     }
 }

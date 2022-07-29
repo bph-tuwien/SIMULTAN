@@ -249,7 +249,7 @@ namespace SIMULTAN.Serializer.CODXF
 
             if (parserInfo.FileVersion <= 3)
             {
-                ImportantSection.Skip(reader, parserInfo, parserInfo.FileVersion == 3); //Some version 3 contain it, some don't
+                ImportantSection.Skip(reader, parserInfo, true); //Some version 3 contain it, some don't
             }
 
             //EOF
@@ -257,6 +257,8 @@ namespace SIMULTAN.Serializer.CODXF
 
             parserInfo.ProjectData.Components.RestoreReferences(parserInfo.ProjectData.NetworkManager.GetAllNetworkElements());
             parserInfo.ProjectData.AssetManager.ReleaseTmpParseRecord();
+
+            parserInfo.FinishLog();
         }
 
         #endregion

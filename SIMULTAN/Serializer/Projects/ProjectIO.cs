@@ -54,7 +54,7 @@ namespace SIMULTAN.Serializer.Projects
         #region VALUES
 
         internal static void OpenMultiValueFile(FileInfo _file, ExtendedProjectData _projectData,
-                                                Guid _calling_global_id, FileInfo logFile, IReferenceLocation _calling_reference = default)
+                                                Guid _calling_global_id, IReferenceLocation _calling_reference = default)
         {
             if (_file == null || !File.Exists(_file.FullName))
                 return;
@@ -111,7 +111,7 @@ namespace SIMULTAN.Serializer.Projects
         #region COMPONENTS
 
         internal static void OpenComponentFile(FileInfo _file, ExtendedProjectData projectData, Guid _calling_global_id,
-                                               FileInfo logFile, IReferenceLocation _calling_reference = default)
+                                               IReferenceLocation _calling_reference = default)
         {
             if (_file == null)
                 throw new ArgumentNullException(string.Format("{0} may not be null", nameof(_file)));
@@ -130,7 +130,7 @@ namespace SIMULTAN.Serializer.Projects
                     projectData.NetworkManager.SetCallingLocation(new DummyReferenceLocation(_calling_global_id));
             }
 
-            ComponentDxfIO.Read(_file, new DXFParserInfo(projectData.Owner.GlobalID, projectData));
+            ComponentDxfIO.Read(_file, new DXFParserInfo(_calling_global_id, projectData));
         }
 
         internal static void SaveComponentFile(FileInfo _file, ProjectData projectData)
@@ -535,8 +535,8 @@ namespace SIMULTAN.Serializer.Projects
             IEnumerable<FileInfo> files_to_convert_to_project = new List<FileInfo> { file_values, file_comps };
 
             // load the data in the project manager
-            OpenMultiValueFile(file_values, _project_data_manager, Guid.Empty, null);
-            OpenComponentFile(file_comps, _project_data_manager, Guid.Empty, null);
+            //OpenMultiValueFile(file_values, _project_data_manager, Guid.Empty, null);
+            //OpenComponentFile(file_comps, _project_data_manager, Guid.Empty, null);
 
             var created = ProjectIO.CreateFromSeparateFiles(_project_file, files_to_convert_to_project,
                 new List<FileInfo>(), new List<FileInfo>(), _project_data_manager, _encryption_key);

@@ -116,6 +116,8 @@ namespace SIMULTAN.Serializer.METADXF
             //EOF
             EOFParserElement.Element.Parse(reader);
 
+            parserInfo.FinishLog();
+
             return metaData.FirstOrDefault();
         }
 

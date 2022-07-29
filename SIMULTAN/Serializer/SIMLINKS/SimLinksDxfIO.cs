@@ -204,6 +204,8 @@ namespace SIMULTAN.Serializer.SIMLINKS
                 info = CommonParserElements.VersionSectionElement.Parse(reader, info).First();
             }
 
+            info.FinishLog();
+
             return MultiLinkSectionEntityElement.Parse(reader, info);
         }
 

@@ -247,6 +247,8 @@ namespace SIMULTAN.Serializer.SPDXF
 
             //EOF
             EOFParserElement.Element.Parse(reader);
+
+            parserInfo.FinishLog();
         }
 
         internal static void Write(FileInfo file, SitePlannerProject sitePlannerProject, ProjectData projectData)

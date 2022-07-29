@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.ObjectModel;
-using System.Linq;
 
 namespace SIMULTAN.Data.SimNetworks
 {
@@ -43,9 +42,8 @@ namespace SIMULTAN.Data.SimNetworks
                 {
                     throw new Exception("Connector is already contained in this collection");
                 }
-
-                this.SetValues(item);                
                 base.InsertItem(index, item);
+                this.SetValues(item);
             }
             /// <summary>
             /// Removes an item at index
@@ -106,17 +104,17 @@ namespace SIMULTAN.Data.SimNetworks
                         item.Id = this.parentNetwork.Factory.ProjectData.IdGenerator.NextId(item, this.parentNetwork.Factory.CalledFromLocation);
                 }
 
-                //Add to ports
-                if (item.Source != null && !item.Source.Connectors.Contains(item))
+
+                if (item.Source != null)
                 {
-                    item.Source.Connectors.Add(item);
                     item.Source.NotifyIsConnectedChanged();
                 }
-                if (item.Target != null && !item.Target.Connectors.Contains(item))
+                if (item.Target != null)
                 {
-                    item.Target.Connectors.Add(item);
-                    item.Source.NotifyIsConnectedChanged();
+                    item.Target.NotifyIsConnectedChanged();
                 }
+
+
             }
 
             private void UnsetValues(SimNetworkConnector item)
@@ -130,18 +128,18 @@ namespace SIMULTAN.Data.SimNetworks
                 }
 
                 item.Id = new SimId(item.Id.GlobalId, item.Id.LocalId);
-                
 
-                if (item.Source != null && item.Source.Connectors.Contains(item))
+
+
+                if (item.Source != null)
                 {
-                    item.Source.Connectors.Remove(item);
                     item.Source.NotifyIsConnectedChanged();
                 }
-                if (item.Target != null && item.Target.Connectors.Contains(item))
+                if (item.Target != null)
                 {
-                    item.Target.Connectors.Remove(item);
-                    item.Source.NotifyIsConnectedChanged();
+                    item.Target.NotifyIsConnectedChanged();
                 }
+
             }
 
             internal void NotifyFactoryChanged(ISimManagedCollection newFactory, ISimManagedCollection oldFactory)

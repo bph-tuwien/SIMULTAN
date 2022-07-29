@@ -120,6 +120,8 @@ namespace SIMULTAN.Serializer.PADXF
 
             //EOF
             EOFParserElement.Element.Parse(reader);
+
+            parserInfo.FinishLog();
         }
     }
 }

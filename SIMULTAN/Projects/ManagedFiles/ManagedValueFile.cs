@@ -71,7 +71,6 @@ namespace SIMULTAN.Projects.ManagedFiles
             }
 
             ProjectIO.OpenMultiValueFile(this.File, ProjectData, this.owner.Project.GlobalID,
-                this.owner.Project.ImportLogFile,
                 this.owner.Project);
         }
     }

@@ -82,6 +82,8 @@ namespace SIMULTAN.Serializer.GMDXF
 
             //EOF
             EOFParserElement.Element.Parse(reader);
+
+            parserInfo.FinishLog();
         }
 
         internal static void Write(FileInfo file, GeoMap geoMap, ProjectData projectData)

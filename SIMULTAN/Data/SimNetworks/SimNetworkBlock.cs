@@ -1,9 +1,7 @@
 ﻿using SIMULTAN.Data.Components;
-using SIMULTAN.Serializer.DXF;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Windows;
 using static SIMULTAN.Data.SimNetworks.SimNetworkPort;
 
@@ -234,7 +232,7 @@ namespace SIMULTAN.Data.SimNetworks
 
         private void ComponentInstance_IsBeingDeleted(object sender)
         {
-            if (sender is SimComponentInstance compInstance)
+            if (sender is SimComponentInstance compInstance && this.ComponentInstance != null)
             {
                 //Remove Ports 
                 if (compInstance.Component != this.ComponentInstance.Component)

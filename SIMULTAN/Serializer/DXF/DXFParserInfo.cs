@@ -189,15 +189,25 @@ namespace SIMULTAN.Serializer.DXF
         {
             if (logFileWriter == null)
             {
+
                 //Try to find valid filename
                 string fileNameBase = string.Format(@".\ImportLog_{0:dd_MM_yyyy-HH_mm_ss}", DateTime.Now);
                 string fileName = fileNameBase + ".txt";
 
-                int c = 0;
+                if (ProjectData.ImportLogFile != null)
+                {
+                    fileName = ProjectData.ImportLogFile.FullName;
+                    fileNameBase = Path.Combine(
+                        ProjectData.ImportLogFile.DirectoryName,
+                        Path.GetFileNameWithoutExtension(ProjectData.ImportLogFile.Name)
+                        );
+                }
+
+                int i = 1;
                 while (File.Exists(fileName))
                 {
-                    c++;
-                    fileName = fileName = string.Format("{0} ({1}).txt", fileNameBase, c);
+                    fileName = string.Format("{0} ({1}).txt", fileNameBase, i);
+                    i++;
                 }
 
                 logFileWriter = new StreamWriter(fileName, true);
@@ -207,6 +217,16 @@ namespace SIMULTAN.Serializer.DXF
             {
                 Console.WriteLine("Import log: {0}", message);
                 logFileWriter.WriteLine(message);
+            }
+        }
+
+        public void FinishLog()
+        {
+            if (logFileWriter != null)
+            {
+                logFileWriter.Close();
+                logFileWriter.Dispose();
+                logFileWriter = null;
             }
         }
 

@@ -6,4 +6,4 @@ Documentation of the source code can be found on the  [API Documentation](docume
 
 ## General Information
 For general information about SIMULTAN please visit the
-[SIMULTAN Wiki](https://github.com/bph-tuwien/SIMULTAN.Documentation/wiki).
+[SIMULTAN Wiki](https://github.com/bph-tuwien/SIMULTAN/wiki).

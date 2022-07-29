@@ -313,6 +313,21 @@ namespace SIMULTAN.Serializer.CODXF
                 endId = SimObjectId.FromString(data.Get<string>(FlowNetworkSaveCode.END_NODE_LOCALID, "-1")).local;
             }
 
+            if (startId == -1)
+            {
+                info.Log(string.Format("Failed to parse StartNode Id for SimFlowNetworkEdge with Id={0}, Name=\"{1}\".\nId Text: {2}",
+                    id, name, data.Get<string>(FlowNetworkSaveCode.START_NODE_LOCALID, "-1")
+                    ));
+                return null;
+            }
+            if (endId == -1)
+            {
+                info.Log(string.Format("Failed to parse EndNode Id for SimFlowNetworkEdge with Id={0}, Name=\"{1}\".\nId Text: {2}",
+                    id, name, data.Get<string>(FlowNetworkSaveCode.END_NODE_LOCALID, "-1")
+                    ));
+                return null;
+            }
+
             try
             {
                 return new SimFlowNetworkEdge(info.GlobalId, id, name, description, isValid, 

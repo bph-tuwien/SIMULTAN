@@ -1420,7 +1420,19 @@ namespace SIMULTAN.Serializer.CODXF
                 var networkLocalId = data.Get<long>(ComponentInstanceSaveCode.INST_NETWORKELEMENT_ID, -1);
                 var networkGlobalId = data.Get<Guid>(ComponentInstanceSaveCode.INST_NETWORKELEMENT_LOCATION, Guid.Empty);
 
-                bool hasNetwork = networkLocalId != 0 && networkGlobalId != Guid.Empty;
+                //Bugfix: In some old version, the global Id was set to Empty although it should have been the project Id
+                if (networkLocalId != -1 && networkGlobalId == Guid.Empty)
+                    networkGlobalId = info.GlobalId;
+                if (networkLocalId != -1 && networkGlobalId != info.GlobalId)
+                {
+                    info.Log(string.Format("Project with GlobalId {0} contains elements with GlobalId {1}. Using project global Id instead",
+                        info.GlobalId, networkGlobalId
+                    ));
+
+                    networkGlobalId = info.GlobalId;
+                }
+
+                bool hasNetwork = networkLocalId != -1 && networkGlobalId != Guid.Empty;
 
                 var geometryFileId = data.Get<int>(ComponentInstanceSaveCode.GEOM_REF_FILE, -1);
                 var geometryId = data.Get<ulong>(ComponentInstanceSaveCode.GEOM_REF_ID, 0);

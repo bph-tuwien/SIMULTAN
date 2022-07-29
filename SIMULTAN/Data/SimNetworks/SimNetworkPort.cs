@@ -1,9 +1,7 @@
 ﻿using SIMULTAN.Data.Components;
-using SIMULTAN.Serializer.DXF;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
 namespace SIMULTAN.Data.SimNetworks
 {
@@ -40,7 +38,15 @@ namespace SIMULTAN.Data.SimNetworks
         /// <summary>
         /// List of connectors where the port is present
         /// </summary>
-        public List<SimNetworkConnector> Connectors { get; } = new List<SimNetworkConnector>();
+        public List<SimNetworkConnector> Connectors
+        {
+            get
+            {
+                return this.ParentNetworkElement.ParentNetwork.ContainedConnectors.Where(c => c.Source == this || c.Target == this).ToList();
+            }
+        }
+
+
         /// <summary>
         /// True whenever a connection exists with this port
         /// </summary>
@@ -48,7 +54,13 @@ namespace SIMULTAN.Data.SimNetworks
         {
             get
             {
-                return (this.Connectors.Count > 0);
+                if (this.isDisposed)
+                {
+                    return false;
+                }
+
+                return (this.ParentNetworkElement.ParentNetwork.ContainedConnectors.Where(c => c.Source == this || c.Target == this).ToList().Count > 0);
+
             }
         }
         /// <summary>

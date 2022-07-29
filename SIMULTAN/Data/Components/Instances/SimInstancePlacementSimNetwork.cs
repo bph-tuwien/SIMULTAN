@@ -73,7 +73,7 @@ namespace SIMULTAN.Data.Components
         public override void AddToTarget()
         {
 
-            if (this.Instance != null && this.Instance.Component != null)
+            if (this.Instance != null && this.Instance.Component != null && this.NetworkElement != null)
             {
                 this.NetworkElement.ComponentInstance = this.Instance;
             }
@@ -81,7 +81,7 @@ namespace SIMULTAN.Data.Components
         /// <inheritdoc />
         public override void RemoveFromTarget()
         {
-            if (this.Instance != null)
+            if (this.Instance != null && this.NetworkElement != null)
                 this.NetworkElement.ComponentInstance = null;
         }
 

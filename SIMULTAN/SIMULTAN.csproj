@@ -67,9 +67,6 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\SharedAssemblyInfo.cs">
-      <Link>Properties\SharedAssemblyInfo.cs</Link>
-    </Compile>
     <Compile Include="Data\Assets\Links\DefaultMachineHashGenerator.cs" />
     <Compile Include="Data\Assets\Links\IMachineHashGenerator.cs" />
     <Compile Include="Data\Components\Algorithms\NetworkFactoryManagement.cs" />

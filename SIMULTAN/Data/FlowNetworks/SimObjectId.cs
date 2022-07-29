@@ -149,7 +149,11 @@ namespace SIMULTAN.Data.FlowNetworks
                 return (Guid.Empty, -1L, -1);
 
             string[] comps = simObjectString.Split(new string[] { ": " }, StringSplitOptions.RemoveEmptyEntries);
-            if (comps.Length != 2)
+            if (comps.Length == 1) // Local Id only
+            {
+                comps = new string[] { Guid.Empty.ToString("D"), simObjectString };
+            }
+            else if (comps.Length > 2)
                 return (Guid.Empty, -1L, -1);
 
             bool success_global = Guid.TryParse(comps[0], out var global);

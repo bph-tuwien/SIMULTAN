@@ -264,8 +264,6 @@ namespace SIMULTAN.Projects
         }
         private ExtendedProjectData all_project_data_managers;
 
-        public FileInfo ImportLogFile { get; set; }
-
         #endregion
 
         #region PROPERTIES: project state

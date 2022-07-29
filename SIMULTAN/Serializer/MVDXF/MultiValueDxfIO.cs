@@ -189,6 +189,8 @@ namespace SIMULTAN.Serializer.MVDXF
 
             //EOF
             EOFParserElement.Element.Parse(reader);
+
+            parserInfo.FinishLog();
         }
 
 

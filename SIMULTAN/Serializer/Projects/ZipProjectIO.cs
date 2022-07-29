@@ -170,7 +170,7 @@ namespace SIMULTAN.Serializer.Projects
 
             var project = new CompactProject(metaData.ProjectId, _project_file, _data_manager, managed_files,
                 null, null, null, unpacked_folder);
-            project.ImportLogFile = new FileInfo(string.Format(@".\ImportLog_{0}_{1:dd_MM_yyyy-HH_mm_ss}.txt",
+            _data_manager.ImportLogFile = new FileInfo(string.Format(@".\ImportLog_{0}_{1:dd_MM_yyyy-HH_mm_ss}.txt",
                 Path.GetFileNameWithoutExtension(_project_file.Name), DateTime.Now));
 
             using (AccessCheckingDisabler.Disable(_data_manager.Components))

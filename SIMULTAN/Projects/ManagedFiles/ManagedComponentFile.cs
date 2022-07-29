@@ -83,7 +83,7 @@ namespace SIMULTAN.Projects.ManagedFiles
             }
 
             ProjectIO.OpenComponentFile(this.File, ProjectData,
-                this.owner.Project.GlobalID, this.owner.Project.ImportLogFile, this.owner.Project);
+                this.owner.Project.GlobalID, this.owner.Project);
             ProjectData.AssetManager.WorkingDirectory = this.File.DirectoryName;
             // this is caused by the factory receiving its location only after the loading of all components
         }

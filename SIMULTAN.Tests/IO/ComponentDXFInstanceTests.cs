@@ -241,7 +241,7 @@ namespace SIMULTAN.Tests.IO
                 BindingFlags.NonPublic | BindingFlags.Instance);
             var npl = instance.Placements[1] as SimInstancePlacementNetwork;
             Assert.IsNotNull(npl);
-            Assert.AreEqual(otherGuid, ((SimObjectId)loadingMember.GetValue(npl)).GlobalId);
+            Assert.AreEqual(guid, ((SimObjectId)loadingMember.GetValue(npl)).GlobalId); //<12, use project id instead of saved id
             Assert.AreEqual(123, ((SimObjectId)loadingMember.GetValue(npl)).LocalId);
 
             //Size Transfer
@@ -335,7 +335,7 @@ namespace SIMULTAN.Tests.IO
                 BindingFlags.NonPublic | BindingFlags.Instance);
             var npl = instance.Placements[1] as SimInstancePlacementNetwork;
             Assert.IsNotNull(npl);
-            Assert.AreEqual(otherGuid, ((SimObjectId)loadingMember.GetValue(npl)).GlobalId);
+            Assert.AreEqual(guid, ((SimObjectId)loadingMember.GetValue(npl)).GlobalId); //<12, use project id instead of saved id
             Assert.AreEqual(123, ((SimObjectId)loadingMember.GetValue(npl)).LocalId);
 
             //Size Transfer
@@ -437,7 +437,7 @@ namespace SIMULTAN.Tests.IO
                 BindingFlags.NonPublic | BindingFlags.Instance);
             var npl = instance.Placements[1] as SimInstancePlacementNetwork;
             Assert.IsNotNull(npl);
-            Assert.AreEqual(otherGuid, ((SimObjectId)loadingMember.GetValue(npl)).GlobalId);
+            Assert.AreEqual(guid, ((SimObjectId)loadingMember.GetValue(npl)).GlobalId); //<12, use project id instead of saved id
             Assert.AreEqual(123, ((SimObjectId)loadingMember.GetValue(npl)).LocalId);
 
             //Size Transfer

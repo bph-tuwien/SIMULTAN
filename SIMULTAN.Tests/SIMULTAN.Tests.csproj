@@ -261,18 +261,6 @@
       <Project>{015d89d1-7b5e-4589-b6d9-7c0b9a85f3db}</Project>
       <Name>SIMULTAN</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\GeometryViewer\GeometryViewer.csproj">
-      <Project>{A3C844E0-5841-41B5-B205-38E9B9CA86FA}</Project>
-      <Name>GeometryViewer</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\SIMULTAN.Lang\SIMULTAN.Lang.csproj">
-      <Project>{0659B55E-8F88-4BFD-8691-989F249BA6AF}</Project>
-      <Name>SIMULTAN.Lang</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\SIMULTAN.UI\SIMULTAN.UI.csproj">
-      <Project>{B1759717-22CF-4544-81EE-9BD3F046E011}</Project>
-      <Name>SIMULTAN.UI</Name>
-    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <None Include="IO\MultiValueDXFResults\DXFSerializer_WriteField3D.txt" />

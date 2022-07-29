@@ -300,6 +300,8 @@ namespace SIMULTAN.Serializer
             EOFParserElement.Element.Parse(reader);
 
             parserInfo.ProjectData.ExcelToolMappingManager.RestoreDependencies(parserInfo.ProjectData);
+
+            parserInfo.FinishLog();
         }
 
 
