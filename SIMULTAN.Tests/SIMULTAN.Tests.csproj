@@ -480,7 +480,7 @@
   <Import Project="$(SolutionDir)packages\MSTest.TestAdapter.2.2.8\build\net45\MSTest.TestAdapter.targets" Condition="Exists('$(SolutionDir)packages\MSTest.TestAdapter.2.2.8\build\net45\MSTest.TestAdapter.targets')" />
   <PropertyGroup>
     <PostBuildEvent>if not exist "$(TargetDir)\runtimes" (mkdir "$(TargetDir)\runtimes")
-xcopy "$(SolutionDir)\Source\SIMULTAN\SIMULTAN\bin\$(ConfigurationName)\runtimes\win-x64" "$(TargetDir)\runtimes\win-x64" /d /e /i /y 1&gt; nul
-xcopy "$(SolutionDir)\Source\SIMULTAN\SIMULTAN\bin\$(ConfigurationName)\runtimes\win-x86" "$(TargetDir)\runtimes\win-x86" /d /e /i /y 1&gt; nul</PostBuildEvent>
+xcopy "$(ProjectDir)\..\SIMULTAN\bin\$(ConfigurationName)\runtimes\win-x64" "$(TargetDir)\runtimes\win-x64" /d /e /i /y 1&gt; nul
+xcopy "$(ProjectDir)\..\SIMULTAN\bin\$(ConfigurationName)\runtimes\win-x86" "$(TargetDir)\runtimes\win-x86" /d /e /i /y 1&gt; nul</PostBuildEvent>
   </PropertyGroup>
 </Project>
