@@ -65,6 +65,7 @@ namespace SIMULTAN.Exchange.GeometryConnectors
             }
 
             ExchangeHelpers.CreateAssetIfNotExists(placement.Instance.Component, volume);
+
         }
 
         private void UpdateParameters(bool geometryExists)
@@ -163,6 +164,12 @@ namespace SIMULTAN.Exchange.GeometryConnectors
             {
                 this.Placement.Instance.Component.Name = geometry.Name;
             }
+        }
+
+        /// <inheritdoc/>
+        internal override void OnOffsetSurfacesChanged()
+        {
+            UpdateParameters(true);
         }
 
         #endregion

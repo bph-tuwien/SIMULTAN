@@ -281,13 +281,9 @@ namespace SIMULTAN.Serializer
         internal static void Read(DXFStreamReader reader, DXFParserInfo parserInfo)
         {
             //Version section
-            try
+            if(CommonParserElements.VersionSectionElement.IsParsable(reader, parserInfo))
             {
                 parserInfo = CommonParserElements.VersionSectionElement.Parse(reader, parserInfo).First();
-            }
-            catch (Exception) //Happens in old version (< version 12) where the version section wasn't present
-            {
-                reader.Seek(0);
             }
 
             //Data section

@@ -32,7 +32,7 @@ namespace SIMULTAN.Serializer.DXF
                 throw new ArgumentNullException(nameof(stream));
 
             this.Stream = stream;
-            reader = new StreamReader(stream);
+            reader = new StreamReader(stream, Encoding.UTF8, true);
         }
 
         private bool isDisposed = false;
@@ -123,15 +123,5 @@ namespace SIMULTAN.Serializer.DXF
             peekQueue.Clear();
         }
 
-        /// <summary>
-        /// Resets the internal stream to a specific position.
-        /// WARNING: The stream is buffered, resetting only works reliable when moving to location 0.
-        /// </summary>
-        /// <param name="position">The target location in the stream</param>
-        public void Seek(long position)
-        {
-            Stream.Position = position;
-            reader.DiscardBufferedData();
-        }
     }
 }

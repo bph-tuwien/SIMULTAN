@@ -13,6 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 
 namespace SIMULTAN.Serializer.Projects
 {
@@ -21,6 +22,12 @@ namespace SIMULTAN.Serializer.Projects
     /// </summary>
     public class ZipProjectIO
     {
+        /// <summary>
+        /// Stores the encryption key for all encrypted files.
+        /// This is not a safe method. This key should only be used when we want to prevent easy file editing. But not to store privacy relevant data
+        /// </summary>
+        public static byte[] EncryptionKey { get { return Encoding.ASCII.GetBytes("ThWmZq4t6w9z$C&F"); } }
+
         #region New Project
 
         /// <summary>
@@ -36,8 +43,8 @@ namespace SIMULTAN.Serializer.Projects
         /// </param>
         /// <param name="serviceProvider">The service provider</param>
         public static HierarchicalProject NewProject(FileInfo _project_file, string _path_to_local_tmp_folder,
-                                                ExtendedProjectData _project_data_manager, byte[] _encryption_key,
-                                                SimUser initialUser, IServicesProvider serviceProvider)
+                                                ExtendedProjectData _project_data_manager,
+                                                SimUser initialUser)
         {
             if (initialUser == null)
                 throw new ArgumentNullException(nameof(initialUser));
@@ -54,7 +61,7 @@ namespace SIMULTAN.Serializer.Projects
             {
                 try
                 {
-                    created = ProjectIO.CreateMinimalProject(_project_file, _path_to_local_tmp_folder, _project_data_manager, _encryption_key, serviceProvider);
+                    created = ProjectIO.CreateMinimalProject(_project_file, _path_to_local_tmp_folder, _project_data_manager);
                     if (created != null)
                     {
                         // Zip the project
@@ -93,8 +100,7 @@ namespace SIMULTAN.Serializer.Projects
         /// <returns>The created project or Null</returns>
         public static HierarchicalProject NewProjectFromFiles(FileInfo _project_file, IEnumerable<FileInfo> _files_to_convert_to_project,
                                                  IEnumerable<FileInfo> _non_managed_files, IEnumerable<FileInfo> _associated_files,
-                                                 ExtendedProjectData _project_data_manager, byte[] _encryption_key, SimUser _initialUser,
-                                                 IServicesProvider serviceProvider)
+                                                 ExtendedProjectData _project_data_manager, SimUser _initialUser)
         {
             // 1. create a copy of the data manager, to prevent the reset of the original on project unloading
             // is done outside ...
@@ -113,7 +119,7 @@ namespace SIMULTAN.Serializer.Projects
             // 3. create the project
             var created = ProjectIO.CreateFromSeparateFiles(_project_file, _files_to_convert_to_project,
                 _non_managed_files, _associated_files, _project_data_manager,
-                _encryption_key);
+                ZipProjectIO.EncryptionKey);
             if (created != null)
             {
                 // Zip the project                
@@ -191,7 +197,7 @@ namespace SIMULTAN.Serializer.Projects
         /// <param name="_encryption_key">the key for encrypting the user file</param>
         /// <param name="serviceProvider">The service provider that should be used to query the <see cref="IAuthenticationService"/></param>
         /// <returns>true, if the project can be opened; false otherwise</returns>
-        public static bool AuthenticateUserAfterLoading(HierarchicalProject _project, ExtendedProjectData _data_manager, byte[] _encryption_key,
+        public static bool AuthenticateUserAfterLoading(HierarchicalProject _project, ExtendedProjectData _data_manager,
             IServicesProvider serviceProvider)
         {
             if (!(_project is CompactProject cproject))
@@ -208,7 +214,7 @@ namespace SIMULTAN.Serializer.Projects
 
             if (user_file != null)
             {
-                _project.PreAuthenticate(user_file, _data_manager, _encryption_key);
+                _project.PreAuthenticate(user_file, _data_manager, ZipProjectIO.EncryptionKey);
                 var authService = serviceProvider.GetService<IAuthenticationService>();
                 if (authService == null)
                     throw new ProjectIOException(ProjectErrorCode.ERR_AUTHSERVICE_NOT_FOUND, "IAuthService not found in service provider");
@@ -241,7 +247,7 @@ namespace SIMULTAN.Serializer.Projects
         /// <param name="user">The user that should be authenticated in the project (only username and passwordhash are used)</param>
         /// <param name="_encryption_key">the key for encrypting the user file</param>
         /// <returns>true, if the project can be opened; false otherwise</returns>
-        public static SimUser AuthenticateUserAfterLoading(HierarchicalProject _project, ExtendedProjectData _data_manager, SimUser user, byte[] _encryption_key)
+        public static SimUser AuthenticateUserAfterLoading(HierarchicalProject _project, ExtendedProjectData _data_manager, SimUser user)
         {
             if (!(_project is CompactProject cproject))
                 throw new ArgumentException("The project must be of type compact!");
@@ -259,7 +265,7 @@ namespace SIMULTAN.Serializer.Projects
 
             if (user_file != null)
             {
-                _project.PreAuthenticate(user_file, _data_manager, _encryption_key);
+                _project.PreAuthenticate(user_file, _data_manager, ZipProjectIO.EncryptionKey);
                 authenticatedUser = _data_manager.UsersManager.Authenticate(user.Name, user.PasswordHash, true);
 
                 if (authenticatedUser != null && IsCorrectlyInPreAuthetication(_project))

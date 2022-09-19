@@ -544,20 +544,11 @@ namespace SIMULTAN.Data.Geometry
         /// <returns>True when the BaseGeometry is contained in the Model, otherwise False</returns>
         public bool ContainsGeometry(BaseGeometry geometry)
         {
-            if (geometry is Vertex)
-                return Vertices.Contains(geometry as Vertex);
-            else if (geometry is Edge)
-                return Edges.Contains(geometry as Edge);
-            else if (geometry is EdgeLoop)
-                return EdgeLoops.Contains(geometry as EdgeLoop);
-            else if (geometry is Face)
-                return Faces.Contains(geometry as Face);
-            else if (geometry is Volume)
-                return Volumes.Contains(geometry as Volume);
-            else if (geometry is ProxyGeometry)
-                return ProxyGeometries.Contains(geometry as ProxyGeometry);
-            else if (geometry is Polyline)
-                return Polylines.Contains(geometry as Polyline);
+            if (geometry == null)
+                return false;
+
+            if (geometryLookup.TryGetValue(geometry.Id, out var geom))
+                return geom == geometry;
 
             return false;
         }

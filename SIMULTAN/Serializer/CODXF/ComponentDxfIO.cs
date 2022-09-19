@@ -120,13 +120,9 @@ namespace SIMULTAN.Serializer.CODXF
         public static void ReadPublic(DXFStreamReader reader, DXFParserInfo parserInfo)
         {
             //Version section
-            try
+            if(CommonParserElements.VersionSectionElement.IsParsable(reader, parserInfo))
             {
                 parserInfo = CommonParserElements.VersionSectionElement.Parse(reader, parserInfo).First();
-            }
-            catch (Exception) //Happens in very old version (< version 4) where the version section wasn't present
-            {
-                reader.Seek(0);
             }
 
             LastParsedFileVersion = parserInfo.FileVersion;
@@ -211,13 +207,9 @@ namespace SIMULTAN.Serializer.CODXF
         public static void Read(DXFStreamReader reader, DXFParserInfo parserInfo)
         {
             //Version section
-            try
+            if(CommonParserElements.VersionSectionElement.IsParsable(reader, parserInfo))
             {
                 parserInfo = CommonParserElements.VersionSectionElement.Parse(reader, parserInfo).First();
-            }
-            catch (Exception) //Happens in very old version (< version 4) where the version section wasn't present
-            {
-                reader.Seek(0);
             }
 
             LastParsedFileVersion = parserInfo.FileVersion;
@@ -230,7 +222,7 @@ namespace SIMULTAN.Serializer.CODXF
             {
                 ComponentDxfIOUserLists.ReadUserListsSection(reader, parserInfo);
             }
-            else if (parserInfo.FileVersion == 8)
+            else if (parserInfo.FileVersion >= 6 && parserInfo.FileVersion <= 8)
             {
                 reader.Peek(); //0 SECTION
                 (int key, var sectionName) = reader.Peek();
@@ -322,13 +314,9 @@ namespace SIMULTAN.Serializer.CODXF
         public static void ReadLibrary(DXFStreamReader reader, DXFParserInfo parserInfo)
         {
             //Version section
-            try
+            if(CommonParserElements.VersionSectionElement.IsParsable(reader, parserInfo))
             {
                 parserInfo = CommonParserElements.VersionSectionElement.Parse(reader, parserInfo).First();
-            }
-            catch (Exception) //Happens in very old version (< version 4) where the version section wasn't present
-            {
-                reader.Seek(0);
             }
 
             //Data section

@@ -31,7 +31,7 @@ namespace SIMULTAN.Tests.Utils
 
             CompactProject project = ZipProjectIO.Load(projectFile, projectDataManager) as CompactProject;
 
-            ZipProjectIO.AuthenticateUserAfterLoading(project, projectDataManager, Encoding.ASCII.GetBytes("ThWmZq4t6w9z$C&F"), servicesProvider);
+            ZipProjectIO.AuthenticateUserAfterLoading(project, projectDataManager, servicesProvider);
             ZipProjectIO.OpenAfterAuthentication(project, projectDataManager);
 
             Assert.IsFalse(projectDataManager.ValueManager.HasChanges);

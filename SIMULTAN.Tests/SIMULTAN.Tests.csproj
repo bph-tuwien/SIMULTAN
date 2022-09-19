@@ -31,6 +31,7 @@
     <WarningLevel>4</WarningLevel>
     <LangVersion>7.3</LangVersion>
     <UseVSHostingProcess>true</UseVSHostingProcess>
+    <PlatformTarget>x64</PlatformTarget>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -40,6 +41,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <LangVersion>7.3</LangVersion>
+    <PlatformTarget>x64</PlatformTarget>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Microsoft.CSharp" />
@@ -88,6 +90,7 @@
     <Compile Include="Geometry\Algorithms\GeoReferenceAlgorithmsTests.cs" />
     <Compile Include="Geometry\Algorithms\MathTests.cs" />
     <Compile Include="Geometry\Algorithms\OffsetSurfaceAlgorithmTests.cs" />
+    <Compile Include="Geometry\Algorithms\ModelCleanupAlgorithmsTests.cs" />
     <Compile Include="Geometry\Algorithms\VolumeAlgorithmTests.cs" />
     <Compile Include="Geometry\BaseGeometries\BaseGeometryTests.cs" />
     <Compile Include="Geometry\BaseGeometries\DerivedColorTests.cs" />
@@ -231,6 +234,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="InstanceTestsProject.simultan">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="ModelCleanupAlgorithmsTestProject.simultan">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="OffsetGeometryProject.simultan">
@@ -472,4 +478,9 @@
     <Error Condition="!Exists('$(SolutionDir)packages\MSTest.TestAdapter.2.2.8\build\net45\MSTest.TestAdapter.targets')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)packages\MSTest.TestAdapter.2.2.8\build\net45\MSTest.TestAdapter.targets'))" />
   </Target>
   <Import Project="$(SolutionDir)packages\MSTest.TestAdapter.2.2.8\build\net45\MSTest.TestAdapter.targets" Condition="Exists('$(SolutionDir)packages\MSTest.TestAdapter.2.2.8\build\net45\MSTest.TestAdapter.targets')" />
+  <PropertyGroup>
+    <PostBuildEvent>if not exist "$(TargetDir)\runtimes" (mkdir "$(TargetDir)\runtimes")
+xcopy "$(ProjectDir)\..\SIMULTAN\bin\$(ConfigurationName)\runtimes\win-x64" "$(TargetDir)\runtimes\win-x64" /d /e /i /y 1&gt; nul
+xcopy "$(ProjectDir)\..\SIMULTAN\bin\$(ConfigurationName)\runtimes\win-x86" "$(TargetDir)\runtimes\win-x86" /d /e /i /y 1&gt; nul</PostBuildEvent>
+  </PropertyGroup>
 </Project>

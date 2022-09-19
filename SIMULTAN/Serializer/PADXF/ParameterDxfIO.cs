@@ -102,14 +102,13 @@ namespace SIMULTAN.Serializer.PADXF
         internal static void Read(DXFStreamReader reader, DXFParserInfo parserInfo)
         {
             //Version section
-            try
+            if(CommonParserElements.VersionSectionElement.IsParsable(reader, parserInfo))
             {
                 parserInfo = CommonParserElements.VersionSectionElement.Parse(reader, parserInfo).First();
             }
-            catch (Exception) //Happens in old version (< version 12) where the version section wasn't present
+            else
             {
-                parserInfo.FileVersion = ComponentDxfIO.LastParsedFileVersion; //Use the version of the last component file
-                reader.Seek(0);
+                parserInfo.FileVersion = ComponentDxfIO.LastParsedFileVersion;
             }
 
             //Data section

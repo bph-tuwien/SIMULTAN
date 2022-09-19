@@ -517,8 +517,7 @@ namespace SIMULTAN.Serializer.Projects
         /// <param name="serviceProvider">The service provider</param>
         /// <returns>the created project and feedback, if there was a problem</returns>
         public static CompactProject CreateMinimalProject(FileInfo _project_file, string _path_to_local_tmp_folder,
-            ExtendedProjectData _project_data_manager, byte[] _encryption_key,
-            IServicesProvider serviceProvider)
+            ExtendedProjectData _project_data_manager)
         {
             // create the minimally required files in a temporary folder
 
@@ -539,7 +538,7 @@ namespace SIMULTAN.Serializer.Projects
             //OpenComponentFile(file_comps, _project_data_manager, Guid.Empty, null);
 
             var created = ProjectIO.CreateFromSeparateFiles(_project_file, files_to_convert_to_project,
-                new List<FileInfo>(), new List<FileInfo>(), _project_data_manager, _encryption_key);
+                new List<FileInfo>(), new List<FileInfo>(), _project_data_manager, ZipProjectIO.EncryptionKey);
 
             // delete the files from the temporary folder
             file_values.Delete();

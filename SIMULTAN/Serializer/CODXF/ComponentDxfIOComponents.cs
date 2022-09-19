@@ -635,7 +635,7 @@ namespace SIMULTAN.Serializer.CODXF
             foreach (var cs in containedSlots)
                 containedComponents.Add((cs, null));
 
-            var containedParameters = data.Get<SimParameter[]>(ComponentSaveCode.CONTAINED_PARAMETERS, new SimParameter[0]);
+            var containedParameters = data.Get<SimParameter[]>(ComponentSaveCode.CONTAINED_PARAMETERS, new SimParameter[0]).Where(x => x != null).ToArray();
 
             var references = data.Get<SimComponentReference[]>(ComponentSaveCode.REFERENCED_COMPONENTS, new SimComponentReference[0]);
 

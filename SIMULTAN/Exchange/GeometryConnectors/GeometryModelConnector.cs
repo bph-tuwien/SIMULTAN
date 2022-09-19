@@ -30,6 +30,7 @@ namespace SIMULTAN.Exchange.GeometryConnectors
 
         private HashSet<BaseGeometry> geometryChangedGeometries = new HashSet<BaseGeometry>();
         private HashSet<BaseGeometry> topologyChangedGeometries = new HashSet<BaseGeometry>();
+        private HashSet<BaseGeometry> offsetSurfacesChangedGeometries = new HashSet<BaseGeometry>();
 
         #endregion
 
@@ -53,6 +54,33 @@ namespace SIMULTAN.Exchange.GeometryConnectors
             this.GeometryModel.Geometry.TopologyChanged += this.Geometry_TopologyChanged;
             this.GeometryModel.Geometry.GeometryAdded += this.Geometry_GeometryAdded;
             this.GeometryModel.Geometry.GeometryRemoved += this.Geometry_GeometryRemoved;
+            this.GeometryModel.Geometry.OffsetModel.OffsetSurfaceChanged += this.OffsetModel_OffsetSurfaceChanged;
+        }
+
+        private void OffsetModel_OffsetSurfaceChanged(object sender, IEnumerable<Face> modifiedFaces)
+        {
+            if (modifiedFaces != null)
+            {
+                foreach (var geom in modifiedFaces)
+                {
+                    this.offsetSurfacesChangedGeometries.Add(geom);
+                    foreach (var f in geom.PFaces)
+                        this.offsetSurfacesChangedGeometries.Add(f.Volume);
+                }
+            }
+            else
+            {
+                foreach (var geom in GeometryModel.Geometry.OffsetModel.Faces)
+                {
+                    var face = geom.Key.Item1;
+                    this.offsetSurfacesChangedGeometries.Add(face);
+                    foreach (var f in face.PFaces)
+                        this.offsetSurfacesChangedGeometries.Add(f.Volume);
+                }
+            }
+
+            if (Exchange.EnableGeometryEvents)
+                SynchronizeChanges();
         }
 
 
@@ -155,6 +183,7 @@ namespace SIMULTAN.Exchange.GeometryConnectors
                 e.OldGeometry.TopologyChanged -= this.Geometry_TopologyChanged;
                 e.OldGeometry.GeometryAdded -= this.Geometry_GeometryAdded;
                 e.OldGeometry.GeometryRemoved -= this.Geometry_GeometryRemoved;
+                e.OldGeometry.OffsetModel.OffsetSurfaceChanged -= this.OffsetModel_OffsetSurfaceChanged;
             }
 
             Exchange.ProjectData.Components.EnableReferencePropagation = false;
@@ -194,7 +223,7 @@ namespace SIMULTAN.Exchange.GeometryConnectors
                         if (geometry != null) //Try to update connectors to new geometry
                         {
                             success = con.ChangeBaseGeometry(geometry);
-                            if (!success)
+                            if (success)
                                 this.connectors.Add(geometry.Id, con);
                         }
 
@@ -232,6 +261,7 @@ namespace SIMULTAN.Exchange.GeometryConnectors
                 e.NewGeometry.TopologyChanged += this.Geometry_TopologyChanged;
                 e.NewGeometry.GeometryAdded += this.Geometry_GeometryAdded;
                 e.NewGeometry.GeometryRemoved += this.Geometry_GeometryRemoved;
+                e.NewGeometry.OffsetModel.OffsetSurfaceChanged += this.OffsetModel_OffsetSurfaceChanged;
             }
         }
 
@@ -253,8 +283,18 @@ namespace SIMULTAN.Exchange.GeometryConnectors
                     cons.ForEach(x => x.OnGeometryChanged());
             }
 
+            foreach (var geom in this.offsetSurfacesChangedGeometries)
+            {
+                if (connectors.TryGetValues(geom.Id, out var cons))
+                    cons.ForEach(x => x.OnOffsetSurfacesChanged());
+            }
+
             //Invalidate/Recalculate all references
             Exchange.ProjectData.Components.EnableReferencePropagation = enableReferencePropagation;
+
+            this.topologyChangedGeometries.Clear();
+            this.geometryChangedGeometries.Clear();
+            this.offsetSurfacesChangedGeometries.Clear();
         }
 
         #endregion
@@ -511,6 +551,7 @@ namespace SIMULTAN.Exchange.GeometryConnectors
             this.GeometryModel.Geometry.TopologyChanged -= this.Geometry_TopologyChanged;
             this.GeometryModel.Geometry.GeometryAdded -= this.Geometry_GeometryAdded;
             this.GeometryModel.Geometry.GeometryRemoved -= this.Geometry_GeometryRemoved;
+            this.GeometryModel.Geometry.OffsetModel.OffsetSurfaceChanged -= this.OffsetModel_OffsetSurfaceChanged;
         }
     }
 }
