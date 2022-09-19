@@ -108,6 +108,16 @@ namespace SIMULTAN.Utils.Collections
         }
 
         /// <summary>
+        /// Return true if the dictionary contais the given key.
+        /// </summary>
+        /// <param name="key">key to check</param>
+        /// <returns>true if the dictionary contais the given key</returns>
+        public bool ContainsKey(TKey key)
+        {
+            return dictionary != null && dictionary.ContainsKey(key);
+        }
+
+        /// <summary>
         /// Removes all entries from the dictionary
         /// </summary>
         public void Clear()

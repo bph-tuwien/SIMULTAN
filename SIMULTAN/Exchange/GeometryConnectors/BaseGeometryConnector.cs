@@ -78,6 +78,12 @@ namespace SIMULTAN.Exchange.GeometryConnectors
         {
             this.Placement.State = SimInstancePlacementState.InstanceTargetMissing;
         }
+        
+        /// <summary>
+        /// Called when OffsetSurfaces got changed
+        /// </summary>
+        internal virtual void OnOffsetSurfacesChanged() { }
+
         /// <summary>
         /// Called when the name of a BaseGeometry has changed
         /// </summary>

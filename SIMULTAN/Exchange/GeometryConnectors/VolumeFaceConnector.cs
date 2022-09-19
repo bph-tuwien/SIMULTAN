@@ -388,6 +388,12 @@ namespace SIMULTAN.Exchange.GeometryConnectors
             }
         }
 
+        /// <inheritdoc/>
+        internal override void OnOffsetSurfacesChanged()
+        {
+            UpdateParameters(true);
+        }
+
         #endregion
     }
 }

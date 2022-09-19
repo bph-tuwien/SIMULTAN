@@ -36,6 +36,47 @@ namespace SIMULTAN.Serializer.DXF
         }
 
         /// <summary>
+        /// Checks if a Section is parsable (has the correct section name).
+        /// </summary>
+        /// <param name="reader">The reader</param>
+        /// <param name="info">the info</param>
+        /// <returns>True if the section is parseable, false otherwise</returns>
+        /// <exception cref="EndOfStreamException">If the end of the stream was reached</exception>
+        /// <exception cref="Exception">If any of the entities could not be found</exception>
+        public bool IsParsable(DXFStreamReader reader, DXFParserInfo info)
+        {
+            (var key, var entityName) = reader.Peek();
+            if (key == -1)
+                throw new EndOfStreamException(string.Format("Reached end of stream while looking for section \"{0}\"", SectionName));
+
+            //Entity Start
+            if (key != (int)ParamStructCommonSaveCode.ENTITY_START)
+            {
+                throw new Exception(string.Format(
+                    "Expected Code \"{0}\", but found \"{1}\"", (int)ParamStructCommonSaveCode.ENTITY_START, key));
+            }
+            if (entityName != ParamStructTypes.SECTION_START)
+            {
+                throw new Exception(string.Format(
+                    "Expected Entity Name \"{0}\", but found \"{1}\"", ParamStructTypes.SECTION_START, entityName));
+            }
+
+            //Section Name
+            (key, entityName) = reader.Peek();
+            if (key != (int)ParamStructCommonSaveCode.ENTITY_NAME)
+            {
+                throw new Exception(string.Format(
+                    "Expected Code \"{0}\", but found \"{1}\"", (int)ParamStructCommonSaveCode.ENTITY_NAME, key));
+            }
+            if (entityName != this.SectionName)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
         /// Parse the section and returns a list of all entities in this section
         /// </summary>
         /// <param name="reader">The reader from which the section should be read</param>

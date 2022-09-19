@@ -93,10 +93,13 @@ namespace SIMULTAN.Exchange
         /// <param name="value">The new value. Only used when a parameter with the given name exists</param>
         internal static void SetParameterIfExists(SimInstancePlacementGeometry placement, string parameterName, double value)
         {
-            var param = placement.Instance.Component.Parameters.FirstOrDefault(x => x.Name == parameterName);
-            if (param != null)
+            if (placement.Instance != null && placement.Instance.Component != null)
             {
-                param.ValueCurrent = value;
+                var param = placement.Instance.Component.Parameters.FirstOrDefault(x => x.Name == parameterName);
+                if (param != null)
+                {
+                    param.ValueCurrent = value;
+                }
             }
         }
 

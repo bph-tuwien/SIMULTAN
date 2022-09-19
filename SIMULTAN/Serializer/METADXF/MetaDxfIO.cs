@@ -100,14 +100,13 @@ namespace SIMULTAN.Serializer.METADXF
         internal static HierarchicProjectMetaData Read(DXFStreamReader reader, DXFParserInfo parserInfo)
         {
             //Version section
-            try
+            if(CommonParserElements.VersionSectionElement.IsParsable(reader, parserInfo))
             {
                 parserInfo = CommonParserElements.VersionSectionElement.Parse(reader, parserInfo).First();
             }
-            catch (Exception) //Happens in old version (< version 12) where the version section wasn't present
+            else
             {
-                parserInfo.FileVersion = 11; //Use the version of the last component file
-                reader.Seek(0);
+                parserInfo.FileVersion = 11;
             }
 
             //Data section

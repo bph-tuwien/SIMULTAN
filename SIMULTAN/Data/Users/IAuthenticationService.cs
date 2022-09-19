@@ -15,6 +15,8 @@ namespace SIMULTAN.Data.Users
     {
         /// <summary>
         /// Authenticates a user.
+        /// This method has to set <see cref="SimUsersManager.CurrentUser"/> and 
+        /// <see cref="SimUsersManager.EncryptionKey"/> in case a valid user has been found
         /// </summary>
         /// <param name="userManager">The userManager</param>
         /// <param name="projectFile">The project File</param>

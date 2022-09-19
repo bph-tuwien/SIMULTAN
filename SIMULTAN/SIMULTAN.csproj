@@ -132,6 +132,8 @@
     <Compile Include="Data\Geometry\GeoReferencing\UTMCoord.cs" />
     <Compile Include="Data\Geometry\ImporterWarningMessage.cs" />
     <Compile Include="Data\Geometry\SimGeometryModelCollection.cs" />
+    <Compile Include="Data\Geometry\UndoRedo\AddPlacementUndoItem.cs" />
+    <Compile Include="Data\Geometry\UndoRedo\RemovePlacementUndoItem.cs" />
     <Compile Include="Data\SimNetworks\BaseSimNetworkElement.cs" />
     <Compile Include="Data\SimNetworks\IElementWithComponent.cs" />
     <Compile Include="Data\SimNetworks\SimNetworkConnector.cs" />
