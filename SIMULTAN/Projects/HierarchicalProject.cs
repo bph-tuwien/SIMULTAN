@@ -12,6 +12,7 @@ using SIMULTAN.Serializer.GMDXF;
 using SIMULTAN.Serializer.Projects;
 using SIMULTAN.Serializer.SimGeo;
 using SIMULTAN.Serializer.SPDXF;
+using SIMULTAN.Serializer.TXDXF;
 using SIMULTAN.Utils;
 using SIMULTAN.Utils.Files;
 using System;
@@ -20,6 +21,7 @@ using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Windows.Media;
 using System.Windows.Threading;
 
@@ -2130,9 +2132,30 @@ namespace SIMULTAN.Projects
             ManagedFiles.SyncWithResources();
             GetAssociatedFiles();
 
+            // Load default taxonomies, everything else needs to be loaded first so IDs don't collide, then merge them with existing ones
+            if(LoadDefaultTaxonomies(_data_manager))
+            {
+                _data_manager.Components.RestoreDefaultTaxonomyReferences();
+            }
+
             // done
             OnProjectOpened();
             IsLoadingData = false;
+        }
+
+        private static bool LoadDefaultTaxonomies(ExtendedProjectData projectData)
+        {
+            var assembly = Assembly.GetExecutingAssembly();
+            bool hasChanged = false;
+            using (var default_tax_stream = assembly.GetManifestResourceStream("SIMULTAN.Data.Taxonomy.Default.default_taxonomies.txdxf")) 
+            {
+                var dummyProjectData = new ExtendedProjectData();
+                dummyProjectData.SetCallingLocation(new DummyReferenceLocation(projectData.Project.GlobalID));
+                var tmpParserInfo = new DXFParserInfo(projectData.Project.GlobalID, dummyProjectData);
+                SimTaxonomyDxfIO.Import(new DXFStreamReader(default_tax_stream), tmpParserInfo);
+                hasChanged = projectData.Taxonomies.MergeWithDefaults(dummyProjectData.Taxonomies);
+            }
+            return hasChanged;
         }
 
         internal void LoadDataIntoProjectDataManager()

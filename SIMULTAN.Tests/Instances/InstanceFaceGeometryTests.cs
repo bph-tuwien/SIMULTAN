@@ -142,10 +142,10 @@ namespace SIMULTAN.Tests.Instances
 
             Assert.AreEqual(4, comp.Parameters.Count);
 
-            var aParam = comp.Parameters.FirstOrDefault(x => x.Name == "A");
-            var nrtotalParam = comp.Parameters.FirstOrDefault(x => x.Name == "NRᴛᴏᴛᴀʟ");
-            var din = comp.Parameters.FirstOrDefault(x => x.Name == "Δdin");
-            var dout = comp.Parameters.FirstOrDefault(x => x.Name == "Δdout");
+            var aParam = comp.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_AREA));
+            var nrtotalParam = comp.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_COUNT));
+            var din = comp.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_MATERIAL_COMPOSITE_D_IN));
+            var dout = comp.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_MATERIAL_COMPOSITE_D_OUT));
 
             Assert.AreNotEqual(null, aParam);
             Assert.AreNotEqual(null, nrtotalParam);
@@ -216,7 +216,7 @@ namespace SIMULTAN.Tests.Instances
 
             var comp = projectData.Components.First(x => x.Name == "Wall 2");
             var vertex = gm.Geometry.Vertices.First(f => f.Name == "Vertex_TopRight");
-            var aParam = comp.Parameters.FirstOrDefault(x => x.Name == "A");
+            var aParam = comp.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_AREA));
 
             AssertUtil.AssertDoubleEqual(188.0, aParam.ValueCurrent);
 
@@ -235,7 +235,7 @@ namespace SIMULTAN.Tests.Instances
             var comp = projectData.Components.First(x => x.Name == "Wall 2");
             var vertex1 = gm.Geometry.Vertices.First(f => f.Name == "Vertex_TopRight");
             var vertex2 = gm.Geometry.Vertices.First(f => f.Name == "Vertex_TopLeft");
-            var aParam = comp.Parameters.FirstOrDefault(x => x.Name == "A");
+            var aParam = comp.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_AREA));
 
             AssertUtil.AssertDoubleEqual(188.0, aParam.ValueCurrent);
 
@@ -262,7 +262,7 @@ namespace SIMULTAN.Tests.Instances
             var edgeOld = gm.Geometry.Edges.First(e => e.Name == "Edge_Top");
             var face = gm.Geometry.Faces.First(f => f.Name == "Face_StandaloneRect");
 
-            var aParam = comp.Parameters.FirstOrDefault(x => x.Name == "A");
+            var aParam = comp.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_AREA));
             var inst = comp.Instances.First(
                 x => x.Placements.Any(p => p is SimInstancePlacementGeometry pg && pg.GeometryId == face.Id && pg.FileId == resource.Key));
 
@@ -331,7 +331,7 @@ namespace SIMULTAN.Tests.Instances
             (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry2.simgeo", projectData, sp);
 
             var comp = projectData.Components.First(x => x.Name == "Wall 2");
-            var aParam = comp.Parameters.FirstOrDefault(x => x.Name == "A");
+            var aParam = comp.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_AREA));
             var face = gm.Geometry.Faces.First(f => f.Name == "Surface 21");
             var instance = comp.Instances.First(i =>
                 i.Placements.Any(p => p is SimInstancePlacementGeometry pg && pg.GeometryId == face.Id && pg.FileId == resource.Key));
@@ -366,7 +366,7 @@ namespace SIMULTAN.Tests.Instances
             (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry2.simgeo", projectData, sp);
 
             var comp = projectData.Components.First(x => x.Name == "Wall 2");
-            var aParam = comp.Parameters.FirstOrDefault(x => x.Name == "A");
+            var aParam = comp.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_AREA));
             var face = gm.Geometry.Faces.First(f => f.Name == "Surface 21");
             var instance = comp.Instances.First(i =>
                 i.Placements.Any(p => p is SimInstancePlacementGeometry pg && pg.GeometryId == face.Id && pg.FileId == resource.Key));
@@ -439,8 +439,8 @@ namespace SIMULTAN.Tests.Instances
             Assert.AreEqual(4, comp.Instances.Count);
             Assert.IsTrue(comp.Instances.Any(i => i.Placements.Any(pl => pl is SimInstancePlacementGeometry gp && gp.GeometryId == rightFace.Id)));
 
-            var aParam = comp.Parameters.FirstOrDefault(x => x.Name == "A");
-            var nrtotalParam = comp.Parameters.FirstOrDefault(x => x.Name == "NRᴛᴏᴛᴀʟ");
+            var aParam = comp.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_AREA));
+            var nrtotalParam = comp.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_COUNT));
 
             projectData.ComponentGeometryExchange.Disassociate(comp, rightFace);
 
@@ -458,10 +458,10 @@ namespace SIMULTAN.Tests.Instances
 
             var comp = projectData.Components.First(x => x.Name == "Floor");
             var face = gm.Geometry.Faces.First(f => f.Name == "SmallFloor");
-            var doutParam = comp.Parameters.FirstOrDefault(x => x.Name == "Δdout");
-            var dinParam = comp.Parameters.FirstOrDefault(x => x.Name == "Δdin");
-            var aParam = comp.Parameters.FirstOrDefault(x => x.Name == "A");
-            var nrtotalParam = comp.Parameters.FirstOrDefault(x => x.Name == "NRᴛᴏᴛᴀʟ");
+            var dinParam = comp.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_MATERIAL_COMPOSITE_D_IN));
+            var doutParam = comp.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_MATERIAL_COMPOSITE_D_OUT));
+            var aParam = comp.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_AREA));
+            var nrtotalParam = comp.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_COUNT));
 
             //Remove last instance
             projectData.ComponentGeometryExchange.Disassociate(comp, face);
@@ -514,8 +514,8 @@ namespace SIMULTAN.Tests.Instances
 
             face.RemoveFromModel();
 
-            var aParam = comp.Parameters.FirstOrDefault(x => x.Name == "A");
-            var nrtotalParam = comp.Parameters.FirstOrDefault(x => x.Name == "NRᴛᴏᴛᴀʟ");
+            var aParam = comp.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_AREA));
+            var nrtotalParam = comp.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_COUNT));
 
             Assert.AreNotEqual(null, aParam);
             Assert.AreNotEqual(null, nrtotalParam);
@@ -575,8 +575,8 @@ namespace SIMULTAN.Tests.Instances
             Assert.IsTrue(instance.State.IsRealized);
             Assert.IsTrue(comp.InstanceState.IsRealized);
 
-            var aParam = comp.Parameters.FirstOrDefault(x => x.Name == "A");
-            var nrtotalParam = comp.Parameters.FirstOrDefault(x => x.Name == "NRᴛᴏᴛᴀʟ");
+            var aParam = comp.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_AREA));
+            var nrtotalParam = comp.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_COUNT));
 
             Assert.IsNotNull(aParam);
             AssertUtil.AssertDoubleEqual(88.0, aParam.ValueCurrent);
@@ -613,8 +613,8 @@ namespace SIMULTAN.Tests.Instances
             Assert.AreEqual(SimInstanceConnectionState.Ok, instance.State.ConnectionState);
             Assert.AreEqual(SimInstancePlacementState.Valid, placement.State);
 
-            var aParam = comp.Parameters.FirstOrDefault(x => x.Name == "A");
-            var nrtotalParam = comp.Parameters.FirstOrDefault(x => x.Name == "NRᴛᴏᴛᴀʟ");
+            var aParam = comp.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_AREA));
+            var nrtotalParam = comp.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_COUNT));
 
             Assert.IsNotNull(aParam);
             AssertUtil.AssertDoubleEqual(88.0, aParam.ValueCurrent);
@@ -648,8 +648,8 @@ namespace SIMULTAN.Tests.Instances
             Assert.AreEqual(SimInstanceConnectionState.Ok, instance.State.ConnectionState);
             Assert.AreEqual(SimInstancePlacementState.Valid, placement.State);
 
-            var aParam = comp.Parameters.FirstOrDefault(x => x.Name == "A");
-            var nrtotalParam = comp.Parameters.FirstOrDefault(x => x.Name == "NRᴛᴏᴛᴀʟ");
+            var aParam = comp.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_AREA));
+            var nrtotalParam = comp.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_COUNT));
 
             Assert.IsNotNull(aParam);
             AssertUtil.AssertDoubleEqual(88.0, aParam.ValueCurrent);
@@ -689,8 +689,8 @@ namespace SIMULTAN.Tests.Instances
             Assert.IsTrue(instance.State.IsRealized);
             Assert.IsTrue(comp.InstanceState.IsRealized);
 
-            var aParam = comp.Parameters.FirstOrDefault(x => x.Name == "A");
-            var nrtotalParam = comp.Parameters.FirstOrDefault(x => x.Name == "NRᴛᴏᴛᴀʟ");
+            var aParam = comp.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_AREA));
+            var nrtotalParam = comp.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_COUNT));
 
             Assert.IsNull(aParam);
             Assert.IsNull(nrtotalParam);
@@ -703,7 +703,7 @@ namespace SIMULTAN.Tests.Instances
             (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry2.simgeo", projectData, sp);
 
             var comp = projectData.Components.First(x => x.Name == "Wall 2");
-            var aParam = comp.Parameters.FirstOrDefault(x => x.Name == "A");
+            var aParam = comp.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_AREA));
             var face = gm.Geometry.Faces.First(f => f.Name == "Surface 21");
             var instance = comp.Instances.First(i =>
                 i.Placements.Any(p => p is SimInstancePlacementGeometry pg && pg.GeometryId == face.Id && pg.FileId == resource.Key));
@@ -729,7 +729,7 @@ namespace SIMULTAN.Tests.Instances
             (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry2.simgeo", projectData, sp);
 
             var comp = projectData.Components.First(x => x.Name == "Wall 2");
-            var aParam = comp.Parameters.FirstOrDefault(x => x.Name == "A");
+            var aParam = comp.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_AREA));
             var face = gm.Geometry.Faces.First(f => f.Name == "Surface 21");
             var instance = comp.Instances.First(i =>
                 i.Placements.Any(p => p is SimInstancePlacementGeometry pg && pg.GeometryId == face.Id && pg.FileId == resource.Key));
@@ -753,7 +753,7 @@ namespace SIMULTAN.Tests.Instances
             (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry2.simgeo", projectData, sp);
 
             var comp = projectData.Components.First(x => x.Name == "Wall 2");
-            var aParam = comp.Parameters.FirstOrDefault(x => x.Name == "A");
+            var aParam = comp.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_AREA));
             var face = gm.Geometry.Faces.First(f => f.Name == "Surface 21");
             var instance = comp.Instances.First(i =>
                 i.Placements.Any(p => p is SimInstancePlacementGeometry pg && pg.GeometryId == face.Id && pg.FileId == resource.Key));
@@ -777,7 +777,7 @@ namespace SIMULTAN.Tests.Instances
             (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry2.simgeo", projectData, sp);
 
             var comp = projectData.Components.First(x => x.Name == "Wall 2");
-            var aParam = comp.Parameters.FirstOrDefault(x => x.Name == "A");
+            var aParam = comp.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_AREA));
             var face = gm.Geometry.Faces.First(f => f.Name == "Surface 21");
             var instances = comp.Instances.Where(x => x.Placements.Any(y => y is SimInstancePlacementGeometry pg && pg.FileId != resource.Key)).ToList();
 
@@ -801,7 +801,7 @@ namespace SIMULTAN.Tests.Instances
             (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry2.simgeo", projectData, sp);
 
             var comp = projectData.Components.First(x => x.Name == "Wall 2");
-            var aParam = comp.Parameters.FirstOrDefault(x => x.Name == "A");
+            var aParam = comp.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_AREA));
             var face = gm.Geometry.Faces.First(f => f.Name == "Surface 21");
             var instance = comp.Instances.First(i =>
                 i.Placements.Any(p => p is SimInstancePlacementGeometry pg && pg.GeometryId == face.Id && pg.FileId == resource.Key));
@@ -827,7 +827,7 @@ namespace SIMULTAN.Tests.Instances
             (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry2.simgeo", projectData, sp);
 
             var comp = projectData.Components.First(x => x.Name == "Wall 2");
-            var aParam = comp.Parameters.FirstOrDefault(x => x.Name == "A");
+            var aParam = comp.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_AREA));
             var face = gm.Geometry.Faces.First(f => f.Name == "Surface 21");
             var instance = comp.Instances.First(i =>
                 i.Placements.Any(p => p is SimInstancePlacementGeometry pg && pg.GeometryId == face.Id && pg.FileId == resource.Key));
@@ -852,7 +852,7 @@ namespace SIMULTAN.Tests.Instances
             (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry2.simgeo", projectData, sp);
 
             var comp = projectData.Components.First(x => x.Name == "Wall 2");
-            var aParam = comp.Parameters.FirstOrDefault(x => x.Name == "A");
+            var aParam = comp.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_AREA));
             var face = gm.Geometry.Faces.First(f => f.Name == "Surface 21");
             var instance = comp.Instances.First(i =>
                 i.Placements.Any(p => p is SimInstancePlacementGeometry pg && pg.GeometryId == face.Id && pg.FileId == resource.Key));
@@ -877,7 +877,7 @@ namespace SIMULTAN.Tests.Instances
             (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
 
             var comp = projectData.Components.First(x => x.Name == "Wall 2");
-            var param = comp.Parameters.First(x => x.Name == "Δdin");
+            var param = comp.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_MATERIAL_COMPOSITE_D_IN));
 
             List<List<BaseGeometry>> eventData = new List<List<BaseGeometry>>();
             projectData.ComponentGeometryExchange.GeometryInvalidated += (s, e) => eventData.Add(e.ToList());
@@ -900,7 +900,7 @@ namespace SIMULTAN.Tests.Instances
             (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
 
             var comp = projectData.Components.First(x => x.Name == "Wall 2");
-            var param = comp.Parameters.First(x => x.Name == "Δdout");
+            var param = comp.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_MATERIAL_COMPOSITE_D_OUT));
 
             List<List<BaseGeometry>> eventData = new List<List<BaseGeometry>>();
             projectData.ComponentGeometryExchange.GeometryInvalidated += (s, e) => eventData.Add(e.ToList());
@@ -923,7 +923,7 @@ namespace SIMULTAN.Tests.Instances
             (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
 
             var comp = projectData.Components.First(x => x.Name == "Wall 2");
-            var param = comp.Parameters.First(x => x.Name == "Δdin");
+            var param = comp.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_MATERIAL_COMPOSITE_D_IN));
 
             List<List<BaseGeometry>> eventData = new List<List<BaseGeometry>>();
             projectData.ComponentGeometryExchange.GeometryInvalidated += (s, e) => eventData.Add(e.ToList());
@@ -946,7 +946,7 @@ namespace SIMULTAN.Tests.Instances
             (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
 
             var comp = projectData.Components.First(x => x.Name == "Wall 2");
-            var param = comp.Parameters.First(x => x.Name == "Δdout");
+            var param = comp.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_MATERIAL_COMPOSITE_D_OUT));
 
             List<List<BaseGeometry>> eventData = new List<List<BaseGeometry>>();
             projectData.ComponentGeometryExchange.GeometryInvalidated += (s, e) => eventData.Add(e.ToList());
@@ -969,7 +969,7 @@ namespace SIMULTAN.Tests.Instances
             (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
 
             var comp = projectData.Components.First(x => x.Name == "Wall 2");
-            var param = comp.Parameters.First(x => x.Name == "Δdin");
+            var param = comp.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_MATERIAL_COMPOSITE_D_IN));
 
             List<List<BaseGeometry>> eventData = new List<List<BaseGeometry>>();
             projectData.ComponentGeometryExchange.GeometryInvalidated += (s, e) => eventData.Add(e.ToList());
@@ -1005,8 +1005,8 @@ namespace SIMULTAN.Tests.Instances
             Assert.IsNotNull(propOn);
             Assert.AreEqual(1, propOff.Instances.Count);
             Assert.AreEqual(1, propOn.Instances.Count);
-            Assert.AreEqual(false, propOff.Parameters.Any(x => x.Name == ReservedParameters.RP_INST_PROPAGATE));
-            Assert.AreEqual(false, propOn.Parameters.Any(x => x.Name == ReservedParameters.RP_INST_PROPAGATE));
+            Assert.AreEqual(false, propOff.Parameters.Any(x => x.TaxonomyEntry.Name == ReservedParameters.RP_INST_PROPAGATE));
+            Assert.AreEqual(false, propOn.Parameters.Any(x => x.TaxonomyEntry.Name == ReservedParameters.RP_INST_PROPAGATE));
             Assert.AreEqual(false, propOff.Instances[0].PropagateParameterChanges);
             Assert.AreEqual(true, propOn.Instances[0].PropagateParameterChanges);
         }

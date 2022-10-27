@@ -31,7 +31,7 @@ namespace SIMULTAN.Data.MultiValues
     /// Base class for all value fields. 
     /// Have a look at SimMultiValueField3D, SimMultiValueFunction and SimMultiValueBigTable for implementations
     /// </summary>
-    public abstract class SimMultiValue : SimObjectNew<SimMultiValueCollection>
+    public abstract class SimMultiValue : SimNamedObject<SimMultiValueCollection>
     {
         #region STATIC
 

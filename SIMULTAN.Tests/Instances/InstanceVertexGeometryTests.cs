@@ -140,7 +140,7 @@ namespace SIMULTAN.Tests.Instances
 
             Assert.AreEqual(1, comp.Parameters.Count);
 
-            var nrtotalParam = comp.Parameters.FirstOrDefault(x => x.Name == "NRᴛᴏᴛᴀʟ");
+            var nrtotalParam = comp.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_COUNT));
 
             Assert.AreNotEqual(null, nrtotalParam);
 
@@ -348,7 +348,7 @@ namespace SIMULTAN.Tests.Instances
             Assert.AreEqual(1, comp.Instances.Count);
             Assert.IsTrue(comp.Instances.Any(i => i.Placements.Any(pl => pl is SimInstancePlacementGeometry gp && gp.GeometryId == vertexB.Id)));
 
-            var nrtotalParam = comp.Parameters.FirstOrDefault(x => x.Name == "NRᴛᴏᴛᴀʟ");
+            var nrtotalParam = comp.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_COUNT));
 
             projectData.ComponentGeometryExchange.Disassociate(comp, vertexB);
 
@@ -398,7 +398,7 @@ namespace SIMULTAN.Tests.Instances
 
             vertexB.RemoveFromModel();
 
-            var nrtotalParam = comp.Parameters.FirstOrDefault(x => x.Name == "NRᴛᴏᴛᴀʟ");
+            var nrtotalParam = comp.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_COUNT));
             AssertUtil.AssertDoubleEqual(2.0, nrtotalParam.ValueCurrent);
         }
 

@@ -1,10 +1,14 @@
-﻿using SIMULTAN.Data.Components;
+﻿using SIMULTAN.Data;
+using SIMULTAN.Data.Components;
 using SIMULTAN.Data.FlowNetworks;
 using SIMULTAN.Data.MultiValues;
+using SIMULTAN.Data.Taxonomy;
 using SIMULTAN.Projects;
 using SIMULTAN.Serializer.CODXF;
 using SIMULTAN.Serializer.DXF;
 using SIMULTAN.Serializer.MVDXF;
+using SIMULTAN.Serializer.TXDXF;
+using SIMULTAN.Utils;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -43,18 +47,29 @@ namespace SIMULTAN.Serializer.Projects
             (var all_components, var all_networks) = GetReferencedComponentsAndNetworks(_components);
             // gather all relevant values
             var all_values = GetReferencedMultiValues(all_components);
+            // gather all relevatn taxonomies
+            var all_taxonomies = GetReferencedTaxonomies(all_components);
 
             // extract the file names
             string path_to_CompFile = Path.Combine(_file.Directory.FullName, "ComponentExport_Components" + ParamStructFileExtensions.FILE_EXT_COMPONENTS);
             string path_to_MVFile = Path.Combine(_file.Directory.FullName, "ComponentExport_Values" + ParamStructFileExtensions.FILE_EXT_MULTIVALUES);
+            string path_to_TXFile = Path.Combine(_file.Directory.FullName, "ComponentExport_Taxonomies" + ParamStructFileExtensions.FILE_EXT_TAXONOMY);
             List<FileInfo> files_to_pack = new List<FileInfo>();
 
             // export the values
-            if (all_values.Count() > 0)
+            if (all_values.Any())
             {
                 var mvFile = new FileInfo(path_to_MVFile);
                 MultiValueDxfIO.Write(mvFile, all_values);
                 files_to_pack.Add(mvFile);
+            }
+
+            // export taxonomies
+            if (all_taxonomies.Any())
+            {
+                var txFile = new FileInfo(path_to_TXFile);
+                SimTaxonomyDxfIO.Write(txFile, all_taxonomies, projectData);
+                files_to_pack.Add(txFile);
             }
 
             // export the components
@@ -84,11 +99,21 @@ namespace SIMULTAN.Serializer.Projects
 
             // 0. unpack the archive
             var files_to_import = ZipUtils.UnpackArchive(_archive_file, _archive_file.Directory);
+            FileInfo tfile = files_to_import.FirstOrDefault(x => string.Equals(x.Extension, ParamStructFileExtensions.FILE_EXT_TAXONOMY));
             FileInfo vfile = files_to_import.FirstOrDefault(x => string.Equals(x.Extension, ParamStructFileExtensions.FILE_EXT_MULTIVALUES));
             FileInfo cfile = files_to_import.FirstOrDefault(x => string.Equals(x.Extension, ParamStructFileExtensions.FILE_EXT_COMPONENTS));
 
-            // 1a. reconstruct the values file
             ExtendedProjectData mergeData = new ExtendedProjectData();
+
+            // load the taxonomies
+            if(tfile != null)
+            {
+                DXFParserInfo info = new DXFParserInfo(Guid.Empty, mergeData);
+                mergeData.Taxonomies.SetCallingLocation(new DummyReferenceLocation(info.GlobalId));
+                SimTaxonomyDxfIO.Read(tfile, info);
+            }
+
+            // 1a. reconstruct the values file
             if (vfile != null)
             {
                 // 1b. load the values to a clean factory
@@ -134,12 +159,35 @@ namespace SIMULTAN.Serializer.Projects
                     nw.Description += String.Format(" ({0})", cfile.FullName);
                 }
 
+                // merge taxonomies
+                var existingTaxonomies = _project.AllProjectDataManagers.Taxonomies.Merge(mergeData.Taxonomies);
+ 
                 // 3a. merge the values with the existing
                 _project.AllProjectDataManagers.ValueManager.Merge(mergeData.ValueManager);
 
                 // 3b. merge component and network records
                 _project.AllProjectDataManagers.Components.Merge(new SimComponent[] { import_parent });
                 _project.AllProjectDataManagers.NetworkManager.AddToRecord(mergeData.NetworkManager.NetworkRecord.ToList());
+
+                // replace all taxonomy entries that already existed
+                ComponentWalker.ForeachComponent(import_parent, (component) =>
+                {
+                    foreach(var param in component.Parameters)
+                    {
+                        if(param.TaxonomyEntry.HasTaxonomyEntry())
+                        {
+                            var entry = param.TaxonomyEntry.TaxonomyEntryReference.Target;
+                            if(existingTaxonomies.TryGetValue(entry.Taxonomy, out var tax))
+                            {
+                                var replaceEntry = tax.GetTaxonomyEntryByKey(entry.Key);
+                                if(replaceEntry != null)
+                                {
+                                    param.TaxonomyEntry = new SimTaxonomyEntryOrString(replaceEntry);
+                                }
+                            }
+                        }
+                    }
+                });
             }
 
             // delete the unpacked files
@@ -403,6 +451,35 @@ namespace SIMULTAN.Serializer.Projects
                 if (param.MultiValuePointer != null && !result.Contains(param.MultiValuePointer.ValueField))
                     result.Add(param.MultiValuePointer.ValueField);
             }
+        }
+
+        internal static IEnumerable<SimTaxonomy> GetReferencedTaxonomies(IEnumerable<SimComponent> components)
+        {
+            if(components == null)
+                throw new ArgumentNullException(nameof(components));
+
+            HashSet<SimTaxonomy> values = new HashSet<SimTaxonomy>();
+            foreach(var c in components)
+            {
+                GetReferencedTaxonomies(c, values);
+            }
+
+            return values;
+        }
+        private static void GetReferencedTaxonomies(SimComponent _comp, HashSet<SimTaxonomy> result)
+        {
+            ComponentWalker.ForeachComponent(_comp, comp =>
+            {
+                foreach (var param in ComponentWalker.GetFlatParameters(comp))
+                {
+                    if (param.TaxonomyEntry.HasTaxonomyEntry())
+                    {
+                        var tax = param.TaxonomyEntry.TaxonomyEntryReference.Target.Taxonomy;
+                        if (!result.Contains(tax))
+                            result.Add(tax);
+                    }
+                }
+            });
         }
 
         #endregion

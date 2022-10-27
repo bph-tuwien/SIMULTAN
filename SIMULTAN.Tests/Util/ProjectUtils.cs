@@ -76,7 +76,7 @@ namespace SIMULTAN.Tests.Utils
             Dictionary<string, SimParameter> result = new Dictionary<string, SimParameter>();
 
             foreach (var param in comp.Parameters)
-                result.Add(param.Name, param);
+                result.Add(param.TaxonomyEntry.Name, param);
 
             return result;
         }

@@ -747,8 +747,8 @@ namespace SIMULTAN.Exchange
             {
                 if (pl.Instance.InstanceType == SimInstanceType.AttributesFace)
                 {
-                    var dinParameter = pl.Instance.Component.Parameters.FirstOrDefault(x => x.Name == ReservedParameters.RP_MATERIAL_COMPOSITE_D_IN);
-                    var doutParameter = pl.Instance.Component.Parameters.FirstOrDefault(x => x.Name == ReservedParameters.RP_MATERIAL_COMPOSITE_D_OUT);
+                    var dinParameter = pl.Instance.Component.Parameters.FirstOrDefault(x => x.TaxonomyEntry.TaxonomyEntryReference.Target.Key == ReservedParameterKeys.RP_MATERIAL_COMPOSITE_D_IN);
+                    var doutParameter = pl.Instance.Component.Parameters.FirstOrDefault(x => x.TaxonomyEntry.TaxonomyEntryReference.Target.Key == ReservedParameterKeys.RP_MATERIAL_COMPOSITE_D_OUT);
 
                     //Check if parameters exist
                     if (dinParameter != null)

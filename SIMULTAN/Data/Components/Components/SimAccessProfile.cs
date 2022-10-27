@@ -28,7 +28,6 @@ namespace SIMULTAN.Data.Components
     /// </summary>
     public class SimAccessProfile : INotifyPropertyChanged, IEnumerable<SimAccessProfileEntry>
     {
-
         #region PROPERTIES
 
         private Dictionary<SimUserRole, SimAccessProfileEntry> profile;
@@ -70,10 +69,17 @@ namespace SIMULTAN.Data.Components
                 {
                     profileState = value;
                     this.NotifyPropertyChanged(nameof(ProfileState));
+                    this.Component?.NotifyAccessChanged();
                 }
             }
         }
         private SimComponentValidity profileState;
+
+        /// <summary>
+        /// Stores the <see cref="SimComponent"/> to which this instance belongs. Automatically set by the component when assigning
+        /// the profile
+        /// </summary>
+        public SimComponent Component { get; internal set; }
 
         #endregion
 
@@ -94,6 +100,7 @@ namespace SIMULTAN.Data.Components
         private void NotifyAccessChanged()
         {
             this.AccessChanged?.Invoke(this, EventArgs.Empty);
+            Component?.NotifyAccessChanged();
         }
 
         /// <summary>

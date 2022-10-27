@@ -50,12 +50,12 @@ namespace SIMULTAN.Tests.Instances
             var building = spProject.Buildings.First(x => x.GeometryModelRes.ResourceFile.Name == "test1.simgeo");
             var comp = projectData.Components.First(x => x.Name == "Building2");
 
-            Assert.IsFalse(comp.Parameters.Any(x => x.Name == ReservedParameters.RP_LABEL_SOURCE));
+            Assert.IsFalse(comp.Parameters.Any(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_LABEL_SOURCE)));
 
             projectData.ComponentGeometryExchange.Associate(comp, building);
 
-            Assert.IsTrue(comp.Parameters.Any(x => x.Name == ReservedParameters.RP_PARAM_TO_GEOMETRY));
-            var p = comp.Parameters.First(x => x.Name == ReservedParameters.RP_PARAM_TO_GEOMETRY);
+            Assert.IsTrue(comp.Parameters.Any(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_PARAM_TO_GEOMETRY)));
+            var p = comp.Parameters.First(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_PARAM_TO_GEOMETRY));
             Assert.AreEqual(SimParameterInstancePropagation.PropagateIfInstance, p.InstancePropagationMode);
             Assert.AreEqual(1.0, p.ValueCurrent);
         }
@@ -215,7 +215,7 @@ namespace SIMULTAN.Tests.Instances
             projectData.ComponentGeometryExchange.BuildingComponentParamaterChanged += (s, e) => eventData.Add(e);
 
             var comp = projectData.Components.First(x => x.Name == "Building");
-            var param = comp.Parameters.First(x => x.Name == ReservedParameters.RP_PARAM_TO_GEOMETRY);
+            var param = comp.Parameters.First(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_PARAM_TO_GEOMETRY));
 
             Assert.AreEqual(0, eventData.Count);
 

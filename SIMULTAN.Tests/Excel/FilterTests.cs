@@ -251,9 +251,9 @@ namespace SIMULTAN.Tests.Excel
             var param = new SimParameter("Test", "m", 42);
             comp.Parameters.Add(param);
 
-            Assert.IsTrue(ExcelMappingNode.InstancePassesFilter(param, new List<(string, object)> { ("Name", "Test") }, null));
-            Assert.IsTrue(ExcelMappingNode.InstancePassesFilter(param, new List<(string, object)> { ("Name", "") }, null));
-            Assert.IsFalse(ExcelMappingNode.InstancePassesFilter(param, new List<(string, object)> { ("Name", "Noname") }, null));
+            Assert.IsTrue(ExcelMappingNode.InstancePassesFilter(param, new List<(string, object)> { ("TaxonomyEntry", "Test") }, null));
+            Assert.IsTrue(ExcelMappingNode.InstancePassesFilter(param, new List<(string, object)> { ("TaxonomyEntry", "") }, null));
+            Assert.IsFalse(ExcelMappingNode.InstancePassesFilter(param, new List<(string, object)> { ("TaxonomyEntry", "Noname") }, null));
         }
 
         [TestMethod]

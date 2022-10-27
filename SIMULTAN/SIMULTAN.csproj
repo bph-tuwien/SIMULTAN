@@ -132,6 +132,7 @@
     <Compile Include="Data\Geometry\GeoReferencing\UTMCoord.cs" />
     <Compile Include="Data\Geometry\ImporterWarningMessage.cs" />
     <Compile Include="Data\Geometry\SimGeometryModelCollection.cs" />
+    <Compile Include="Data\Geometry\UndoRedo\RemoveLayerUndoItem.cs" />
     <Compile Include="Data\Geometry\UndoRedo\AddPlacementUndoItem.cs" />
     <Compile Include="Data\Geometry\UndoRedo\RemovePlacementUndoItem.cs" />
     <Compile Include="Data\SimNetworks\BaseSimNetworkElement.cs" />
@@ -144,8 +145,29 @@
     <Compile Include="Data\SimNetworks\SimNetworkCollection.cs" />
     <Compile Include="Data\SimNetworks\SimNetworkPort.cs" />
     <Compile Include="Data\SimNetworks\SimNetworkPortCollection.cs" />
+    <Compile Include="Data\SimObjects\SimNamedObject.cs" />
     <Compile Include="Data\SitePlanner\SitePlannerBuildingCollection.cs" />
+    <Compile Include="Data\Taxonomy\SimTaxonomy.cs" />
+    <Compile Include="Data\Taxonomy\SimTaxonomyCollection.cs" />
+    <Compile Include="Data\Taxonomy\SimTaxonomyEntry.cs" />
+    <Compile Include="Data\Taxonomy\SimChildTaxonomyEntryCollection.cs" />
+    <Compile Include="Data\Taxonomy\SimTaxonomyEntryCollection.cs" />
+    <Compile Include="Data\Taxonomy\SimTaxonomyEntryReference.cs" />
+    <Compile Include="Data\Taxonomy\SimTaxonomyEntryOrString.cs" />
+    <Compile Include="Data\SitePlanner\SitePlannerProjectsCollection.cs" />
     <Compile Include="Data\Users\IAuthenticationService.cs" />
+    <Compile Include="Data\ValueMappings\ColorMaps\SimColorMarker.cs" />
+    <Compile Include="Data\ValueMappings\ColorMaps\SimColorMarkerCollection.cs" />
+    <Compile Include="Data\ValueMappings\ColorMaps\SimLinearGradientColorMap.cs" />
+    <Compile Include="Data\ValueMappings\ColorMaps\SimThresholdColorMap.cs" />
+    <Compile Include="Data\ValueMappings\Prefilters\SimDefaultPrefilter.cs" />
+    <Compile Include="Data\ValueMappings\Prefilters\SimAveragePrefilter.cs" />
+    <Compile Include="Data\ValueMappings\Prefilters\SimMaximumPrefilter.cs" />
+    <Compile Include="Data\ValueMappings\Prefilters\SimMinimumPrefilter.cs" />
+    <Compile Include="Data\ValueMappings\SimPrefilter.cs" />
+    <Compile Include="Data\ValueMappings\SimColorMap.cs" />
+    <Compile Include="Data\ValueMappings\SimValueMapping.cs" />
+    <Compile Include="Data\ValueMappings\SimValueMappingCollection.cs" />
     <Compile Include="Exceptions\ExceptionToFileWriter.cs" />
     <Compile Include="Exceptions\FileInUseException.cs" />
     <Compile Include="Exceptions\InvalidGeoReferencingException.cs" />
@@ -188,6 +210,7 @@
     <Compile Include="Projects\ManagedFiles\ManagedPublicComponentFile.cs" />
     <Compile Include="Projects\ManagedFiles\ManagedPublicValueFile.cs" />
     <Compile Include="Projects\ManagedFiles\ManagedSitePlannerFile.cs" />
+    <Compile Include="Projects\ManagedFiles\ManagedTaxonomyFile.cs" />
     <Compile Include="Projects\ManagedFiles\ManagedUserFile.cs" />
     <Compile Include="Projects\ManagedFiles\ManagedValueFile.cs" />
     <Compile Include="Serializer\CODXF\ComponentDxfIO.cs" />
@@ -196,6 +219,7 @@
     <Compile Include="Serializer\CODXF\ComponentDxfIOResources.cs" />
     <Compile Include="Serializer\CODXF\ComponentDxfIOSimNetworks.cs" />
     <Compile Include="Serializer\CODXF\ComponentDxfIOUserLists.cs" />
+    <Compile Include="Serializer\CODXF\ComponentDxfIOValueMappings.cs" />
     <Compile Include="Serializer\CODXF\ComponentV11EntityParserElement.cs" />
     <Compile Include="Serializer\CSV\BigTableToCSVExporter.cs" />
     <Compile Include="Serializer\CSV\CSVExporter.cs" />
@@ -338,15 +362,7 @@
     <Compile Include="Data\SimObjects\SimIdGenerator.cs" />
     <Compile Include="Data\SimObjects\SimObjectNew.cs" />
     <Compile Include="Data\SitePlanner\GeoMap.cs" />
-    <Compile Include="Data\SitePlanner\ValueMapping\Maps\ColorMapMarker.cs" />
-    <Compile Include="Data\SitePlanner\ValueMapping\IValuePreFilter.cs" />
-    <Compile Include="Data\SitePlanner\ValueMapping\Maps\BaseColorMap.cs" />
-    <Compile Include="Data\SitePlanner\ValueMapping\Maps\MarkerColorMapParameters.cs" />
-    <Compile Include="Data\SitePlanner\ValueMapping\Maps\MultiLinearGradientColorMap.cs" />
-    <Compile Include="Data\SitePlanner\ValueMapping\Prefilters\BasePrefilter.cs" />
-    <Compile Include="Data\SitePlanner\ValueMapping\Prefilters\EmptyPrefilterParameters.cs" />
-    <Compile Include="Data\SitePlanner\ValueMapping\Prefilters\IValueTimelinePrefilter.cs" />
-    <Compile Include="Data\SitePlanner\ValueMapping\IValueToColorMap.cs" />
+    <Compile Include="Data\ValueMappings\DefaultColorMappingColors.cs" />
     <Compile Include="Data\SitePlanner\SitePlannerBuilding.cs" />
     <Compile Include="Data\SitePlanner\SitePlannerManager.cs" />
     <Compile Include="Data\SitePlanner\ImageGeoReference.cs" />
@@ -360,15 +376,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Data\SitePlanner\SitePlannerMap.cs" />
     <Compile Include="Data\SitePlanner\SitePlannerProject.cs" />
-    <Compile Include="Data\SitePlanner\ValueMapping\Maps\MultiThresholdColorMap.cs" />
-    <Compile Include="Data\SitePlanner\ValueMapping\Prefilters\AggregationPrefilter.cs" />
-    <Compile Include="Data\SitePlanner\ValueMapping\Prefilters\TimelinePrefilter.cs" />
-    <Compile Include="Data\SitePlanner\ValueMapping\Prefilters\TimelinePrefilterParameters.cs" />
-    <Compile Include="Data\SitePlanner\ValueMapping\ValueMap.cs" />
-    <Compile Include="Data\SitePlanner\ValueMapping\ValueMappingAssociation.cs" />
-    <Compile Include="Data\SitePlanner\ValueMapping\ValueMappingParameters.cs" />
-    <Compile Include="Data\SitePlanner\ValueMapping\ValuePrefilterParameters.cs" />
-    <Compile Include="Data\SitePlanner\ValueMapping\ValueToColorMapParameters.cs" />
+    <Compile Include="Data\ValueMappings\SimComponentIndexUsage.cs" />
     <Compile Include="Serializer\DXF\DXFEntityParserElement.cs" />
     <Compile Include="Serializer\DXF\DXFEntryParserElement.cs" />
     <Compile Include="Serializer\DXF\DXFParserInfo.cs" />
@@ -413,6 +421,7 @@
     <Compile Include="Data\MultiValues\SimMultiValuePointers.cs" />
     <Compile Include="Data\MultiValues\SimMultiValueField3D.cs" />
     <Compile Include="Data\MultiValues\SimAggregationFunction.cs" />
+    <Compile Include="Serializer\TXDXF\SimTaxonomyDxfIO.cs" />
     <Compile Include="Serializer\XMLExtensions.cs" />
     <Compile Include="Utils\AdmissibilityQueries.cs" />
     <Compile Include="Utils\BackgroundWork\BackgroundAlgorithmInfo.cs" />
@@ -421,8 +430,10 @@
     <Compile Include="Utils\Collections\ElectivelyObservableCollection.cs" />
     <Compile Include="Utils\Collections\IReadOnlyObservableCollection.cs" />
     <Compile Include="Utils\Collections\IReadonlyObservableDictionary.cs" />
+    <Compile Include="Utils\Collections\MultiDictionaryOptimized.cs" />
     <Compile Include="Utils\Collections\MultiDictionary.cs" />
     <Compile Include="Utils\Collections\ObservableDictionary.cs" />
+    <Compile Include="Utils\Collections\PriorityQueue.cs" />
     <Compile Include="Utils\CommonExtensions.cs" />
     <Compile Include="Utils\DefaultNameProvider.cs" />
     <Compile Include="Utils\ElevationProvider\BulkElevationProviderAttribute.cs" />
@@ -451,6 +462,7 @@
     <Compile Include="Utils\UndoRedo\PropertyUndoItem.cs" />
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="Data\Taxonomy\Default\default_taxonomies.txdxf" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>

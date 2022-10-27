@@ -638,8 +638,8 @@ namespace SIMULTAN.Data.FlowNetworks
                 var ps = ComponentWalker.GetFlatParameters(c);
                 foreach (var p in ps)
                 {
-                    if (!names.Contains(p.Name))
-                        names.Add(p.Name);
+                    if (!names.Contains(p.TaxonomyEntry.Name))
+                        names.Add(p.TaxonomyEntry.Name);
                 }
             }
             return names.ToList();
@@ -719,33 +719,6 @@ namespace SIMULTAN.Data.FlowNetworks
             else if (this.ContainedFlowNetworks.ContainsKey(id))
             {
                 return this.ContainedFlowNetworks[id].GetFirstParamBySuffix(_suffix, _in_flow_dir);
-            }
-
-            return null;
-        }
-
-        [Obsolete]
-        public override SimComponentInstance GetUpdatedInstance(bool _in_flow_dir)
-        {
-            long id = -1;
-            if (_in_flow_dir)
-            {
-                if (this.node_end_id < 0) return null;
-                id = this.node_end_id;
-            }
-            else
-            {
-                if (this.node_start_id < 0) return null;
-                id = this.node_start_id;
-            }
-
-            if (this.contained_nodes.ContainsKey(id))
-            {
-                return this.contained_nodes[id].GetUpdatedInstance(_in_flow_dir);
-            }
-            else if (this.ContainedFlowNetworks.ContainsKey(id))
-            {
-                return this.ContainedFlowNetworks[id].GetUpdatedInstance(_in_flow_dir);
             }
 
             return null;
@@ -1559,11 +1532,11 @@ namespace SIMULTAN.Data.FlowNetworks
             sb.AppendLine("N " + _current_node.Name);
 
             // extract the relevant component instances
-            SimComponentInstance instance_in_node = _current_node.GetUpdatedInstance(_in_flow_dir);
+            SimComponentInstance instance_in_node = _current_node.Content;
 
             List<SimComponentInstance> instances_in_edges_prev = new List<SimComponentInstance>();
             if (edges_prev != null)
-                instances_in_edges_prev = edges_prev.Select(x => x.GetUpdatedInstance(_in_flow_dir)).ToList();
+                instances_in_edges_prev = edges_prev.Select(x => x.Content).ToList();
 
             // document state BEFORE calculation step
             var values_in_node_BEFORE = instance_in_node.InstanceParameterValuesTemporary.ToList();
@@ -1608,7 +1581,7 @@ namespace SIMULTAN.Data.FlowNetworks
                             continue;
                     }
 
-                    string line = "'" + beforeItem.Key.Name + "':";
+                    string line = "'" + beforeItem.Key.TaxonomyEntry.Name + "':";
                     line = line.PadRight(20, ' ') + "\t";
                     line += beforeItem.Value.ToString("F4") + " -> ";
                     line += afterItem.ToString("F4");

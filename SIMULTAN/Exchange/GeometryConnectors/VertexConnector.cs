@@ -17,7 +17,7 @@ namespace SIMULTAN.Exchange.GeometryConnectors
         {
             using (AccessCheckingDisabler.Disable(Placement.Instance.Factory))
             {
-                ExchangeHelpers.CreateParameterIfNotExists(placement.Instance.Component, ReservedParameters.RP_COUNT,
+                ExchangeHelpers.CreateParameterIfNotExists(placement.Instance.Component, ReservedParameterKeys.RP_COUNT, ReservedParameters.RP_COUNT,
                     SimParameterInstancePropagation.PropagateNever, 0.0);
             }
 
@@ -28,7 +28,7 @@ namespace SIMULTAN.Exchange.GeometryConnectors
         {
             using (AccessCheckingDisabler.Disable(Placement.Instance.Component.Factory))
             {
-                var countParam = Placement.Instance.Component.Parameters.FirstOrDefault(x => x.Name == ReservedParameters.RP_COUNT);
+                var countParam = Placement.Instance.Component.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_COUNT));
                 if (countParam != null)
                 {
                     Placement.Instance.InstanceParameterValuesPersistent[countParam] = placementDeleted ? 0.0 : 1.0;

@@ -445,5 +445,35 @@ namespace SIMULTAN.Utils
 
             return transposed;
         }
+
+
+        /// <summary>
+        /// Tries to get an item with a specific index from an IEnumerable
+        /// </summary>
+        /// <typeparam name="T">Type of the items</typeparam>
+        /// <param name="list">The collection</param>
+        /// <param name="index">The index to look for</param>
+        /// <param name="result">Contains the element at this index (or the default value when no such item exists)</param>
+        /// <returns>True when the collection contains an item with the given index, otherwise False</returns>
+        public static bool TryGetElementAt<T>(this IEnumerable<T> list, int index, out T result)
+        {
+            if (index < 0)
+                throw new ArgumentOutOfRangeException(nameof(index));
+
+            int idx = 0;
+            foreach (var item in list)
+            {
+                if (idx == index)
+                {
+                    result = item;
+                    return true;
+                }
+
+                idx++;
+            }
+
+            result = default(T);
+            return false;
+        }
     }
 }

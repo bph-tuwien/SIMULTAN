@@ -446,7 +446,7 @@ namespace SIMULTAN.Tests.Calculations
             var archCalc = archComp.Calculations.First(x => x.Name == "Calc1");
             var bphComp = projectData.Components.First(x => x.Name == "BPHComp");
             var bphCalc = bphComp.Calculations.First(x => x.Name == "Calc2");
-            var param2 = bphComp.Parameters.First(x => x.Name == "Parameter2");
+            var param2 = bphComp.Parameters.First(x => x.TaxonomyEntry.Name == "Parameter2");
 
             //Working
             bphCalc.InputParams["b"] = param2;
@@ -668,7 +668,7 @@ namespace SIMULTAN.Tests.Calculations
             var archCalc = archComp.Calculations.First(x => x.Name == "Calc1");
             var bphComp = projectData.Components.First(x => x.Name == "BPHComp");
             var bphCalc = bphComp.Calculations.First(x => x.Name == "Calc2");
-            var param2 = bphComp.Parameters.First(x => x.Name == "Parameter2");
+            var param2 = bphComp.Parameters.First(x => x.TaxonomyEntry.Name == "Parameter2");
 
             //Working
             bphCalc.ReturnParams.Add("out2", null);
@@ -686,7 +686,7 @@ namespace SIMULTAN.Tests.Calculations
             var archCalc = archComp.Calculations.First(x => x.Name == "Calc1");
             var bphComp = projectData.Components.First(x => x.Name == "BPHComp");
             var bphCalc = bphComp.Calculations.First(x => x.Name == "Calc2");
-            var param2 = bphComp.Parameters.First(x => x.Name == "Parameter2");
+            var param2 = bphComp.Parameters.First(x => x.TaxonomyEntry.Name == "Parameter2");
 
             var outparam = new SimParameter("outputtest", "", 15.0);
 
@@ -706,7 +706,7 @@ namespace SIMULTAN.Tests.Calculations
             var archCalc = archComp.Calculations.First(x => x.Name == "Calc1");
             var bphComp = projectData.Components.First(x => x.Name == "BPHComp");
             var bphCalc = bphComp.Calculations.First(x => x.Name == "Calc2");
-            var param2 = bphComp.Parameters.First(x => x.Name == "Parameter2");
+            var param2 = bphComp.Parameters.First(x => x.TaxonomyEntry.Name == "Parameter2");
 
             var outparam = new SimParameter("outputtest", "", 15.0);
 

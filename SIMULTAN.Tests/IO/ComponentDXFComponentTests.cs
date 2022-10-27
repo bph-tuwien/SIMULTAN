@@ -185,7 +185,7 @@ namespace SIMULTAN.Tests.IO
             Assert.AreEqual(null, refs[3].Target);
 
             //Parameter
-            Assert.AreEqual(20011, child1.Component.Parameters.First(x => x.Name == "A1").Id.LocalId);
+            Assert.AreEqual(20011, child1.Component.Parameters.First(x => x.TaxonomyEntry.Name == "A1").Id.LocalId);
 
             //Calculations
             Assert.AreEqual(0, root.Calculations.Count);
@@ -196,9 +196,9 @@ namespace SIMULTAN.Tests.IO
             Assert.AreEqual(30001, calc.Id.LocalId);
             Assert.AreEqual("x*x", calc.Expression);
             Assert.AreEqual(1, calc.InputParams.Count);
-            Assert.AreEqual(child2.Component.Parameters.First(x => x.Name == "A"), calc.InputParams["x"]);
+            Assert.AreEqual(child2.Component.Parameters.First(x => x.TaxonomyEntry.Name == "A"), calc.InputParams["x"]);
             Assert.AreEqual(1, calc.ReturnParams.Count);
-            Assert.AreEqual(child2.Component.Parameters.First(x => x.Name == "B"), calc.ReturnParams["ret"]);
+            Assert.AreEqual(child2.Component.Parameters.First(x => x.TaxonomyEntry.Name == "B"), calc.ReturnParams["ret"]);
 
             //Instances
             Assert.AreEqual(SimInstanceType.NetworkEdge, root.InstanceType);
@@ -384,7 +384,7 @@ namespace SIMULTAN.Tests.IO
             Assert.AreEqual(null, refs[3].Target);
 
             //Parameter
-            Assert.AreEqual(20011, child1.Component.Parameters.First(x => x.Name == "A1").Id.LocalId);
+            Assert.AreEqual(20011, child1.Component.Parameters.First(x => x.TaxonomyEntry.Name == "A1").Id.LocalId);
 
             //Calculations
             Assert.AreEqual(0, root.Calculations.Count);
@@ -395,9 +395,9 @@ namespace SIMULTAN.Tests.IO
             Assert.AreEqual(30001, calc.Id.LocalId);
             Assert.AreEqual("x*x", calc.Expression);
             Assert.AreEqual(1, calc.InputParams.Count);
-            Assert.AreEqual(child2.Component.Parameters.First(x => x.Name == "A"), calc.InputParams["x"]);
+            Assert.AreEqual(child2.Component.Parameters.First(x => x.TaxonomyEntry.Name == "A"), calc.InputParams["x"]);
             Assert.AreEqual(1, calc.ReturnParams.Count);
-            Assert.AreEqual(child2.Component.Parameters.First(x => x.Name == "B"), calc.ReturnParams["ret"]);
+            Assert.AreEqual(child2.Component.Parameters.First(x => x.TaxonomyEntry.Name == "B"), calc.ReturnParams["ret"]);
 
             //Instances
             Assert.AreEqual(SimInstanceType.NetworkEdge, root.InstanceType);
@@ -532,7 +532,7 @@ namespace SIMULTAN.Tests.IO
             Assert.AreEqual(null, refs[3].Target);
 
             //Parameter
-            Assert.AreEqual(20011, child1.Component.Parameters.First(x => x.Name == "A1").Id.LocalId);
+            Assert.AreEqual(20011, child1.Component.Parameters.First(x => x.TaxonomyEntry.Name == "A1").Id.LocalId);
 
             //Calculations
             Assert.AreEqual(0, root.Calculations.Count);
@@ -543,9 +543,9 @@ namespace SIMULTAN.Tests.IO
             Assert.AreEqual(30001, calc.Id.LocalId);
             Assert.AreEqual("x*x", calc.Expression);
             Assert.AreEqual(1, calc.InputParams.Count);
-            Assert.AreEqual(child2.Component.Parameters.First(x => x.Name == "A"), calc.InputParams["x"]);
+            Assert.AreEqual(child2.Component.Parameters.First(x => x.TaxonomyEntry.Name == "A"), calc.InputParams["x"]);
             Assert.AreEqual(1, calc.ReturnParams.Count);
-            Assert.AreEqual(child2.Component.Parameters.First(x => x.Name == "B"), calc.ReturnParams["ret"]);
+            Assert.AreEqual(child2.Component.Parameters.First(x => x.TaxonomyEntry.Name == "B"), calc.ReturnParams["ret"]);
 
             //Instances
             Assert.AreEqual(SimInstanceType.NetworkEdge, root.InstanceType);
@@ -679,7 +679,7 @@ namespace SIMULTAN.Tests.IO
             Assert.AreEqual(null, refs[2].Target);
 
             //Parameter
-            Assert.AreEqual(20011, child1.Component.Parameters.First(x => x.Name == "A1").Id.LocalId);
+            Assert.AreEqual(20011, child1.Component.Parameters.First(x => x.TaxonomyEntry.Name == "A1").Id.LocalId);
 
             //Calculations
             Assert.AreEqual(0, root.Calculations.Count);
@@ -690,9 +690,9 @@ namespace SIMULTAN.Tests.IO
             Assert.AreEqual(30001, calc.Id.LocalId);
             Assert.AreEqual("x*x", calc.Expression);
             Assert.AreEqual(1, calc.InputParams.Count);
-            Assert.AreEqual(child2.Component.Parameters.First(x => x.Name == "A"), calc.InputParams["x"]);
+            Assert.AreEqual(child2.Component.Parameters.First(x => x.TaxonomyEntry.Name == "A"), calc.InputParams["x"]);
             Assert.AreEqual(1, calc.ReturnParams.Count);
-            Assert.AreEqual(child2.Component.Parameters.First(x => x.Name == "B"), calc.ReturnParams["ret"]);
+            Assert.AreEqual(child2.Component.Parameters.First(x => x.TaxonomyEntry.Name == "B"), calc.ReturnParams["ret"]);
 
             //Instances
             Assert.AreEqual(SimInstanceType.NetworkEdge, root.InstanceType);
@@ -826,7 +826,7 @@ namespace SIMULTAN.Tests.IO
             Assert.AreEqual(null, refs[2].Target);
 
             //Parameter
-            Assert.AreEqual(20011, child1.Component.Parameters.First(x => x.Name == "A1").Id.LocalId);
+            Assert.AreEqual(20011, child1.Component.Parameters.First(x => x.TaxonomyEntry.Name == "A1").Id.LocalId);
 
             //Calculations
             Assert.AreEqual(0, root.Calculations.Count);
@@ -837,9 +837,9 @@ namespace SIMULTAN.Tests.IO
             Assert.AreEqual(30001, calc.Id.LocalId);
             Assert.AreEqual("x*x", calc.Expression);
             Assert.AreEqual(1, calc.InputParams.Count);
-            Assert.AreEqual(child2.Component.Parameters.First(x => x.Name == "A"), calc.InputParams["x"]);
+            Assert.AreEqual(child2.Component.Parameters.First(x => x.TaxonomyEntry.Name == "A"), calc.InputParams["x"]);
             Assert.AreEqual(1, calc.ReturnParams.Count);
-            Assert.AreEqual(child2.Component.Parameters.First(x => x.Name == "B"), calc.ReturnParams["ret"]);
+            Assert.AreEqual(child2.Component.Parameters.First(x => x.TaxonomyEntry.Name == "B"), calc.ReturnParams["ret"]);
 
             //Instances
             Assert.AreEqual(SimInstanceType.NetworkEdge, root.InstanceType);
@@ -973,7 +973,7 @@ namespace SIMULTAN.Tests.IO
             Assert.AreEqual(null, refs[2].Target);
 
             //Parameter
-            Assert.AreEqual(20011, child1.Component.Parameters.First(x => x.Name == "A1").Id.LocalId);
+            Assert.AreEqual(20011, child1.Component.Parameters.First(x => x.TaxonomyEntry.Name == "A1").Id.LocalId);
 
             //Calculations
             Assert.AreEqual(0, root.Calculations.Count);
@@ -984,9 +984,9 @@ namespace SIMULTAN.Tests.IO
             Assert.AreEqual(30001, calc.Id.LocalId);
             Assert.AreEqual("x*x", calc.Expression);
             Assert.AreEqual(1, calc.InputParams.Count);
-            Assert.AreEqual(child2.Component.Parameters.First(x => x.Name == "A"), calc.InputParams["x"]);
+            Assert.AreEqual(child2.Component.Parameters.First(x => x.TaxonomyEntry.Name == "A"), calc.InputParams["x"]);
             Assert.AreEqual(1, calc.ReturnParams.Count);
-            Assert.AreEqual(child2.Component.Parameters.First(x => x.Name == "B"), calc.ReturnParams["ret"]);
+            Assert.AreEqual(child2.Component.Parameters.First(x => x.TaxonomyEntry.Name == "B"), calc.ReturnParams["ret"]);
 
             //Instances
             Assert.AreEqual(SimInstanceType.NetworkEdge, root.InstanceType);
@@ -1119,7 +1119,7 @@ namespace SIMULTAN.Tests.IO
             Assert.AreEqual(null, refs[2].Target);
 
             //Parameter
-            Assert.AreEqual(1076741825, child1.Component.Parameters.First(x => x.Name == "A1").Id.LocalId);
+            Assert.AreEqual(1076741825, child1.Component.Parameters.First(x => x.TaxonomyEntry.Name == "A1").Id.LocalId);
 
             //Calculations
             Assert.AreEqual(0, root.Calculations.Count);
@@ -1130,9 +1130,9 @@ namespace SIMULTAN.Tests.IO
             Assert.AreEqual(1075741824, calc.Id.LocalId);
             Assert.AreEqual("x*x", calc.Expression);
             Assert.AreEqual(1, calc.InputParams.Count);
-            Assert.AreEqual(child2.Component.Parameters.First(x => x.Name == "A"), calc.InputParams["x"]);
+            Assert.AreEqual(child2.Component.Parameters.First(x => x.TaxonomyEntry.Name == "A"), calc.InputParams["x"]);
             Assert.AreEqual(1, calc.ReturnParams.Count);
-            Assert.AreEqual(child2.Component.Parameters.First(x => x.Name == "B"), calc.ReturnParams["ret"]);
+            Assert.AreEqual(child2.Component.Parameters.First(x => x.TaxonomyEntry.Name == "B"), calc.ReturnParams["ret"]);
 
             //Instances
             Assert.AreEqual(SimInstanceType.NetworkEdge, root.InstanceType);
@@ -1224,6 +1224,7 @@ namespace SIMULTAN.Tests.IO
                 ComponentDxfIOComponents.ReadComponentSection(reader, info);
             }
 
+
             projectData.Components.RestoreReferences(new Dictionary<SimObjectId, SimFlowNetworkElement>
             {
                 { node.ID, node }
@@ -1265,7 +1266,7 @@ namespace SIMULTAN.Tests.IO
             Assert.AreEqual(null, refs[2].Target);
 
             //Parameter
-            Assert.AreEqual(1076741825, child1.Component.Parameters.First(x => x.Name == "A1").Id.LocalId);
+            Assert.AreEqual(1076741825, child1.Component.Parameters.First(x => x.TaxonomyEntry.Name == "A1").Id.LocalId);
 
             //Calculations
             Assert.AreEqual(0, root.Calculations.Count);
@@ -1276,9 +1277,9 @@ namespace SIMULTAN.Tests.IO
             Assert.AreEqual(1075741824, calc.Id.LocalId);
             Assert.AreEqual("x*x", calc.Expression);
             Assert.AreEqual(1, calc.InputParams.Count);
-            Assert.AreEqual(child2.Component.Parameters.First(x => x.Name == "A"), calc.InputParams["x"]);
+            Assert.AreEqual(child2.Component.Parameters.First(x => x.TaxonomyEntry.Name == "A"), calc.InputParams["x"]);
             Assert.AreEqual(1, calc.ReturnParams.Count);
-            Assert.AreEqual(child2.Component.Parameters.First(x => x.Name == "B"), calc.ReturnParams["ret"]);
+            Assert.AreEqual(child2.Component.Parameters.First(x => x.TaxonomyEntry.Name == "B"), calc.ReturnParams["ret"]);
 
             //Instances
             Assert.AreEqual(SimInstanceType.NetworkEdge, root.InstanceType);
@@ -1368,6 +1369,7 @@ namespace SIMULTAN.Tests.IO
                 ComponentDxfIOComponents.ReadComponentSection(reader, new DXFParserInfo(guid, projectData));
             }
 
+
             projectData.Components.RestoreReferences(new Dictionary<SimObjectId, SimFlowNetworkElement>
             {
                 { node.ID, node }
@@ -1409,7 +1411,7 @@ namespace SIMULTAN.Tests.IO
             Assert.AreEqual(null, refs[2].Target);
 
             //Parameter
-            Assert.AreEqual(1076741825, child1.Component.Parameters.First(x => x.Name == "A1").Id.LocalId);
+            Assert.AreEqual(1076741825, child1.Component.Parameters.First(x => x.TaxonomyEntry.Name == "A1").Id.LocalId);
 
             //Calculations
             Assert.AreEqual(0, root.Calculations.Count);
@@ -1420,9 +1422,9 @@ namespace SIMULTAN.Tests.IO
             Assert.AreEqual(1075741824, calc.Id.LocalId);
             Assert.AreEqual("x*x", calc.Expression);
             Assert.AreEqual(1, calc.InputParams.Count);
-            Assert.AreEqual(child2.Component.Parameters.First(x => x.Name == "A"), calc.InputParams["x"]);
+            Assert.AreEqual(child2.Component.Parameters.First(x => x.TaxonomyEntry.Name == "A"), calc.InputParams["x"]);
             Assert.AreEqual(1, calc.ReturnParams.Count);
-            Assert.AreEqual(child2.Component.Parameters.First(x => x.Name == "B"), calc.ReturnParams["ret"]);
+            Assert.AreEqual(child2.Component.Parameters.First(x => x.TaxonomyEntry.Name == "B"), calc.ReturnParams["ret"]);
 
             //Instances
             Assert.AreEqual(SimInstanceType.NetworkEdge, root.InstanceType);

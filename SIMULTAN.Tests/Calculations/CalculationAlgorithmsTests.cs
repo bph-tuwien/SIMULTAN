@@ -129,10 +129,10 @@ namespace SIMULTAN.Tests.Calculations
             Assert.AreEqual(comp2, calc.Component);
 
             //Check parameters
-            Assert.AreEqual(comp2.Parameters.First(x => x.Name == "param1"), calc.InputParams["a"]);
-            Assert.AreEqual(comp2child.Parameters.First(x => x.Name == "param2"), calc.InputParams["b"]);
+            Assert.AreEqual(comp2.Parameters.First(x => x.TaxonomyEntry.Name == "param1"), calc.InputParams["a"]);
+            Assert.AreEqual(comp2child.Parameters.First(x => x.TaxonomyEntry.Name == "param2"), calc.InputParams["b"]);
             Assert.AreEqual(null, calc.InputParams["c"]);
-            Assert.AreEqual(comp2.Parameters.First(x => x.Name == "out"), calc.ReturnParams["out1"]);
+            Assert.AreEqual(comp2.Parameters.First(x => x.TaxonomyEntry.Name == "out"), calc.ReturnParams["out1"]);
             Assert.AreEqual(null, calc.ReturnParams["out2"]);
         }
 
@@ -159,10 +159,10 @@ namespace SIMULTAN.Tests.Calculations
             Assert.AreEqual(comp2, copy.Component);
 
             //Check parameters
-            Assert.AreEqual(comp2.Parameters.First(x => x.Name == "param1"), copy.InputParams["a"]);
-            Assert.AreEqual(comp2child.Parameters.First(x => x.Name == "param2"), copy.InputParams["b"]);
+            Assert.AreEqual(comp2.Parameters.First(x => x.TaxonomyEntry.Name == "param1"), copy.InputParams["a"]);
+            Assert.AreEqual(comp2child.Parameters.First(x => x.TaxonomyEntry.Name == "param2"), copy.InputParams["b"]);
             Assert.AreEqual(null, copy.InputParams["c"]);
-            Assert.AreEqual(comp2.Parameters.First(x => x.Name == "out"), copy.ReturnParams["out1"]);
+            Assert.AreEqual(comp2.Parameters.First(x => x.TaxonomyEntry.Name == "out"), copy.ReturnParams["out1"]);
             Assert.AreEqual(null, copy.ReturnParams["out2"]);
         }
     }

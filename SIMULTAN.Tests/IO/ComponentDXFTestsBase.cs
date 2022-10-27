@@ -4,7 +4,9 @@ using SIMULTAN.Data.Assets;
 using SIMULTAN.Data.Components;
 using SIMULTAN.Data.FlowNetworks;
 using SIMULTAN.Data.SimNetworks;
+using SIMULTAN.Data.SitePlanner;
 using SIMULTAN.Data.Users;
+using SIMULTAN.Data.ValueMappings;
 using SIMULTAN.Excel;
 using SIMULTAN.Projects;
 using System;
@@ -365,40 +367,38 @@ namespace SIMULTAN.Tests.IO
             data.Components.EndLoading();
         }
 
-        public ExtendedProjectData CreateTestData()
+        public void CreateValueMappingTestData(ProjectData data, Guid guid)
         {
-            var guid = Guid.NewGuid();
-            var otherGuid = Guid.Parse("da7d8f7c-8eec-423b-b127-9d6e17f52522");
+            var table = MultiValueDxfTests.CreateBigTable();
+            table.Id = new SimId(guid, 2151483658);
+            data.ValueManager.StartLoading();
+            data.ValueManager.Add(table);
+            data.ValueManager.EndLoading();
 
-            ExtendedProjectData projectData = new ExtendedProjectData();
-            projectData.SetCallingLocation(new DummyReferenceLocation(guid));
-            projectData.AssetManager.WorkingDirectory = workingDirectory.FullName;
-
-            CreateNetworkTestData(projectData);
-            CreateComponentTestData(projectData, guid, otherGuid);
-            CreateResourceTestData(projectData);
-            CreateUserListsTestData(projectData);
-            CreateSimNetworkTestData(projectData, guid);
-
-            return projectData;
-        }
-
-        public ExtendedProjectData CreateTestData(out Guid guid)
-        {
-            guid = Guid.NewGuid();
-            var otherGuid = Guid.Parse("da7d8f7c-8eec-423b-b127-9d6e17f52522");
-
-            ExtendedProjectData projectData = new ExtendedProjectData();
-            projectData.SetCallingLocation(new DummyReferenceLocation(guid));
-            projectData.AssetManager.WorkingDirectory = workingDirectory.FullName;
-
-            CreateNetworkTestData(projectData);
-            CreateComponentTestData(projectData, guid, otherGuid);
-            CreateResourceTestData(projectData);
-            CreateUserListsTestData(projectData);
-            CreateSimNetworkTestData(projectData, guid);
-
-            return projectData;
+            data.ValueMappings.StartLoading();
+            var valueMap1 = new SimValueMapping("my mapping 1", table, new SimMinimumPrefilter(), new SimLinearGradientColorMap(
+                new SimColorMarker[]
+                {
+                    new SimColorMarker(-1.0, Color.FromArgb(255, 255, 0, 0)),
+                    new SimColorMarker(5.0, Color.FromArgb(255, 0, 255, 0)),
+                    new SimColorMarker(99.0, Color.FromArgb(255, 0, 0, 255)),
+                }))
+            {
+                Id = new SimId(data.SitePlannerManager.CalledFromLocation.GlobalID, 665577),
+                ComponentIndexUsage = SimComponentIndexUsage.Column,
+            };
+            data.ValueMappings.Add(valueMap1);
+            var valueMap2 = new SimValueMapping("my mapping 2", table, new SimAveragePrefilter(), new SimThresholdColorMap(
+                new SimColorMarker[]
+                {
+                    new SimColorMarker(-1.0, Color.FromArgb(255, 255, 0, 0)),
+                    new SimColorMarker(5.0, Color.FromArgb(255, 0, 255, 0)),
+                }))
+            {
+                Id = new SimId(data.SitePlannerManager.CalledFromLocation.GlobalID, 665578),
+                ComponentIndexUsage = SimComponentIndexUsage.Row,
+            };
+            data.ValueMappings.Add(valueMap2);
         }
 
         public void CreateSimNetworkTestData(ExtendedProjectData projectData, Guid guid)
@@ -466,6 +466,45 @@ namespace SIMULTAN.Tests.IO
             network.ContainedElements.Add(childNetwork);
 
             projectData.SimNetworks.EndLoading();
+        }
+
+
+        public ExtendedProjectData CreateTestData()
+        {
+            var guid = Guid.NewGuid();
+            var otherGuid = Guid.Parse("da7d8f7c-8eec-423b-b127-9d6e17f52522");
+
+            ExtendedProjectData projectData = new ExtendedProjectData();
+            projectData.SetCallingLocation(new DummyReferenceLocation(guid));
+            projectData.AssetManager.WorkingDirectory = workingDirectory.FullName;
+
+            CreateNetworkTestData(projectData);
+            CreateComponentTestData(projectData, guid, otherGuid);
+            CreateResourceTestData(projectData);
+            CreateUserListsTestData(projectData);
+            CreateSimNetworkTestData(projectData, guid);
+            CreateValueMappingTestData(projectData, guid);
+
+            return projectData;
+        }
+
+        public ExtendedProjectData CreateTestData(out Guid guid)
+        {
+            guid = Guid.NewGuid();
+            var otherGuid = Guid.Parse("da7d8f7c-8eec-423b-b127-9d6e17f52522");
+
+            ExtendedProjectData projectData = new ExtendedProjectData();
+            projectData.SetCallingLocation(new DummyReferenceLocation(guid));
+            projectData.AssetManager.WorkingDirectory = workingDirectory.FullName;
+
+            CreateNetworkTestData(projectData);
+            CreateComponentTestData(projectData, guid, otherGuid);
+            CreateResourceTestData(projectData);
+            CreateUserListsTestData(projectData);
+            CreateSimNetworkTestData(projectData, guid);
+            CreateValueMappingTestData(projectData, guid);
+
+            return projectData;
         }
 
         #endregion

@@ -7,7 +7,7 @@ namespace SIMULTAN.Data.SimNetworks
     /// <summary>
     /// Class for representing a connector between two ports in a SimNetwork
     /// </summary>
-    public partial class SimNetworkConnector : SimObjectNew<ISimManagedCollection>
+    public partial class SimNetworkConnector : SimNamedObject<ISimManagedCollection>
     {
         private SimId loadingSourceId, loadingTargetId;
 

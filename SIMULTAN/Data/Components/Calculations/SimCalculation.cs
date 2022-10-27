@@ -169,7 +169,7 @@ namespace SIMULTAN.Data.Components
     /// Parameter randomization is done by applying a normal distribute random number to the actual value. The parameter can be controlled by the
     /// parameter meta data.
     /// </summary>
-    public partial class SimCalculation : SimObjectNew<SimComponentCollection>
+    public partial class SimCalculation : SimNamedObject<SimComponentCollection>
     {
         //~Calculation() { Console.WriteLine("~Calculation"); }
 
@@ -811,7 +811,7 @@ namespace SIMULTAN.Data.Components
             output += " [ ";
             foreach (var entry in this.ReturnParams)
             {
-                output += (entry.Value == null) ? entry.Key + " " : entry.Value.Name + " ";
+                output += (entry.Value == null) ? entry.Key + " " : entry.Value.TaxonomyEntry.Name + " ";
             }
             output += "]= ";
             output += " {" + this.Expression + "} ";
@@ -827,6 +827,24 @@ namespace SIMULTAN.Data.Components
             if (this.Component != null)
                 this.Component.RecordWriteAccess();
             base.NotifyWriteAccess();
+        }
+
+        /// <inheritdoc />
+        protected override void OnFactoryChanged(SimComponentCollection newFactory, SimComponentCollection oldFactory)
+        {
+            if (oldFactory != null)
+            {
+                this.InputParams.UnregisterReferences();
+                this.ReturnParams.UnregisterReferences();
+            }
+
+            base.OnFactoryChanged(newFactory, oldFactory);
+
+            if (newFactory != null)
+            {
+                this.InputParams.RegisterReferences();
+                this.ReturnParams.RegisterReferences();
+            }
         }
     }
 

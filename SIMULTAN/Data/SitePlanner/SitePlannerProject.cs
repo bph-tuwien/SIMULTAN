@@ -1,4 +1,5 @@
 ﻿using SIMULTAN.Data.Assets;
+using SIMULTAN.Data.ValueMappings;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -16,12 +17,71 @@ namespace SIMULTAN.Data.SitePlanner
     /// </summary>
     public class SitePlannerProject : INotifyPropertyChanged
     {
-        #region EVENTS: tracing
+        #region EVENTS
 
         /// <inheritdoc />
         public event PropertyChangedEventHandler PropertyChanged;
 
+        /// <summary>
+        /// Invokes the <see cref="PropertyChanged"/> event
+        /// </summary>
+        /// <param name="property">The name of the property</param>
+        protected void NotifyPropertyChanged(string property)
+        {
+            this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(property));
+        }
+
         #endregion
+
+
+        #region Value Mappings
+
+        /// <summary>
+        /// Stores a list of all ValueMappings that are available in this project
+        /// </summary>
+        public ObservableCollection<SimValueMapping> ValueMappings { get; }
+
+        /// <summary>
+        /// The currently active ValueMapping. Has to be one of the mappings stored in <see cref="ValueMappings"/>
+        /// </summary>
+        public SimValueMapping ActiveValueMapping
+        {
+            get { return activeValueMapping; }
+            set
+            {
+                if (activeValueMapping != value)
+                {
+                    activeValueMapping = value;
+                    NotifyPropertyChanged(nameof(ActiveValueMapping));
+                }
+            }
+        }
+        private SimValueMapping activeValueMapping = null;
+
+        /// <summary>
+        /// When set to True, the rendered color should be affected by the <see cref="ActiveValueMapping"/>. 
+        /// Otherwise, the color of the buildings may be used.
+        /// </summary>
+        public bool IsValueMappingEnabled
+        {
+            get { return isValueMappingEnabled; }
+            set
+            {
+                if (isValueMappingEnabled != value)
+                {
+                    isValueMappingEnabled = value;
+                    NotifyPropertyChanged(nameof(IsValueMappingEnabled));
+                }
+            }
+        }
+        private bool isValueMappingEnabled = false;
+
+        #endregion
+
+        /// <summary>
+        /// Stores the factory this project belongs to
+        /// </summary>
+        public SitePlannerManager Factory { get; set; }
 
         /// <summary>
         /// Path to the DXF file that contains this SitePlannerProject
@@ -39,23 +99,6 @@ namespace SIMULTAN.Data.SitePlanner
         public SitePlannerBuildingCollection Buildings { get; private set; }
 
         /// <summary>
-        /// Value Mapping
-        /// </summary>
-        public ValueMap ValueMap
-        {
-            get => valueMap;
-            set
-            {
-                if (valueMap != value)
-                {
-                    valueMap = value;
-                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ValueMap)));
-                }
-            }
-        }
-        private ValueMap valueMap = null;
-
-        /// <summary>
         /// Initializes a new instance of the SitePlannerProject class
         /// </summary>
         /// <param name="projectFile">ResourceFileEntry of SitePlanner file (spdxf)</param>
@@ -66,8 +109,9 @@ namespace SIMULTAN.Data.SitePlanner
             Buildings = new SitePlannerBuildingCollection(this);
             Maps = new ObservableCollection<SitePlannerMap>();
 
-            this.ValueMap = new ValueMap();
+            this.ValueMappings = new ObservableCollection<SimValueMapping>();
         }
+
 
         /// <summary>
         /// Returns whether a specified SimGeo file is contained in this project

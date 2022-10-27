@@ -175,6 +175,9 @@ namespace SIMULTAN.Projects.ManagedFiles
             this.ValueEntry = this.files.FirstOrDefault(x => x is ManagedValueFile) as ManagedValueFile;
             this.ValueEntries = this.files.Where(x => x is ManagedValueFile).Select(x => x as ManagedValueFile).ToList();
 
+            this.TaxonomyEntry = this.files.FirstOrDefault(x => x is ManagedTaxonomyFile) as ManagedTaxonomyFile;
+            this.TaxonomyEntries = this.files.Where(x => x is ManagedTaxonomyFile).Select(x => x as ManagedTaxonomyFile).ToList();
+
             this.GeometryEntry = this.files.FirstOrDefault(x => x is ManagedGeometryFile) as ManagedGeometryFile;
             this.GeometryEntries = this.files.Where(x => x is ManagedGeometryFile).Select(x => x as ManagedGeometryFile).ToList();
 
@@ -356,6 +359,10 @@ namespace SIMULTAN.Projects.ManagedFiles
             // 2. load the values that are used in parameters, both in the library and in components
             if (this.ValueEntry != null)
                 this.ValueEntry.Open(_clear_before_open);
+
+            if (this.TaxonomyEntry != null)
+                this.TaxonomyEntry.Open(_clear_before_open);
+
             // 3a. load the links for the external resources
             if (_data_manager.UsersManager.Users.Count == 0)
             {
@@ -515,6 +522,16 @@ namespace SIMULTAN.Projects.ManagedFiles
         public IEnumerable<ManagedValueFile> ValueEntries { get; private set; }
 
         /// <summary>
+        /// Returns the first Taxonomy file entry or null;
+        /// </summary>
+        public ManagedTaxonomyFile TaxonomyEntry { get; private set; }
+        /// <summary>
+        /// Returns all taxonomy file entries or an empty collection.
+        /// </summary>
+
+        public IEnumerable<ManagedTaxonomyFile> TaxonomyEntries { get; private set; }
+
+        /// <summary>
         /// Returns the first geometry file entry or Null.
         /// </summary>
         public ManagedGeometryFile GeometryEntry { get; private set; }
@@ -659,6 +676,11 @@ namespace SIMULTAN.Projects.ManagedFiles
             {
                 // SPDXF               
                 created = new ManagedSitePlannerFile(projectDataManager, _owner, _file);
+            }
+            else if (string.Equals(_file.Extension, ParamStructFileExtensions.FILE_EXT_TAXONOMY, StringComparison.InvariantCultureIgnoreCase))
+            {
+                // TXDXF               
+                created = new ManagedTaxonomyFile(projectDataManager, _owner, _file);
             }
             return created;
         }

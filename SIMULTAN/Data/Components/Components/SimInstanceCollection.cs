@@ -1,4 +1,5 @@
-﻿using SIMULTAN.Exceptions;
+﻿using SIMULTAN.Data.FlowNetworks;
+using SIMULTAN.Exceptions;
 using System;
 using System.Collections.ObjectModel;
 
@@ -40,12 +41,14 @@ namespace SIMULTAN.Data.Components
 
                 this.owner.OnInstanceStateChanged();
 
-                SimComponentInstance.AddAutoParameters(this.owner);
-                SimComponentInstance.UpdateAutoParameters(this.owner);
-
-                //Notify geometry
                 if (item.Factory != null)
+                {
+                    SimComponentInstance.AddAutoParameters(this.owner);
+                    SimComponentInstance.UpdateAutoParameters(this.owner);
+
+                    //Notify geometry
                     item.Factory.ProjectData.ComponentGeometryExchange.OnInstanceAdded(item);
+                }
             }
             /// <inheritdoc />
             protected override void RemoveItem(int index)
@@ -148,7 +151,7 @@ namespace SIMULTAN.Data.Components
                 item.Component = null;
             }
 
-            internal void NotifyFactoryChanged()
+            internal void NotifyFactoryChanged(SimComponentCollection newFactory, SimComponentCollection oldFactory)
             {
                 if (this.owner.Factory != null)
                 {

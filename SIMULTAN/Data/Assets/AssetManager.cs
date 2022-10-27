@@ -9,8 +9,10 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -369,6 +371,12 @@ namespace SIMULTAN.Data.Assets
             this.ResourceRenamed?.Invoke(this, oldName, newName);
         }
 
+        public event PropertyChangedEventHandler ResourcePropertyChanged;
+        internal void NotifyResourcePropertyChanged(ResourceEntry entry, [CallerMemberName] string propertyName = null)
+        {
+            ResourcePropertyChanged?.Invoke(entry, new PropertyChangedEventArgs(propertyName));
+        }
+
         #endregion
 
         #region .CTOR, Reset
@@ -421,15 +429,6 @@ namespace SIMULTAN.Data.Assets
             var check1 = this.CorrectPathInput(_full_path, _rel_path, true); // test1
             var check2 = this.CorrectPathInput(_full_path, _rel_path, false); // test2
 
-            //if (correction.path.EndsWith(Path.DirectorySeparatorChar.ToString()) || correction.path.EndsWith(Path.AltDirectorySeparatorChar.ToString()))
-            //    re = new ResourceDirectoryEntry(this, _user, correction.path, true, _key);
-            //else
-            //{
-            //    if (correction.is_contained_corrected)
-            //        re = new ContainedResourceFileEntry(this, _user, correction.path, correction.path_is_absolute, _key);
-            //    else
-            //        re = new LinkedResourceFileEntry(this, _user, correction.path, correction.path_is_absolute, _key);
-            //}
             if (check1.corrected_full.EndsWith(Path.DirectorySeparatorChar.ToString()) || check1.corrected_full.EndsWith(Path.AltDirectorySeparatorChar.ToString()))
                 re = new ResourceDirectoryEntry(this, _user, check1.corrected_full, true, _key);
             else

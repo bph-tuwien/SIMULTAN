@@ -32,7 +32,7 @@ namespace SIMULTAN.Tests.IO
             ExtendedProjectData projectData = new ExtendedProjectData();
             Guid guid = Guid.NewGuid();
 
-            using (DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_MVDXF_Empty)))
+            using (DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_ReadMVDXF_EmptyV12)))
             {
                 MultiValueDxfIO.Read(reader, new DXFParserInfo(guid, projectData));
             }

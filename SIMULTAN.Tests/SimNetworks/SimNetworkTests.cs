@@ -21,7 +21,6 @@ namespace SIMULTAN.Tests.SimNetworks
 
         private string _bName1 = "TestBlock1";
         private string _bName2 = "TestBlock2";
-        private string _bName3 = "TestBlock3";
 
         private string _BlockComp = "BlockComp";
 

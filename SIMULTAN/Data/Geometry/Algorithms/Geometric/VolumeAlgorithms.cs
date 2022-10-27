@@ -3,6 +3,7 @@ using SIMULTAN.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Windows.Media.Media3D;
 
 namespace SIMULTAN.Data.Geometry
@@ -508,6 +509,28 @@ namespace SIMULTAN.Data.Geometry
             }
 
             return peri;
+        }
+    
+        /// <summary>
+        /// Tests if a point is inside a volume
+        /// </summary>
+        /// <param name="volume">The volume</param>
+        /// <param name="point">The point</param>
+        /// <returns>True when the point lies inside the volume, otherwise False</returns>
+        public static bool IsInside(Volume volume, Point3D point)
+        {
+            int count = 0;
+            
+            foreach (var pface in volume.Faces)
+            {
+                if (FaceAlgorithms.IntersectsRay(pface.Face, point, new Vector3D(1, 0, 0)))
+                    count++;
+            }
+
+            if (count % 2 == 1)
+                return true;
+
+            return false;
         }
     }
 }

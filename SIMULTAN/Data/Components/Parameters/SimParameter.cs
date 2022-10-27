@@ -1,9 +1,12 @@
 ﻿using SIMULTAN.Data.MultiValues;
+using SIMULTAN.Data.Taxonomy;
 using SIMULTAN.Data.Users;
 using SIMULTAN.Excel;
 using SIMULTAN.Serializer.DXF;
+using SIMULTAN.Utils;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Text;
@@ -30,7 +33,43 @@ namespace SIMULTAN.Data.Components
     /// </summary>
     public class SimParameter : SimObjectNew<ISimManagedCollection>
     {
+        //~SimParameter() { Console.WriteLine("~SimParameter");}
+
         #region Properties
+
+        /// <summary>
+        /// The <see cref="TaxonomyEntry"/> of the parameter
+        /// </summary>
+        [ExcelMappingProperty("SIM_OBJECT_NAME",PropertyType = typeof(String))] // ToDo: Check where this is relevant
+        public SimTaxonomyEntryOrString TaxonomyEntry
+        {
+            get
+            {
+                return taxonomyEntry;
+            }
+            set
+            {
+                NotifyWriteAccess();
+
+                if (taxonomyEntry.HasTaxonomyEntryReference())
+                {
+                    TaxonomyEntry.TaxonomyEntryReference.RemoveDeleteAction();
+                }
+
+                taxonomyEntry = value;
+
+                if (taxonomyEntry.HasTaxonomyEntry())
+                {
+                    taxonomyEntry.TaxonomyEntryReference.SetDeleteAction(TaxonomyEntryDeleted);
+                }
+
+                UpdateState();
+                NotifyPropertyChanged(nameof(TaxonomyEntry));
+                NotifyChanged();
+            }
+        }
+
+        private SimTaxonomyEntryOrString taxonomyEntry;
 
         /// <summary>
         /// The unit of the parameter
@@ -325,6 +364,17 @@ namespace SIMULTAN.Data.Components
         }
         private SimMultiValuePointer multiValuePointer;
 
+        /// <summary>
+        /// Stores all calculations referencing this parameter either as an input or as an output
+        /// </summary>
+        public IReadOnlyList<SimCalculation> ReferencingCalculations { get { return this.referencingCalculations; } }
+        /// <summary>
+        /// Stores all calculations referencing this parameter either as an input or as an output.
+        /// Same as <see cref="ReferencingCalculations"/>, but allows for writing access.
+        /// </summary>
+        internal List<SimCalculation> ReferencingCalculations_Internal { get { return this.referencingCalculations; } }
+        private List<SimCalculation> referencingCalculations = new List<SimCalculation>();
+
         #endregion
 
         #region EVENTS
@@ -344,6 +394,18 @@ namespace SIMULTAN.Data.Components
         public void OnIsBeingDeleted()
         {
             this.IsBeingDeleted?.Invoke(this);
+        }
+
+        /// <inheritdoc />
+        protected override void NotifyPropertyChanged(string property)
+        {
+            base.NotifyPropertyChanged(property);
+
+            if (this.Component != null)
+            {
+                this.Component.Factory?.NotifyParameterPropertyChanged(this, property);
+                this.Component.Parameters.OnParameterPropertyChanged(this, property);
+            }
         }
 
         #endregion
@@ -368,13 +430,39 @@ namespace SIMULTAN.Data.Components
         /// <param name="name">The name of the parameter</param>
         /// <param name="unit">Unit of the parameter</param>
         /// <param name="value">The current value of the parameter</param>
+        /// <param name="allowedOperations">The operations the user is expected to perform on this parameter</param>
+        public SimParameter(string name, string unit, string value, SimParameterOperations allowedOperations = SimParameterOperations.All)
+        {
+            TaxonomyEntry = new SimTaxonomyEntryOrString(name);
+            this.Unit = unit;
+            this.Category = SimCategory.None;
+            this.Propagation = SimInfoFlow.Mixed;
+
+            this.ValueMin = double.NegativeInfinity;
+            this.ValueMax = double.PositiveInfinity;
+            this.ValueCurrent = 0.0;
+            this.TextValue = value;
+
+            this.AllowedOperations = allowedOperations;
+
+            this.MultiValuePointer = null;
+
+            UpdateState();
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the SimParameter class
+        /// </summary>
+        /// <param name="name">The name of the parameter</param>
+        /// <param name="unit">Unit of the parameter</param>
+        /// <param name="value">The current value of the parameter</param>
         /// <param name="minValue">The minimum valid value</param>
         /// <param name="maxValue">The maximum valid value</param>
         /// <param name="allowedOperations">The operations the user is expected to perform on this parameter</param>
         public SimParameter(string name, string unit, double value, double minValue, double maxValue,
             SimParameterOperations allowedOperations = SimParameterOperations.All)
         {
-            this.Name = name;
+            TaxonomyEntry = new SimTaxonomyEntryOrString(name);
             this.Unit = unit;
             this.Category = SimCategory.None;
             this.Propagation = SimInfoFlow.Mixed;
@@ -416,7 +504,7 @@ namespace SIMULTAN.Data.Components
             : base(new SimId(localId))
         {
 
-            this.Name = name;
+            TaxonomyEntry = new SimTaxonomyEntryOrString(name);
             this.Unit = unit;
             this.Category = category;
             this.Propagation = propagation;
@@ -443,7 +531,7 @@ namespace SIMULTAN.Data.Components
         /// <param name="original">The parameter to copy from</param>
         protected SimParameter(SimParameter original)
         {
-            this.Name = original.Name;
+            this.TaxonomyEntry = new SimTaxonomyEntryOrString(original.TaxonomyEntry);
             this.Unit = original.Unit;
             this.Category = original.Category;
             this.Propagation = original.Propagation;
@@ -473,6 +561,15 @@ namespace SIMULTAN.Data.Components
         #region Property management
 
         /// <summary>
+        /// Called when the referenced TaxonomyEntry got deleted.
+        /// Handed to the TaxonomyEntryReference to be used as a callback.
+        /// </summary>
+        private void TaxonomyEntryDeleted()
+        {
+            this.TaxonomyEntry = new SimTaxonomyEntryOrString(this.TaxonomyEntry.Name);
+        }
+
+        /// <summary>
         /// Tests if the value of the parameter is the same as the supplied value.
         /// Handles NaN values correctly
         /// </summary>
@@ -481,13 +578,6 @@ namespace SIMULTAN.Data.Components
         internal bool HasSameCurrentValue(double value)
         {
             return (double.IsNaN(this.ValueCurrent) && double.IsNaN(value)) || Math.Abs(this.ValueCurrent - value) < 0.00000001;
-        }
-
-        /// <inheritdoc />
-		protected override void OnNameChanged()
-        {
-            UpdateState();
-            base.OnNameChanged();
         }
 
         /// <summary>
@@ -515,7 +605,7 @@ namespace SIMULTAN.Data.Components
                 {
                     foreach (var referenced in this.Component.ReferencedComponents.Where(x => x.Target != null))
                     {
-                        if (referenced.Target.Parameters.Any(x => x.Name == this.Name))
+                        if (referenced.Target.Parameters.Any(x => x.TaxonomyEntry.Equals(TaxonomyEntry)))
                         {
                             newState |= SimParameterState.HidesReference;
                             break;
@@ -544,39 +634,60 @@ namespace SIMULTAN.Data.Components
             return value;
         }
 
+        /// <summary>
+        /// Restores references to other connected parts, f.e. TaxonomyEntries
+        /// </summary>
+        /// <param name="idGenerator">The idGenerator used to look up the references</param>
+        public void RestoreReferences(SimIdGenerator idGenerator)
+        {
+            if (TaxonomyEntry.HasTaxonomyEntryReference())
+            {
+                var entry = idGenerator.GetById<SimTaxonomyEntry>(TaxonomyEntry.TaxonomyEntryReference.TaxonomyEntryId);
+                TaxonomyEntry = new SimTaxonomyEntryOrString(new SimTaxonomyEntryReference(entry));
+            }
+        }
+
+        /// <summary>
+        /// Looks up taxonomy entries for reserved parameters by their name.
+        /// Do this if the default taxonomies changed, could mean that the project is migrated.
+        /// </summary>
+        /// <exception cref="Exception">If the default taxonomy entry could not be found.</exception>
+        public void RestoreDefaultTaxonomyReferences()
+        {
+            if(Component.InstanceType != SimInstanceType.None || Component.Name == "Cumulative")
+            {
+                if(ReservedParameterKeys.NameToKeyLookup.TryGetValue(TaxonomyEntry.Name, out var key))
+                {
+                    var taxonomy = Factory.ProjectData.Taxonomies.GetTaxonomyByKeyOrName(ReservedParameterKeys.RP_TAXONOMY_KEY);
+                    var entry = taxonomy.GetTaxonomyEntryByKey(key);
+                    if(entry != null)
+                    {
+                        TaxonomyEntry = new SimTaxonomyEntryOrString(new SimTaxonomyEntryReference(entry));
+                    }
+                    else
+                    {
+                        throw new Exception("Could not find reserved taxonomy entry for parameter " + TaxonomyEntry.Name);
+                    }
+                }
+            }
+
+        }
+
+        /// <summary>
+        /// Returns if the parameter has a default reserved taxonomy entry of the provided key from <see cref="ReservedParameterKeys"/>.
+        /// </summary>
+        /// <param name="entryKey">The key of the taxonomy entry to check. Should be from <see cref="ReservedParameterKeys"/>.</param>
+        /// <returns>if the parameter has a default reserved taxonomy entry of the provided key.</returns>
+        public bool HasReservedTaxonomyEntry(String entryKey)
+        {
+            return taxonomyEntry.HasTaxonomyEntry() &&
+                taxonomyEntry.TaxonomyEntryReference.Target.Taxonomy.Key == ReservedParameterKeys.RP_TAXONOMY_KEY &&
+                taxonomyEntry.TaxonomyEntryReference.Target.Key == entryKey;
+        }
+
         #endregion
 
         #region INFO
-
-        /// <summary>
-        /// Returns a list of all calculations that use this parameter
-        /// </summary>
-        /// <returns>A list of all calculations that use this parameter</returns>
-        public List<SimCalculation> GetReferencingCalculations()
-        {
-            if (this.Component == null || this.Component.Factory == null)
-                throw new InvalidOperationException("This operation is only possible when the containing component is part of a factory");
-
-            List<SimCalculation> result = new List<SimCalculation>();
-
-            foreach (var comp in this.Component.Factory)
-                GetReferencingCalculations(comp, result);
-
-            return result;
-        }
-        private void GetReferencingCalculations(SimComponent component, List<SimCalculation> results)
-        {
-            if (component == null)
-            {
-                return;
-            }
-            foreach (var calc in component.Calculations)
-                if (calc.InputParams.ContainsValue(this) || calc.ReturnParams.ContainsValue(this))
-                    results.Add(calc);
-
-            foreach (var child in component.Components.Where(x => x.Component != null))
-                GetReferencingCalculations(child.Component, results);
-        }
 
         /// <summary>
         /// Returns the referenced parameter in case Propagation is set to REF_IN.
@@ -598,7 +709,7 @@ namespace SIMULTAN.Data.Components
                 {
                     if (refComp.Target != null)
                     {
-                        var matchingParam = refComp.Target.Parameters.FirstOrDefault(x => x.Name == this.Name);
+                        var matchingParam = refComp.Target.Parameters.FirstOrDefault(x => x.TaxonomyEntry.Equals(TaxonomyEntry));
                         if (matchingParam != null)
                             return matchingParam;
                     }

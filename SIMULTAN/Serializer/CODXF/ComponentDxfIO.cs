@@ -176,6 +176,7 @@ namespace SIMULTAN.Serializer.CODXF
             ComponentDxfIOUserLists.WriteUserListsSection(projectData.UserComponentLists, writer);
             ComponentDxfIONetworks.WriteNetworkSection(projectData.NetworkManager.NetworkRecord, writer);
             ComponentDxfIOSimNetworks.WriteNetworkSection(projectData.SimNetworks, writer);
+            ComponentDxfIOValueMappings.WriteValueMappingSection(projectData.ValueMappings, writer);
 
             //EOF
             writer.WriteEOF();
@@ -242,6 +243,11 @@ namespace SIMULTAN.Serializer.CODXF
             if (parserInfo.FileVersion <= 3)
             {
                 ImportantSection.Skip(reader, parserInfo, true); //Some version 3 contain it, some don't
+            }
+
+            if (parserInfo.FileVersion >= 13)
+            {
+                ComponentDxfIOValueMappings.ReadValueMappingSection(reader, parserInfo);
             }
 
             //EOF

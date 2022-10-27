@@ -245,23 +245,16 @@ namespace SIMULTAN.Data.FlowNetworks
             if (this.Content == null)
                 return null;
 
-            return ComponentWalker.GetFlatParameters(this.Content.Component).FirstOrDefault(x => x.Name.EndsWith(_suffix));
+            return ComponentWalker.GetFlatParameters(this.Content.Component).FirstOrDefault(x => x.TaxonomyEntry.Name.EndsWith(_suffix));
         }
 
         public virtual bool GetBoundInstanceRealizedStatus()
         {
-            SimComponentInstance gr = this.GetUpdatedInstance(true);
+            SimComponentInstance gr = this.Content;
             if (gr != null)
                 return gr.State.IsRealized;
             else
                 return false;
-        }
-
-        // Reference for the instantiated Component assigned to the element 
-        [Obsolete]
-        public virtual SimComponentInstance GetUpdatedInstance(bool _in_flow_dir)
-        {
-            return this.Content;
         }
 
         /// <summary>
@@ -270,7 +263,7 @@ namespace SIMULTAN.Data.FlowNetworks
         /// <returns>Returns six values. First three are for minimum sizes, next three for maximum sizes</returns>
         public virtual SimInstanceSize GetInstanceSize()
         {
-            SimComponentInstance instance = this.GetUpdatedInstance(true);
+            SimComponentInstance instance = this.Content;
             if (instance == null) return SimInstanceSize.Default;
 
             return instance.InstanceSize;
@@ -278,7 +271,7 @@ namespace SIMULTAN.Data.FlowNetworks
 
         public bool InstanceHasPath()
         {
-            SimComponentInstance instance = this.GetUpdatedInstance(true);
+            SimComponentInstance instance = this.Content;
             if (instance == null) return false;
             if (instance.Component.InstanceType != SimInstanceType.NetworkEdge) return false;
 
@@ -287,7 +280,7 @@ namespace SIMULTAN.Data.FlowNetworks
 
         public bool InstanceHasValidPath()
         {
-            SimComponentInstance instance = this.GetUpdatedInstance(true);
+            SimComponentInstance instance = this.Content;
             if (instance == null) return false;
             if (instance.Component.InstanceType != SimInstanceType.NetworkEdge) return false;
 

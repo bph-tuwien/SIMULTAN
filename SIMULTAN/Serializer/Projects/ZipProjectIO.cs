@@ -7,12 +7,15 @@ using SIMULTAN.Projects;
 using SIMULTAN.Projects.ManagedFiles;
 using SIMULTAN.Serializer.DXF;
 using SIMULTAN.Serializer.PPATH;
+using SIMULTAN.Serializer.TXDXF;
 using SIMULTAN.Utils;
 using SIMULTAN.Utils.Files;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace SIMULTAN.Serializer.Projects
@@ -37,11 +40,9 @@ namespace SIMULTAN.Serializer.Projects
         /// <param name="_project_file">the target file for saving the project</param>
         /// <param name="_path_to_local_tmp_folder">the path to a temporary folder for saving temporary data</param>
         /// <param name="_project_data_manager">the manager of all relevant data</param>
-        /// <param name="_encryption_key">the key for encrypting the user file</param>
         /// <param name="initialUser">
         /// The default user for this project. Has to be an Administrator.
         /// </param>
-        /// <param name="serviceProvider">The service provider</param>
         public static HierarchicalProject NewProject(FileInfo _project_file, string _path_to_local_tmp_folder,
                                                 ExtendedProjectData _project_data_manager,
                                                 SimUser initialUser)
@@ -94,9 +95,7 @@ namespace SIMULTAN.Serializer.Projects
         /// <param name="_non_managed_files">the files contained in the project, but not managed by it, e.g. PDF files</param>
         /// <param name="_associated_files">the files linked to the project but not saved in it</param>
         /// <param name="_project_data_manager">the manager of all relevant data</param>
-        /// <param name="_encryption_key">the key for encrypting the user file</param>
         /// <param name="_initialUser">The default user for this project. Has to be an Administrator.</param>
-        /// <param name="serviceProvider">The service provider</param>
         /// <returns>The created project or Null</returns>
         public static HierarchicalProject NewProjectFromFiles(FileInfo _project_file, IEnumerable<FileInfo> _files_to_convert_to_project,
                                                  IEnumerable<FileInfo> _non_managed_files, IEnumerable<FileInfo> _associated_files,
@@ -169,6 +168,15 @@ namespace SIMULTAN.Serializer.Projects
                 var additional_stuff = ZipUtils.PartialUnpackPaths(_project_file, paths_to_unpack, unpacked_folder);
             }
 
+            // Check if TaxonomyRecord exists, otherwise create it
+            if(!files.Any(x => x.Extension == ParamStructFileExtensions.FILE_EXT_TAXONOMY))
+            {
+                var taxFile = ProjectIO.CreateInitialTaxonomyFile(unpacked_folder.FullName);
+                var tmpFiles = files.ToList();
+                tmpFiles.Add(taxFile);
+                files = tmpFiles;
+            }
+
             // 3. create the project instance and the managed file infrastructure
             ManagedFileCollection managed_files = new ManagedFileCollection(files.ToList(), _data_manager);
             var metaDataFile = managed_files.Files.FirstOrDefault(x => x is ManagedMetaData);
@@ -189,12 +197,12 @@ namespace SIMULTAN.Serializer.Projects
             return project;
         }
 
+
         /// <summary>
         /// Performs user authentication on an already loaded project. If the project is open or not properly loaded it does nothing.
         /// </summary>
         /// <param name="_project">the loaded project</param>
         /// <param name="_data_manager">the corresponding data manager</param>
-        /// <param name="_encryption_key">the key for encrypting the user file</param>
         /// <param name="serviceProvider">The service provider that should be used to query the <see cref="IAuthenticationService"/></param>
         /// <returns>true, if the project can be opened; false otherwise</returns>
         public static bool AuthenticateUserAfterLoading(HierarchicalProject _project, ExtendedProjectData _data_manager,
@@ -245,7 +253,6 @@ namespace SIMULTAN.Serializer.Projects
         /// <param name="_project">the loaded project</param>
         /// <param name="_data_manager">the corresponding data manager</param>
         /// <param name="user">The user that should be authenticated in the project (only username and passwordhash are used)</param>
-        /// <param name="_encryption_key">the key for encrypting the user file</param>
         /// <returns>true, if the project can be opened; false otherwise</returns>
         public static SimUser AuthenticateUserAfterLoading(HierarchicalProject _project, ExtendedProjectData _data_manager, SimUser user)
         {

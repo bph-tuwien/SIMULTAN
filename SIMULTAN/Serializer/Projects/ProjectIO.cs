@@ -3,6 +3,7 @@ using SIMULTAN.Data.Assets;
 using SIMULTAN.Data.Components;
 using SIMULTAN.Data.MultiValues;
 using SIMULTAN.Data.SitePlanner;
+using SIMULTAN.Data.Taxonomy;
 using SIMULTAN.Data.Users;
 using SIMULTAN.Projects;
 using SIMULTAN.Projects.ManagedFiles;
@@ -17,11 +18,13 @@ using SIMULTAN.Serializer.SimGeo;
 using SIMULTAN.Serializer.SIMLINKS;
 using SIMULTAN.Serializer.SIMUSER;
 using SIMULTAN.Serializer.SPDXF;
+using SIMULTAN.Serializer.TXDXF;
 using SIMULTAN.Utils;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -393,6 +396,59 @@ namespace SIMULTAN.Serializer.Projects
             _file.LastWriteTime = DateTime.Now;
         }
 
+        internal static void OpenTaxonomyFile(FileInfo file, ExtendedProjectData projectData)
+        {
+            if (file == null || !file.Exists)
+                return;
+
+            var parserInfo = new DXFParserInfo(projectData.Owner.GlobalID, projectData);
+            SimTaxonomyDxfIO.Read(file, parserInfo);
+        }
+
+        /// <summary>
+        /// Imports a taxonomy file into the project data.
+        /// </summary>
+        /// <param name="file">The taxonomy file to import</param>
+        /// <param name="projectData">The project data to import the taxonomies into</param>
+        public static void ImportTaxonomyFile(FileInfo file, ExtendedProjectData projectData)
+        {
+            if (file == null)
+                throw new ArgumentNullException(nameof(file));
+            if (!file.Exists)
+                throw new ArgumentException("Provided taxonomy file does not exist");
+            if (projectData == null)
+                throw new ArgumentNullException(nameof(projectData));
+                
+
+            var parserInfo = new DXFParserInfo(projectData.Owner.GlobalID, projectData);
+            SimTaxonomyDxfIO.Import(file, parserInfo);
+        }
+
+        internal static void SaveTaxonomyFile(FileInfo file, ExtendedProjectData projectData)
+        {
+            SimTaxonomyDxfIO.Write(file, projectData.Taxonomies, projectData);
+            file.LastWriteTime = DateTime.Now;
+        }
+
+        /// <summary>
+        /// Exports selected taxonomies.
+        /// </summary>
+        /// <param name="file">The taxonomy file to export to</param>
+        /// <param name="taxonomies">The taxonomies to export</param>
+        /// <param name="projectData">The project data to export from</param>
+        public static void ExportTaxonomyFile(FileInfo file, IEnumerable<SimTaxonomy> taxonomies, ExtendedProjectData projectData)
+        {
+            if (file == null)
+                throw new ArgumentNullException(nameof(file));
+            if (taxonomies == null)
+                throw new ArgumentNullException(nameof(taxonomies));
+            if (projectData == null)
+                throw new ArgumentNullException(nameof(projectData));
+
+            SimTaxonomyDxfIO.Export(file, taxonomies, projectData);
+            file.LastWriteTime = DateTime.Now;
+        }
+
         #endregion
 
         #region PROJECTS: create from files
@@ -513,8 +569,6 @@ namespace SIMULTAN.Serializer.Projects
         /// <param name="_project_file">the target file of saving the project</param>
         /// <param name="_path_to_local_tmp_folder">the directory for saving temporary files</param>
         /// <param name="_project_data_manager">the manager of all relevant data</param>
-        /// <param name="_encryption_key">The key for encrypting the user file</param>
-        /// <param name="serviceProvider">The service provider</param>
         /// <returns>the created project and feedback, if there was a problem</returns>
         public static CompactProject CreateMinimalProject(FileInfo _project_file, string _path_to_local_tmp_folder,
             ExtendedProjectData _project_data_manager)
@@ -531,6 +585,8 @@ namespace SIMULTAN.Serializer.Projects
             File.Create(file_comps.FullName).Dispose();
             file_comps.LastWriteTime = DateTime.Now;
 
+            CreateInitialTaxonomyFile(_path_to_local_tmp_folder);
+
             IEnumerable<FileInfo> files_to_convert_to_project = new List<FileInfo> { file_values, file_comps };
 
             // load the data in the project manager
@@ -545,6 +601,21 @@ namespace SIMULTAN.Serializer.Projects
             file_comps.Delete();
 
             return created;
+        }
+
+        /// <summary>
+        /// Creates the default Taxonomy record file. Should only be used when creating a new project. Or when loading and it doesn't exist yet.
+        /// </summary>
+        /// <param name="folderPath">The folder path in which to create the file.</param>
+        /// <returns>The created file</returns>
+        internal static FileInfo CreateInitialTaxonomyFile(string folderPath)
+        {
+            string taxonmyPath = Path.Combine(folderPath, "TaxonomyRecord" + ParamStructFileExtensions.FILE_EXT_TAXONOMY);
+            FileInfo file_taxonomy = new FileInfo(taxonmyPath);
+            File.Create(file_taxonomy.FullName).Dispose();
+            file_taxonomy.LastWriteTime = DateTime.Now;
+
+            return file_taxonomy;
         }
 
         /// <summary>

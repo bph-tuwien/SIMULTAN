@@ -108,6 +108,16 @@ namespace SIMULTAN.Serializer.DXF
         /// </summary>
         /// <param name="code">The code of the entry</param>
         internal DXFSingleEntryParserElement(SimNetworkSaveCode code) : base((int)code) { }
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DXFSingleEntryParserElement{T}"/> class
+        /// </summary>
+        /// <param name="code">The code of the entry</param>
+        internal DXFSingleEntryParserElement(ValueMappingSaveCode code) : base((int)code) { }
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DXFSingleEntryParserElement{T}"/> class
+        /// </summary>
+        /// <param name="code">The code of the entry</param>
+        internal DXFSingleEntryParserElement(TaxonomySaveCode code) : base((int)code) { }
 
         /// <inheritdoc />
         internal override object ParseInternal(DXFStreamReader reader, DXFParserInfo info)

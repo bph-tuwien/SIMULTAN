@@ -20,6 +20,7 @@ namespace SIMULTAN.Serializer.DXF
         public const string FLOWNETWORK_EDGE = "FLOWNETWORK_EDGE";// custom
         public const string COMPONENT = "COMPONENT";            // custom
         public const string USER_LIST = "USER_LIST";
+        public const string VALUEMAPPING = "VALUEMAPPING";
         [Obsolete]
         public const string TYPED_COMPONENT = "TYPED_COMPONENT";// custom
         public const string CALCULATION = "CALCULATION";        // custom
@@ -54,6 +55,7 @@ namespace SIMULTAN.Serializer.DXF
         public const string COLOR_MAP_MULTI_THRESHOLD = "COLOR_MAP_MULTI_THRESHOLD";
         public const string COLOR_MAP_MULTI_LINEAR_GRADIENT = "COLOR_MAP_MULTI_LINEAR_GRADIENT";
         public const string PREFILTER_TIMELINE = "PREFILTER_TIMELINE";
+        public const string PREFILTER_DEFAULT = "PREFILTER_DEFAULT";
         public const string PREFILTER_MAXIMUM = "PREFILTER_MAXIMUM";
         public const string PREFILTER_MINIMUM = "PREFILTER_MINIMUM";
         public const string PREFILTER_AVERAGE = "PREFILTER_AVERAGE";
@@ -70,6 +72,7 @@ namespace SIMULTAN.Serializer.DXF
         public const string ENTITY_SECTION = "ENTITIES";        // DXF specs
         public const string NETWORK_SECTION = "NETWORKS";       // custom
         public const string SIMNETWORK_SECTION = "SIMNETWORKS";       // custom
+        public const string SIMVALUEMAPPING_SECTION = "VALUEMAPPINGS";
         [Obsolete]
         public const string IMPORTANT_SECTION = "IMPORTANT";    // custom
         public const string EXCEL_SECTION = "EXCEL_TOOLS";      // custom
@@ -93,6 +96,10 @@ namespace SIMULTAN.Serializer.DXF
         public const string ENTITY_CONTINUE = "ENTCTN";         // custom
 
         public const string COLOR_IN_BYTES = "BYTE_COLOR";      // for saving colors with byte-color components
+
+        public const string TAXONOMY_SECTION = "TAXONOMY_SECTION";
+        public const string TAXONOMY = "TAXONOMY";
+        public const string TAXONOMY_ENTRY = "TAXONOMY_ENTRY";
 
         // public const string DOUBLE_NAN = "NaN";                 // custom
         public const int LIST_CONTINUE = 1;                   // custom

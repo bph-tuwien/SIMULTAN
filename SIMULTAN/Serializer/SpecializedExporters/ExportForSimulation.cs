@@ -146,7 +146,7 @@ namespace SIMULTAN.Serializer.SpecializedExporters
             }
             //Checking required node parameters
 
-            List<SimFlowNetworkNode> simNetworkNodes = networkNodes.Where(n => n.Content.Component.Parameters.Any(p => p.Name == requiredParameters.SummarizedParameter)).ToList();
+            List<SimFlowNetworkNode> simNetworkNodes = networkNodes.Where(n => n.Content.Component.Parameters.Any(p => p.TaxonomyEntry.Name == requiredParameters.SummarizedParameter)).ToList();
             if (simNetworkNodes.Count == 0)
             {
                 Errors.Add(new CoolingNetworkError(CoolingNetworkErrorReason.MissingSumParameter, new object[] { requiredParameters.SummarizedParameter }));
@@ -178,7 +178,7 @@ namespace SIMULTAN.Serializer.SpecializedExporters
 
             foreach (var sParam in requiredParameters.SimulationParameters)
             {
-                if (!component.Parameters.Any(p => p.Name == sParam))
+                if (!component.Parameters.Any(p => p.TaxonomyEntry.Name == sParam))
                 {
                     missingParameters.Add(sParam);
                 }
@@ -237,54 +237,54 @@ namespace SIMULTAN.Serializer.SpecializedExporters
                     {
                         if (param.Unit == "datetime")
                         {
-                            writer.WriteStartElement(param.Name);
+                            writer.WriteStartElement(param.TaxonomyEntry.Name);
                             writer.WriteAttributeString("Unit", param.Unit);
                             writer.WriteString(param.TextValue);
                             writer.WriteEndElement();
                         }
-                        if (param.Name == "timeStep")
+                        if (param.TaxonomyEntry.Name == "timeStep")
                         {
-                            writer.WriteStartElement(param.Name);
+                            writer.WriteStartElement(param.TaxonomyEntry.Name);
                             writer.WriteAttributeString("Unit", "minutes");
                             writer.WriteString(param.ValueCurrent.ToString(CultureInfo.InvariantCulture));
                             writer.WriteEndElement();
 
                         }
-                        if (param.Name == "Vorlauftemperatur")
+                        if (param.TaxonomyEntry.Name == "Vorlauftemperatur")
                         {
-                            writer.WriteStartElement(param.Name);
+                            writer.WriteStartElement(param.TaxonomyEntry.Name);
                             writer.WriteString(param.ValueCurrent.ToString(CultureInfo.InvariantCulture));
                             writer.WriteEndElement();
                         }
-                        if (param.Name == "supplyTemperature")
+                        if (param.TaxonomyEntry.Name == "supplyTemperature")
                         {
-                            writer.WriteStartElement(param.Name);
-                            writer.WriteString(param.ValueCurrent.ToString(CultureInfo.InvariantCulture));
-                            writer.WriteEndElement();
-                        }
-
-                        if (param.Name == "roughnessLambdaStart")
-                        {
-                            writer.WriteStartElement(param.Name);
+                            writer.WriteStartElement(param.TaxonomyEntry.Name);
                             writer.WriteString(param.ValueCurrent.ToString(CultureInfo.InvariantCulture));
                             writer.WriteEndElement();
                         }
 
-                        if (param.Name == "densityStart")
+                        if (param.TaxonomyEntry.Name == "roughnessLambdaStart")
                         {
-                            writer.WriteStartElement(param.Name);
+                            writer.WriteStartElement(param.TaxonomyEntry.Name);
                             writer.WriteString(param.ValueCurrent.ToString(CultureInfo.InvariantCulture));
                             writer.WriteEndElement();
                         }
-                        if (param.Name == "sectionPressureFL_start")
+
+                        if (param.TaxonomyEntry.Name == "densityStart")
                         {
-                            writer.WriteStartElement(param.Name);
+                            writer.WriteStartElement(param.TaxonomyEntry.Name);
                             writer.WriteString(param.ValueCurrent.ToString(CultureInfo.InvariantCulture));
                             writer.WriteEndElement();
                         }
-                        if (param.Name == "sectionPressureRL_start")
+                        if (param.TaxonomyEntry.Name == "sectionPressureFL_start")
                         {
-                            writer.WriteStartElement(param.Name);
+                            writer.WriteStartElement(param.TaxonomyEntry.Name);
+                            writer.WriteString(param.ValueCurrent.ToString(CultureInfo.InvariantCulture));
+                            writer.WriteEndElement();
+                        }
+                        if (param.TaxonomyEntry.Name == "sectionPressureRL_start")
+                        {
+                            writer.WriteStartElement(param.TaxonomyEntry.Name);
                             writer.WriteString(param.ValueCurrent.ToString(CultureInfo.InvariantCulture));
                             writer.WriteEndElement();
                         }
@@ -293,7 +293,7 @@ namespace SIMULTAN.Serializer.SpecializedExporters
 
                     }
                     writer.WriteStartElement("outputFolder");
-                    var xmlstring = component.Parameters.Where(p => p.Name == "outputFolder").FirstOrDefault().TextValue.ToString(); ;
+                    var xmlstring = component.Parameters.Where(p => p.TaxonomyEntry.Name == "outputFolder").FirstOrDefault().TextValue.ToString(); ;
                     //(@"c:\temp").ToString();
                     writer.WriteString(xmlstring);
                     writer.WriteEndElement();
@@ -301,7 +301,7 @@ namespace SIMULTAN.Serializer.SpecializedExporters
 
 
                     writer.WriteStartElement("outputXML");
-                    writer.WriteString(component.Parameters.Where(p => p.Name == "outputXML").FirstOrDefault().TextValue.ToString());
+                    writer.WriteString(component.Parameters.Where(p => p.TaxonomyEntry.Name == "outputXML").FirstOrDefault().TextValue.ToString());
                     writer.WriteEndElement();
                     writer.WriteEndElement();
 
@@ -309,8 +309,8 @@ namespace SIMULTAN.Serializer.SpecializedExporters
 
                     writer.WriteStartElement("SimulationFiles");
                     writer.WriteStartElement("Simulation");
-                    writer.WriteAttributeString("To", component.Parameters.Where(p => p.Name == "endTime").FirstOrDefault().TextValue);
-                    writer.WriteAttributeString("From", component.Parameters.Where(p => p.Name == "startTime").FirstOrDefault().TextValue);
+                    writer.WriteAttributeString("To", component.Parameters.Where(p => p.TaxonomyEntry.Name == "endTime").FirstOrDefault().TextValue);
+                    writer.WriteAttributeString("From", component.Parameters.Where(p => p.TaxonomyEntry.Name == "startTime").FirstOrDefault().TextValue);
 
                     if (network != null)
                     {

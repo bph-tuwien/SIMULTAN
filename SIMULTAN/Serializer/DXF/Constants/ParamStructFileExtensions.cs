@@ -31,6 +31,7 @@ namespace SIMULTAN.Serializer.DXF
 
         public const string FILE_EXT_GEOMAP = ".gmdxf";
         public const string FILE_EXT_SITEPLANNER = ".spdxf";
+        public const string FILE_EXT_TAXONOMY = ".txdxf";
 
         /// <summary>
         /// The file extension for the file saving all public resource paths.
@@ -58,6 +59,7 @@ namespace SIMULTAN.Serializer.DXF
                 FILE_EXT_LINKS,
                 FILE_EXT_GEOMAP,
                 FILE_EXT_SITEPLANNER,
+                FILE_EXT_TAXONOMY,
 
                 FILE_EXT_GEOMETRY_INTERNAL,
             };

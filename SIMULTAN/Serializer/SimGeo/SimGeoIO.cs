@@ -1,5 +1,7 @@
-﻿using SIMULTAN.Data.Assets;
+﻿using SIMULTAN.Data;
+using SIMULTAN.Data.Assets;
 using SIMULTAN.Data.Geometry;
+using SIMULTAN.Data.ValueMappings;
 using SIMULTAN.Projects;
 using SIMULTAN.Utils.Files;
 using System;
@@ -12,6 +14,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Data;
 using System.Windows.Media;
 using System.Windows.Media.Media3D;
 
@@ -67,7 +70,7 @@ namespace SIMULTAN.Serializer.SimGeo
         /// <summary>
         /// The current version of the SimGeo Format
         /// </summary>
-        public static int SimGeoVersion => 10;
+        public static int SimGeoVersion => 11;
 
         /// <summary>
         /// Describes which format should be written
@@ -231,6 +234,7 @@ namespace SIMULTAN.Serializer.SimGeo
             WriteNumberPlaintext<Int32>(sw, model.LinkedModels.Count);
             WriteNumberPlaintext<Int32>(sw, model.Geometry.ProxyGeometries.Count);
             WriteNumberPlaintext<Int32>(sw, model.Geometry.GeoReferences.Count);
+            WriteNumberPlaintext<Int32>(sw, model.ValueMappings.Count);
             WriteNumberPlaintext<UInt64>(sw, model.Geometry.GetFreeId(false)); // free id is the next usable one, we need to remember that
             sw.WriteLine();
 
@@ -259,13 +263,15 @@ namespace SIMULTAN.Serializer.SimGeo
             foreach (var p in model.Geometry.ProxyGeometries)
                 WriteProxyGeometryPlaintext(sw, p);
             foreach (var r in model.Geometry.GeoReferences)
-                WriteGeoRefPlainText(sw, r);
+                WriteGeoRefPlaintext(sw, r);
+            foreach (var vm in model.ValueMappings)
+                WriteValueMappingIdPlaintext(sw, vm);
+            WriteValueMappingIdPlaintext(sw, model.ActiveValueMapping);
 
             //Linked Models
             foreach (var m in model.LinkedModels)
                 WriteLinkedModelPlaintext(sw, m, model);
         }
-
 
         private static void WriteStringPlaintext(StreamWriter sw, string str)
         {
@@ -422,12 +428,20 @@ namespace SIMULTAN.Serializer.SimGeo
             sw.WriteLine();
         }
 
-        private static void WriteGeoRefPlainText(StreamWriter sw, GeoReference reference)
+        private static void WriteGeoRefPlaintext(StreamWriter sw, GeoReference reference)
         {
             WriteNumberPlaintext<ulong>(sw, reference.Vertex.Id);
             WriteNumberPlaintext<double>(sw, reference.ReferencePoint.X);
             WriteNumberPlaintext<double>(sw, reference.ReferencePoint.Y);
             WriteNumberPlaintext<double>(sw, reference.ReferencePoint.Z);
+        }
+
+        private static void WriteValueMappingIdPlaintext(StreamWriter sw, SimValueMapping vm)
+        {
+            if (vm != null)
+                WriteNumberPlaintext<Int64>(sw, vm.Id.LocalId);
+            else
+                WriteNumberPlaintext<Int64>(sw, 0L);
         }
 
         private static void WriteProxyGeometryPlaintext(StreamWriter sw, ProxyGeometry proxy)
@@ -560,6 +574,10 @@ namespace SIMULTAN.Serializer.SimGeo
             if (versionNumber >= 7)
                 geoRefCount = ReadNumber<Int32>(stream, ref row, ref column, "GeoRef Count");
 
+            Int32 valueMappingCount = 0;
+            if (versionNumber >= 11)
+                valueMappingCount = ReadNumber<Int32>(stream, ref row, ref column, "ValueMappingCount");
+
             UInt64 nextGeoId = 0;
             if (versionNumber >= 10)
                 nextGeoId = ReadNumber<UInt64>(stream, ref row, ref column, "Next Geometry ID");
@@ -605,6 +623,18 @@ namespace SIMULTAN.Serializer.SimGeo
             for (int i = 0; i < geoRefCount; ++i)
                 ReadGeoRef(stream, modelData, geometries, versionNumber, ref row, ref column);
 
+            for (int i = 0; i < valueMappingCount; ++i)
+                ReadValueMapping(stream, geometryModel, projectData, versionNumber, ref row, ref column);
+
+            if (versionNumber >= 11)
+            {
+                long activeValueMappingId = ReadNumber<Int64>(stream, ref row, ref column, "Active ColorMapping Id");
+                if (activeValueMappingId > 0)
+                {
+                    geometryModel.ActiveValueMapping = geometryModel.ValueMappings.FirstOrDefault(x => x.Id.LocalId == activeValueMappingId);
+                }
+            }
+
             for (int i = 0; i < linkedModelCount; ++i)
                 linkedModels.Add(ReadLinkedModel(stream, geometryModel, ref row, ref column));
 
@@ -613,7 +643,6 @@ namespace SIMULTAN.Serializer.SimGeo
 
             return geometryModel;
         }
-
 
         private static string ReadToDelimiter(StreamReader sr, ref int row, ref int column, string description)
         {
@@ -1174,6 +1203,17 @@ namespace SIMULTAN.Serializer.SimGeo
             }
         }
 
+        private static void ReadValueMapping(StreamReader sr, GeometryModel model, ProjectData projectData,
+            int versionNumber, ref int row, ref int column)
+        {
+            long valueMappingId = ReadNumber<long>(sr, ref row, ref column, "Value Mappign ID");
+
+            var mapping = projectData.IdGenerator.GetById<SimValueMapping>(new SimId(
+                projectData.ValueMappings.CalledFromLocation, valueMappingId
+                ));
+            if (mapping != null)
+                model.ValueMappings.Add(mapping);
+        }
         private static FileInfo ReadLinkedModel(StreamReader sr, GeometryModel model, ref int row, ref int column)
         {
             var path = ReadString(sr, ref row, ref column, "Linked Model Path");

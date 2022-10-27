@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SIMULTAN.Data.Taxonomy;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -17,50 +18,6 @@ namespace SIMULTAN.Data.Components
         public class SimParameterCollection : ObservableCollection<SimParameter>
         {
             private SimComponent owner;
-
-            #region ParameterPropertyChanged event
-
-            /// <summary>
-            /// Contains additional data for the <see cref="ParameterPropertyChanged"/> event
-            /// </summary>
-            public class ParameterPropertyChangedEventArgs : EventArgs
-            {
-                /// <summary>
-                /// Contains a list of all parameters that have changed, and the property name of the changed property
-                /// </summary>
-                public List<(SimParameter parameter, string property)> ModifiedParameters { get; }
-
-                /// <summary>
-                /// Initializes a new instance of the ParameterPropertyChangedEventArgs class
-                /// </summary>
-                /// <param name="modifiedParameters">A list of all parameters that have changed, and the property name of the changed property</param>
-                public ParameterPropertyChangedEventArgs(List<(SimParameter parameter, string property)> modifiedParameters)
-                {
-                    this.ModifiedParameters = modifiedParameters;
-                }
-            }
-
-            /// <summary>
-            /// EventHandler for the <see cref="ParameterPropertyChanged"/> event
-            /// </summary>
-            /// <param name="sender">The instance sending this event</param>
-            /// <param name="e">The event args</param>
-            public delegate void ParameterPropertyChangedEventHandler(object sender, ParameterPropertyChangedEventArgs e);
-            /// <summary>
-            /// Invoked after a number of parameters has been changed. Contains a list of all modified parameters together with their parameters
-            /// </summary>
-            public event ParameterPropertyChangedEventHandler ParameterPropertyChanged;
-
-            /// <summary>
-            /// Invokes the <see cref="ParameterPropertyChanged"/> event
-            /// </summary>
-            /// <param name="modifiedParameters">A list of all modified parameters together with the name of their changed parameter</param>
-            private void NotifyParameterPropertyChanged(List<(SimParameter parameter, string property)> modifiedParameters)
-            {
-                this.ParameterPropertyChanged?.Invoke(this, new ParameterPropertyChangedEventArgs(modifiedParameters));
-            }
-
-            #endregion
 
 
             /// <summary>
@@ -162,7 +119,6 @@ namespace SIMULTAN.Data.Components
                 if (isAdded)
                 {
                     item.Component = owner;
-                    item.PropertyChanged += Item_PropertyChanged;
                 }
             }
 
@@ -178,7 +134,6 @@ namespace SIMULTAN.Data.Components
                 if (isRemoved)
                 {
                     item.Component = null;
-                    item.PropertyChanged -= Item_PropertyChanged;
                 }
             }
 
@@ -267,41 +222,39 @@ namespace SIMULTAN.Data.Components
                 nameof(SimParameter.ValueMax),
                 nameof(SimParameter.TextValue),
                 nameof(SimParameter.Category),
-                nameof(SimParameter.Name),
+                nameof(SimParameter.TaxonomyEntry),
                 nameof(SimParameter.Propagation)
             };
 
-            private void Item_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+            internal void OnParameterPropertyChanged(object sender, string property)
             {
                 var parameter = (SimParameter)sender;
 
                 bool propagationEnabled = owner.Factory == null || owner.Factory.EnableReferencePropagation;
 
                 if (propagationEnabled &&
-                    propagatingParameterProperties.Contains(e.PropertyName))
+                    propagatingParameterProperties.Contains(property))
                 {
-                    if (e.PropertyName == nameof(SimParameter.ValueCurrent))
+                    if (property == nameof(SimParameter.ValueCurrent))
                     {
                         owner.OnParameterValueChanged(parameter);
                     }
-                    else if (e.PropertyName == nameof(SimParameter.TextValue))
+                    else if (property == nameof(SimParameter.TextValue))
                     {
                         owner.PropagateRefParamValueFromClosestRef(parameter);
                     }
-                    else if (e.PropertyName == nameof(SimParameter.Category))
+                    else if (property == nameof(SimParameter.Category))
                     {
                         owner.GatherCategoryInfo();
                     }
-                    else if (e.PropertyName == nameof(SimParameter.Name))
+                    else if (property == nameof(SimParameter.TaxonomyEntry))
                     {
                         owner.ReactToParameterPropagationChanged(parameter);
                     }
-                    else if (e.PropertyName == nameof(SimParameter.Propagation) && parameter.Propagation == SimInfoFlow.FromReference && parameter.MultiValuePointer == null)
+                    else if (property == nameof(SimParameter.Propagation) && parameter.Propagation == SimInfoFlow.FromReference && parameter.MultiValuePointer == null)
                     {
                         owner.ReactToParameterPropagationChanged(parameter);
                     }
-
-                    NotifyParameterPropertyChanged(new List<(SimParameter parameter, string property)> { ((SimParameter)sender, e.PropertyName) });
                 }
             }
 

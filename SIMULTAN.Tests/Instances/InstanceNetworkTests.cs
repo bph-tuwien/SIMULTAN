@@ -300,20 +300,20 @@ namespace SIMULTAN.Tests.Instances
             var cumulativeComponent = nodeComponent.Components.FirstOrDefault(x => x.Component != null && x.Component.Name == "Cumulative")?.Component;
             Assert.AreNotEqual(null, cumulativeComponent);
 
-            List<string> cumulativeParameterNames = new List<string>
+            List<string> cumulativeParameterKeys = new List<string>
             {
-                ReservedParameters.RP_LENGTH_MIN_TOTAL,
-                ReservedParameters.RP_AREA_MIN_TOTAL,
-                ReservedParameters.RP_VOLUME_MIN_TOTAL,
-                ReservedParameters.RP_LENGTH_MAX_TOTAL,
-                ReservedParameters.RP_AREA_MAX_TOTAL,
-                ReservedParameters.RP_VOLUME_MAX_TOTAL,
-                ReservedParameters.RP_COUNT,
+                ReservedParameterKeys.RP_LENGTH_MIN_TOTAL,
+                ReservedParameterKeys.RP_AREA_MIN_TOTAL,
+                ReservedParameterKeys.RP_VOLUME_MIN_TOTAL,
+                ReservedParameterKeys.RP_LENGTH_MAX_TOTAL,
+                ReservedParameterKeys.RP_AREA_MAX_TOTAL,
+                ReservedParameterKeys.RP_VOLUME_MAX_TOTAL,
+                ReservedParameterKeys.RP_COUNT,
             };
 
-            foreach (var pName in cumulativeParameterNames)
+            foreach (var pKey in cumulativeParameterKeys)
             {
-                Assert.AreNotEqual(null, cumulativeComponent.Parameters.FirstOrDefault(x => x.Name == pName));
+                Assert.AreNotEqual(null, cumulativeComponent.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(pKey)));
             }
         }
 
@@ -332,20 +332,20 @@ namespace SIMULTAN.Tests.Instances
             var cumulativeComponent = nodeComponent.Components.FirstOrDefault(x => x.Component != null && x.Component.Name == "Cumulative")?.Component;
             Assert.AreNotEqual(null, cumulativeComponent);
 
-            List<string> cumulativeParameterNames = new List<string>
+            List<string> cumulativeParameterKeys = new List<string>
             {
-                ReservedParameters.RP_LENGTH_MIN_TOTAL,
-                ReservedParameters.RP_AREA_MIN_TOTAL,
-                ReservedParameters.RP_VOLUME_MIN_TOTAL,
-                ReservedParameters.RP_LENGTH_MAX_TOTAL,
-                ReservedParameters.RP_AREA_MAX_TOTAL,
-                ReservedParameters.RP_VOLUME_MAX_TOTAL,
-                ReservedParameters.RP_COUNT,
+                ReservedParameterKeys.RP_LENGTH_MIN_TOTAL,
+                ReservedParameterKeys.RP_AREA_MIN_TOTAL,
+                ReservedParameterKeys.RP_VOLUME_MIN_TOTAL,
+                ReservedParameterKeys.RP_LENGTH_MAX_TOTAL,
+                ReservedParameterKeys.RP_AREA_MAX_TOTAL,
+                ReservedParameterKeys.RP_VOLUME_MAX_TOTAL,
+                ReservedParameterKeys.RP_COUNT,
             };
 
-            foreach (var pName in cumulativeParameterNames)
+            foreach (var pKey in cumulativeParameterKeys)
             {
-                Assert.AreNotEqual(null, cumulativeComponent.Parameters.FirstOrDefault(x => x.Name == pName));
+                Assert.AreNotEqual(null, cumulativeComponent.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(pKey)));
             }
         }
 
@@ -366,35 +366,35 @@ namespace SIMULTAN.Tests.Instances
 
             Dictionary<string, SimParameter> cumulativeParameters = new Dictionary<string, SimParameter>
             {
-                { ReservedParameters.RP_LENGTH_MIN_TOTAL, null },
-                { ReservedParameters.RP_AREA_MIN_TOTAL, null },
-                { ReservedParameters.RP_VOLUME_MIN_TOTAL, null },
-                { ReservedParameters.RP_LENGTH_MAX_TOTAL, null },
-                { ReservedParameters.RP_AREA_MAX_TOTAL, null },
-                { ReservedParameters.RP_VOLUME_MAX_TOTAL, null },
-                { ReservedParameters.RP_COUNT, null },
+                { ReservedParameterKeys.RP_LENGTH_MIN_TOTAL, null },
+                { ReservedParameterKeys.RP_AREA_MIN_TOTAL, null },
+                { ReservedParameterKeys.RP_VOLUME_MIN_TOTAL, null },
+                { ReservedParameterKeys.RP_LENGTH_MAX_TOTAL, null },
+                { ReservedParameterKeys.RP_AREA_MAX_TOTAL, null },
+                { ReservedParameterKeys.RP_VOLUME_MAX_TOTAL, null },
+                { ReservedParameterKeys.RP_COUNT, null },
             };
 
-            foreach (var pName in cumulativeParameters.Keys.ToList())
-                cumulativeParameters[pName] = cumulativeComponent.Parameters.FirstOrDefault(x => x.Name == pName);
+            foreach (var pKey in cumulativeParameters.Keys.ToList())
+                cumulativeParameters[pKey] = cumulativeComponent.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(pKey));
 
-            AssertUtil.AssertDoubleEqual(0.0, cumulativeParameters[ReservedParameters.RP_LENGTH_MIN_TOTAL].ValueCurrent);
-            AssertUtil.AssertDoubleEqual(1.0, cumulativeParameters[ReservedParameters.RP_LENGTH_MAX_TOTAL].ValueCurrent);
-            AssertUtil.AssertDoubleEqual(0.0, cumulativeParameters[ReservedParameters.RP_AREA_MIN_TOTAL].ValueCurrent);
-            AssertUtil.AssertDoubleEqual(1.0, cumulativeParameters[ReservedParameters.RP_AREA_MAX_TOTAL].ValueCurrent);
-            AssertUtil.AssertDoubleEqual(0.0, cumulativeParameters[ReservedParameters.RP_VOLUME_MIN_TOTAL].ValueCurrent);
-            AssertUtil.AssertDoubleEqual(1.0, cumulativeParameters[ReservedParameters.RP_VOLUME_MAX_TOTAL].ValueCurrent);
-            AssertUtil.AssertDoubleEqual(1.0, cumulativeParameters[ReservedParameters.RP_COUNT].ValueCurrent);
+            AssertUtil.AssertDoubleEqual(0.0, cumulativeParameters[ReservedParameterKeys.RP_LENGTH_MIN_TOTAL].ValueCurrent);
+            AssertUtil.AssertDoubleEqual(1.0, cumulativeParameters[ReservedParameterKeys.RP_LENGTH_MAX_TOTAL].ValueCurrent);
+            AssertUtil.AssertDoubleEqual(0.0, cumulativeParameters[ReservedParameterKeys.RP_AREA_MIN_TOTAL].ValueCurrent);
+            AssertUtil.AssertDoubleEqual(1.0, cumulativeParameters[ReservedParameterKeys.RP_AREA_MAX_TOTAL].ValueCurrent);
+            AssertUtil.AssertDoubleEqual(0.0, cumulativeParameters[ReservedParameterKeys.RP_VOLUME_MIN_TOTAL].ValueCurrent);
+            AssertUtil.AssertDoubleEqual(1.0, cumulativeParameters[ReservedParameterKeys.RP_VOLUME_MAX_TOTAL].ValueCurrent);
+            AssertUtil.AssertDoubleEqual(1.0, cumulativeParameters[ReservedParameterKeys.RP_COUNT].ValueCurrent);
 
             instance.InstanceSize = new SimInstanceSize(new Vector3D(1.0, 2.0, 3.0), new Vector3D(4.0, 5.0, 6.0));
 
-            AssertUtil.AssertDoubleEqual(3.0, cumulativeParameters[ReservedParameters.RP_LENGTH_MIN_TOTAL].ValueCurrent);
-            AssertUtil.AssertDoubleEqual(6.0, cumulativeParameters[ReservedParameters.RP_LENGTH_MAX_TOTAL].ValueCurrent);
-            AssertUtil.AssertDoubleEqual(2.0, cumulativeParameters[ReservedParameters.RP_AREA_MIN_TOTAL].ValueCurrent);
-            AssertUtil.AssertDoubleEqual(20.0, cumulativeParameters[ReservedParameters.RP_AREA_MAX_TOTAL].ValueCurrent);
-            AssertUtil.AssertDoubleEqual(6.0, cumulativeParameters[ReservedParameters.RP_VOLUME_MIN_TOTAL].ValueCurrent);
-            AssertUtil.AssertDoubleEqual(120.0, cumulativeParameters[ReservedParameters.RP_VOLUME_MAX_TOTAL].ValueCurrent);
-            AssertUtil.AssertDoubleEqual(1.0, cumulativeParameters[ReservedParameters.RP_COUNT].ValueCurrent);
+            AssertUtil.AssertDoubleEqual(3.0, cumulativeParameters[ReservedParameterKeys.RP_LENGTH_MIN_TOTAL].ValueCurrent);
+            AssertUtil.AssertDoubleEqual(6.0, cumulativeParameters[ReservedParameterKeys.RP_LENGTH_MAX_TOTAL].ValueCurrent);
+            AssertUtil.AssertDoubleEqual(2.0, cumulativeParameters[ReservedParameterKeys.RP_AREA_MIN_TOTAL].ValueCurrent);
+            AssertUtil.AssertDoubleEqual(20.0, cumulativeParameters[ReservedParameterKeys.RP_AREA_MAX_TOTAL].ValueCurrent);
+            AssertUtil.AssertDoubleEqual(6.0, cumulativeParameters[ReservedParameterKeys.RP_VOLUME_MIN_TOTAL].ValueCurrent);
+            AssertUtil.AssertDoubleEqual(120.0, cumulativeParameters[ReservedParameterKeys.RP_VOLUME_MAX_TOTAL].ValueCurrent);
+            AssertUtil.AssertDoubleEqual(1.0, cumulativeParameters[ReservedParameterKeys.RP_COUNT].ValueCurrent);
         }
 
         [TestMethod]
@@ -414,45 +414,45 @@ namespace SIMULTAN.Tests.Instances
 
             Dictionary<string, SimParameter> cumulativeParameters = new Dictionary<string, SimParameter>
             {
-                { ReservedParameters.RP_LENGTH_MIN_TOTAL, null },
-                { ReservedParameters.RP_AREA_MIN_TOTAL, null },
-                { ReservedParameters.RP_VOLUME_MIN_TOTAL, null },
-                { ReservedParameters.RP_LENGTH_MAX_TOTAL, null },
-                { ReservedParameters.RP_AREA_MAX_TOTAL, null },
-                { ReservedParameters.RP_VOLUME_MAX_TOTAL, null },
-                { ReservedParameters.RP_COUNT, null },
+                { ReservedParameterKeys.RP_LENGTH_MIN_TOTAL, null },
+                { ReservedParameterKeys.RP_AREA_MIN_TOTAL, null },
+                { ReservedParameterKeys.RP_VOLUME_MIN_TOTAL, null },
+                { ReservedParameterKeys.RP_LENGTH_MAX_TOTAL, null },
+                { ReservedParameterKeys.RP_AREA_MAX_TOTAL, null },
+                { ReservedParameterKeys.RP_VOLUME_MAX_TOTAL, null },
+                { ReservedParameterKeys.RP_COUNT, null },
             };
 
-            foreach (var pName in cumulativeParameters.Keys.ToList())
-                cumulativeParameters[pName] = cumulativeComponent.Parameters.FirstOrDefault(x => x.Name == pName);
+            foreach (var pKey in cumulativeParameters.Keys.ToList())
+                cumulativeParameters[pKey] = cumulativeComponent.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(pKey));
 
-            AssertUtil.AssertDoubleEqual(3.0, cumulativeParameters[ReservedParameters.RP_LENGTH_MIN_TOTAL].ValueCurrent);
-            AssertUtil.AssertDoubleEqual(7.0, cumulativeParameters[ReservedParameters.RP_LENGTH_MAX_TOTAL].ValueCurrent);
-            AssertUtil.AssertDoubleEqual(2.0, cumulativeParameters[ReservedParameters.RP_AREA_MIN_TOTAL].ValueCurrent);
-            AssertUtil.AssertDoubleEqual(21.0, cumulativeParameters[ReservedParameters.RP_AREA_MAX_TOTAL].ValueCurrent);
-            AssertUtil.AssertDoubleEqual(6.0, cumulativeParameters[ReservedParameters.RP_VOLUME_MIN_TOTAL].ValueCurrent);
-            AssertUtil.AssertDoubleEqual(121.0, cumulativeParameters[ReservedParameters.RP_VOLUME_MAX_TOTAL].ValueCurrent);
-            AssertUtil.AssertDoubleEqual(2.0, cumulativeParameters[ReservedParameters.RP_COUNT].ValueCurrent);
+            AssertUtil.AssertDoubleEqual(3.0,   cumulativeParameters[ReservedParameterKeys.RP_LENGTH_MIN_TOTAL].ValueCurrent);
+            AssertUtil.AssertDoubleEqual(7.0,   cumulativeParameters[ReservedParameterKeys.RP_LENGTH_MAX_TOTAL].ValueCurrent);
+            AssertUtil.AssertDoubleEqual(2.0,   cumulativeParameters[ReservedParameterKeys.RP_AREA_MIN_TOTAL].ValueCurrent);
+            AssertUtil.AssertDoubleEqual(21.0,  cumulativeParameters[ReservedParameterKeys.RP_AREA_MAX_TOTAL].ValueCurrent);
+            AssertUtil.AssertDoubleEqual(6.0,   cumulativeParameters[ReservedParameterKeys.RP_VOLUME_MIN_TOTAL].ValueCurrent);
+            AssertUtil.AssertDoubleEqual(121.0, cumulativeParameters[ReservedParameterKeys.RP_VOLUME_MAX_TOTAL].ValueCurrent);
+            AssertUtil.AssertDoubleEqual(2.0,   cumulativeParameters[ReservedParameterKeys.RP_COUNT].ValueCurrent);
 
             instance.InstanceSize = new SimInstanceSize(new Vector3D(1.0, 2.0, 3.0), new Vector3D(4.0, 5.0, 6.0));
 
-            AssertUtil.AssertDoubleEqual(6.0, cumulativeParameters[ReservedParameters.RP_LENGTH_MIN_TOTAL].ValueCurrent);
-            AssertUtil.AssertDoubleEqual(12.0, cumulativeParameters[ReservedParameters.RP_LENGTH_MAX_TOTAL].ValueCurrent);
-            AssertUtil.AssertDoubleEqual(4.0, cumulativeParameters[ReservedParameters.RP_AREA_MIN_TOTAL].ValueCurrent);
-            AssertUtil.AssertDoubleEqual(40.0, cumulativeParameters[ReservedParameters.RP_AREA_MAX_TOTAL].ValueCurrent);
-            AssertUtil.AssertDoubleEqual(12.0, cumulativeParameters[ReservedParameters.RP_VOLUME_MIN_TOTAL].ValueCurrent);
-            AssertUtil.AssertDoubleEqual(240.0, cumulativeParameters[ReservedParameters.RP_VOLUME_MAX_TOTAL].ValueCurrent);
-            AssertUtil.AssertDoubleEqual(2.0, cumulativeParameters[ReservedParameters.RP_COUNT].ValueCurrent);
+            AssertUtil.AssertDoubleEqual(6.0,   cumulativeParameters[ReservedParameterKeys.RP_LENGTH_MIN_TOTAL].ValueCurrent);
+            AssertUtil.AssertDoubleEqual(12.0,  cumulativeParameters[ReservedParameterKeys.RP_LENGTH_MAX_TOTAL].ValueCurrent);
+            AssertUtil.AssertDoubleEqual(4.0,   cumulativeParameters[ReservedParameterKeys.RP_AREA_MIN_TOTAL].ValueCurrent);
+            AssertUtil.AssertDoubleEqual(40.0,  cumulativeParameters[ReservedParameterKeys.RP_AREA_MAX_TOTAL].ValueCurrent);
+            AssertUtil.AssertDoubleEqual(12.0,  cumulativeParameters[ReservedParameterKeys.RP_VOLUME_MIN_TOTAL].ValueCurrent);
+            AssertUtil.AssertDoubleEqual(240.0, cumulativeParameters[ReservedParameterKeys.RP_VOLUME_MAX_TOTAL].ValueCurrent);
+            AssertUtil.AssertDoubleEqual(2.0,   cumulativeParameters[ReservedParameterKeys.RP_COUNT].ValueCurrent);
 
             nodeComponent.Instances.Remove(instance);
 
-            AssertUtil.AssertDoubleEqual(3.0, cumulativeParameters[ReservedParameters.RP_LENGTH_MIN_TOTAL].ValueCurrent);
-            AssertUtil.AssertDoubleEqual(6.0, cumulativeParameters[ReservedParameters.RP_LENGTH_MAX_TOTAL].ValueCurrent);
-            AssertUtil.AssertDoubleEqual(2.0, cumulativeParameters[ReservedParameters.RP_AREA_MIN_TOTAL].ValueCurrent);
-            AssertUtil.AssertDoubleEqual(20.0, cumulativeParameters[ReservedParameters.RP_AREA_MAX_TOTAL].ValueCurrent);
-            AssertUtil.AssertDoubleEqual(6.0, cumulativeParameters[ReservedParameters.RP_VOLUME_MIN_TOTAL].ValueCurrent);
-            AssertUtil.AssertDoubleEqual(120.0, cumulativeParameters[ReservedParameters.RP_VOLUME_MAX_TOTAL].ValueCurrent);
-            AssertUtil.AssertDoubleEqual(1.0, cumulativeParameters[ReservedParameters.RP_COUNT].ValueCurrent);
+            AssertUtil.AssertDoubleEqual(3.0,   cumulativeParameters[ReservedParameterKeys.RP_LENGTH_MIN_TOTAL].ValueCurrent);
+            AssertUtil.AssertDoubleEqual(6.0,   cumulativeParameters[ReservedParameterKeys.RP_LENGTH_MAX_TOTAL].ValueCurrent);
+            AssertUtil.AssertDoubleEqual(2.0,   cumulativeParameters[ReservedParameterKeys.RP_AREA_MIN_TOTAL].ValueCurrent);
+            AssertUtil.AssertDoubleEqual(20.0,  cumulativeParameters[ReservedParameterKeys.RP_AREA_MAX_TOTAL].ValueCurrent);
+            AssertUtil.AssertDoubleEqual(6.0,   cumulativeParameters[ReservedParameterKeys.RP_VOLUME_MIN_TOTAL].ValueCurrent);
+            AssertUtil.AssertDoubleEqual(120.0, cumulativeParameters[ReservedParameterKeys.RP_VOLUME_MAX_TOTAL].ValueCurrent);
+            AssertUtil.AssertDoubleEqual(1.0,   cumulativeParameters[ReservedParameterKeys.RP_COUNT].ValueCurrent);
 
         }
 

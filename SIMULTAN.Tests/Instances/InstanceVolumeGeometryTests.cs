@@ -22,7 +22,8 @@ namespace SIMULTAN.Tests.Instances
         private static void CheckParameter(SimComponent comp, string name, double value, string unit,
             SimInfoFlow propagation, SimCategory category)
         {
-            var param = comp.Parameters.FirstOrDefault(x => x.Name == name);
+            var taxkey = ReservedParameterKeys.NameToKeyLookup[name];
+            var param = comp.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(taxkey));
             Assert.IsNotNull(param);
             AssertUtil.AssertDoubleEqual(value, param.ValueCurrent);
             Assert.AreEqual(unit, param.Unit);
@@ -1231,7 +1232,7 @@ namespace SIMULTAN.Tests.Instances
             Assert.AreEqual(SimInstancePlacementState.Valid, geometryPlacement.State);
 
             //Parameter check
-            AssertUtil.AssertDoubleEqual(21.0, leftWallComp.Parameters.First(x => x.Name == "A").ValueCurrent);
+            AssertUtil.AssertDoubleEqual(21.0, leftWallComp.Parameters.First(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_AREA)).ValueCurrent);
         }
         [TestMethod]
         public void VolumeHoleAddedFilled()
@@ -1286,7 +1287,7 @@ namespace SIMULTAN.Tests.Instances
             Assert.AreEqual(SimInstancePlacementState.Valid, geometryPlacement.State);
 
             //Parameter check
-            AssertUtil.AssertDoubleEqual(21.0, leftWallComp.Parameters.First(x => x.Name == "A").ValueCurrent);
+            AssertUtil.AssertDoubleEqual(21.0, leftWallComp.Parameters.First(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_AREA)).ValueCurrent);
         }
         [TestMethod]
         public void VolumeHoleRemovedEmpty()
@@ -1316,7 +1317,7 @@ namespace SIMULTAN.Tests.Instances
             Assert.AreEqual(1, wallComp.Components.Count);
 
             //Check parameters
-            AssertUtil.AssertDoubleEqual(48.0, wallComp.Parameters.First(x => x.Name == "A").ValueCurrent);
+            AssertUtil.AssertDoubleEqual(48.0, wallComp.Parameters.First(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_AREA)).ValueCurrent);
         }
         [TestMethod]
         public void VolumeHoleRemovedFilled()
@@ -1348,7 +1349,7 @@ namespace SIMULTAN.Tests.Instances
             Assert.AreEqual(1, wallComp.Components.Count);
 
             //Check parameters
-            AssertUtil.AssertDoubleEqual(48.0, wallComp.Parameters.First(x => x.Name == "A").ValueCurrent);
+            AssertUtil.AssertDoubleEqual(48.0, wallComp.Parameters.First(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_AREA)).ValueCurrent);
         }
 
 
@@ -1487,7 +1488,7 @@ namespace SIMULTAN.Tests.Instances
             Assert.AreEqual(SimInstancePlacementState.Valid, geometryPlacement.State);
 
             //Parameter check
-            AssertUtil.AssertDoubleEqual(0.25, holeholeComponent.Parameters.First(x => x.Name == "A").ValueCurrent);
+            AssertUtil.AssertDoubleEqual(0.25, holeholeComponent.Parameters.First(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_AREA)).ValueCurrent);
         }
         [TestMethod]
         public void VolumeHoleInHoleAddFilled()
@@ -1548,7 +1549,7 @@ namespace SIMULTAN.Tests.Instances
             Assert.AreEqual(SimInstancePlacementState.Valid, geometryPlacement.State);
 
             //Parameter check
-            AssertUtil.AssertDoubleEqual(0.25, holeholeComponent.Parameters.First(x => x.Name == "A").ValueCurrent);
+            AssertUtil.AssertDoubleEqual(0.25, holeholeComponent.Parameters.First(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_AREA)).ValueCurrent);
         }
 
         [TestMethod]

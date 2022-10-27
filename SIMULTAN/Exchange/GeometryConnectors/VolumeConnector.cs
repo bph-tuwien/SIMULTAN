@@ -48,6 +48,10 @@ namespace SIMULTAN.Exchange.GeometryConnectors
 
                 //References to adjacent components
                 UpdateNeighborReferences();
+
+                //Parameter for ValueMapping
+                ExchangeHelpers.CreateParameterIfNotExists(placement.Instance.Component,
+                    ReservedParameterKeys.RP_PARAM_TO_GEOMETRY, ReservedParameters.RP_PARAM_TO_GEOMETRY, SimParameterInstancePropagation.PropagateIfInstance, 1.0);
             }
         }
 

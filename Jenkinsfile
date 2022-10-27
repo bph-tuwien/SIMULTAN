@@ -92,7 +92,7 @@ pipeline {
                   }
                 }
                 steps {
-                  discordSend description: '', successful: currentBuild.resultIsBetterOrEqualTo('SUCCESS'), result: currentBuild.currentResult, title: 'New public version of Simultan released!', webhookURL: "${RELEASE_WEBHOOK}"
+                  discordSend description: '', successful: currentBuild.resultIsBetterOrEqualTo('SUCCESS'), result: currentBuild.currentResult, title: 'New public version of the Simultan Datamodel was released!', webhookURL: "${RELEASE_WEBHOOK}"
                 }
               }
             }

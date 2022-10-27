@@ -36,27 +36,6 @@ namespace SIMULTAN.Data
         public Guid GlobalID { get { return this.id.GlobalId; } }
 
         /// <summary>
-        /// The name of the object. It can be any string.
-        /// </summary>
-        [ExcelMappingProperty("SIM_OBJECT_NAME")]
-        public string Name
-        {
-            get { return this.name; }
-            set
-            {
-                if (this.name != value)
-                {
-                    NotifyWriteAccess();
-                    this.name = value;
-                    OnNameChanged();
-                    this.NotifyPropertyChanged(nameof(Name));
-                    this.NotifyChanged();
-                }
-            }
-        }
-        private string name;
-
-        /// <summary>
         /// The description of the object.
         /// </summary>
         [ExcelMappingProperty("SIM_OBJECT_DESCRIPTION")]
@@ -86,7 +65,7 @@ namespace SIMULTAN.Data
         /// Invokes the PropertyChanged event
         /// </summary>
         /// <param name="property">Name of the property</param>
-        protected void NotifyPropertyChanged(string property)
+        protected virtual void NotifyPropertyChanged(string property)
         {
             this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(property));
         }
@@ -115,10 +94,6 @@ namespace SIMULTAN.Data
         /// When the current user does not have writing access, this method has to throw a AccessDeniedException.
         /// </summary>
         protected abstract void NotifyWriteAccess();
-        /// <summary>
-        /// Called when the name changes. Use this in derived classes to react to name changes
-        /// </summary>
-        protected virtual void OnNameChanged() { }
     }
 
     /// <summary>

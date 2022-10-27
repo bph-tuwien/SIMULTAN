@@ -72,7 +72,7 @@ namespace SIMULTAN.Tests.IO
                 exportedString = Encoding.UTF8.GetString(array);
             }
 
-            AssertUtil.AreEqualMultiline(Properties.Resources.DXFSerializer_GMDXF_EmptyV12, exportedString);
+            AssertUtil.AreEqualMultiline(Properties.Resources.DXFSerializer_GMDXF_WriteEmpty, exportedString);
         }
 
         [TestMethod]
@@ -145,7 +145,7 @@ namespace SIMULTAN.Tests.IO
         }
 
         [TestMethod]
-        public void WriteWithImageV12()
+        public void WriteWithImage()
         {
             CreateProjectData();
             ExtendedProjectData data = new ExtendedProjectData();
@@ -169,7 +169,7 @@ namespace SIMULTAN.Tests.IO
                 exportedString = Encoding.UTF8.GetString(array);
             }
 
-            AssertUtil.AreEqualMultiline(Properties.Resources.DXFSerializer_ReadGMDXF_MapResourceV12, exportedString);
+            AssertUtil.AreEqualMultiline(Properties.Resources.DXFSerializer_GMDXF_WriteMapResource, exportedString);
         }
 
         [TestMethod]
@@ -204,7 +204,7 @@ namespace SIMULTAN.Tests.IO
         }
 
         [TestMethod]
-        public void WriteGeoReferencesV12()
+        public void WriteGeoReferences()
         {
             ExtendedProjectData data = new ExtendedProjectData();
 
@@ -232,7 +232,7 @@ namespace SIMULTAN.Tests.IO
                 exportedString = Encoding.UTF8.GetString(array);
             }
 
-            AssertUtil.AreEqualMultiline(Properties.Resources.DXFSerializer_ReadGMDXF_GeoReferencesV12, exportedString);
+            AssertUtil.AreEqualMultiline(Properties.Resources.DXFSerializer_GMDXF_WriteGeoReferences, exportedString);
         }
     }
 }

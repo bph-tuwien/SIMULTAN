@@ -49,6 +49,40 @@ namespace SIMULTAN.Tests.IO
         }
 
         [TestMethod]
+        public void ReadComponentFileV13()
+        {
+            Guid guid = Guid.NewGuid();
+            var otherGuid = Guid.Parse("da7d8f7c-8eec-423b-b127-9d6e17f52522");
+
+            ExtendedProjectData projectData = new ExtendedProjectData();
+            projectData.SetCallingLocation(new DummyReferenceLocation(guid));
+            projectData.AssetManager.WorkingDirectory = workingDirectory.FullName;
+            projectData.AssetManager.PathsToResourceFiles.Add(linkDirectory.FullName);
+
+            var table = MultiValueDxfTests.CreateBigTable();
+            table.Id = new SimId(projectData.SitePlannerManager.CalledFromLocation.GlobalID, 2151483658);
+            projectData.ValueManager.StartLoading();
+            projectData.ValueManager.Add(table);
+            projectData.ValueManager.EndLoading();
+
+            using (DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_ReadCODXFV13)))
+            {
+                var info = new DXFParserInfo(guid, projectData);
+                ComponentDxfIO.Read(reader, info);
+            }
+
+            //Resources
+            ComponentDXFResourceTests.CheckAssetManager(projectData.AssetManager);
+            ComponentDXFNetworkTests.CheckNetworks(projectData, guid);
+
+            var instanceNode = projectData.NetworkManager.NetworkRecord[0].ContainedNodes[2];
+            ComponentDXFComponentTests.CheckComponents(projectData, guid, otherGuid, instanceNode);
+            ComponentDXFUserComponentListTests.CheckUserLists(projectData);
+            ComponentDXFSimNetworkTests.CheckTestData(projectData);
+            ComponentDXFValueMappingTests.CheckTestData(projectData);
+        }
+
+        [TestMethod]
         public void ReadComponentFileV12()
         {
             Guid guid = Guid.NewGuid();
@@ -73,6 +107,8 @@ namespace SIMULTAN.Tests.IO
             ComponentDXFComponentTests.CheckComponents(projectData, guid, otherGuid, instanceNode);
             ComponentDXFUserComponentListTests.CheckUserLists(projectData);
             ComponentDXFSimNetworkTests.CheckTestData(projectData);
+
+            Assert.AreEqual(0, projectData.ValueMappings.Count);
         }
 
         [TestMethod]
@@ -99,6 +135,8 @@ namespace SIMULTAN.Tests.IO
             var instanceNode = projectData.NetworkManager.NetworkRecord[0].ContainedNodes[2];
             ComponentDXFComponentTests.CheckComponents(projectData, guid, otherGuid, instanceNode);
             ComponentDXFUserComponentListTests.CheckUserLists(projectData);
+
+            Assert.AreEqual(0, projectData.ValueMappings.Count);
         }
 
         #endregion

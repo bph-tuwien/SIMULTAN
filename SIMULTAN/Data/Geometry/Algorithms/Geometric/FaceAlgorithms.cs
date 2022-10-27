@@ -1,4 +1,5 @@
-﻿using SIMULTAN;
+﻿using MathNet.Numerics.LinearAlgebra.Factorization;
+using SIMULTAN;
 using SIMULTAN.Utils;
 using System;
 using System.Collections.Generic;
@@ -917,6 +918,157 @@ namespace SIMULTAN.Data.Geometry
             }
 
             return (incline, orientation);
+        }
+
+        /// <summary>
+        /// Extrudes a face along its normal by a given height
+        /// </summary>
+        /// <param name="faces">The faces to extrude. Each face is treated separately, but shared edges are extruded only once</param>
+        /// <param name="referenceFace">A reference face, only needed to return the extruded reference face</param>
+        /// <param name="height">The height of the extrusion</param>
+        /// <returns>
+        /// A tuple containing:
+        ///  - createdGeometry: A list of all geometries created by this operation
+        ///  - extrudedFaces: A list of the top faces of each extrusion. Order is the same as in the input face list
+        ///  - extrudedReferenceFace: The top face of the extrusion of the referenceFace
+        /// </returns>
+        public static (List<BaseGeometry> createdGeometry, List<Face> extrudedFaces, Face extrudedReferenceFace) Extrude(
+            IEnumerable<Face> faces, Face referenceFace, double height)
+        {
+            List<Face> selectFaces = new List<Face>();
+            List<BaseGeometry> result = new List<BaseGeometry>();
+            Dictionary<Vertex, Vertex> vertexLookup = new Dictionary<Vertex, Vertex>();
+            Dictionary<Vertex, Edge> edgeLookup = new Dictionary<Vertex, Edge>();
+            Dictionary<Edge, (Face face, Edge topEdge)> faceLookup = new Dictionary<Edge, (Face face, Edge topEdge)>();
+
+            Face extrudedReferenceFace = null;
+
+            Vector3D normal = EdgeLoopAlgorithms.NormalCCW(faces.First().Boundary);
+
+            var model = faces.First().ModelGeometry;
+            model.StartBatchOperation();
+
+            foreach (var face in faces)
+            {
+                List<Face> volumeFaces = new List<Face>() { face };
+                List<Edge> topEdges = new List<Edge>();
+
+                foreach (var e in face.Boundary.Edges)
+                {
+                    if (!faceLookup.ContainsKey(e.Edge))
+                    {
+                        List<Edge> faceLoop = new List<Edge>();
+
+                        foreach (var v in e.Edge.Vertices)
+                        {
+                            if (!vertexLookup.ContainsKey(v))
+                            {
+                                var newV = new Vertex(v.Layer, "", v.Position + normal * height) { Color = v.Color };
+                                vertexLookup.Add(v, newV);
+                                result.Add(newV);
+                            }
+                            if (!edgeLookup.ContainsKey(v))
+                            {
+                                Edge vedge = new Edge(e.Edge.Layer, "",
+                                    new List<Vertex> { v, vertexLookup[v] })
+                                { Color = new DerivedColor(e.Edge.Color) };
+                                edgeLookup.Add(v, vedge);
+                                result.Add(vedge);
+                            }
+
+                            faceLoop.Add(edgeLookup[v]);
+                        }
+
+                        Edge edge = new Edge(e.Edge.Layer, "",
+                            new List<Vertex> { vertexLookup[e.Edge.Vertices[0]], vertexLookup[e.Edge.Vertices[1]] })
+                        {
+                            Color = new DerivedColor(e.Edge.Color)
+                        };
+                        result.Add(edge);
+                        topEdges.Add(edge);
+
+                        faceLoop.Insert(1, edge);
+                        faceLoop.Insert(0, e.Edge);
+
+                        EdgeLoop loop = new EdgeLoop(e.Edge.Layer, "", faceLoop) { Color = e.Edge.Color };
+                        result.Add(loop);
+
+                        Face newFace = new Face(e.Edge.Layer, "", loop) { Color = new DerivedColor(e.Edge.Color) };
+                        result.Add(newFace);
+                        volumeFaces.Add(newFace);
+                        faceLookup.Add(e.Edge, (newFace, edge));
+                    }
+                    else
+                    {
+                        (var newFace, var topEdge) = faceLookup[e.Edge];
+                        volumeFaces.Add(newFace);
+                        topEdges.Add(topEdge);
+                    }
+                }
+
+                EdgeLoop topLoop = new EdgeLoop(face.Layer, "", topEdges) { Color = face.Color };
+                result.Add(topLoop);
+
+                Face topFace = new Face(face.Layer, "", topLoop) { Color = new DerivedColor(face.Color) };
+                result.Add(topFace);
+                volumeFaces.Add(topFace);
+                selectFaces.Add(topFace);
+
+                Volume volume = new Volume(face.Layer, "", volumeFaces) { Color = new DerivedColor(face.Color) };
+                result.Add(volume);
+
+                if (face == referenceFace)
+                    extrudedReferenceFace = topFace;
+            }
+
+            model.EndBatchOperation();
+
+            return (result, selectFaces, extrudedReferenceFace);
+
+        }
+
+        /// <summary>
+        /// Checks whether a face is intersected by a line segment.
+        /// Order of start and end of the line doesn't matter for this algorithm.
+        /// </summary>
+        /// <param name="face">The face</param>
+        /// <param name="lineStart">The starting point of the line</param>
+        /// <param name="lineEnd">The end point of the line</param>
+        /// <param name="tolerance">The numerical tolerance</param>
+        /// <returns>True when the line segment intersects the face, otherwise False</returns>
+        public static bool IntersectsLine(Face face, Point3D lineStart, Point3D lineEnd, double tolerance = 0.0001)
+        {
+            var hnf = HessianPlane(face);
+            (var p, var t) = hnf.IntersectLine(lineStart, lineEnd);
+
+            if (t >= -tolerance && t <= 1.0 + tolerance)
+            {
+                return Contains(face, p, tolerance, tolerance) == GeometricRelation.Contained;
+            }
+            else
+                return false;
+        }
+
+        /// <summary>
+        /// Checks whether a face is intersected by a ray.
+        /// Only intersections in positive direction from the ray starting point are considered intersections.
+        /// </summary>
+        /// <param name="face">The face to test</param>
+        /// <param name="rayStart">The starting point of the ray</param>
+        /// <param name="rayDirection">The direction of the ray</param>
+        /// <param name="tolerance">The numerical tolerance</param>
+        /// <returns>True when the ray intersects the face, otherwise False</returns>
+        public static bool IntersectsRay(Face face, Point3D rayStart, Vector3D rayDirection, double tolerance = 0.0001)
+        {
+            var hnf = HessianPlane(face);
+            (var p, var t) = hnf.IntersectLine(rayStart, rayStart + rayDirection);
+
+            if (t >= -tolerance)
+            {
+                return Contains(face, p, tolerance, tolerance) == GeometricRelation.Contained;
+            }
+            else
+                return false;
         }
     }
 }

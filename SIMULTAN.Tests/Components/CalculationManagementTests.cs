@@ -269,8 +269,8 @@ namespace SIMULTAN.Tests.Components
             var childComp = parentComp.Components.First(x => x.Component.Name == "Sub").Component;
             var calc = parentComp.Calculations.First(x => x.Name == "calculation");
 
-            var aParam = parentComp.Parameters.First(x => x.Name == "a");
-            var bParam = childComp.Parameters.First(x => x.Name == "b");
+            var aParam = parentComp.Parameters.First(x => x.TaxonomyEntry.Name == "a");
+            var bParam = childComp.Parameters.First(x => x.TaxonomyEntry.Name == "b");
 
             //Input
             parentComp.Parameters.Remove(aParam);
@@ -291,8 +291,8 @@ namespace SIMULTAN.Tests.Components
             var childComp = parentComp.Components.First(x => x.Component.Name == "Sub").Component;
             var calc = parentComp.Calculations.First(x => x.Name == "calculation");
 
-            var outParam = parentComp.Parameters.First(x => x.Name == "out");
-            var out2Param = childComp.Parameters.First(x => x.Name == "out2");
+            var outParam = parentComp.Parameters.First(x => x.TaxonomyEntry.Name == "out");
+            var out2Param = childComp.Parameters.First(x => x.TaxonomyEntry.Name == "out2");
 
             //Output
             parentComp.Parameters.Remove(outParam);
@@ -313,8 +313,8 @@ namespace SIMULTAN.Tests.Components
             var childComp = parentComp.Components.First(x => x.Component.Name == "Sub");
             var calc = parentComp.Calculations.First(x => x.Name == "calculation");
 
-            var aParam = parentComp.Parameters.First(x => x.Name == "a");
-            var bParam = childComp.Component.Parameters.First(x => x.Name == "b");
+            var aParam = parentComp.Parameters.First(x => x.TaxonomyEntry.Name == "a");
+            var bParam = childComp.Component.Parameters.First(x => x.TaxonomyEntry.Name == "b");
 
             //Input
             parentComp.Components.Remove(childComp);
@@ -336,8 +336,8 @@ namespace SIMULTAN.Tests.Components
             var childComp = parentComp.Components.First(x => x.Component.Name == "Sub");
             var calc = parentComp.Calculations.First(x => x.Name == "calculation");
 
-            var outParam = parentComp.Parameters.First(x => x.Name == "out");
-            var out2Param = childComp.Component.Parameters.First(x => x.Name == "out2");
+            var outParam = parentComp.Parameters.First(x => x.TaxonomyEntry.Name == "out");
+            var out2Param = childComp.Component.Parameters.First(x => x.TaxonomyEntry.Name == "out2");
 
             //Output
             parentComp.Components.Remove(childComp);

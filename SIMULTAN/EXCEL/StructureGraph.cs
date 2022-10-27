@@ -66,7 +66,7 @@ namespace SIMULTAN.Excel
             // content
             node.IDAsLong = _node_source.Id.LocalId;
             node.IDAsLong_Used = true;
-            node.IDAsString = _node_source.Name;
+            node.IDAsString = _node_source.TaxonomyEntry.Name;
             node.IDAsString_Used = true;
             node.ContentType = typeof(SimParameter);
             node.ContentType_Used = true;
