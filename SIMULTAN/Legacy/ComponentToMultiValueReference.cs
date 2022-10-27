@@ -169,7 +169,7 @@ namespace SIMULTAN.Legacy
         private static string ExtractDescriptiveInfoForReference(SimParameter parameter)
         {
             if (parameter != null)
-                return "NAME: " + parameter.Name + " UNIT: " + parameter.Unit + " PROPAGATION: " + parameter.Propagation;
+                return "NAME: " + parameter.TaxonomyEntry.Name + " UNIT: " + parameter.Unit + " PROPAGATION: " + parameter.Propagation;
             else
                 return string.Empty;
         }

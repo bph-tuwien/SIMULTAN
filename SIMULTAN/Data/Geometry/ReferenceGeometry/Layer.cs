@@ -172,8 +172,7 @@ namespace SIMULTAN.Data.Geometry
             this.Layers = new ObservableCollection<Layer>();
 
             this.Layers.CollectionChanged += Layers_CollectionChanged;
-            this.Model.PropertyChanged += Model_PropertyChanged;
-            this.Model.GeometryRemoved += Model_GeometryRemoved;
+            AttachEvents();   
         }
 
         /// <summary>
@@ -196,6 +195,19 @@ namespace SIMULTAN.Data.Geometry
 
         #region EventHandler
 
+        internal void AttachEvents()
+        {
+            this.Model.PropertyChanged += Model_PropertyChanged;
+            this.Model.GeometryRemoved += Model_GeometryRemoved;
+        }
+
+        internal void DetachEvents()
+        {
+            this.Model.PropertyChanged -= Model_PropertyChanged;
+            this.Model.GeometryRemoved -= Model_GeometryRemoved;
+        }
+
+
         private void Model_PropertyChanged(object sender, PropertyChangedEventArgs e)
         {
             if (e.PropertyName == nameof(GeometryModelData.IsVisible))
@@ -205,7 +217,8 @@ namespace SIMULTAN.Data.Geometry
         private void Model_GeometryRemoved(object sender, IEnumerable<BaseGeometry> geometry)
         {
             foreach (var g in geometry)
-                Elements.Remove(g);
+                if (g.Layer == this)
+                    Elements.Remove(g);
         }
 
         private void Layers_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)

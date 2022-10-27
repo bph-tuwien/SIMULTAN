@@ -208,7 +208,7 @@ namespace SIMULTAN.Tests.Projects
             //Check pointer
             var importComp = projectData.Components.First();
             var childTarget2 = importComp.Components.First(x => x.Component.Name == "ChildTarget2").Component;
-            var param = childTarget2.Parameters.First(x => x.Name == "from MV");
+            var param = childTarget2.Parameters.First(x => x.TaxonomyEntry.Name == "from MV");
 
             Assert.AreNotEqual(null, param.MultiValuePointer);
             Assert.IsTrue(param.MultiValuePointer is SimMultiValueBigTable.SimMultiValueBigTablePointer);
@@ -234,9 +234,9 @@ namespace SIMULTAN.Tests.Projects
             //Check if parameters have been found
             Assert.AreEqual(2, calc.InputParams.Count);
             Assert.AreEqual(1, calc.ReturnParams.Count);
-            Assert.AreEqual(nodeChild.Parameters.First(x => x.Name == "b"), calc.InputParams["y"]);
-            Assert.AreEqual(node.Parameters.First(x => x.Name == "a"), calc.InputParams["x"]);
-            Assert.AreEqual(node.Parameters.First(x => x.Name == "c"), calc.ReturnParams["out1"]);
+            Assert.AreEqual(nodeChild.Parameters.First(x => x.TaxonomyEntry.Name == "b"), calc.InputParams["y"]);
+            Assert.AreEqual(node.Parameters.First(x => x.TaxonomyEntry.Name == "a"), calc.InputParams["x"]);
+            Assert.AreEqual(node.Parameters.First(x => x.TaxonomyEntry.Name == "c"), calc.ReturnParams["out1"]);
         }
 
         #endregion

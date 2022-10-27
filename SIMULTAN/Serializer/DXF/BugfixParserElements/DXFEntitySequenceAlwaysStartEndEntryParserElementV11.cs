@@ -29,12 +29,13 @@ namespace SIMULTAN.Serializer.DXF
         /// <param name="entityElement">The entity in this collection</param>
         internal DXFEntitySequenceAlwaysStartEndEntryParserElementV11(ComponentSaveCode code, DXFEntityParserElementBase<T> entityElement)
             : this((int)code, entityElement) { }
-        /// <summary>
-        /// Initializes a new instance of the <see cref="DXFENTCTNEntityParserElementV11{T}"/> class
-        /// </summary>
-        /// <param name="code">The entity code</param>
-        /// <param name="entityElement">The entity in this collection</param>
+        internal DXFEntitySequenceAlwaysStartEndEntryParserElementV11(SitePlannerSaveCode code, IEnumerable<DXFEntityParserElementBase<T>> entityElement)
+            : this((int)code, entityElement) { }
         internal DXFEntitySequenceAlwaysStartEndEntryParserElementV11(ChatItemSaveCode code, DXFEntityParserElementBase<T> entityElement)
+            : this((int)code, entityElement) { }
+        internal DXFEntitySequenceAlwaysStartEndEntryParserElementV11(ResourceSaveCode code, IEnumerable<DXFEntityParserElementBase<T>> entityElement)
+            : this((int)code, entityElement) { }
+        internal DXFEntitySequenceAlwaysStartEndEntryParserElementV11(AssetSaveCode code, IEnumerable<DXFEntityParserElementBase<T>> entityElement)
             : this((int)code, entityElement) { }
         /// <summary>
         /// Initializes a new instance of the <see cref="DXFENTCTNEntityParserElementV11{T}"/> class

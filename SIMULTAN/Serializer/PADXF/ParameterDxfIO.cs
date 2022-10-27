@@ -115,7 +115,10 @@ namespace SIMULTAN.Serializer.PADXF
             var parameters = ParameterSectionEntityElement.Parse(reader, parserInfo);
 
             foreach (var parameter in parameters.Where(x => x != null))
+            {
                 parserInfo.ProjectData.ParameterLibraryManager.ParameterRecord.Add(parameter);
+                parameter.RestoreReferences(parserInfo.ProjectData.IdGenerator);
+            }
 
             //EOF
             EOFParserElement.Element.Parse(reader);

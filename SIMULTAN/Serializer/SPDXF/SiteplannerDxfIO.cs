@@ -1,11 +1,15 @@
-﻿using SIMULTAN.Data.MultiValues;
+﻿using Assimp.Unmanaged;
+using SIMULTAN.Data;
+using SIMULTAN.Data.MultiValues;
 using SIMULTAN.Data.SitePlanner;
+using SIMULTAN.Data.ValueMappings;
 using SIMULTAN.Projects;
 using SIMULTAN.Serializer.DXF;
 using SIMULTAN.Utils;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Windows.Media;
@@ -41,9 +45,9 @@ namespace SIMULTAN.Serializer.SPDXF
 
         private class MultiThresholdColorMapData : ColorMapData
         {
-            public IEnumerable<ColorMapMarker> ColorMapMarkers { get; set; }
+            public IEnumerable<SimColorMarker> ColorMapMarkers { get; set; }
 
-            public MultiThresholdColorMapData(IEnumerable<ColorMapMarker> colorMapMarkers)
+            public MultiThresholdColorMapData(IEnumerable<SimColorMarker> colorMapMarkers)
             {
                 this.ColorMapMarkers = colorMapMarkers;
             }
@@ -51,9 +55,9 @@ namespace SIMULTAN.Serializer.SPDXF
 
         private class MultiLinearGradientColorMapData : ColorMapData
         {
-            public IEnumerable<ColorMapMarker> ColorMapMarkers { get; set; }
+            public IEnumerable<SimColorMarker> ColorMapMarkers { get; set; }
 
-            public MultiLinearGradientColorMapData(IEnumerable<ColorMapMarker> colorMapMarkers)
+            public MultiLinearGradientColorMapData(IEnumerable<SimColorMarker> colorMapMarkers)
             {
                 this.ColorMapMarkers = colorMapMarkers;
             }
@@ -64,7 +68,7 @@ namespace SIMULTAN.Serializer.SPDXF
         #region Syntax
 
         private static DXFEntityParserElement<SitePlannerProject> siteplannerEntityElement =
-            new DXFEntityParserElement<SitePlannerProject>(ParamStructTypes.SITEPLANNER, ParseSiteplannerProjcet,
+            new DXFEntityParserElement<SitePlannerProject>(ParamStructTypes.SITEPLANNER, ParseSiteplannerProject,
                 new DXFEntryParserElement[]
                 {
                     new DXFStructArrayEntryParserElement<SitePlannerMap>(SitePlannerSaveCode.GEOMAPS, ParseSitePlannerMap,
@@ -88,14 +92,14 @@ namespace SIMULTAN.Serializer.SPDXF
                             new DXFSingleEntryParserElement<String>(SitePlannerSaveCode.BUILDING_CUSTOM_COLOR){MaxVersion = 11},
                             new DXFSingleEntryParserElement<Color>(SitePlannerSaveCode.BUILDING_CUSTOM_COLOR){MinVersion = 12},
                         }),
-                    new DXFStructArrayEntryParserElement<ValueMappingAssociation>(SitePlannerSaveCode.VALUE_MAPPING_ASSOCIATIONS, ParseValueMappingAssociations,
+                    new DXFStructArrayEntryParserElement<SimId>(SitePlannerSaveCode.VALUE_MAPPING_ASSOCIATIONS, ParseValueMappingV12,
                         new DXFEntryParserElement[]
                         {
                             new DXFSingleEntryParserElement<int>(SitePlannerSaveCode.VALUE_MAPPING_ASSOCIATION_INDEX){ MaxVersion = 11, IsOptional = true},
                             new DXFSingleEntryParserElement<string>(SitePlannerSaveCode.VALUE_MAPPING_ASSOCIATION_NAME),
                             new DXFSingleEntryParserElement<Guid>(SitePlannerSaveCode.VALUE_MAPPING_VALUE_TABLE_LOCATION),
                             new DXFSingleEntryParserElement<long>(SitePlannerSaveCode.VALUE_MAPPING_VALUE_TABLE_KEY),
-                            new DXFSingleEntryParserElement<ComponentIndexUsage>(SitePlannerSaveCode.VALUE_MAPPING_INDEX_USAGE),
+                            new DXFSingleEntryParserElement<SimComponentIndexUsage>(SitePlannerSaveCode.VALUE_MAPPING_INDEX_USAGE),
                             new DXFSingleEntryParserElement<String>(SitePlannerSaveCode.VALUE_MAPPING_COLOR_MAP_TYPE) {MaxVersion = 11},
                             new DXFSingleEntryParserElement<String>(SitePlannerSaveCode.VALUE_MAPPING_COLOR_MAP_PARAMS) {MaxVersion = 11},
                             new DXFSingleEntryParserElement<String>(SitePlannerSaveCode.VALUE_MAPPING_PREFILTER_TYPE) {MaxVersion = 11},
@@ -107,7 +111,7 @@ namespace SIMULTAN.Serializer.SPDXF
                                     new DXFComplexEntityParserElement<ColorMapData>(new DXFEntityParserElement<ColorMapData>(ParamStructTypes.COLOR_MAP_MULTI_THRESHOLD,
                                         ParseMultiThresholdColorMap,
                                         new DXFEntryParserElement[]{
-                                            new DXFStructArrayEntryParserElement<ColorMapMarker>(SitePlannerSaveCode.VALUE_MAPPING_COLOR_MAP_MARKER,
+                                            new DXFStructArrayEntryParserElement<SimColorMarker>(SitePlannerSaveCode.VALUE_MAPPING_COLOR_MAP_MARKER,
                                                 ParseColorMapMarker,
                                                 new DXFEntryParserElement[]
                                                 {
@@ -119,7 +123,7 @@ namespace SIMULTAN.Serializer.SPDXF
                                     new DXFComplexEntityParserElement<ColorMapData>(new DXFEntityParserElement<ColorMapData>(ParamStructTypes.COLOR_MAP_MULTI_LINEAR_GRADIENT,
                                         ParseMultiLinearGradientColorMap,
                                         new DXFEntryParserElement[]{
-                                            new DXFStructArrayEntryParserElement<ColorMapMarker>(SitePlannerSaveCode.VALUE_MAPPING_COLOR_MAP_MARKER,
+                                            new DXFStructArrayEntryParserElement<SimColorMarker>(SitePlannerSaveCode.VALUE_MAPPING_COLOR_MAP_MARKER,
                                                 ParseColorMapMarker,
                                                 new DXFEntryParserElement[]
                                                 {
@@ -156,7 +160,14 @@ namespace SIMULTAN.Serializer.SPDXF
                                         })),
                                 }) {MinVersion = 12} // End of Color Maps
 
-                        }), // End of Value Mapping Associations
+                        }) { MaxVersion = 12 } , // End of Value Mapping Associations
+                    new DXFStructArrayEntryParserElement<SimId>(SitePlannerSaveCode.VALUE_MAPPING_ASSOCIATIONS, ParseValueMapping,
+                        new DXFEntryParserElement[]
+                        {
+                            new DXFSingleEntryParserElement<Guid>(SitePlannerSaveCode.VALUE_MAPPING_GLOBAL_ID),
+                            new DXFSingleEntryParserElement<long>(SitePlannerSaveCode.VALUE_MAPPING_LOCAL_ID),
+
+                        }) { MinVersion = 13 },
                     new DXFSingleEntryParserElement<int>(SitePlannerSaveCode.VALUE_MAPPING_ACTIVE_ASSOCIATION_INDEX),
                 });
 
@@ -176,19 +187,21 @@ namespace SIMULTAN.Serializer.SPDXF
         {
             if (typeLookup == null)
             {
+                //V < 12
                 typeLookup = new Dictionary<string, Type>();
-                typeLookup.Add("ParameterStructure.SitePlanner.ValueMapping.Maps.MultiLinearGradientColorMap", typeof(MultiLinearGradientColorMap));
-                typeLookup.Add("ParameterStructure.SitePlanner.ValueMapping.Maps.MultiThresholdColorMap", typeof(MultiThresholdColorMap));
-                typeLookup.Add("ParameterStructure.SitePlanner.ValueMapping.Prefilters.TimelinePrefilter", typeof(TimelinePrefilter));
-                typeLookup.Add("ParameterStructure.SitePlanner.ValueMapping.Prefilters.MinimumPrefilter", typeof(MinimumPrefilter));
-                typeLookup.Add("ParameterStructure.SitePlanner.ValueMapping.Prefilters.MaximumPrefilter", typeof(MaximumPrefilter));
-                typeLookup.Add("ParameterStructure.SitePlanner.ValueMapping.Prefilters.AveragePrefilter", typeof(AveragePrefilter));
-                typeLookup.Add("SIMULTAN.Data.SitePlanner.MultiLinearGradientColorMap", typeof(MultiLinearGradientColorMap));
-                typeLookup.Add("SIMULTAN.Data.SitePlanner.MultiThresholdColorMap", typeof(MultiThresholdColorMap));
-                typeLookup.Add("SIMULTAN.Data.SitePlanner.TimelinePrefilter", typeof(TimelinePrefilter));
-                typeLookup.Add("SIMULTAN.Data.SitePlanner.MinimumPrefilter", typeof(MinimumPrefilter));
-                typeLookup.Add("SIMULTAN.Data.SitePlanner.MaximumPrefilter", typeof(MaximumPrefilter));
-                typeLookup.Add("SIMULTAN.Data.SitePlanner.AveragePrefilter", typeof(AveragePrefilter));
+                typeLookup.Add("ParameterStructure.SitePlanner.ValueMapping.Maps.MultiLinearGradientColorMap", typeof(SimLinearGradientColorMap));
+                typeLookup.Add("ParameterStructure.SitePlanner.ValueMapping.Maps.MultiThresholdColorMap", typeof(SimThresholdColorMap));
+                typeLookup.Add("ParameterStructure.SitePlanner.ValueMapping.Prefilters.TimelinePrefilter", typeof(SimDefaultPrefilter));
+                typeLookup.Add("ParameterStructure.SitePlanner.ValueMapping.Prefilters.MinimumPrefilter", typeof(SimMinimumPrefilter));
+                typeLookup.Add("ParameterStructure.SitePlanner.ValueMapping.Prefilters.MaximumPrefilter", typeof(SimMaximumPrefilter));
+                typeLookup.Add("ParameterStructure.SitePlanner.ValueMapping.Prefilters.AveragePrefilter", typeof(SimAveragePrefilter));
+                //V12
+                typeLookup.Add("SIMULTAN.Data.SitePlanner.MultiLinearGradientColorMap", typeof(SimLinearGradientColorMap));
+                typeLookup.Add("SIMULTAN.Data.SitePlanner.MultiThresholdColorMap", typeof(SimThresholdColorMap));
+                typeLookup.Add("SIMULTAN.Data.SitePlanner.TimelinePrefilter", typeof(SimDefaultPrefilter));
+                typeLookup.Add("SIMULTAN.Data.SitePlanner.MinimumPrefilter", typeof(SimMinimumPrefilter));
+                typeLookup.Add("SIMULTAN.Data.SitePlanner.MaximumPrefilter", typeof(SimMaximumPrefilter));
+                typeLookup.Add("SIMULTAN.Data.SitePlanner.AveragePrefilter", typeof(SimAveragePrefilter));
             }
 
             if(typeLookup.TryGetValue(typename, out var type))
@@ -286,113 +299,24 @@ namespace SIMULTAN.Serializer.SPDXF
                 w.Write(SitePlannerSaveCode.BUILDING_CUSTOM_COLOR, building.CustomColor);
             });
 
-            writer.WriteArray<ValueMappingAssociation>(SitePlannerSaveCode.VALUE_MAPPING_ASSOCIATIONS, sitePlannerProject.ValueMap.ParametersAssociations,
-                (assoc, w) =>
+            writer.WriteArray<SimValueMapping>(SitePlannerSaveCode.VALUE_MAPPING_ASSOCIATIONS, sitePlannerProject.ValueMappings,
+                (vm, w) =>
+                {
+                    w.WriteGlobalId(SitePlannerSaveCode.VALUE_MAPPING_GLOBAL_ID, vm.Id.GlobalId, 
+                        projectData.SitePlannerManager.CalledFromLocation.GlobalID);
+                    w.Write<long>(SitePlannerSaveCode.VALUE_MAPPING_LOCAL_ID, vm.Id.LocalId);
+                });
+
+            if (sitePlannerProject.ActiveValueMapping != null)
             {
-                w.Write(SitePlannerSaveCode.VALUE_MAPPING_ASSOCIATION_NAME, assoc.Name);
-                w.WriteGlobalId(SitePlannerSaveCode.VALUE_MAPPING_VALUE_TABLE_LOCATION, assoc.Parameters.ValueTable.GlobalID, projectData.SitePlannerManager.CalledFromLocation.GlobalID);
-                w.Write(SitePlannerSaveCode.VALUE_MAPPING_VALUE_TABLE_KEY, assoc.Parameters.ValueTable.LocalID);
-                w.Write(SitePlannerSaveCode.VALUE_MAPPING_INDEX_USAGE, assoc.Parameters.ComponentIndexUsage);
-
-                w.WriteEntitySequence<IValueToColorMap>(SitePlannerSaveCode.VALUE_MAPPING_COLOR_MAP, new IValueToColorMap[] { assoc.Parameters.ValueToColorMap },
-                    (map, wr) =>
-                    {
-                        if (map is MultiThresholdColorMap mtcm)
-                        {
-                            wr.StartComplexEntity();
-
-                            wr.Write(ParamStructCommonSaveCode.ENTITY_START, ParamStructTypes.COLOR_MAP_MULTI_THRESHOLD);
-
-                            var cmparams = (MarkerColorMapParameters)mtcm.Parameters;
-                            WriteColorMapMarkers(cmparams.Markers, wr);
-
-                            wr.EndComplexEntity();
-                        }
-                        else if (map is MultiLinearGradientColorMap mlgcm)
-                        {
-                            wr.StartComplexEntity();
-
-                            wr.Write(ParamStructCommonSaveCode.ENTITY_START, ParamStructTypes.COLOR_MAP_MULTI_LINEAR_GRADIENT);
-
-                            var cmparams = (MarkerColorMapParameters)mlgcm.Parameters;
-                            WriteColorMapMarkers(cmparams.Markers, wr);
-
-                            wr.EndComplexEntity();
-                        }
-                        else
-                        {
-                            throw new Exception("Unsupported IValueColorMap type " + map.GetType().Name);
-                        }
-                    });
-
-
-                w.WriteEntitySequence<IValuePrefilter>(SitePlannerSaveCode.VALUE_MAPPING_PREFILTER, new IValuePrefilter[] { assoc.Parameters.ValuePreFilter },
-                    (prefilter, wr) =>
-                    {
-                        if (prefilter is MaximumPrefilter)
-                        {
-                            wr.StartComplexEntity();
-
-                            wr.Write(ParamStructCommonSaveCode.ENTITY_START, ParamStructTypes.PREFILTER_MAXIMUM);
-
-                            wr.EndComplexEntity();
-                        }
-                        else if (prefilter is MinimumPrefilter)
-                        {
-                            wr.StartComplexEntity();
-
-                            wr.Write(ParamStructCommonSaveCode.ENTITY_START, ParamStructTypes.PREFILTER_MINIMUM);
-
-                            wr.EndComplexEntity();
-                        }
-                        else if (prefilter is AveragePrefilter)
-                        {
-                            wr.StartComplexEntity();
-
-                            wr.Write(ParamStructCommonSaveCode.ENTITY_START, ParamStructTypes.PREFILTER_AVERAGE);
-
-                            wr.EndComplexEntity();
-                        }
-                        else if (prefilter is TimelinePrefilter tp)
-                        {
-                            wr.StartComplexEntity();
-
-                            wr.Write(ParamStructCommonSaveCode.ENTITY_START, ParamStructTypes.PREFILTER_TIMELINE);
-
-                            var tpParams = tp.Parameters as TimelinePrefilterParameters;
-                            wr.Write(SitePlannerSaveCode.VALUE_MAPPING_PREFILTER_TIMELINE_CURRENT, tpParams.Current);
-
-                            wr.EndComplexEntity();
-                        }
-                        else
-                        {
-                            throw new Exception("Unsupported IValuePrefilter type " + prefilter.GetType().Name);
-                        }
-
-                    });
-
-            });
-
-
-            if (sitePlannerProject.ValueMap.ActiveParametersAssociation != null)
-            {
-                writer.Write(SitePlannerSaveCode.VALUE_MAPPING_ACTIVE_ASSOCIATION_INDEX, sitePlannerProject.ValueMap.ActiveParametersAssociationIndex);
+                writer.Write(SitePlannerSaveCode.VALUE_MAPPING_ACTIVE_ASSOCIATION_INDEX,
+                    sitePlannerProject.ValueMappings.IndexOf(sitePlannerProject.ActiveValueMapping));
             }
 
             writer.EndSection();
 
             // EOF
             writer.WriteEOF();
-        }
-
-        private static void WriteColorMapMarkers(IEnumerable<ColorMapMarker> markers, DXFStreamWriter w)
-        {
-            w.WriteArray<ColorMapMarker>(SitePlannerSaveCode.VALUE_MAPPING_COLOR_MAP_MARKER, markers,
-                (marker, mw) =>
-                {
-                    mw.Write<double>(SitePlannerSaveCode.VALUE_MAPPING_COLOR_MAP_MARKER_VALUE, marker.Value);
-                    mw.Write<Color>(SitePlannerSaveCode.VALUE_MAPPING_COLOR_MAP_MARKER_COLOR, marker.Color);
-                });
         }
 
         /// <summary>
@@ -407,9 +331,9 @@ namespace SIMULTAN.Serializer.SPDXF
         #endregion
 
         #region Parsing
-        private static IEnumerable<ColorMapMarker> DeserializeMarkerColorMapParametersV11(string obj)
+        private static IEnumerable<SimColorMarker> DeserializeMarkerColorMapParametersV11(string obj)
         {
-            var colorMapMarkers = new List<ColorMapMarker>();
+            var colorMapMarkers = new List<SimColorMarker>();
             string[] markers = obj.Split(';');
             ColorConverter colorConverter = new ColorConverter();
             foreach (var m in markers)
@@ -417,18 +341,12 @@ namespace SIMULTAN.Serializer.SPDXF
                 var parameters = m.Split('|');
                 var val = double.Parse(parameters[0], System.Globalization.CultureInfo.InvariantCulture);
                 var col = (Color)colorConverter.ConvertFromInvariantString(parameters[1]);
-                colorMapMarkers.Add(new ColorMapMarker(val, col));
+                colorMapMarkers.Add(new SimColorMarker(val, col));
             }
             return colorMapMarkers;
         }
 
-        private static int DeserializeTimelinePrefilterV11(string obj)
-        {
-            string[] parameters = obj.Split(';');
-            return int.Parse(parameters[0]);
-        }
-
-        private static SitePlannerProject ParseSiteplannerProjcet(DXFParserResultSet data, DXFParserInfo info)
+        private static SitePlannerProject ParseSiteplannerProject(DXFParserResultSet data, DXFParserInfo info)
         {
             var resource = info.ProjectData.AssetManager.GetResource(info.CurrentFile);
             if (resource == null)
@@ -438,7 +356,7 @@ namespace SIMULTAN.Serializer.SPDXF
 
             var maps = data.Get<SitePlannerMap[]>(SitePlannerSaveCode.GEOMAPS, new SitePlannerMap[0]);
             var buildings = data.Get<SitePlannerBuilding[]>(SitePlannerSaveCode.BUILDINGS, new SitePlannerBuilding[0]);
-            var associations = data.Get<ValueMappingAssociation[]>(SitePlannerSaveCode.VALUE_MAPPING_ASSOCIATIONS, new ValueMappingAssociation[0]);
+            var valueMappingIds = data.Get<SimId[]>(SitePlannerSaveCode.VALUE_MAPPING_ASSOCIATIONS, new SimId[0]);
 
             var spp = new SitePlannerProject(resource);
 
@@ -447,27 +365,36 @@ namespace SIMULTAN.Serializer.SPDXF
             // SitePlannerBuildings
             spp.Buildings.AddRange(buildings);
 
-            // ValueMappingAssoctiaions
-            var valueMap = new ValueMap();
-            valueMap.ParametersAssociations.AddRange(associations);
-
-            valueMap.EstablishValueFieldConnection(info.ProjectData.ValueManager);
-
-            var activeAssociationIndex = data.Get<int>(SitePlannerSaveCode.VALUE_MAPPING_ACTIVE_ASSOCIATION_INDEX, -1);
-            if (activeAssociationIndex >= 0)
+            // ValueMappings
+            foreach (var valueMappingId in valueMappingIds)
             {
-                valueMap.ActiveParametersAssociationIndex = activeAssociationIndex;
+                if (valueMappingId != SimId.Empty)
+                {
+                    var valueMapping = info.ProjectData.IdGenerator.GetById<SimValueMapping>(valueMappingId);
+
+                    if (valueMapping != null)
+                        spp.ValueMappings.Add(valueMapping);
+                    else
+                        info.Log(String.Format("Could not find ValueMapping with Id {0}:{1}", valueMappingId.GlobalId, valueMappingId.LocalId));
+                }
             }
 
-            spp.ValueMap = valueMap;
+            var activeAssociationIndex = data.Get<int>(SitePlannerSaveCode.VALUE_MAPPING_ACTIVE_ASSOCIATION_INDEX, -1);
+            if (activeAssociationIndex >= 0 && activeAssociationIndex < spp.ValueMappings.Count)
+            {
+                spp.ActiveValueMapping = spp.ValueMappings[activeAssociationIndex];
+            }
 
             return spp;
         }
-        private static ValueMappingAssociation ParseValueMappingAssociations(DXFParserResultSet result, DXFParserInfo info)
+
+        private static SimId ParseValueMappingV12(DXFParserResultSet result, DXFParserInfo info)
         {
+            //Only relevant for version < 13
+
             var name = result.Get<String>(SitePlannerSaveCode.VALUE_MAPPING_ASSOCIATION_NAME, "");
             var id = result.GetSimId(SitePlannerSaveCode.VALUE_MAPPING_VALUE_TABLE_LOCATION, SitePlannerSaveCode.VALUE_MAPPING_VALUE_TABLE_KEY, info.ProjectData.SitePlannerManager.CalledFromLocation.GlobalID);
-            var usage = result.Get<ComponentIndexUsage>(SitePlannerSaveCode.VALUE_MAPPING_INDEX_USAGE, ComponentIndexUsage.Column);
+            var usage = result.Get<SimComponentIndexUsage>(SitePlannerSaveCode.VALUE_MAPPING_INDEX_USAGE, SimComponentIndexUsage.Column);
 
             id = new Data.SimId(id.GlobalId, info.TranslateId(typeof(SimMultiValue), id.LocalId)); // translates if version < 6
 
@@ -476,55 +403,16 @@ namespace SIMULTAN.Serializer.SPDXF
             {
                 throw new Exception("Could not find Multi Value Table for ValueAssociation");
             }
-            var vmp = new ValueMappingParameters(table);
-            vmp.ComponentIndexUsage = usage;
 
-            if (info.FileVersion < 12)
+            SimColorMap colorMap = null;
+            SimPrefilter prefilter = null;
+            SimId mappingId = SimId.Empty;
+
+            if (info.FileVersion >= 13)
             {
-                var colorMapTypeString = result.Get<String>(SitePlannerSaveCode.VALUE_MAPPING_COLOR_MAP_TYPE, null);
-                var colorMapType = LookupType(colorMapTypeString);
-                if(!String.IsNullOrEmpty(colorMapTypeString) && colorMapType == null)
-                {
-                    throw new Exception("Could not find type of color map: " + colorMapTypeString);
-                }
-                var colormap = vmp.RegisteredColorMaps.FirstOrDefault(x => x.GetType() == colorMapType);
-                if (colormap != null)
-                {
-                    var colorMapString = result.Get<String>(SitePlannerSaveCode.VALUE_MAPPING_COLOR_MAP_PARAMS, "");
-                    var markerParams = colormap.Parameters as MarkerColorMapParameters;
-                    if (markerParams != null)
-                    {
-                        var markes = DeserializeMarkerColorMapParametersV11(colorMapString);
-                        markerParams.Markers.Clear();
-                        markerParams.Markers.AddRange(markes);
-                    }
-                    else
-                    {
-                        throw new Exception("Unsupported ColorMapParamerters Type " + colormap.Parameters.GetType().Name);
-                    }
-                    vmp.ValueToColorMap = colormap;
-                }
-
-                var prefilterTypeString = result.Get<String>(SitePlannerSaveCode.VALUE_MAPPING_PREFILTER_TYPE, null);
-                var prefilterType = LookupType(prefilterTypeString);
-                if(!String.IsNullOrEmpty(prefilterTypeString) && prefilterType == null)
-                {
-                    throw new Exception("Could not find type of value prefilter: " + prefilterTypeString);
-                }
-                var prefilter = vmp.RegisteredValuePrefilters.FirstOrDefault(x => x.GetType() == prefilterType);
-                if (prefilter != null)
-                {
-                    var prefilterString = result.Get<String>(SitePlannerSaveCode.VALUE_MAPPING_PREFILTER_PARAMS, "");
-                    if (prefilterType == typeof(TimelinePrefilter))
-                    {
-                        int current = DeserializeTimelinePrefilterV11(prefilterString);
-                        ((TimelinePrefilterParameters)prefilter.Parameters).Current = current;
-                    }
-
-                    vmp.ValuePreFilter = prefilter;
-                }
+                throw new NotImplementedException("TODO");
             }
-            else
+            else if (info.FileVersion == 12)
             {
                 // Color Maps
                 var colormaps = result.Get<ColorMapData[]>(SitePlannerSaveCode.VALUE_MAPPING_COLOR_MAP, new ColorMapData[0]);
@@ -532,27 +420,18 @@ namespace SIMULTAN.Serializer.SPDXF
                 {
                     // There is only one
                     var colorMapData = colormaps[0];
-                    Type colorMapType = null;
-                    IEnumerable<ColorMapMarker> markers = null;
                     if (colorMapData is MultiThresholdColorMapData mtcmd)
                     {
-                        colorMapType = typeof(MultiThresholdColorMap);
-                        markers = mtcmd.ColorMapMarkers;
+                        colorMap = new SimThresholdColorMap(mtcmd.ColorMapMarkers);
                     }
                     else if (colorMapData is MultiLinearGradientColorMapData mlgcmd)
                     {
-                        colorMapType = typeof(MultiLinearGradientColorMap);
-                        markers = mlgcmd.ColorMapMarkers;
+                        colorMap = new SimLinearGradientColorMap(mlgcmd.ColorMapMarkers);
                     }
                     else
                     {
                         throw new Exception(String.Format("Color map data type {0} not supported", colorMapData.GetType().Name));
                     }
-                    var colormap = vmp.RegisteredColorMaps.FirstOrDefault(x => x.GetType() == colorMapType);
-                    var parameters = (MarkerColorMapParameters)colormap.Parameters;
-                    parameters.Markers.Clear();
-                    parameters.Markers.AddRange(markers);
-                    vmp.ValueToColorMap = colormap;
                 }
                 else
                 {
@@ -562,38 +441,25 @@ namespace SIMULTAN.Serializer.SPDXF
                 var prefilters = result.Get<PrefilterData[]>(SitePlannerSaveCode.VALUE_MAPPING_PREFILTER, new PrefilterData[0]);
                 if (prefilters.Count() > 0)
                 {
-                    var prefilter = prefilters[0];
-                    if (prefilter is AggregationPrefilterData ap)
+                    var loadingprefilter = prefilters[0];
+                    if (loadingprefilter is AggregationPrefilterData ap)
                     {
-                        Type prefType = null;
                         switch (ap.PrefilterType)
                         {
                             case AggregationPrefilterData.AggregationPrefilterType.Maximum:
-                                prefType = typeof(MaximumPrefilter);
+                                prefilter = new SimMaximumPrefilter();
                                 break;
                             case AggregationPrefilterData.AggregationPrefilterType.Minimum:
-                                prefType = typeof(MinimumPrefilter);
+                                prefilter = new SimMinimumPrefilter();
                                 break;
                             case AggregationPrefilterData.AggregationPrefilterType.Average:
-                                prefType = typeof(AveragePrefilter);
+                                prefilter = new SimAveragePrefilter();
                                 break;
                         }
-
-                        var valuePrefilter = vmp.RegisteredValuePrefilters.FirstOrDefault(x => x.GetType() == prefType);
-                        if(valuePrefilter != null)
-                        {
-                            vmp.ValuePreFilter = valuePrefilter;
-                        }
                     }
-                    else if (prefilter is TimelinePrefilterData tp)
+                    else if (loadingprefilter is TimelinePrefilterData tp)
                     {
-
-                        var valuePrefilter = vmp.RegisteredValuePrefilters.FirstOrDefault(x => x.GetType() == typeof(TimelinePrefilter));
-                        if(valuePrefilter != null)
-                        {
-                            ((TimelinePrefilterParameters)valuePrefilter.Parameters).Current = tp.Current;
-                            vmp.ValuePreFilter = valuePrefilter;
-                        }
+                        prefilter = new SimDefaultPrefilter();
                     }
                     else
                     {
@@ -604,10 +470,79 @@ namespace SIMULTAN.Serializer.SPDXF
                 {
                     throw new Exception("Could not find any Prefilters.");
                 }
+
+                var mapping = new SimValueMapping(name, table, prefilter, colorMap)
+                {
+                    ComponentIndexUsage = usage,
+                };
+                info.ProjectData.ValueMappings.Add(mapping);
+                mappingId = mapping.Id;
+            }
+            else// info.FileVersion < 12
+            {
+                //Color Maps
+                var colorMapTypeString = result.Get<String>(SitePlannerSaveCode.VALUE_MAPPING_COLOR_MAP_TYPE, null);
+                var colorMapType = LookupType(colorMapTypeString);
+                if(!String.IsNullOrEmpty(colorMapTypeString) && colorMapType == null)
+                {
+                    throw new Exception("Could not find type of color map: " + colorMapTypeString);
+                }
+
+                var colorMapString = result.Get<String>(SitePlannerSaveCode.VALUE_MAPPING_COLOR_MAP_PARAMS, "");
+                if (colorMapType == typeof(SimThresholdColorMap))
+                {
+                    var markers = DeserializeMarkerColorMapParametersV11(colorMapString);
+                    colorMap = new SimThresholdColorMap(markers);
+                }
+                else if (colorMapType == typeof(SimLinearGradientColorMap))
+                {
+                    var markers = DeserializeMarkerColorMapParametersV11(colorMapString);
+                    colorMap = new SimLinearGradientColorMap(markers);
+                }
+                else
+                    throw new NotSupportedException("Unsupported color map type");
+
+                //Pre Filter
+                var prefilterTypeString = result.Get<String>(SitePlannerSaveCode.VALUE_MAPPING_PREFILTER_TYPE, null);
+                var prefilterType = LookupType(prefilterTypeString);
+                if(!String.IsNullOrEmpty(prefilterTypeString) && prefilterType == null)
+                {
+                    throw new Exception("Could not find type of value prefilter: " + prefilterTypeString);
+                }
+
+                var prefilterString = result.Get<String>(SitePlannerSaveCode.VALUE_MAPPING_PREFILTER_PARAMS, "");
+                if (prefilterType == typeof(SimMaximumPrefilter))
+                {
+                    prefilter = new SimMaximumPrefilter();
+                }
+                else if (prefilterType == typeof(SimMinimumPrefilter))
+                {
+                    prefilter = new SimMinimumPrefilter();
+                }
+                else if (prefilterType == typeof(SimAveragePrefilter))
+                {
+                    prefilter = new SimAveragePrefilter();
+                }
+                else if (prefilterType == typeof(SimDefaultPrefilter))
+                {
+                    prefilter = new SimDefaultPrefilter();
+                }
+                else
+                    throw new NotSupportedException("Unsupported prefilter type");
+
+                var mapping = new SimValueMapping(name, table, prefilter, colorMap)
+                {
+                    ComponentIndexUsage = usage,
+                };
+                info.ProjectData.ValueMappings.Add(mapping);
+                mappingId = mapping.Id;
             }
 
-            var vma = new ValueMappingAssociation(name, vmp);
-            return vma;
+            return mappingId;
+        }
+        private static SimId ParseValueMapping(DXFParserResultSet result, DXFParserInfo info)
+        {
+            return result.GetSimId(SitePlannerSaveCode.VALUE_MAPPING_GLOBAL_ID, SitePlannerSaveCode.VALUE_MAPPING_LOCAL_ID, info.GlobalId);
         }
 
         private static SitePlannerBuilding ParseBuildings(DXFParserResultSet result, DXFParserInfo info)
@@ -694,21 +629,21 @@ namespace SIMULTAN.Serializer.SPDXF
             return new AggregationPrefilterData() { PrefilterType = AggregationPrefilterData.AggregationPrefilterType.Average };
         }
 
-        private static ColorMapMarker ParseColorMapMarker(DXFParserResultSet data, DXFParserInfo info)
+        private static SimColorMarker ParseColorMapMarker(DXFParserResultSet data, DXFParserInfo info)
         {
             double value = data.Get<double>(SitePlannerSaveCode.VALUE_MAPPING_COLOR_MAP_MARKER_VALUE, 0);
             Color color = data.Get<Color>(SitePlannerSaveCode.VALUE_MAPPING_COLOR_MAP_MARKER_COLOR, Colors.Black);
-            return new ColorMapMarker(value, color);
+            return new SimColorMarker(value, color);
         }
 
         private static ColorMapData ParseMultiThresholdColorMap(DXFParserResultSet data, DXFParserInfo info)
         {
-            var markers = data.Get<ColorMapMarker[]>(SitePlannerSaveCode.VALUE_MAPPING_COLOR_MAP_MARKER, null);
+            var markers = data.Get<SimColorMarker[]>(SitePlannerSaveCode.VALUE_MAPPING_COLOR_MAP_MARKER, null);
             return new MultiThresholdColorMapData(markers);
         }
         private static ColorMapData ParseMultiLinearGradientColorMap(DXFParserResultSet data, DXFParserInfo info)
         {
-            var markers = data.Get<ColorMapMarker[]>(SitePlannerSaveCode.VALUE_MAPPING_COLOR_MAP_MARKER, null);
+            var markers = data.Get<SimColorMarker[]>(SitePlannerSaveCode.VALUE_MAPPING_COLOR_MAP_MARKER, null);
             return new MultiLinearGradientColorMapData(markers);
         }
         #endregion

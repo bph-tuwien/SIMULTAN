@@ -24,41 +24,41 @@ namespace SIMULTAN.Exchange.GeometryConnectors
             using (AccessCheckingDisabler.Disable(placement.Instance.Component.Factory))
             {
                 //Check that parameters exist
-                ExchangeHelpers.CreateParameterIfNotExists(placement.Instance.Component, ReservedParameters.RP_K_FOK,
+                ExchangeHelpers.CreateParameterIfNotExists(placement.Instance.Component, ReservedParameterKeys.RP_K_FOK, ReservedParameters.RP_K_FOK,
                     SimParameterInstancePropagation.PropagateAlways, 0.0);
-                ExchangeHelpers.CreateParameterIfNotExists(placement.Instance.Component, ReservedParameters.RP_K_FOK_ROH,
+                ExchangeHelpers.CreateParameterIfNotExists(placement.Instance.Component, ReservedParameterKeys.RP_K_FOK_ROH, ReservedParameters.RP_K_FOK_ROH,
                     SimParameterInstancePropagation.PropagateAlways, double.NaN);
-                ExchangeHelpers.CreateParameterIfNotExists(placement.Instance.Component, ReservedParameters.RP_K_F_AXES,
+                ExchangeHelpers.CreateParameterIfNotExists(placement.Instance.Component, ReservedParameterKeys.RP_K_F_AXES, ReservedParameters.RP_K_F_AXES,
                     SimParameterInstancePropagation.PropagateAlways, 0.0);
-                ExchangeHelpers.CreateParameterIfNotExists(placement.Instance.Component, ReservedParameters.RP_K_DUK,
+                ExchangeHelpers.CreateParameterIfNotExists(placement.Instance.Component, ReservedParameterKeys.RP_K_DUK, ReservedParameters.RP_K_DUK,
                     SimParameterInstancePropagation.PropagateAlways, 0.0);
-                ExchangeHelpers.CreateParameterIfNotExists(placement.Instance.Component, ReservedParameters.RP_K_DUK_ROH,
+                ExchangeHelpers.CreateParameterIfNotExists(placement.Instance.Component, ReservedParameterKeys.RP_K_DUK_ROH, ReservedParameters.RP_K_DUK_ROH,
                     SimParameterInstancePropagation.PropagateAlways, 0.0);
-                ExchangeHelpers.CreateParameterIfNotExists(placement.Instance.Component, ReservedParameters.RP_K_D_AXES,
+                ExchangeHelpers.CreateParameterIfNotExists(placement.Instance.Component, ReservedParameterKeys.RP_K_D_AXES, ReservedParameters.RP_K_D_AXES,
                     SimParameterInstancePropagation.PropagateAlways, 0.0);
-                ExchangeHelpers.CreateParameterIfNotExists(placement.Instance.Component, ReservedParameters.RP_H_NET,
+                ExchangeHelpers.CreateParameterIfNotExists(placement.Instance.Component, ReservedParameterKeys.RP_H_NET, ReservedParameters.RP_H_NET,
                     SimParameterInstancePropagation.PropagateAlways, 0.0);
-                ExchangeHelpers.CreateParameterIfNotExists(placement.Instance.Component, ReservedParameters.RP_H_GROSS,
+                ExchangeHelpers.CreateParameterIfNotExists(placement.Instance.Component, ReservedParameterKeys.RP_H_GROSS, ReservedParameters.RP_H_GROSS,
                     SimParameterInstancePropagation.PropagateAlways, 0.0);
-                ExchangeHelpers.CreateParameterIfNotExists(placement.Instance.Component, ReservedParameters.RP_H_AXES,
+                ExchangeHelpers.CreateParameterIfNotExists(placement.Instance.Component, ReservedParameterKeys.RP_H_AXES, ReservedParameters.RP_H_AXES,
                     SimParameterInstancePropagation.PropagateAlways, 0.0);
-                ExchangeHelpers.CreateParameterIfNotExists(placement.Instance.Component, ReservedParameters.RP_L_PERIMETER,
+                ExchangeHelpers.CreateParameterIfNotExists(placement.Instance.Component, ReservedParameterKeys.RP_L_PERIMETER, ReservedParameters.RP_L_PERIMETER,
                     SimParameterInstancePropagation.PropagateAlways, 0.0);
-                ExchangeHelpers.CreateParameterIfNotExists(placement.Instance.Component, ReservedParameters.RP_AREA_BGF,
+                ExchangeHelpers.CreateParameterIfNotExists(placement.Instance.Component, ReservedParameterKeys.RP_AREA_BGF, ReservedParameters.RP_AREA_BGF,
                     SimParameterInstancePropagation.PropagateAlways, 0.0);
-                ExchangeHelpers.CreateParameterIfNotExists(placement.Instance.Component, ReservedParameters.RP_AREA_NGF,
+                ExchangeHelpers.CreateParameterIfNotExists(placement.Instance.Component, ReservedParameterKeys.RP_AREA_NGF, ReservedParameters.RP_AREA_NGF,
                     SimParameterInstancePropagation.PropagateAlways, 0.0);
-                ExchangeHelpers.CreateParameterIfNotExists(placement.Instance.Component, ReservedParameters.RP_AREA_NF,
+                ExchangeHelpers.CreateParameterIfNotExists(placement.Instance.Component, ReservedParameterKeys.RP_AREA_NF, ReservedParameters.RP_AREA_NF,
                     SimParameterInstancePropagation.PropagateAlways, double.NaN);
-                ExchangeHelpers.CreateParameterIfNotExists(placement.Instance.Component, ReservedParameters.RP_AREA_AXES,
+                ExchangeHelpers.CreateParameterIfNotExists(placement.Instance.Component, ReservedParameterKeys.RP_AREA_AXES, ReservedParameters.RP_AREA_AXES,
                     SimParameterInstancePropagation.PropagateAlways, 0.0);
-                ExchangeHelpers.CreateParameterIfNotExists(placement.Instance.Component, ReservedParameters.RP_VOLUME_BRI,
+                ExchangeHelpers.CreateParameterIfNotExists(placement.Instance.Component, ReservedParameterKeys.RP_VOLUME_BRI, ReservedParameters.RP_VOLUME_BRI,
                     SimParameterInstancePropagation.PropagateAlways, 0.0);
-                ExchangeHelpers.CreateParameterIfNotExists(placement.Instance.Component, ReservedParameters.RP_VOLUME_NRI,
+                ExchangeHelpers.CreateParameterIfNotExists(placement.Instance.Component, ReservedParameterKeys.RP_VOLUME_NRI, ReservedParameters.RP_VOLUME_NRI,
                     SimParameterInstancePropagation.PropagateAlways, 0.0);
-                ExchangeHelpers.CreateParameterIfNotExists(placement.Instance.Component, ReservedParameters.RP_VOLUME_NRI_NF,
+                ExchangeHelpers.CreateParameterIfNotExists(placement.Instance.Component, ReservedParameterKeys.RP_VOLUME_NRI_NF, ReservedParameters.RP_VOLUME_NRI_NF,
                     SimParameterInstancePropagation.PropagateAlways, 0.0);
-                ExchangeHelpers.CreateParameterIfNotExists(placement.Instance.Component, ReservedParameters.RP_VOLUME_AXES,
+                ExchangeHelpers.CreateParameterIfNotExists(placement.Instance.Component, ReservedParameterKeys.RP_VOLUME_AXES, ReservedParameters.RP_VOLUME_AXES,
                     SimParameterInstancePropagation.PropagateAlways, 0.0);
 
                 this.Placement.Instance.Component.Name = volume.Name;
@@ -90,27 +90,27 @@ namespace SIMULTAN.Exchange.GeometryConnectors
 
             using (AccessCheckingDisabler.Disable(Placement.Instance.Factory))
             {
-                ExchangeHelpers.SetParameterIfExists(Placement, ReservedParameters.RP_K_FOK, elevFloor);
-                ExchangeHelpers.SetParameterIfExists(Placement, ReservedParameters.RP_K_FOK_ROH, double.NaN);
-                ExchangeHelpers.SetParameterIfExists(Placement, ReservedParameters.RP_K_F_AXES, refElevFloor);
-                ExchangeHelpers.SetParameterIfExists(Placement, ReservedParameters.RP_K_DUK, elevCeiling);
-                ExchangeHelpers.SetParameterIfExists(Placement, ReservedParameters.RP_K_DUK_ROH, elevFloor);
-                ExchangeHelpers.SetParameterIfExists(Placement, ReservedParameters.RP_K_D_AXES, refElevCeiling);
+                ExchangeHelpers.SetParameterIfExists(Placement, ReservedParameterKeys.RP_K_FOK, elevFloor);
+                ExchangeHelpers.SetParameterIfExists(Placement, ReservedParameterKeys.RP_K_FOK_ROH, double.NaN);
+                ExchangeHelpers.SetParameterIfExists(Placement, ReservedParameterKeys.RP_K_F_AXES, refElevFloor);
+                ExchangeHelpers.SetParameterIfExists(Placement, ReservedParameterKeys.RP_K_DUK, elevCeiling);
+                ExchangeHelpers.SetParameterIfExists(Placement, ReservedParameterKeys.RP_K_DUK_ROH, elevFloor);
+                ExchangeHelpers.SetParameterIfExists(Placement, ReservedParameterKeys.RP_K_D_AXES, refElevCeiling);
 
-                ExchangeHelpers.SetParameterIfExists(Placement, ReservedParameters.RP_H_NET, heightMin);
-                ExchangeHelpers.SetParameterIfExists(Placement, ReservedParameters.RP_H_GROSS, heightMax);
-                ExchangeHelpers.SetParameterIfExists(Placement, ReservedParameters.RP_H_AXES, heightRef);
-                ExchangeHelpers.SetParameterIfExists(Placement, ReservedParameters.RP_L_PERIMETER, floorPerim);
+                ExchangeHelpers.SetParameterIfExists(Placement, ReservedParameterKeys.RP_H_NET, heightMin);
+                ExchangeHelpers.SetParameterIfExists(Placement, ReservedParameterKeys.RP_H_GROSS, heightMax);
+                ExchangeHelpers.SetParameterIfExists(Placement, ReservedParameterKeys.RP_H_AXES, heightRef);
+                ExchangeHelpers.SetParameterIfExists(Placement, ReservedParameterKeys.RP_L_PERIMETER, floorPerim);
 
-                ExchangeHelpers.SetParameterIfExists(Placement, ReservedParameters.RP_AREA_BGF, areaBrutto);
-                ExchangeHelpers.SetParameterIfExists(Placement, ReservedParameters.RP_AREA_NGF, areaNetto);
-                ExchangeHelpers.SetParameterIfExists(Placement, ReservedParameters.RP_AREA_NF, double.NaN);
-                ExchangeHelpers.SetParameterIfExists(Placement, ReservedParameters.RP_AREA_AXES, areaRef);
+                ExchangeHelpers.SetParameterIfExists(Placement, ReservedParameterKeys.RP_AREA_BGF, areaBrutto);
+                ExchangeHelpers.SetParameterIfExists(Placement, ReservedParameterKeys.RP_AREA_NGF, areaNetto);
+                ExchangeHelpers.SetParameterIfExists(Placement, ReservedParameterKeys.RP_AREA_NF, double.NaN);
+                ExchangeHelpers.SetParameterIfExists(Placement, ReservedParameterKeys.RP_AREA_AXES, areaRef);
 
-                ExchangeHelpers.SetParameterIfExists(Placement, ReservedParameters.RP_VOLUME_BRI, volumeBrutto);
-                ExchangeHelpers.SetParameterIfExists(Placement, ReservedParameters.RP_VOLUME_NRI, volumeNetto);
-                ExchangeHelpers.SetParameterIfExists(Placement, ReservedParameters.RP_VOLUME_NRI_NF, volumeNetto);
-                ExchangeHelpers.SetParameterIfExists(Placement, ReservedParameters.RP_VOLUME_AXES, volumeRef);
+                ExchangeHelpers.SetParameterIfExists(Placement, ReservedParameterKeys.RP_VOLUME_BRI, volumeBrutto);
+                ExchangeHelpers.SetParameterIfExists(Placement, ReservedParameterKeys.RP_VOLUME_NRI, volumeNetto);
+                ExchangeHelpers.SetParameterIfExists(Placement, ReservedParameterKeys.RP_VOLUME_NRI_NF, volumeNetto);
+                ExchangeHelpers.SetParameterIfExists(Placement, ReservedParameterKeys.RP_VOLUME_AXES, volumeRef);
             }
         }
 

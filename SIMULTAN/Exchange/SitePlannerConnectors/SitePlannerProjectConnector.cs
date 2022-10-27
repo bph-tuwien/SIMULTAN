@@ -135,7 +135,7 @@ namespace SIMULTAN.Exchange.SitePlannerConnectors
             if (placement.FileId != this.Project.SitePlannerFile.Key)
                 throw new ArgumentException("Placement does not belong to this SitePlanner project");
 
-            if (parameter.Name == ReservedParameters.RP_PARAM_TO_GEOMETRY)
+            if (parameter.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_PARAM_TO_GEOMETRY))
             {
                 if (connectors.TryGetValues(placement.GeometryId, out var cons))
                 {

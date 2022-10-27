@@ -3,9 +3,12 @@ using SIMULTAN.Data.SimNetworks;
 using SIMULTAN.Data.Users;
 using SIMULTAN.Exceptions;
 using SIMULTAN.Projects;
+using SIMULTAN.Utils;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
+using System.Runtime.CompilerServices;
 
 namespace SIMULTAN.Data.Components
 {
@@ -14,11 +17,30 @@ namespace SIMULTAN.Data.Components
     /// </summary>
     public partial class SimComponentCollection : SimManagedCollection<SimComponent>
     {
+        #region Events
+
+        /// <summary>
+        /// Invoked whenever a property of a parameter has changed. It gets invoked at the same time where the PropertyChanged event
+        /// in the parameter is invoked, but allows to attach just a single EventHandler and perform manual dispatching.
+        /// </summary>
+        public event PropertyChangedEventHandler ParameterPropertyChanged;
+        /// <summary>
+        /// Invokes the <see cref="ParameterPropertyChanged"/> event
+        /// </summary>
+        /// <param name="parameter">The parameter which invokes the event</param>
+        /// <param name="property">The name of the property which caused the event</param>
+        internal void NotifyParameterPropertyChanged(SimParameter parameter, [CallerMemberName] string property = null)
+        {
+            ParameterPropertyChanged?.Invoke(parameter, new PropertyChangedEventArgs(property));
+        }
+
+        #endregion
+
         #region Properties
 
         /// <summary>
         /// Enables/Disables whether parameter values are propagated to references.
-        /// Forces a reevaluation of all referncing parameters when changing from False to True
+        /// Forces a reevaluation of all referencing parameters when changing from False to True
         /// </summary>
         public bool EnableReferencePropagation 
         {
@@ -266,6 +288,18 @@ namespace SIMULTAN.Data.Components
             {
                 comp?.RestoreReferences(networkElements, this.ProjectData.AssetManager);
             }
+        }
+
+        /// <summary>
+        /// Looks up taxonomy entries for reserved parameters by their name.
+        /// Do this if the default taxonomies changed, could mean that the project is migrated.
+        /// </summary>
+        public void RestoreDefaultTaxonomyReferences()
+        {
+            ComponentWalker.ForeachComponent(this, x =>
+            {
+                x.Parameters.ForEach(p => p.RestoreDefaultTaxonomyReferences());
+            });
         }
 
 

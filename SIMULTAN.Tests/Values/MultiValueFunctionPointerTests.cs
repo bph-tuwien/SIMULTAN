@@ -196,7 +196,7 @@ namespace SIMULTAN.Tests.Values
 
             //Find ptr
             var comp = projectData.Components.First(x => x.Name == "WithPointer");
-            var param = comp.Parameters.First(x => x.Name == "Target");
+            var param = comp.Parameters.First(x => x.TaxonomyEntry.Name == "Target");
 
             var ptr = (SimMultiValueFunction.MultiValueFunctionPointer)param.MultiValuePointer;
             CheckPointer(ptr, (SimMultiValueFunction)ptr.ValueField, "graph1", 0.5, 1.0);
@@ -213,8 +213,8 @@ namespace SIMULTAN.Tests.Values
 
             //Find ptr
             var comp = projectData.Components.First(x => x.Name == "WithPointer");
-            var param = comp.Parameters.First(x => x.Name == "Target");
-            var xParam = comp.Parameters.First(x => x.Name == "Target.ValuePointer.OffsetX");
+            var param = comp.Parameters.First(x => x.TaxonomyEntry.Name == "Target");
+            var xParam = comp.Parameters.First(x => x.TaxonomyEntry.Name == "Target.ValuePointer.OffsetX");
 
             var ptr = (SimMultiValueFunction.MultiValueFunctionPointer)param.MultiValuePointer;
             ptr.ValueChanged += (s, e) => eventCounter++;
@@ -234,8 +234,8 @@ namespace SIMULTAN.Tests.Values
 
             //Find ptr
             var comp = projectData.Components.First(x => x.Name == "WithPointer");
-            var param = comp.Parameters.First(x => x.Name == "Target");
-            var xParam = comp.Parameters.First(x => x.Name == "Target.ValuePointer.OffsetX");
+            var param = comp.Parameters.First(x => x.TaxonomyEntry.Name == "Target");
+            var xParam = comp.Parameters.First(x => x.TaxonomyEntry.Name == "Target.ValuePointer.OffsetX");
 
             var ptr = (SimMultiValueFunction.MultiValueFunctionPointer)param.MultiValuePointer;
             ptr.ValueChanged += (s, e) => eventCounter++;
@@ -255,11 +255,11 @@ namespace SIMULTAN.Tests.Values
             LoadProject(testProject);
 
             var comp = projectData.Components.First(x => x.Name == "WithoutParameter");
-            var param = comp.Parameters.First(x => x.Name == "Target");
+            var param = comp.Parameters.First(x => x.TaxonomyEntry.Name == "Target");
 
             param.MultiValuePointer.CreateValuePointerParameters(projectData.UsersManager.Users.First());
 
-            var xParam = comp.Parameters.FirstOrDefault(x => x.Name == "Target.ValuePointer.OffsetX");
+            var xParam = comp.Parameters.FirstOrDefault(x => x.TaxonomyEntry.Name == "Target.ValuePointer.OffsetX");
 
             Assert.IsNotNull(xParam);
 
@@ -273,7 +273,7 @@ namespace SIMULTAN.Tests.Values
             LoadProject(testProject);
 
             var comp = projectData.Components.First(x => x.Name == "WithPointer");
-            var param = comp.Parameters.First(x => x.Name == "Target");
+            var param = comp.Parameters.First(x => x.TaxonomyEntry.Name == "Target");
 
             WeakReference ptrRef = new WeakReference(param.MultiValuePointer);
             param.MultiValuePointer = null;
@@ -292,7 +292,7 @@ namespace SIMULTAN.Tests.Values
             LoadProject(testProject);
 
             var comp = projectData.Components.First(x => x.Name == "WithPointer");
-            var param = comp.Parameters.First(x => x.Name == "Target");
+            var param = comp.Parameters.First(x => x.TaxonomyEntry.Name == "Target");
 
             WeakReference ptrRef = new WeakReference(param.MultiValuePointer);
 
@@ -312,7 +312,7 @@ namespace SIMULTAN.Tests.Values
             LoadProject(testProject);
 
             var comp = projectData.Components.First(x => x.Name == "WithPointer");
-            var param = comp.Parameters.First(x => x.Name == "Target");
+            var param = comp.Parameters.First(x => x.TaxonomyEntry.Name == "Target");
 
             var function = (SimMultiValueFunction)param.MultiValuePointer.ValueField;
             function.Graphs.First(x => x.Name == "graph1").Points[1] = new Point3D(1.0, 2.0, 0.0);

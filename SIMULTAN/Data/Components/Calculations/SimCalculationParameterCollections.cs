@@ -46,7 +46,11 @@ namespace SIMULTAN.Data.Components
                 : this(owner)
             {
                 foreach (var item in data)
-                    this.Data.Add(item.Key, new CalculationParameterReference(this, item.Value));
+                {
+                    var referenceItem = new CalculationParameterReference(this, item.Value);
+                    this.Data.Add(item.Key, referenceItem);
+                    referenceItem.RegisterReferences();                    
+                }
             }
 
             /// <summary>
@@ -77,7 +81,12 @@ namespace SIMULTAN.Data.Components
                             CheckParameter(value);
                             Owner.NotifyWriteAccess();
 
-                            Data[parameter] = new CalculationParameterReference(this, value);
+                            var oldParameter = Data[parameter];
+                            var newParameter = new CalculationParameterReference(this, value);
+                            Data[parameter] = newParameter;
+
+                            oldParameter?.UnregisterReferences();
+                            newParameter.RegisterReferences();
 
                             Owner.UpdateState();
                             Owner.NotifyComponentReordering();
@@ -173,7 +182,9 @@ namespace SIMULTAN.Data.Components
                     CheckParameter(parameter);
                     Owner.NotifyWriteAccess();
 
-                    Data.Add(key, new CalculationParameterReference(this, parameter));
+                    var newItem = new CalculationParameterReference(this, parameter);
+                    Data.Add(key, newItem);
+                    newItem.RegisterReferences();
 
                     Owner.UpdateState();
                     Owner.NotifyComponentReordering();
@@ -195,7 +206,11 @@ namespace SIMULTAN.Data.Components
                     Owner.NotifyWriteAccess();
 
                     foreach (var item in values)
-                        Data.Add(item.Key, new CalculationParameterReference(this, item.Value));
+                    {
+                        var newItem = new CalculationParameterReference(this, item.Value);
+                        Data.Add(item.Key, newItem);
+                        newItem.RegisterReferences();
+                    }
 
                     Owner.UpdateState();
                     Owner.NotifyComponentReordering();
@@ -215,6 +230,7 @@ namespace SIMULTAN.Data.Components
                 {
                     Owner.NotifyWriteAccess();
                     Data.Remove(key);
+                    oldValue.UnregisterReferences();
 
                     Owner.UpdateState();
                     Owner.NotifyComponentReordering();
@@ -230,8 +246,13 @@ namespace SIMULTAN.Data.Components
             {
                 Owner.NotifyWriteAccess();
 
+                var removeItems = Data.Values.ToList();
+
                 Data.ForEach(x => x.Value.Dispose());
                 Data.Clear();
+
+                removeItems.ForEach(x => x.UnregisterReferences());
+
                 NotifyCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
                 Owner.NotifyChanged();
             }
@@ -348,6 +369,23 @@ namespace SIMULTAN.Data.Components
             }
 
             #endregion
+
+            /// <summary>
+            /// Registers the calculation in the affected parameter's <see cref="SimParameter.ReferencingCalculations"/> collection
+            /// </summary>
+            internal void RegisterReferences()
+            {
+                foreach (var item in Data.Values)
+                    item.RegisterReferences();
+            }
+            /// <summary>
+            /// Removes the calculation from the affected parameter's <see cref="SimParameter.ReferencingCalculations"/> collection
+            /// </summary>
+            internal void UnregisterReferences()
+            {
+                foreach (var item in Data.Values)
+                    item.UnregisterReferences();
+            }
         }
 
         /// <summary>

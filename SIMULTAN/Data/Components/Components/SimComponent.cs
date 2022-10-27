@@ -1,4 +1,5 @@
-﻿using SIMULTAN.Data.Assets;
+﻿using Assimp;
+using SIMULTAN.Data.Assets;
 using SIMULTAN.Data.FlowNetworks;
 using SIMULTAN.Data.MultiValues;
 using SIMULTAN.Data.SimNetworks;
@@ -36,7 +37,7 @@ namespace SIMULTAN.Data.Components
     /// management can be found in the <see cref="SimAccessProfile"/>.
     /// </summary>
     [DebuggerDisplay("[Component] {Name}, Id = {Id}")]
-    public partial class SimComponent : SimObjectNew<SimComponentCollection>
+    public partial class SimComponent : SimNamedObject<SimComponentCollection>
     {
         #region Properties
 
@@ -66,16 +67,14 @@ namespace SIMULTAN.Data.Components
             {
                 if (this.accessLocal != null)
                 {
-                    this.accessLocal.PropertyChanged -= this.AccessLocal_PropertyChanged;
-                    this.accessLocal.AccessChanged -= this.AccessLocal_AccessChanged;
+                    this.accessLocal.Component = null;
                 }
 
                 this.accessLocal = value;
 
                 if (this.accessLocal != null)
                 {
-                    this.accessLocal.PropertyChanged += this.AccessLocal_PropertyChanged;
-                    this.accessLocal.AccessChanged += this.AccessLocal_AccessChanged;
+                    this.accessLocal.Component = this;
                 }
 
                 this.NotifyPropertyChanged(nameof(this.AccessLocal));
@@ -471,7 +470,7 @@ namespace SIMULTAN.Data.Components
         /// <summary>
         /// Invokes the <see cref="AccessChanged"/> event
         /// </summary>
-        protected void NotifyAccessChanged()
+        internal void NotifyAccessChanged()
         {
             this.AccessChanged?.Invoke(this, EventArgs.Empty);
         }
@@ -967,7 +966,7 @@ namespace SIMULTAN.Data.Components
 
             //Adapt value only when a reference parameter and when no MVpointer is attached
             if (p.Propagation != SimInfoFlow.FromReference || p.MultiValuePointer != null)
-                foundValue = true;
+                return;
 
             //Find and update the closest parameter which matches the name
             while (comp != null)
@@ -978,21 +977,24 @@ namespace SIMULTAN.Data.Components
                     {
                         foreach (var rP in ComponentWalker.GetFlatParameters(entry.Target))
                         {
-                            if (!foundValue && rP.Name == p.Name)
+                            if (rP.TaxonomyEntry.Name != null)
                             {
-                                p.ValueCurrent = rP.ValueCurrent;
-                                p.TextValue = rP.TextValue;
-                                foundValue = true;
-                            }
-                            else if (!foundMin && rP.Name.EndsWith("MIN"))
-                            {
-                                p.ValueMin = rP.ValueCurrent;
-                                foundMin = true;
-                            }
-                            else if (!foundMax && rP.Name.EndsWith("MAX"))
-                            {
-                                p.ValueMax = rP.ValueCurrent;
-                                foundMin = true;
+                                if (!foundValue && rP.TaxonomyEntry.Equals(p.TaxonomyEntry))
+                                {
+                                    p.ValueCurrent = rP.ValueCurrent;
+                                    p.TextValue = rP.TextValue;
+                                    foundValue = true;
+                                }
+                                else if (!foundMin && rP.TaxonomyEntry.Name.EndsWith("MIN"))
+                                {
+                                    p.ValueMin = rP.ValueCurrent;
+                                    foundMin = true;
+                                }
+                                else if (!foundMax && rP.TaxonomyEntry.Name.EndsWith("MAX"))
+                                {
+                                    p.ValueMax = rP.ValueCurrent;
+                                    foundMax = true;
+                                }
                             }
 
                             //Early exit when all references are found
@@ -1020,24 +1022,12 @@ namespace SIMULTAN.Data.Components
             //Update calculation Ids
             this.Calculations.NotifyFactoryChanged(this.Factory, oldFactory);
             this.Parameters.NotifyFactoryChanged(this.Factory, oldFactory);
-            this.Instances.NotifyFactoryChanged();
+            this.Instances.NotifyFactoryChanged(this.Factory, oldFactory);
 
             this.Components.NotifyFactoryChanged(this.Factory, oldFactory);
             this.ReferencedComponents.NotifyFactoryChanged(this.Factory, oldFactory);
 
             base.OnFactoryChanged(newFactory, oldFactory);
-        }
-
-        private void AccessLocal_PropertyChanged(object sender, PropertyChangedEventArgs e)
-        {
-            if (e.PropertyName == nameof(SimAccessProfile.ProfileState))
-            {
-                this.NotifyAccessChanged();
-            }
-        }
-        private void AccessLocal_AccessChanged(object sender, EventArgs e)
-        {
-            this.NotifyAccessChanged();
         }
 
         /// <summary>
@@ -1097,6 +1087,9 @@ namespace SIMULTAN.Data.Components
 
             //Assets
             assetManager.RestoreAssetsToComponent(this);
+
+            //Parameters
+            this.Parameters.ForEach(x => x.RestoreReferences(Factory.ProjectData.IdGenerator));
 
             //Call on child components
             foreach (var subComp in this.Components)

@@ -17,7 +17,7 @@ namespace SIMULTAN.Data.Assets
     /// </summary>
     public abstract class ResourceEntry : INotifyPropertyChanged, IEquatable<ResourceEntry>
     {
-        #region PROPERTIES: INotifyPropertyChanged
+        #region INotifyPropertyChanged
 
         /// <summary>
         /// Handler for the PropertyChanged event.
@@ -26,14 +26,11 @@ namespace SIMULTAN.Data.Assets
         /// <summary>
         /// Emits the PropertyChanged event.
         /// </summary>
-        /// <param name="_propName">the name of the property</param>
-        protected void NotifyPropertyChanged(string _propName)
+        /// <param name="property">the name of the property</param>
+        protected void NotifyPropertyChanged(string property)
         {
-            if (_propName == null)
-                return;
-
-            if (PropertyChanged != null)
-                PropertyChanged(this, new PropertyChangedEventArgs(_propName));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(property));
+            this.manager?.NotifyResourcePropertyChanged(this, property);
         }
 
         #endregion

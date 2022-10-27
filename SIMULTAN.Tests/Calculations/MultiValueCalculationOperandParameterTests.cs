@@ -385,7 +385,7 @@ namespace SIMULTAN.Tests.Calculations
 
             calc.Calculate(projectData.ValueManager);
 
-            var resultParam = calcComp.Parameters.First(x => x.Name == "out");
+            var resultParam = calcComp.Parameters.First(x => x.TaxonomyEntry.Name == "out");
 
             Assert.IsTrue(resultParam.MultiValuePointer != null);
             Assert.IsTrue(resultParam.MultiValuePointer.ValueField != null);

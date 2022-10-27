@@ -57,7 +57,7 @@ namespace SIMULTAN.Serializer.SpecializedExporters
 
                 foreach (SimFlowNetworkNode node in NetworkNodes)
                 {
-                    SimParameter parameter = node.Content.Component.Parameters.Where(p => p.Name == "Lastprofil").FirstOrDefault();
+                    SimParameter parameter = node.Content.Component.Parameters.Where(p => p.TaxonomyEntry.Name == "Lastprofil").FirstOrDefault();
                     if (parameter != null)
                     {
                         List<string> nodeColumn = new List<string>();
@@ -165,7 +165,7 @@ namespace SIMULTAN.Serializer.SpecializedExporters
 
                 foreach (SimFlowNetworkNode node in NetworkNodes)
                 {
-                    SimParameter parameter = node.Content.Component.Parameters.Where(p => p.Name == "Lastprofil").FirstOrDefault();
+                    SimParameter parameter = node.Content.Component.Parameters.Where(p => p.TaxonomyEntry.Name == "Lastprofil").FirstOrDefault();
 
                     if (parameter != null)
                     {
@@ -179,7 +179,7 @@ namespace SIMULTAN.Serializer.SpecializedExporters
 
                                 //Getting the weight factor (in this exporter the "Anteil" value for each node will be that) 
 
-                                SimFlowNetworkElement element = node.Edges_In.Where(e => e.Content.Component.Parameters.Any(p => p.Name == "Anteil")).FirstOrDefault();
+                                SimFlowNetworkElement element = node.Edges_In.Where(e => e.Content.Component.Parameters.Any(p => p.TaxonomyEntry.Name == "Anteil")).FirstOrDefault();
                                 //Getting the parameters 
                                 var parameterValues = element.Content.InstanceParameterValuesPersistent;
 
@@ -187,7 +187,7 @@ namespace SIMULTAN.Serializer.SpecializedExporters
                                 {
                                     for (int j = 0; j < table.Count(0); j++)
                                     {
-                                        var value = table[j, i] * parameterValues.First(pv => pv.Key.Name == "Anteil").Value;
+                                        var value = table[j, i] * parameterValues.First(pv => pv.Key.TaxonomyEntry.Name == "Anteil").Value;
                                         nodeColumn.Add(value);
                                     }
                                 }
@@ -264,7 +264,7 @@ namespace SIMULTAN.Serializer.SpecializedExporters
             foreach (var item in GetNodes(network))
             {
                 nodesWithContent.AddRange(item.Where(n => n.Content != null));
-                summarizedNodes.AddRange(nodesWithContent.Where(n => n.Content.Component.Parameters.Any(p => p.Name == parameterName)).ToList());
+                summarizedNodes.AddRange(nodesWithContent.Where(n => n.Content.Component.Parameters.Any(p => p.TaxonomyEntry.Name == parameterName)).ToList());
             }
             return summarizedNodes;
         }

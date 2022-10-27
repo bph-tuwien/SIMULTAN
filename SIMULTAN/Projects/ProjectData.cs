@@ -5,7 +5,9 @@ using SIMULTAN.Data.FlowNetworks;
 using SIMULTAN.Data.Geometry;
 using SIMULTAN.Data.MultiValues;
 using SIMULTAN.Data.SitePlanner;
+using SIMULTAN.Data.Taxonomy;
 using SIMULTAN.Data.Users;
+using SIMULTAN.Data.ValueMappings;
 using SIMULTAN.Excel;
 using SIMULTAN.Exchange;
 using System.IO;
@@ -39,6 +41,10 @@ namespace SIMULTAN.Projects
         /// </summary>
         public SimNetworkCollection SimNetworks { get; }
 
+        /// <summary>
+        /// The ValueMappings in the project
+        /// </summary>
+        public SimValueMappingCollection ValueMappings { get; }
 
         /// <summary>
         /// Stores all user defined component lists
@@ -87,9 +93,20 @@ namespace SIMULTAN.Projects
         /// </summary>
         public SimGeometryModelCollection GeometryModels { get; }
 
+        /// <summary>
+        /// Provides methods for synchronizing Geometry with Components
+        /// </summary>
         public ComponentGeometryExchange ComponentGeometryExchange { get; }
 
+        /// <summary>
+        /// Stores all the SitePlannerProjects in the project
+        /// </summary>
         public SitePlannerManager SitePlannerManager { get; }
+
+        /// <summary>
+        /// Stores the taxonomies in this project
+        /// </summary>
+        public SimTaxonomyCollection Taxonomies { get; }
 
         #endregion
 
@@ -111,6 +128,7 @@ namespace SIMULTAN.Projects
             this.SimNetworks = new SimNetworkCollection(this);
 
             this.UserComponentLists = new SimUserComponentListCollection();
+            this.ValueMappings = new SimValueMappingCollection(this);
 
             this.MultiLinkManager.SecondaryDataManager = this.AssetManager;
             this.MultiLinkManager.UserEncryptionUtiliy = this.UsersManager;
@@ -123,6 +141,8 @@ namespace SIMULTAN.Projects
 
             this.GeometryModels = new SimGeometryModelCollection(this);
             this.SitePlannerManager = new SitePlannerManager(this);
+
+            this.Taxonomies = new SimTaxonomyCollection(this);
 
             this.ComponentGeometryExchange = new ComponentGeometryExchange(this);
         }
@@ -138,6 +158,7 @@ namespace SIMULTAN.Projects
             {
                 this.SitePlannerManager.ClearRecord();
                 this.SitePlannerManager.SetCallingLocation(null);
+
                 this.MultiLinkManager.Clear();
                 this.NetworkManager.ClearRecord();
                 this.AssetManager.Reset();
@@ -154,7 +175,13 @@ namespace SIMULTAN.Projects
                 this.ExcelToolMappingManager.ClearRecord();
                 this.ParameterLibraryManager.ClearRecord();
 
+                this.ValueMappings.Clear();
+                this.ValueMappings.SetCallingLocation(null);
+
                 this.UserComponentLists.Clear();
+
+                this.Taxonomies.Clear();
+                this.Taxonomies.SetCallingLocation(null);
 
                 this.IdGenerator.Reset();
             }
@@ -172,9 +199,14 @@ namespace SIMULTAN.Projects
             this.NetworkManager.SetCallingLocation(caller);
             this.Components.SetCallingLocation(caller);
             this.SitePlannerManager.SetCallingLocation(caller);
+            this.ValueMappings.SetCallingLocation(caller);
+            this.Taxonomies.SetCallingLocation(caller);
             this.SimNetworks.SetCallingLocation(caller);
         }
 
+        /// <summary>
+        /// Log file which contains errors and warnings generated during import
+        /// </summary>
         public FileInfo ImportLogFile { get; set; }
     }
 }

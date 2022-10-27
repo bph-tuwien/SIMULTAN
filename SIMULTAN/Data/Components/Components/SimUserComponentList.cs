@@ -92,7 +92,6 @@ namespace SIMULTAN.Data.Components
         public SimUserRootComponentCollection RootComponents
         {
             get;
-            private set;
         }
 
         #endregion

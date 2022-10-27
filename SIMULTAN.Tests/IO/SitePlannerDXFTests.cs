@@ -2,6 +2,7 @@
 using SIMULTAN.Data;
 using SIMULTAN.Data.Assets;
 using SIMULTAN.Data.SitePlanner;
+using SIMULTAN.Data.ValueMappings;
 using SIMULTAN.Projects;
 using SIMULTAN.Serializer.DXF;
 using SIMULTAN.Serializer.SPDXF;
@@ -53,10 +54,8 @@ namespace SIMULTAN.Tests.IO
             Assert.IsTrue(projectData.ComponentGeometryExchange.IsConnected(sp));
             Assert.AreEqual(0, sp.Maps.Count);
             Assert.AreEqual(0, sp.Buildings.Count);
-            Assert.IsNotNull(sp.ValueMap);
-            Assert.AreEqual(0, sp.ValueMap.ParametersAssociations.Count);
+            Assert.AreEqual(0, sp.ValueMappings.Count);
         }
-
         [TestMethod]
         public void ParseEmptyFileV12()
         {
@@ -73,12 +72,30 @@ namespace SIMULTAN.Tests.IO
             var sp = projectData.SitePlannerManager.SitePlannerProjects[1];
             Assert.AreEqual(0, sp.Maps.Count);
             Assert.AreEqual(0, sp.Buildings.Count);
-            Assert.IsNotNull(sp.ValueMap);
-            Assert.AreEqual(0, sp.ValueMap.ParametersAssociations.Count);
+            Assert.AreEqual(0, sp.ValueMappings.Count);
+            Assert.IsNull(sp.ActiveValueMapping);
         }
-
         [TestMethod]
-        public void WriteEmptyFileV12()
+        public void ParseEmptyFileV13()
+        {
+            CreateProjectData();
+
+            Assert.AreEqual(startSiteplannerCount, projectData.SitePlannerManager.SitePlannerProjects.Count);
+
+            using (DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_SPDXF_EmptyV13)))
+            {
+                SiteplannerDxfIO.Read(reader, new DXFParserInfo(project.GlobalID, projectData) { CurrentFile = new FileInfo(spRes.CurrentFullPath) });
+            }
+
+            Assert.AreEqual(startSiteplannerCount + 1, projectData.SitePlannerManager.SitePlannerProjects.Count);
+            var sp = projectData.SitePlannerManager.SitePlannerProjects[1];
+            Assert.AreEqual(0, sp.Maps.Count);
+            Assert.AreEqual(0, sp.Buildings.Count);
+            Assert.AreEqual(0, sp.ValueMappings.Count);
+            Assert.IsNull(sp.ActiveValueMapping);
+        }
+        [TestMethod]
+        public void WriteEmptyFile()
         {
             ExtendedProjectData data = new ExtendedProjectData();
 
@@ -100,8 +117,9 @@ namespace SIMULTAN.Tests.IO
                 exportedString = Encoding.UTF8.GetString(array);
             }
 
-            AssertUtil.AreEqualMultiline(Properties.Resources.DXFSerializer_SPDXF_EmptyV12, exportedString);
+            AssertUtil.AreEqualMultiline(Properties.Resources.DXFSerializer_SPDXF_Empty, exportedString);
         }
+
 
         [TestMethod]
         public void ParseWithGeoMapsV11()
@@ -130,10 +148,9 @@ namespace SIMULTAN.Tests.IO
             Assert.AreEqual(123, sp.Maps[1].GridCellSize);
 
             Assert.AreEqual(0, sp.Buildings.Count);
-            Assert.IsNotNull(sp.ValueMap);
-            Assert.AreEqual(0, sp.ValueMap.ParametersAssociations.Count);
+            Assert.AreEqual(0, sp.ValueMappings.Count);
+            Assert.IsNull(sp.ActiveValueMapping);
         }
-
         [TestMethod]
         public void ParseWithGeoMapsV12()
         {
@@ -161,12 +178,41 @@ namespace SIMULTAN.Tests.IO
             Assert.AreEqual(123, sp.Maps[1].GridCellSize);
 
             Assert.AreEqual(0, sp.Buildings.Count);
-            Assert.IsNotNull(sp.ValueMap);
-            Assert.AreEqual(0, sp.ValueMap.ParametersAssociations.Count);
+            Assert.IsNull(sp.ActiveValueMapping);
+            Assert.AreEqual(0, sp.ValueMappings.Count);
         }
-
         [TestMethod]
-        public void WriteWithGeoMapV12()
+        public void ParseWithGeoMapsV13()
+        {
+            CreateProjectData();
+
+            Assert.AreEqual(startSiteplannerCount, projectData.SitePlannerManager.SitePlannerProjects.Count);
+
+            using (DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_SPDXF_GeoMapsV13)))
+            {
+                SiteplannerDxfIO.Read(reader, new DXFParserInfo(project.GlobalID, projectData) { CurrentFile = new FileInfo(spRes.CurrentFullPath) });
+            }
+
+            Assert.AreEqual(startSiteplannerCount + 1, projectData.SitePlannerManager.SitePlannerProjects.Count);
+            var sp = projectData.SitePlannerManager.SitePlannerProjects[startSiteplannerCount];
+            Assert.AreEqual(2, sp.Maps.Count);
+
+            Assert.AreEqual(new Guid("a5ef2c5d-9519-4335-9ac2-4beb0a597326"), sp.Maps[0].GeoMapRes.ProjectId);
+            Assert.AreEqual(12, sp.Maps[0].GeoMapRes.ResourceIndex);
+            Assert.AreEqual("", sp.Maps[0].ElevationProviderTypeName);
+            Assert.AreEqual(100, sp.Maps[0].GridCellSize);
+
+            Assert.AreEqual(new Guid("a5ef2c5d-9519-4335-9ac2-4beb0a597327"), sp.Maps[1].GeoMapRes.ProjectId);
+            Assert.AreEqual(13, sp.Maps[1].GeoMapRes.ResourceIndex);
+            Assert.AreEqual("S3ElevationProviderGtiff", sp.Maps[1].ElevationProviderTypeName);
+            Assert.AreEqual(123, sp.Maps[1].GridCellSize);
+
+            Assert.AreEqual(0, sp.Buildings.Count);
+            Assert.IsNull(sp.ActiveValueMapping);
+            Assert.AreEqual(0, sp.ValueMappings.Count);
+        }
+        [TestMethod]
+        public void WriteWithGeoMap()
         {
             ExtendedProjectData data = new ExtendedProjectData();
             data.SetCallingLocation(new DummyReferenceLocation(new Guid("a5ef2c5d-9519-4335-9ac2-4beb0a597326")));
@@ -203,7 +249,7 @@ namespace SIMULTAN.Tests.IO
                 exportedString = Encoding.UTF8.GetString(array);
             }
 
-            AssertUtil.AreEqualMultiline(Properties.Resources.DXFSerializer_SPDXF_GeoMapsV12, exportedString);
+            AssertUtil.AreEqualMultiline(Properties.Resources.DXFSerializer_SPDXF_GeoMaps, exportedString);
         }
 
         [TestMethod]
@@ -233,10 +279,9 @@ namespace SIMULTAN.Tests.IO
             Assert.AreEqual(6, sp.Buildings[1].GeometryModelRes.ResourceIndex);
             Assert.AreEqual(Color.FromRgb(128, 0, 32), sp.Buildings[1].CustomColor);
 
-            Assert.IsNotNull(sp.ValueMap);
-            Assert.AreEqual(0, sp.ValueMap.ParametersAssociations.Count);
+            Assert.IsNull(sp.ActiveValueMapping);
+            Assert.AreEqual(0, sp.ValueMappings.Count);
         }
-
         [TestMethod]
         public void ParseWithBuildingsV12()
         {
@@ -264,11 +309,41 @@ namespace SIMULTAN.Tests.IO
             Assert.AreEqual(6, sp.Buildings[1].GeometryModelRes.ResourceIndex);
             Assert.AreEqual(Color.FromRgb(128, 0, 32), sp.Buildings[1].CustomColor);
 
-            Assert.IsNotNull(sp.ValueMap);
-            Assert.AreEqual(0, sp.ValueMap.ParametersAssociations.Count);
+            Assert.IsNull(sp.ActiveValueMapping);
+            Assert.AreEqual(0, sp.ValueMappings.Count);
         }
         [TestMethod]
-        public void WriteWithBuildingsV12()
+        public void ParseWithBuildingsV13()
+        {
+            CreateProjectData();
+
+            Assert.AreEqual(startSiteplannerCount, projectData.SitePlannerManager.SitePlannerProjects.Count);
+
+            using (DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_SPDXF_BuildingsV13)))
+            {
+                SiteplannerDxfIO.Read(reader, new DXFParserInfo(project.GlobalID, projectData) { CurrentFile = new FileInfo(spRes.CurrentFullPath) });
+            }
+
+            Assert.AreEqual(startSiteplannerCount + 1, projectData.SitePlannerManager.SitePlannerProjects.Count);
+            var sp = projectData.SitePlannerManager.SitePlannerProjects[startSiteplannerCount];
+            Assert.AreEqual(0, sp.Maps.Count);
+            Assert.AreEqual(2, sp.Buildings.Count);
+
+            Assert.AreEqual(2UL, sp.Buildings[0].ID);
+            Assert.AreEqual(new Guid("a5ef2c5d-9519-4335-9ac2-4beb0a597326"), sp.Buildings[0].GeometryModelRes.ProjectId);
+            Assert.AreEqual(5, sp.Buildings[0].GeometryModelRes.ResourceIndex);
+            Assert.AreEqual(Color.FromRgb(0, 128, 255), sp.Buildings[0].CustomColor);
+
+            Assert.AreEqual(3UL, sp.Buildings[1].ID);
+            Assert.AreEqual(new Guid("a5ef2c5d-9519-4335-9ac2-4beb0a597327"), sp.Buildings[1].GeometryModelRes.ProjectId);
+            Assert.AreEqual(6, sp.Buildings[1].GeometryModelRes.ResourceIndex);
+            Assert.AreEqual(Color.FromRgb(128, 0, 32), sp.Buildings[1].CustomColor);
+
+            Assert.IsNull(sp.ActiveValueMapping);
+            Assert.AreEqual(0, sp.ValueMappings.Count);
+        }
+        [TestMethod]
+        public void WriteWithBuildings()
         {
             ExtendedProjectData data = new ExtendedProjectData();
             data.SetCallingLocation(new DummyReferenceLocation(new Guid("a5ef2c5d-9519-4335-9ac2-4beb0a597326")));
@@ -302,17 +377,18 @@ namespace SIMULTAN.Tests.IO
                 exportedString = Encoding.UTF8.GetString(array);
             }
 
-            AssertUtil.AreEqualMultiline(Properties.Resources.DXFSerializer_SPDXF_BuildingsV12, exportedString);
+            AssertUtil.AreEqualMultiline(Properties.Resources.DXFSerializer_SPDXF_Buildings, exportedString);
         }
 
+
         [TestMethod]
-        public void ParseWithAssociationV5()
+        public void ParseWithValueMappingV5()
         {
             CreateProjectData();
             projectData.SetCallingLocation(new DummyReferenceLocation(new Guid("a5ef2c5d-9519-4335-9ac2-4beb0a597326")));
 
             var table = MultiValueDxfTests.CreateBigTable();
-            table.Id = new SimId(projectData.SitePlannerManager.CalledFromLocation.GlobalID, 2151483658);
+            table.Id = new SimId(projectData.SitePlannerManager.CalledFromLocation.GlobalID, 552151483658);
 
             projectData.ValueManager.StartLoading();
             projectData.ValueManager.Add(table);
@@ -329,74 +405,67 @@ namespace SIMULTAN.Tests.IO
             var sp = projectData.SitePlannerManager.SitePlannerProjects[startSiteplannerCount];
             Assert.AreEqual(0, sp.Maps.Count);
             Assert.AreEqual(0, sp.Buildings.Count);
-            Assert.IsNotNull(sp.ValueMap);
-            Assert.AreEqual(4, sp.ValueMap.ParametersAssociations.Count);
+            Assert.IsNotNull(sp.ActiveValueMapping);
+            Assert.AreEqual(4, sp.ValueMappings.Count);
 
-            var association = sp.ValueMap.ParametersAssociations[0];
-            Assert.AreEqual("Test1", association.Name);
-            Assert.AreEqual(new Guid("a5ef2c5d-9519-4335-9ac2-4beb0a597326"), association.Parameters.ValueTable.GlobalID);
-            Assert.AreEqual(1074741824, association.Parameters.ValueTable.LocalID);
-            Assert.AreEqual(Data.SitePlanner.ComponentIndexUsage.Column, association.Parameters.ComponentIndexUsage);
+            var valueMapping = sp.ValueMappings[0];
+            Assert.AreEqual("Test1", valueMapping.Name);
+            Assert.AreEqual(new Guid("a5ef2c5d-9519-4335-9ac2-4beb0a597326"), valueMapping.Table.GlobalID);
+            Assert.AreEqual(1074741824, valueMapping.Table.LocalID);
+            Assert.AreEqual(SimComponentIndexUsage.Column, valueMapping.ComponentIndexUsage);
 
-            var colorMap = association.Parameters.ValueToColorMap;
-            Assert.IsInstanceOfType(colorMap, typeof(MultiThresholdColorMap));
-            var mtcm = (MultiThresholdColorMap)colorMap;
-            var cparam = (MarkerColorMapParameters)mtcm.Parameters;
-            Assert.AreEqual(0, cparam.Markers[0].Value);
-            Assert.AreEqual(ColorConverter.ConvertFromString("#FF3FFF00"), cparam.Markers[0].Color);
-            Assert.AreEqual(3.5, cparam.Markers[1].Value);
-            Assert.AreEqual(ColorConverter.ConvertFromString("#FFFFFFFF"), cparam.Markers[1].Color);
-            Assert.AreEqual(100, cparam.Markers[2].Value);
-            Assert.AreEqual(ColorConverter.ConvertFromString("#12345678"), cparam.Markers[2].Color);
+            var colorMap = valueMapping.ColorMap;
+            Assert.IsInstanceOfType(colorMap, typeof(SimThresholdColorMap));
+            var mtcm = (SimThresholdColorMap)colorMap;
+            Assert.AreEqual(0, mtcm.ColorMarkers[0].Value);
+            Assert.AreEqual(ColorConverter.ConvertFromString("#FF3FFF00"), mtcm.ColorMarkers[0].Color);
+            Assert.AreEqual(3.5, mtcm.ColorMarkers[1].Value);
+            Assert.AreEqual(ColorConverter.ConvertFromString("#FFFFFFFF"), mtcm.ColorMarkers[1].Color);
+            Assert.AreEqual(100, mtcm.ColorMarkers[2].Value);
+            Assert.AreEqual(ColorConverter.ConvertFromString("#12345678"), mtcm.ColorMarkers[2].Color);
 
-            var prefilter = association.Parameters.ValuePreFilter;
-            Assert.IsInstanceOfType(prefilter, typeof(TimelinePrefilter));
-            var tparam = (TimelinePrefilterParameters)prefilter.Parameters;
-            Assert.AreEqual(1, tparam.Current);
+            var prefilter = valueMapping.Prefilter;
+            Assert.IsInstanceOfType(prefilter, typeof(SimDefaultPrefilter));
 
-            association = sp.ValueMap.ParametersAssociations[1];
-            Assert.AreEqual("Test2", association.Name);
-            Assert.AreEqual(new Guid("a5ef2c5d-9519-4335-9ac2-4beb0a597326"), association.Parameters.ValueTable.GlobalID);
-            Assert.AreEqual(1074741824, association.Parameters.ValueTable.LocalID);
-            Assert.AreEqual(Data.SitePlanner.ComponentIndexUsage.Row, association.Parameters.ComponentIndexUsage);
+            valueMapping = sp.ValueMappings[1];
+            Assert.AreEqual("Test2", valueMapping.Name);
+            Assert.AreEqual(new Guid("a5ef2c5d-9519-4335-9ac2-4beb0a597326"), valueMapping.Table.GlobalID);
+            Assert.AreEqual(1074741824, valueMapping.Table.LocalID);
+            Assert.AreEqual(SimComponentIndexUsage.Row, valueMapping.ComponentIndexUsage);
 
-            colorMap = association.Parameters.ValueToColorMap;
-            Assert.IsInstanceOfType(colorMap, typeof(MultiLinearGradientColorMap));
-            cparam = (MarkerColorMapParameters)colorMap.Parameters;
-            Assert.AreEqual(0, cparam.Markers[0].Value);
-            Assert.AreEqual(ColorConverter.ConvertFromString("#FF3FFF00"), cparam.Markers[0].Color);
-            Assert.AreEqual(33, cparam.Markers[1].Value);
-            Assert.AreEqual(ColorConverter.ConvertFromString("#FFFFFFFF"), cparam.Markers[1].Color);
-            Assert.AreEqual(100, cparam.Markers[2].Value);
-            Assert.AreEqual(ColorConverter.ConvertFromString("#FFFFFFFF"), cparam.Markers[2].Color);
+            colorMap = valueMapping.ColorMap;
+            Assert.IsInstanceOfType(colorMap, typeof(SimLinearGradientColorMap));
+            var lgcm = (SimLinearGradientColorMap)colorMap;
+            Assert.AreEqual(0, lgcm.ColorMarkers[0].Value);
+            Assert.AreEqual(ColorConverter.ConvertFromString("#FF3FFF00"), lgcm.ColorMarkers[0].Color);
+            Assert.AreEqual(33, lgcm.ColorMarkers[1].Value);
+            Assert.AreEqual(ColorConverter.ConvertFromString("#FFFFFFFF"), lgcm.ColorMarkers[1].Color);
+            Assert.AreEqual(100, lgcm.ColorMarkers[2].Value);
+            Assert.AreEqual(ColorConverter.ConvertFromString("#FFFFFFFF"), lgcm.ColorMarkers[2].Color);
 
-            prefilter = association.Parameters.ValuePreFilter;
-            Assert.IsInstanceOfType(prefilter, typeof(MinimumPrefilter));
-            Assert.IsInstanceOfType(prefilter.Parameters, typeof(EmptyPrefilterParameters));
+            prefilter = valueMapping.Prefilter;
+            Assert.IsInstanceOfType(prefilter, typeof(SimMinimumPrefilter));
 
-            association = sp.ValueMap.ParametersAssociations[2];
-            Assert.AreEqual("Test3", association.Name);
-            prefilter = association.Parameters.ValuePreFilter;
-            Assert.IsInstanceOfType(prefilter, typeof(MaximumPrefilter));
-            Assert.IsInstanceOfType(prefilter.Parameters, typeof(EmptyPrefilterParameters));
+            valueMapping = sp.ValueMappings[2];
+            Assert.AreEqual("Test3", valueMapping.Name);
+            prefilter = valueMapping.Prefilter;
+            Assert.IsInstanceOfType(prefilter, typeof(SimMaximumPrefilter));
 
-            association = sp.ValueMap.ParametersAssociations[3];
-            Assert.AreEqual("Test4", association.Name);
-            prefilter = association.Parameters.ValuePreFilter;
-            Assert.IsInstanceOfType(prefilter, typeof(AveragePrefilter));
-            Assert.IsInstanceOfType(prefilter.Parameters, typeof(EmptyPrefilterParameters));
+            valueMapping = sp.ValueMappings[3];
+            Assert.AreEqual("Test4", valueMapping.Name);
+            prefilter = valueMapping.Prefilter;
+            Assert.IsInstanceOfType(prefilter, typeof(SimAveragePrefilter));
 
-            Assert.AreEqual(1, sp.ValueMap.ActiveParametersAssociationIndex);
+            Assert.AreEqual(sp.ValueMappings[1], sp.ActiveValueMapping);
         }
-
         [TestMethod]
-        public void ParseWithAssociationV11()
+        public void ParseWithValueMappingV11()
         {
             CreateProjectData();
             projectData.SetCallingLocation(new DummyReferenceLocation(new Guid("a5ef2c5d-9519-4335-9ac2-4beb0a597326")));
 
             var table = MultiValueDxfTests.CreateBigTable();
-            table.Id = new SimId(projectData.SitePlannerManager.CalledFromLocation.GlobalID, 2151483658);
+            table.Id = new SimId(projectData.SitePlannerManager.CalledFromLocation.GlobalID, 552151483658);
 
             projectData.ValueManager.StartLoading();
             projectData.ValueManager.Add(table);
@@ -413,74 +482,66 @@ namespace SIMULTAN.Tests.IO
             var sp = projectData.SitePlannerManager.SitePlannerProjects[startSiteplannerCount];
             Assert.AreEqual(0, sp.Maps.Count);
             Assert.AreEqual(0, sp.Buildings.Count);
-            Assert.IsNotNull(sp.ValueMap);
-            Assert.AreEqual(4, sp.ValueMap.ParametersAssociations.Count);
+            Assert.AreEqual(4, sp.ValueMappings.Count);
 
-            var association = sp.ValueMap.ParametersAssociations[0];
-            Assert.AreEqual("Test1", association.Name);
-            Assert.AreEqual(new Guid("a5ef2c5d-9519-4335-9ac2-4beb0a597326"), association.Parameters.ValueTable.GlobalID);
-            Assert.AreEqual(2151483658, association.Parameters.ValueTable.LocalID);
-            Assert.AreEqual(Data.SitePlanner.ComponentIndexUsage.Column, association.Parameters.ComponentIndexUsage);
+            var mapping = sp.ValueMappings[0];
+            Assert.AreEqual("Test1", mapping.Name);
+            Assert.AreEqual(new Guid("a5ef2c5d-9519-4335-9ac2-4beb0a597326"), mapping.Table.GlobalID);
+            Assert.AreEqual(552151483658, mapping.Table.LocalID);
+            Assert.AreEqual(SimComponentIndexUsage.Column, mapping.ComponentIndexUsage);
 
-            var colorMap = association.Parameters.ValueToColorMap;
-            Assert.IsInstanceOfType(colorMap, typeof(MultiThresholdColorMap));
-            var mtcm = (MultiThresholdColorMap)colorMap;
-            var cparam = (MarkerColorMapParameters)mtcm.Parameters;
-            Assert.AreEqual(0, cparam.Markers[0].Value);
-            Assert.AreEqual(ColorConverter.ConvertFromString("#FF3FFF00"), cparam.Markers[0].Color);
-            Assert.AreEqual(3.5, cparam.Markers[1].Value);
-            Assert.AreEqual(ColorConverter.ConvertFromString("#FFFFFFFF"), cparam.Markers[1].Color);
-            Assert.AreEqual(100, cparam.Markers[2].Value);
-            Assert.AreEqual(ColorConverter.ConvertFromString("#12345678"), cparam.Markers[2].Color);
+            var colorMap = mapping.ColorMap;
+            Assert.IsInstanceOfType(colorMap, typeof(SimThresholdColorMap));
+            var mtcm = (SimThresholdColorMap)colorMap;
+            Assert.AreEqual(0, mtcm.ColorMarkers[0].Value);
+            Assert.AreEqual(ColorConverter.ConvertFromString("#FF3FFF00"), mtcm.ColorMarkers[0].Color);
+            Assert.AreEqual(3.5, mtcm.ColorMarkers[1].Value);
+            Assert.AreEqual(ColorConverter.ConvertFromString("#FFFFFFFF"), mtcm.ColorMarkers[1].Color);
+            Assert.AreEqual(100, mtcm.ColorMarkers[2].Value);
+            Assert.AreEqual(ColorConverter.ConvertFromString("#12345678"), mtcm.ColorMarkers[2].Color);
 
-            var prefilter = association.Parameters.ValuePreFilter;
-            Assert.IsInstanceOfType(prefilter, typeof(TimelinePrefilter));
-            var tparam = (TimelinePrefilterParameters)prefilter.Parameters;
-            Assert.AreEqual(1, tparam.Current);
+            var prefilter = mapping.Prefilter;
+            Assert.IsInstanceOfType(prefilter, typeof(SimDefaultPrefilter));
 
-            association = sp.ValueMap.ParametersAssociations[1];
-            Assert.AreEqual("Test2", association.Name);
-            Assert.AreEqual(new Guid("a5ef2c5d-9519-4335-9ac2-4beb0a597326"), association.Parameters.ValueTable.GlobalID);
-            Assert.AreEqual(2151483658, association.Parameters.ValueTable.LocalID);
-            Assert.AreEqual(Data.SitePlanner.ComponentIndexUsage.Row, association.Parameters.ComponentIndexUsage);
+            mapping = sp.ValueMappings[1];
+            Assert.AreEqual("Test2", mapping.Name);
+            Assert.AreEqual(new Guid("a5ef2c5d-9519-4335-9ac2-4beb0a597326"), mapping.Table.GlobalID);
+            Assert.AreEqual(552151483658, mapping.Table.LocalID);
+            Assert.AreEqual(SimComponentIndexUsage.Row, mapping.ComponentIndexUsage);
 
-            colorMap = association.Parameters.ValueToColorMap;
-            Assert.IsInstanceOfType(colorMap, typeof(MultiLinearGradientColorMap));
-            cparam = (MarkerColorMapParameters)colorMap.Parameters;
-            Assert.AreEqual(0, cparam.Markers[0].Value);
-            Assert.AreEqual(ColorConverter.ConvertFromString("#FF3FFF00"), cparam.Markers[0].Color);
-            Assert.AreEqual(33, cparam.Markers[1].Value);
-            Assert.AreEqual(ColorConverter.ConvertFromString("#FFFFFFFF"), cparam.Markers[1].Color);
-            Assert.AreEqual(100, cparam.Markers[2].Value);
-            Assert.AreEqual(ColorConverter.ConvertFromString("#FFFFFFFF"), cparam.Markers[2].Color);
+            colorMap = mapping.ColorMap;
+            Assert.IsInstanceOfType(colorMap, typeof(SimLinearGradientColorMap));
+            var lgcm = (SimLinearGradientColorMap)colorMap;
+            Assert.AreEqual(0, lgcm.ColorMarkers[0].Value);
+            Assert.AreEqual(ColorConverter.ConvertFromString("#FF3FFF00"), lgcm.ColorMarkers[0].Color);
+            Assert.AreEqual(33, lgcm.ColorMarkers[1].Value);
+            Assert.AreEqual(ColorConverter.ConvertFromString("#FFFFFFFF"), lgcm.ColorMarkers[1].Color);
+            Assert.AreEqual(100, lgcm.ColorMarkers[2].Value);
+            Assert.AreEqual(ColorConverter.ConvertFromString("#FFFFFFFF"), lgcm.ColorMarkers[2].Color);
 
-            prefilter = association.Parameters.ValuePreFilter;
-            Assert.IsInstanceOfType(prefilter, typeof(MinimumPrefilter));
-            Assert.IsInstanceOfType(prefilter.Parameters, typeof(EmptyPrefilterParameters));
+            prefilter = mapping.Prefilter;
+            Assert.IsInstanceOfType(prefilter, typeof(SimMinimumPrefilter));
 
-            association = sp.ValueMap.ParametersAssociations[2];
-            Assert.AreEqual("Test3", association.Name);
-            prefilter = association.Parameters.ValuePreFilter;
-            Assert.IsInstanceOfType(prefilter, typeof(MaximumPrefilter));
-            Assert.IsInstanceOfType(prefilter.Parameters, typeof(EmptyPrefilterParameters));
+            mapping = sp.ValueMappings[2];
+            Assert.AreEqual("Test3", mapping.Name);
+            prefilter = mapping.Prefilter;
+            Assert.IsInstanceOfType(prefilter, typeof(SimMaximumPrefilter));
 
-            association = sp.ValueMap.ParametersAssociations[3];
-            Assert.AreEqual("Test4", association.Name);
-            prefilter = association.Parameters.ValuePreFilter;
-            Assert.IsInstanceOfType(prefilter, typeof(AveragePrefilter));
-            Assert.IsInstanceOfType(prefilter.Parameters, typeof(EmptyPrefilterParameters));
+            mapping = sp.ValueMappings[3];
+            Assert.AreEqual("Test4", mapping.Name);
+            prefilter = mapping.Prefilter;
+            Assert.IsInstanceOfType(prefilter, typeof(SimAveragePrefilter));
 
-            Assert.AreEqual(1, sp.ValueMap.ActiveParametersAssociationIndex);
+            Assert.AreEqual(sp.ValueMappings[1], sp.ActiveValueMapping);
         }
-
         [TestMethod]
-        public void ParseWithAssociationV12()
+        public void ParseWithValueMappingV12()
         {
             CreateProjectData();
             projectData.SetCallingLocation(new DummyReferenceLocation(new Guid("a5ef2c5d-9519-4335-9ac2-4beb0a597326")));
 
             var table = MultiValueDxfTests.CreateBigTable();
-            table.Id = new SimId(projectData.SitePlannerManager.CalledFromLocation.GlobalID, 2151483658);
+            table.Id = new SimId(projectData.SitePlannerManager.CalledFromLocation.GlobalID, 552151483658);
 
             projectData.ValueManager.StartLoading();
             projectData.ValueManager.Add(table);
@@ -497,68 +558,102 @@ namespace SIMULTAN.Tests.IO
             var sp = projectData.SitePlannerManager.SitePlannerProjects[startSiteplannerCount];
             Assert.AreEqual(0, sp.Maps.Count);
             Assert.AreEqual(0, sp.Buildings.Count);
-            Assert.IsNotNull(sp.ValueMap);
-            Assert.AreEqual(4, sp.ValueMap.ParametersAssociations.Count);
+            Assert.AreEqual(4, sp.ValueMappings.Count);
 
-            var association = sp.ValueMap.ParametersAssociations[0];
+            var association = sp.ValueMappings[0];
             Assert.AreEqual("Test1", association.Name);
-            Assert.AreEqual(new Guid("a5ef2c5d-9519-4335-9ac2-4beb0a597326"), association.Parameters.ValueTable.GlobalID);
-            Assert.AreEqual(2151483658, association.Parameters.ValueTable.LocalID);
-            Assert.AreEqual(Data.SitePlanner.ComponentIndexUsage.Column, association.Parameters.ComponentIndexUsage);
+            Assert.AreEqual(new Guid("a5ef2c5d-9519-4335-9ac2-4beb0a597326"), association.Table.GlobalID);
+            Assert.AreEqual(552151483658, association.Table.LocalID);
+            Assert.AreEqual(SimComponentIndexUsage.Column, association.ComponentIndexUsage);
 
-            var colorMap = association.Parameters.ValueToColorMap;
-            Assert.IsInstanceOfType(colorMap, typeof(MultiThresholdColorMap));
-            var mtcm = (MultiThresholdColorMap)colorMap;
-            var cparam = (MarkerColorMapParameters)mtcm.Parameters;
-            Assert.AreEqual(0, cparam.Markers[0].Value);
-            Assert.AreEqual(ColorConverter.ConvertFromString("#FF3FFF00"), cparam.Markers[0].Color);
-            Assert.AreEqual(3.5, cparam.Markers[1].Value);
-            Assert.AreEqual(ColorConverter.ConvertFromString("#FFFFFFFF"), cparam.Markers[1].Color);
-            Assert.AreEqual(100, cparam.Markers[2].Value);
-            Assert.AreEqual(ColorConverter.ConvertFromString("#12345678"), cparam.Markers[2].Color);
+            var colorMap = association.ColorMap;
+            Assert.IsInstanceOfType(colorMap, typeof(SimThresholdColorMap));
+            var mtcm = (SimThresholdColorMap)colorMap;
+            Assert.AreEqual(0, mtcm.ColorMarkers[0].Value);
+            Assert.AreEqual(ColorConverter.ConvertFromString("#FF3FFF00"), mtcm.ColorMarkers[0].Color);
+            Assert.AreEqual(3.5, mtcm.ColorMarkers[1].Value);
+            Assert.AreEqual(ColorConverter.ConvertFromString("#FFFFFFFF"), mtcm.ColorMarkers[1].Color);
+            Assert.AreEqual(100, mtcm.ColorMarkers[2].Value);
+            Assert.AreEqual(ColorConverter.ConvertFromString("#12345678"), mtcm.ColorMarkers[2].Color);
 
-            var prefilter = association.Parameters.ValuePreFilter;
-            Assert.IsInstanceOfType(prefilter, typeof(TimelinePrefilter));
-            var tparam = (TimelinePrefilterParameters)prefilter.Parameters;
-            Assert.AreEqual(1, tparam.Current);
+            var prefilter = association.Prefilter;
+            Assert.IsInstanceOfType(prefilter, typeof(SimDefaultPrefilter));
 
-            association = sp.ValueMap.ParametersAssociations[1];
+            association = sp.ValueMappings[1];
             Assert.AreEqual("Test2", association.Name);
-            Assert.AreEqual(new Guid("a5ef2c5d-9519-4335-9ac2-4beb0a597326"), association.Parameters.ValueTable.GlobalID);
-            Assert.AreEqual(2151483658, association.Parameters.ValueTable.LocalID);
-            Assert.AreEqual(Data.SitePlanner.ComponentIndexUsage.Row, association.Parameters.ComponentIndexUsage);
+            Assert.AreEqual(new Guid("a5ef2c5d-9519-4335-9ac2-4beb0a597326"), association.Table.GlobalID);
+            Assert.AreEqual(552151483658, association.Table.LocalID);
+            Assert.AreEqual(SimComponentIndexUsage.Row, association.ComponentIndexUsage);
 
-            colorMap = association.Parameters.ValueToColorMap;
-            Assert.IsInstanceOfType(colorMap, typeof(MultiLinearGradientColorMap));
-            cparam = (MarkerColorMapParameters)colorMap.Parameters;
-            Assert.AreEqual(0, cparam.Markers[0].Value);
-            Assert.AreEqual(ColorConverter.ConvertFromString("#FF3FFF00"), cparam.Markers[0].Color);
-            Assert.AreEqual(33, cparam.Markers[1].Value);
-            Assert.AreEqual(ColorConverter.ConvertFromString("#FFFFFFFF"), cparam.Markers[1].Color);
-            Assert.AreEqual(100, cparam.Markers[2].Value);
-            Assert.AreEqual(ColorConverter.ConvertFromString("#FFFFFFFF"), cparam.Markers[2].Color);
+            colorMap = association.ColorMap;
+            Assert.IsInstanceOfType(colorMap, typeof(SimLinearGradientColorMap));
+            var lgcm = (SimLinearGradientColorMap)colorMap;
+            Assert.AreEqual(0, lgcm.ColorMarkers[0].Value);
+            Assert.AreEqual(ColorConverter.ConvertFromString("#FF3FFF00"), lgcm.ColorMarkers[0].Color);
+            Assert.AreEqual(33, lgcm.ColorMarkers[1].Value);
+            Assert.AreEqual(ColorConverter.ConvertFromString("#FFFFFFFF"), lgcm.ColorMarkers[1].Color);
+            Assert.AreEqual(100, lgcm.ColorMarkers[2].Value);
+            Assert.AreEqual(ColorConverter.ConvertFromString("#FFFFFFFF"), lgcm.ColorMarkers[2].Color);
 
-            prefilter = association.Parameters.ValuePreFilter;
-            Assert.IsInstanceOfType(prefilter, typeof(MinimumPrefilter));
-            Assert.IsInstanceOfType(prefilter.Parameters, typeof(EmptyPrefilterParameters));
+            prefilter = association.Prefilter;
+            Assert.IsInstanceOfType(prefilter, typeof(SimMinimumPrefilter));
 
-            association = sp.ValueMap.ParametersAssociations[2];
+            association = sp.ValueMappings[2];
             Assert.AreEqual("Test3", association.Name);
-            prefilter = association.Parameters.ValuePreFilter;
-            Assert.IsInstanceOfType(prefilter, typeof(MaximumPrefilter));
-            Assert.IsInstanceOfType(prefilter.Parameters, typeof(EmptyPrefilterParameters));
+            prefilter = association.Prefilter;
+            Assert.IsInstanceOfType(prefilter, typeof(SimMaximumPrefilter));
 
-            association = sp.ValueMap.ParametersAssociations[3];
+            association = sp.ValueMappings[3];
             Assert.AreEqual("Test4", association.Name);
-            prefilter = association.Parameters.ValuePreFilter;
-            Assert.IsInstanceOfType(prefilter, typeof(AveragePrefilter));
-            Assert.IsInstanceOfType(prefilter.Parameters, typeof(EmptyPrefilterParameters));
+            prefilter = association.Prefilter;
+            Assert.IsInstanceOfType(prefilter, typeof(SimAveragePrefilter));
 
-            Assert.AreEqual(1, sp.ValueMap.ActiveParametersAssociationIndex);
+            Assert.AreEqual(sp.ValueMappings[1], sp.ActiveValueMapping);
         }
-
         [TestMethod]
-        public void WriteWithAssociationsV12()
+        public void ParseWithValueMappingV13()
+        {
+            //Setup
+            CreateProjectData();
+            projectData.SetCallingLocation(new DummyReferenceLocation(new Guid("a5ef2c5d-9519-4335-9ac2-4beb0a597326")));
+
+            //Table
+            var table = MultiValueDxfTests.CreateBigTable();
+            table.Id = new SimId(projectData.SitePlannerManager.CalledFromLocation.GlobalID, 2151483658);
+
+            //Mapping
+            projectData.ValueMappings.StartLoading();
+            var valueMap1 = new SimValueMapping("my mapping 1", table, new SimDefaultPrefilter(), new SimLinearGradientColorMap())
+            {
+                Id = new SimId(projectData.SitePlannerManager.CalledFromLocation.GlobalID, 665577)
+            };
+            projectData.ValueMappings.Add(valueMap1);
+            var valueMap2 = new SimValueMapping("my mapping 2", table, new SimMinimumPrefilter(), new SimLinearGradientColorMap())
+            {
+                Id = new SimId(projectData.SitePlannerManager.CalledFromLocation.GlobalID, 665578)
+            };
+            projectData.ValueMappings.Add(valueMap2);
+            projectData.ValueMappings.EndLoading();
+
+            Assert.AreEqual(startSiteplannerCount, projectData.SitePlannerManager.SitePlannerProjects.Count);
+
+            //Test
+            using (DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_SPDXF_AssociationsV13)))
+            {
+                SiteplannerDxfIO.Read(reader, new DXFParserInfo(project.GlobalID, projectData) { CurrentFile = new FileInfo(spRes.CurrentFullPath) });
+            }
+
+            //Checks
+            Assert.AreEqual(startSiteplannerCount + 1, projectData.SitePlannerManager.SitePlannerProjects.Count);
+            var sp = projectData.SitePlannerManager.SitePlannerProjects[startSiteplannerCount];
+
+            Assert.AreEqual(2, sp.ValueMappings.Count);
+            Assert.AreEqual(valueMap1, sp.ValueMappings[0]);
+            Assert.AreEqual(valueMap2, sp.ValueMappings[1]);
+            Assert.AreEqual(valueMap2, sp.ActiveValueMapping);
+        }
+        [TestMethod]
+        public void WriteWithValueMapping()
         {
             ExtendedProjectData data = new ExtendedProjectData();
             data.SetCallingLocation(new DummyReferenceLocation(new Guid("a5ef2c5d-9519-4335-9ac2-4beb0a597326")));
@@ -566,97 +661,28 @@ namespace SIMULTAN.Tests.IO
             var siteplannerProject = new SitePlannerProject(null);
             data.SitePlannerManager.SitePlannerProjects.Add(siteplannerProject);
 
-            var valueMap = new ValueMap();
-
+            //Table
             var table = MultiValueDxfTests.CreateBigTable();
             table.Id = new SimId(data.SitePlannerManager.CalledFromLocation.GlobalID, 2151483658);
-            var vmp = new ValueMappingParameters(table);
-            vmp.ComponentIndexUsage = ComponentIndexUsage.Column;
 
-            var colorMap = vmp.RegisteredColorMaps.FirstOrDefault(x => x.GetType() == typeof(MultiThresholdColorMap));
-            var cparam = (MarkerColorMapParameters)colorMap.Parameters;
-            cparam.Markers.Clear();
-            cparam.Markers.AddRange(new ColorMapMarker[]
+            //Mapping
+            data.ValueMappings.StartLoading();
+            var valueMap1 = new SimValueMapping("my mapping 1", table, new SimDefaultPrefilter(), new SimLinearGradientColorMap())
             {
-                new ColorMapMarker(0  , (Color)ColorConverter.ConvertFromString("#FF3FFF00")),
-                new ColorMapMarker(3.5, (Color)ColorConverter.ConvertFromString("#FFFFFFFF")),
-                new ColorMapMarker(100, (Color)ColorConverter.ConvertFromString("#12345678")),
-            });
-            vmp.ValueToColorMap = colorMap;
-
-            var prefilter = vmp.RegisteredValuePrefilters.FirstOrDefault(x => x.GetType() == typeof(TimelinePrefilter));
-            var fparam = (TimelinePrefilterParameters)prefilter.Parameters;
-            fparam.Current = 1;
-            vmp.ValuePreFilter = prefilter;
-
-            var association = new ValueMappingAssociation("Test1", vmp);
-            valueMap.ParametersAssociations.Add(association);
-
-            table = MultiValueDxfTests.CreateBigTable();
-            table.Id = new SimId(new Guid("a5ef2c5d-9519-4335-9ac2-4beb0a597327"), 2151483659);
-            vmp = new ValueMappingParameters(table);
-            vmp.ComponentIndexUsage = ComponentIndexUsage.Row;
-
-            colorMap = vmp.RegisteredColorMaps.FirstOrDefault(x => x.GetType() == typeof(MultiLinearGradientColorMap)) as MultiLinearGradientColorMap;
-            cparam = (MarkerColorMapParameters)colorMap.Parameters;
-            cparam.Markers.Clear();
-            cparam.Markers.AddRange(new ColorMapMarker[]
+                Id = new SimId(data.SitePlannerManager.CalledFromLocation.GlobalID, 665577)
+            };
+            data.ValueMappings.Add(valueMap1);
+            var valueMap2 = new SimValueMapping("my mapping 2", table, new SimMinimumPrefilter(), new SimLinearGradientColorMap())
             {
-                new ColorMapMarker(0  , (Color)ColorConverter.ConvertFromString("#FF3FFF00")),
-                new ColorMapMarker(33, (Color)ColorConverter.ConvertFromString("#FFFFFFFF")),
-                new ColorMapMarker(100, (Color)ColorConverter.ConvertFromString("#FFFFFFFF")),
-            });
-            vmp.ValueToColorMap = colorMap;
+                Id = new SimId(data.SitePlannerManager.CalledFromLocation.GlobalID, 665578)
+            };
+            data.ValueMappings.Add(valueMap2);
+            data.ValueMappings.EndLoading();
 
-            prefilter = vmp.RegisteredValuePrefilters.FirstOrDefault(x => x.GetType() == typeof(MinimumPrefilter));
-            vmp.ValuePreFilter = prefilter;
+            siteplannerProject.ValueMappings.Add(valueMap1);
+            siteplannerProject.ValueMappings.Add(valueMap2);
+            siteplannerProject.ActiveValueMapping = valueMap2;
 
-            association = new ValueMappingAssociation("Test2", vmp);
-            valueMap.ParametersAssociations.Add(association);
-
-            table.Id = new SimId(new Guid("a5ef2c5d-9519-4335-9ac2-4beb0a597327"), 2151483659);
-            vmp = new ValueMappingParameters(table);
-            vmp.ComponentIndexUsage = ComponentIndexUsage.Row;
-
-            colorMap = vmp.RegisteredColorMaps.FirstOrDefault(x => x.GetType() == typeof(MultiLinearGradientColorMap)) as MultiLinearGradientColorMap;
-            cparam = (MarkerColorMapParameters)colorMap.Parameters;
-            cparam.Markers.Clear();
-            cparam.Markers.AddRange(new ColorMapMarker[]
-            {
-                new ColorMapMarker(0  , (Color)ColorConverter.ConvertFromString("#FF3FFF00")),
-                new ColorMapMarker(33, (Color)ColorConverter.ConvertFromString("#FFFFFFFF")),
-                new ColorMapMarker(100, (Color)ColorConverter.ConvertFromString("#FFFFFFFF")),
-            });
-            vmp.ValueToColorMap = colorMap;
-
-            prefilter = vmp.RegisteredValuePrefilters.FirstOrDefault(x => x.GetType() == typeof(MaximumPrefilter));
-            vmp.ValuePreFilter = prefilter;
-
-            association = new ValueMappingAssociation("Test3", vmp);
-            valueMap.ParametersAssociations.Add(association);
-
-            table.Id = new SimId(new Guid("a5ef2c5d-9519-4335-9ac2-4beb0a597327"), 2151483659);
-            vmp = new ValueMappingParameters(table);
-            vmp.ComponentIndexUsage = ComponentIndexUsage.Row;
-
-            colorMap = vmp.RegisteredColorMaps.FirstOrDefault(x => x.GetType() == typeof(MultiLinearGradientColorMap)) as MultiLinearGradientColorMap;
-            cparam = (MarkerColorMapParameters)colorMap.Parameters;
-            cparam.Markers.Clear();
-            cparam.Markers.AddRange(new ColorMapMarker[]
-            {
-                new ColorMapMarker(0  , (Color)ColorConverter.ConvertFromString("#FF3FFF00")),
-                new ColorMapMarker(33, (Color)ColorConverter.ConvertFromString("#FFFFFFFF")),
-                new ColorMapMarker(100, (Color)ColorConverter.ConvertFromString("#FFFFFFFF")),
-            });
-            vmp.ValueToColorMap = colorMap;
-
-            prefilter = vmp.RegisteredValuePrefilters.FirstOrDefault(x => x.GetType() == typeof(AveragePrefilter));
-            vmp.ValuePreFilter = prefilter;
-
-            association = new ValueMappingAssociation("Test4", vmp);
-            valueMap.ParametersAssociations.Add(association);
-            siteplannerProject.ValueMap = valueMap;
-            valueMap.ActiveParametersAssociationIndex = 1;
 
             string exportedString = null;
             using (MemoryStream stream = new MemoryStream())
@@ -673,7 +699,7 @@ namespace SIMULTAN.Tests.IO
                 exportedString = Encoding.UTF8.GetString(array);
             }
 
-            AssertUtil.AreEqualMultiline(Properties.Resources.DXFSerializer_SPDXF_AssociationsV12, exportedString);
+            AssertUtil.AreEqualMultiline(Properties.Resources.DXFSerializer_SPDXF_Associations, exportedString);
         }
     }
 }

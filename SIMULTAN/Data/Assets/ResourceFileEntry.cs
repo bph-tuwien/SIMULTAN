@@ -48,6 +48,7 @@ namespace SIMULTAN.Data.Assets
         /// <summary>
         /// Returns the name of this file without extension 
         /// </summary>
+        [Obsolete("Better calculate it in place from the Name")]
         public string NameWithoutExtension
         {
             get
@@ -72,24 +73,14 @@ namespace SIMULTAN.Data.Assets
         /// <summary>
         /// The extension of the resource file.
         /// </summary>
-		public string Extension
+		[Obsolete("Better calculate it in place from the Name")]
+        public string Extension
         {
             get
             {
                 if (this.File == null)
                     return null;
                 return this.File.Extension;
-            }
-        }
-
-        /// <summary>
-        /// The extension of the resource file without leading dot.
-        /// </summary>
-        public string ExtensionText
-        {
-            get
-            {
-                return Extension == null ? null : Extension.TrimStart('.');
             }
         }
 

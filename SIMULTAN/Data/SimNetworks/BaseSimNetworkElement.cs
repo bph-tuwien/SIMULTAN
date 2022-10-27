@@ -7,7 +7,7 @@ namespace SIMULTAN.Data.SimNetworks
     /// <summary>
     /// A Base element for the elements constructing a network
     /// </summary>
-    public abstract partial class BaseSimNetworkElement : SimObjectNew<ISimManagedCollection>
+    public abstract partial class BaseSimNetworkElement : SimNamedObject<ISimManagedCollection>
     {
         /// <summary>
         /// Representing the parent network.

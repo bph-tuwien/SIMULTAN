@@ -2,6 +2,7 @@
 using SIMULTAN.Data;
 using SIMULTAN.Data.Components;
 using SIMULTAN.Data.MultiValues;
+using SIMULTAN.Data.Taxonomy;
 using SIMULTAN.Projects;
 using SIMULTAN.Projects.ManagedFiles;
 using SIMULTAN.Serializer.CODXF;
@@ -90,6 +91,37 @@ namespace SIMULTAN.Tests.IO
         }
 
         [TestMethod]
+        public void WriteParameterWithTaxonomyEntry()
+        {
+            var tax = new SimTaxonomy(new SimId(1200)) { Name = "Taxonomy"};
+            var taxEntry = new SimTaxonomyEntry(new SimId(1201)) { Name = "Parameter X", Key = "key" };
+            tax.Entries.Add(taxEntry);
+            SimParameter parameter = new SimParameter(99, "Parameter X", "Unit",
+                SimCategory.Cooling | SimCategory.Communication | SimCategory.Light_Artificial,
+                SimInfoFlow.Output,
+                45.67, -12.3, double.PositiveInfinity, "text value with spaces", null,
+                SimParameterOperations.EditValue | SimParameterOperations.EditName, SimParameterInstancePropagation.PropagateAlways, true);
+            parameter.TaxonomyEntry = new SimTaxonomyEntryOrString(new SimTaxonomyEntryReference(taxEntry));
+
+            string exportedString = null;
+            using (MemoryStream stream = new MemoryStream())
+            {
+                using (DXFStreamWriter writer = new DXFStreamWriter(stream, true))
+                {
+                    ComponentDxfIOComponents.WriteParameter(parameter, writer);
+                }
+
+                stream.Flush();
+                stream.Position = 0;
+
+                var array = stream.ToArray();
+                exportedString = Encoding.UTF8.GetString(array);
+            }
+
+            AssertUtil.AreEqualMultiline(Properties.Resources.DXFSerializer_WriteParameterWithTaxonomyEntry, exportedString);
+        }
+
+        [TestMethod]
         public void ParseParameterV0()
         {
             ExtendedProjectData projectData = new ExtendedProjectData();
@@ -109,7 +141,7 @@ namespace SIMULTAN.Tests.IO
 
             Assert.IsNotNull(parameter);
             Assert.AreEqual(1076741824, parameter.Id.LocalId);
-            Assert.AreEqual("Parameter X", parameter.Name);
+            Assert.AreEqual("Parameter X", parameter.TaxonomyEntry.Name);
             Assert.AreEqual("Unit", parameter.Unit);
             Assert.AreEqual(SimCategory.Cooling | SimCategory.Communication | SimCategory.Light_Artificial, parameter.Category);
             Assert.AreEqual(SimInfoFlow.Output, parameter.Propagation);
@@ -143,7 +175,7 @@ namespace SIMULTAN.Tests.IO
 
             Assert.IsNotNull(parameter);
             Assert.AreEqual(99, parameter.Id.LocalId);
-            Assert.AreEqual("Parameter X", parameter.Name);
+            Assert.AreEqual("Parameter X", parameter.TaxonomyEntry.Name);
             Assert.AreEqual("Unit", parameter.Unit);
             Assert.AreEqual(SimCategory.Cooling | SimCategory.Communication | SimCategory.Light_Artificial, parameter.Category);
             Assert.AreEqual(SimInfoFlow.Output, parameter.Propagation);
@@ -153,6 +185,43 @@ namespace SIMULTAN.Tests.IO
             AssertUtil.AssertDoubleEqual(45.67, parameter.ValueCurrent);
             Assert.AreEqual("text value with spaces", parameter.TextValue);
             Assert.AreEqual(SimParameterOperations.EditValue, parameter.AllowedOperations);
+            Assert.AreEqual(true, parameter.IsAutomaticallyGenerated);
+            Assert.IsNull(parameter.MultiValuePointer);
+        }
+
+        [TestMethod]
+        public void ParseParameterV14()
+        {
+            ExtendedProjectData projectData = new ExtendedProjectData();
+            Guid guid = Guid.NewGuid();
+
+            SimParameter parameter = null;
+
+            using (DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_ReadCODXF_ParameterV14)))
+            {
+                var info = new DXFParserInfo(guid, projectData);
+                info.FileVersion = 14;
+
+                reader.Read();
+
+                parameter = ComponentDxfIOComponents.ParameterEntityElement.Parse(reader, info);
+            }
+
+            Assert.IsNotNull(parameter);
+            Assert.AreEqual(99, parameter.Id.LocalId);
+            Assert.IsNull(parameter.TaxonomyEntry.Name); // null because taxonomy entry reference not restored yet
+            Assert.AreEqual(true, parameter.TaxonomyEntry.HasTaxonomyEntryReference());
+            Assert.AreEqual(1200, parameter.TaxonomyEntry.TaxonomyEntryReference.TaxonomyId.LocalId);
+            Assert.AreEqual(1201, parameter.TaxonomyEntry.TaxonomyEntryReference.TaxonomyEntryId.LocalId);
+            Assert.AreEqual("Unit", parameter.Unit);
+            Assert.AreEqual(SimCategory.Cooling | SimCategory.Communication | SimCategory.Light_Artificial, parameter.Category);
+            Assert.AreEqual(SimInfoFlow.Output, parameter.Propagation);
+            Assert.AreEqual(SimParameterInstancePropagation.PropagateAlways, parameter.InstancePropagationMode);
+            AssertUtil.AssertDoubleEqual(-12.3, parameter.ValueMin);
+            AssertUtil.AssertDoubleEqual(double.PositiveInfinity, parameter.ValueMax);
+            AssertUtil.AssertDoubleEqual(45.67, parameter.ValueCurrent);
+            Assert.AreEqual("text value with spaces", parameter.TextValue);
+            Assert.AreEqual(SimParameterOperations.EditValue | SimParameterOperations.EditName, parameter.AllowedOperations);
             Assert.AreEqual(true, parameter.IsAutomaticallyGenerated);
             Assert.IsNull(parameter.MultiValuePointer);
         }
@@ -177,7 +246,7 @@ namespace SIMULTAN.Tests.IO
 
             Assert.IsNotNull(parameter);
             Assert.AreEqual(99, parameter.Id.LocalId);
-            Assert.AreEqual("Parameter X", parameter.Name);
+            Assert.AreEqual("Parameter X", parameter.TaxonomyEntry.Name);
             Assert.AreEqual("Unit", parameter.Unit);
             Assert.AreEqual(SimCategory.Cooling | SimCategory.Communication | SimCategory.Light_Artificial, parameter.Category);
             Assert.AreEqual(SimInfoFlow.Output, parameter.Propagation);
@@ -221,7 +290,7 @@ namespace SIMULTAN.Tests.IO
 
             Assert.IsNotNull(parameter);
             Assert.AreEqual(99, parameter.Id.LocalId);
-            Assert.AreEqual("Parameter X", parameter.Name);
+            Assert.AreEqual("Parameter X", parameter.TaxonomyEntry.Name);
             Assert.AreEqual("Unit", parameter.Unit);
             Assert.AreEqual(SimCategory.Cooling | SimCategory.Communication | SimCategory.Light_Artificial, parameter.Category);
             Assert.AreEqual(SimInfoFlow.Output, parameter.Propagation);

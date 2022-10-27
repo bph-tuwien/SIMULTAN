@@ -85,8 +85,8 @@ namespace SIMULTAN.Tests.IO
             }
 
             Assert.AreEqual(2, projectData.ParameterLibraryManager.ParameterRecord.Count);
-            Assert.AreEqual("Parameter X", projectData.ParameterLibraryManager.ParameterRecord[0].Name);
-            Assert.AreEqual("Parameter Y", projectData.ParameterLibraryManager.ParameterRecord[1].Name);
+            Assert.AreEqual("Parameter X", projectData.ParameterLibraryManager.ParameterRecord[0].TaxonomyEntry.Name);
+            Assert.AreEqual("Parameter Y", projectData.ParameterLibraryManager.ParameterRecord[1].TaxonomyEntry.Name);
         }
 
         [TestMethod]
@@ -109,8 +109,8 @@ namespace SIMULTAN.Tests.IO
             }
 
             Assert.AreEqual(2, projectData.ParameterLibraryManager.ParameterRecord.Count);
-            Assert.AreEqual("Parameter X", projectData.ParameterLibraryManager.ParameterRecord[0].Name);
-            Assert.AreEqual("Parameter Y", projectData.ParameterLibraryManager.ParameterRecord[1].Name);
+            Assert.AreEqual("Parameter X", projectData.ParameterLibraryManager.ParameterRecord[0].TaxonomyEntry.Name);
+            Assert.AreEqual("Parameter Y", projectData.ParameterLibraryManager.ParameterRecord[1].TaxonomyEntry.Name);
         }
     }
 }

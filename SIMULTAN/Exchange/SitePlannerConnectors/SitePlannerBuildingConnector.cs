@@ -39,7 +39,7 @@ namespace SIMULTAN.Exchange.SitePlannerConnectors
 
             //Make sure that parameter exists
             ExchangeHelpers.CreateParameterIfNotExists(placement.Instance.Component,
-                ReservedParameters.RP_PARAM_TO_GEOMETRY, SimParameterInstancePropagation.PropagateIfInstance, 1.0);
+                ReservedParameterKeys.RP_PARAM_TO_GEOMETRY, ReservedParameters.RP_PARAM_TO_GEOMETRY, SimParameterInstancePropagation.PropagateIfInstance, 1.0);
         }
     }
 }

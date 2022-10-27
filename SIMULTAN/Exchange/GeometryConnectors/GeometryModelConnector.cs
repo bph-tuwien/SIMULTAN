@@ -510,8 +510,17 @@ namespace SIMULTAN.Exchange.GeometryConnectors
             
             if (placement.Instance.InstanceType == SimInstanceType.AttributesFace)
             {
-                if (parameter.Name == ReservedParameters.RP_MATERIAL_COMPOSITE_D_IN ||
-                    parameter.Name == ReservedParameters.RP_MATERIAL_COMPOSITE_D_OUT)
+                if (parameter.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_MATERIAL_COMPOSITE_D_IN) ||
+                    parameter.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_MATERIAL_COMPOSITE_D_OUT))
+                {
+                    var geometry = GeometryModel.Geometry.GeometryFromId(placement.GeometryId);
+                    if (geometry != null)
+                        yield return geometry;
+                }
+            }
+            else if (placement.Instance.InstanceType == SimInstanceType.Entity3D)
+            {
+                if (parameter.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_PARAM_TO_GEOMETRY))
                 {
                     var geometry = GeometryModel.Geometry.GeometryFromId(placement.GeometryId);
                     if (geometry != null)

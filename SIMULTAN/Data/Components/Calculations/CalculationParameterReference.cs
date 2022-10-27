@@ -94,6 +94,31 @@ namespace SIMULTAN.Data.Components
             }
         }
 
+        /// <summary>
+        /// Registers the calculation in the affected parameter's <see cref="SimParameter.ReferencingCalculations"/> collection
+        /// </summary>
+        internal void RegisterReferences()
+        {
+            if (this.Parameter != null &&
+                owner.TryGetTarget(out var collection) && collection.Owner != null && collection.Owner.Factory != null &&
+                !this.Parameter.ReferencingCalculations.Contains(collection.Owner))
+            {
+                this.Parameter.ReferencingCalculations_Internal.Add(collection.Owner);
+            }
+        }
+        /// <summary>
+        /// Removes the calculation from the affected parameter's <see cref="SimParameter.ReferencingCalculations"/> collection
+        /// </summary>
+        public void UnregisterReferences()
+        {
+            if (this.Parameter != null && 
+                owner.TryGetTarget(out var collection) && collection.Owner != null &&
+                (collection.Owner.Factory == null || !collection.ContainsValue(this.Parameter)))
+            {
+                this.Parameter.ReferencingCalculations_Internal.Remove(collection.Owner);
+            }
+        }
+
         internal CalculationParameterReference Clone(BaseCalculationParameterCollections targetCollection)
         {
             return new CalculationParameterReference(targetCollection, this.Parameter, this.MetaData);

@@ -457,7 +457,7 @@ namespace SIMULTAN.Tests.Instances
             LoadProject(instanceProject);
 
             var nodeComponent = projectData.Components.First(x => x.Name == "Node2");
-            var parameter = nodeComponent.Parameters.FirstOrDefault(x => x.Name == "A");
+            var parameter = nodeComponent.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_AREA));
             var instance = nodeComponent.Instances.FirstOrDefault();
 
             PropertyChangedEventCounter pc = new PropertyChangedEventCounter(instance);
@@ -481,7 +481,7 @@ namespace SIMULTAN.Tests.Instances
             LoadProject(instanceProject);
 
             var nodeComponent = projectData.Components.First(x => x.Name == "Node2");
-            var parameter = nodeComponent.Parameters.FirstOrDefault(x => x.Name == "A");
+            var parameter = nodeComponent.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_AREA));
             var instance = nodeComponent.Instances.FirstOrDefault();
 
             PropertyChangedEventCounter pc = new PropertyChangedEventCounter(instance);

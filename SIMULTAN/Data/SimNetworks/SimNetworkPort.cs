@@ -23,7 +23,7 @@ namespace SIMULTAN.Data.SimNetworks
     /// <summary>
     /// Represents a port in a SimNetworkBlock. SimNetworkPorts can be connected with SimNetworkConnector <see cref="SimNetworkConnector"/>
     /// </summary>
-    public partial class SimNetworkPort : SimObjectNew<ISimManagedCollection>, IElementWithComponent, IDisposable
+    public partial class SimNetworkPort : SimNamedObject<ISimManagedCollection>, IElementWithComponent, IDisposable
     {
         #region Properties
         /// <summary>

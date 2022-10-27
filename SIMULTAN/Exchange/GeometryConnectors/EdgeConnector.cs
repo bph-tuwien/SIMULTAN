@@ -17,9 +17,9 @@ namespace SIMULTAN.Exchange.GeometryConnectors
         {
             using (AccessCheckingDisabler.Disable(Placement.Instance.Factory))
             {
-                ExchangeHelpers.CreateParameterIfNotExists(placement.Instance.Component, ReservedParameters.RP_LENGTH,
+                ExchangeHelpers.CreateParameterIfNotExists(placement.Instance.Component, ReservedParameterKeys.RP_LENGTH, ReservedParameters.RP_LENGTH,
                     SimParameterInstancePropagation.PropagateNever, 0.0);
-                ExchangeHelpers.CreateParameterIfNotExists(placement.Instance.Component, ReservedParameters.RP_COUNT,
+                ExchangeHelpers.CreateParameterIfNotExists(placement.Instance.Component, ReservedParameterKeys.RP_COUNT, ReservedParameters.RP_COUNT,
                     SimParameterInstancePropagation.PropagateNever, 0.0);
             }
         }
@@ -28,14 +28,14 @@ namespace SIMULTAN.Exchange.GeometryConnectors
         {
             using (AccessCheckingDisabler.Disable(Placement.Instance.Component.Factory))
             {
-                var countParam = Placement.Instance.Component.Parameters.FirstOrDefault(x => x.Name == ReservedParameters.RP_COUNT);
+                var countParam = Placement.Instance.Component.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_COUNT));
                 if (countParam != null)
                 {
                     Placement.Instance.InstanceParameterValuesPersistent[countParam] = placementDeleted ? 0.0 : 1.0;
                     countParam.ValueCurrent = Placement.Instance.Component.Instances.Sum(x => x.InstanceParameterValuesPersistent[countParam]);
                 }
 
-                var lengthParam = Placement.Instance.Component.Parameters.FirstOrDefault(x => x.Name == ReservedParameters.RP_LENGTH);
+                var lengthParam = Placement.Instance.Component.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_LENGTH));
                 if (lengthParam != null)
                 {
                     Placement.Instance.InstanceParameterValuesPersistent[lengthParam] =

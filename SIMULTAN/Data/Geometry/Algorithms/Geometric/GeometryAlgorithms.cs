@@ -13,6 +13,22 @@ namespace SIMULTAN.Data.Geometry
     public static class GeometryAlgorithms
     {
         /// <summary>
+        /// Calculates the closes point on a line for a given input point
+        /// </summary>
+        /// <param name="p">The input point for which the closest point on the line should be found</param>
+        /// <param name="lineOrigin">A point on the line</param>
+        /// <param name="lineDirection">The direction vector of the line</param>
+        /// <returns>
+        /// pclosest: The position of the closest point on the line
+        /// t: The line parameter of the closest point. pclosest = lineOrigin + t * lineDirection
+        /// </returns>
+        public static (Point3D pclosest, double t) ClosestPointOnLine(Point3D p, Point3D lineOrigin, Vector3D lineDirection)
+        {
+            var t = Vector3D.DotProduct(lineDirection, (p - lineOrigin)) / Vector3D.DotProduct(lineDirection, lineDirection);
+            return (lineOrigin + t * lineDirection, t);
+        }
+
+        /// <summary>
         /// Calculates the shortest distance between two lines (rays)
         /// </summary>
         /// <param name="l0Origin">Point on the first line</param>

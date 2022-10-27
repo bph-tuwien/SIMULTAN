@@ -84,6 +84,7 @@ namespace SIMULTAN.Data.Assets
                     this.File = new FileInfo(this.current_full_path);
                 }
             }
+
             this.Name = (this.File == null) ? FileSystemNavigation.ExtractNameFromPath(_file_path) : this.File.Name;
         }
 

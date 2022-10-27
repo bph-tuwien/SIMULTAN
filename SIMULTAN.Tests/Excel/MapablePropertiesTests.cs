@@ -222,7 +222,7 @@ namespace SIMULTAN.Tests.Excel
             var param = new SimParameter("Test", "m", 42);
             comp.Parameters.Add(param);
 
-            var result = ExcelMappingNode.GetPropertyValues(param, new Dictionary<string, Type> { { "Name", typeof(string) } });
+            var result = ExcelMappingNode.GetPropertyValues(param, new Dictionary<string, Type> { { "TaxonomyEntry", typeof(string) } });
             Assert.AreEqual(1, result.Count);
             Assert.AreEqual("Test", (string)result[0]);
         }

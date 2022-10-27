@@ -1,5 +1,6 @@
 ﻿using SIMULTAN.Data.FlowNetworks;
 using SIMULTAN.Data.SimNetworks;
+using SIMULTAN.Data.Taxonomy;
 using SIMULTAN.Data.Users;
 using SIMULTAN.Excel;
 using SIMULTAN.Serializer.DXF;
@@ -9,6 +10,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Windows;
 using System.Windows.Media.Media3D;
@@ -58,7 +60,7 @@ namespace SIMULTAN.Data.Components
     /// </para>
     /// 
     /// </summary>
-    public partial class SimComponentInstance : SimObjectNew<SimComponentCollection>
+    public partial class SimComponentInstance : SimNamedObject<SimComponentCollection>
     {
         #region STATIC
 
@@ -799,7 +801,7 @@ namespace SIMULTAN.Data.Components
         /// <returns>True when the parameter should be placed in the InstanceParameter* lists, otherwise False</returns>
         private static bool IsInstanceableParameter(SimParameter parameter)
         {
-            return parameter.Name != ReservedParameters.RP_INST_PROPAGATE;
+            return parameter.TaxonomyEntry.Name != ReservedParameters.RP_INST_PROPAGATE;
         }
 
         private void UpdateInstanceParameters(SimInstanceParameterCollection instanceValues)
@@ -921,7 +923,7 @@ namespace SIMULTAN.Data.Components
                     }
                     else //For old files: Search for parameter by name.
                     {
-                        parameter = this.Component.Parameters.FirstOrDefault(x => x.Name == loadingData.parameterName);
+                        parameter = this.Component.Parameters.FirstOrDefault(x => x.TaxonomyEntry.Name == loadingData.parameterName);
                     }
 
                     if (parameter != null && parameter.Component == this.Component && IsInstanceableParameter(parameter))
@@ -1045,23 +1047,23 @@ namespace SIMULTAN.Data.Components
                 }
 
                 //Set sizes
-                SetParameterIfExists(cumulativeComponent, ReservedParameters.RP_LENGTH_MIN_TOTAL, p_L_min_total_value);
-                SetParameterIfExists(cumulativeComponent, ReservedParameters.RP_LENGTH_MAX_TOTAL, p_L_max_total_value);
+                SetParameterIfExists(cumulativeComponent, ReservedParameterKeys.RP_LENGTH_MIN_TOTAL, p_L_min_total_value);
+                SetParameterIfExists(cumulativeComponent, ReservedParameterKeys.RP_LENGTH_MAX_TOTAL, p_L_max_total_value);
 
-                SetParameterIfExists(cumulativeComponent, ReservedParameters.RP_AREA_MIN_TOTAL, p_A_min_total_value);
-                SetParameterIfExists(cumulativeComponent, ReservedParameters.RP_AREA_MAX_TOTAL, p_A_max_total_value);
+                SetParameterIfExists(cumulativeComponent, ReservedParameterKeys.RP_AREA_MIN_TOTAL, p_A_min_total_value);
+                SetParameterIfExists(cumulativeComponent, ReservedParameterKeys.RP_AREA_MAX_TOTAL, p_A_max_total_value);
 
-                SetParameterIfExists(cumulativeComponent, ReservedParameters.RP_VOLUME_MIN_TOTAL, p_V_min_total_value);
-                SetParameterIfExists(cumulativeComponent, ReservedParameters.RP_VOLUME_MAX_TOTAL, p_V_max_total_value);
+                SetParameterIfExists(cumulativeComponent, ReservedParameterKeys.RP_VOLUME_MIN_TOTAL, p_V_min_total_value);
+                SetParameterIfExists(cumulativeComponent, ReservedParameterKeys.RP_VOLUME_MAX_TOTAL, p_V_max_total_value);
 
-                SetParameterIfExists(cumulativeComponent, ReservedParameters.RP_COUNT, component.Instances.Count);
+                SetParameterIfExists(cumulativeComponent, ReservedParameterKeys.RP_COUNT, component.Instances.Count);
             }
         }
 
 
-        private static void SetParameterIfExists(SimComponent component, string parameterName, double value)
+        private static void SetParameterIfExists(SimComponent component, string parameterKey, double value)
         {
-            var parameter = component.Parameters.FirstOrDefault(x => x.Name == parameterName);
+            var parameter = component.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(parameterKey));
             if (parameter != null)
                 parameter.ValueCurrent = value;
         }
@@ -1088,7 +1090,7 @@ namespace SIMULTAN.Data.Components
             subComponent.AccessLocal[SimUserRole.BUILDING_DEVELOPER].Access |= SimComponentAccessPrivilege.Release;
 
             // get the correct parameter set
-            AddCumulativeParametersForInstancing(subComponent);
+            AddCumulativeParametersForInstancing(subComponent, component.Factory);
 
             if (needsComponentCreate)
             {
@@ -1103,12 +1105,17 @@ namespace SIMULTAN.Data.Components
             }
         }
 
-        private static void AddCumulativeParametersForInstancing(SimComponent component)
+        private static void AddCumulativeParametersForInstancing(SimComponent component, SimComponentCollection factory)
         {
-            if (!HasParameter(component, ReservedParameters.RP_LENGTH_MIN_TOTAL, "m", SimInfoFlow.Automatic))
+            if (factory == null)
+                throw new ArgumentNullException(nameof(factory));
+
+            if (!HasParameter(component, ReservedParameters.RP_LENGTH_MIN_TOTAL, ReservedParameterKeys.RP_LENGTH_MIN_TOTAL, "m", SimInfoFlow.Automatic))
             {
                 // cumulative values over all instances
-                SimParameter p11 = new SimParameter(ReservedParameters.RP_LENGTH_MIN_TOTAL, "m", 0.0, 0.0, double.MaxValue);
+                SimParameter p11 = new SimParameter(ReservedParameterKeys.RP_LENGTH_MIN_TOTAL, "m", 0.0, 0.0, double.MaxValue);
+                var taxEntry = ReservedParameterKeys.GetReservedTaxonomyEntry(factory.ProjectData.Taxonomies, ReservedParameterKeys.RP_LENGTH_MIN_TOTAL);
+                p11.TaxonomyEntry = new SimTaxonomyEntryOrString(new SimTaxonomyEntryReference(taxEntry));
                 p11.IsAutomaticallyGenerated = true;
                 p11.TextValue = "Net total length";
                 p11.Category |= SimCategory.Geometry | SimCategory.Communication;
@@ -1117,9 +1124,11 @@ namespace SIMULTAN.Data.Components
                 component.Parameters.Add(p11);
             }
 
-            if (!HasParameter(component, ReservedParameters.RP_AREA_MIN_TOTAL, "m²", SimInfoFlow.Automatic))
+            if (!HasParameter(component, ReservedParameters.RP_AREA_MIN_TOTAL, ReservedParameterKeys.RP_AREA_MIN_TOTAL, "m²", SimInfoFlow.Automatic))
             {
-                SimParameter p12 = new SimParameter(ReservedParameters.RP_AREA_MIN_TOTAL, "m²", 0.0, 0.0, double.MaxValue);
+                SimParameter p12 = new SimParameter(ReservedParameterKeys.RP_AREA_MIN_TOTAL, "m²", 0.0, 0.0, double.MaxValue);
+                var taxEntry = ReservedParameterKeys.GetReservedTaxonomyEntry(factory.ProjectData.Taxonomies, ReservedParameterKeys.RP_AREA_MIN_TOTAL);
+                p12.TaxonomyEntry = new SimTaxonomyEntryOrString(new SimTaxonomyEntryReference(taxEntry));
                 p12.IsAutomaticallyGenerated = true;
                 p12.TextValue = "Net total area";
                 p12.Category |= SimCategory.Geometry | SimCategory.Communication;
@@ -1128,9 +1137,11 @@ namespace SIMULTAN.Data.Components
                 component.Parameters.Add(p12);
             }
 
-            if (!HasParameter(component, ReservedParameters.RP_VOLUME_MIN_TOTAL, "m³", SimInfoFlow.Automatic))
+            if (!HasParameter(component, ReservedParameters.RP_VOLUME_MIN_TOTAL, ReservedParameterKeys.RP_VOLUME_MIN_TOTAL, "m³", SimInfoFlow.Automatic))
             {
-                SimParameter p13 = new SimParameter(ReservedParameters.RP_VOLUME_MIN_TOTAL, "m³", 0.0, 0.0, double.MaxValue);
+                SimParameter p13 = new SimParameter(ReservedParameterKeys.RP_VOLUME_MIN_TOTAL, "m³", 0.0, 0.0, double.MaxValue);
+                var taxEntry = ReservedParameterKeys.GetReservedTaxonomyEntry(factory.ProjectData.Taxonomies, ReservedParameterKeys.RP_VOLUME_MIN_TOTAL);
+                p13.TaxonomyEntry = new SimTaxonomyEntryOrString(new SimTaxonomyEntryReference(taxEntry));
                 p13.IsAutomaticallyGenerated = true;
                 p13.TextValue = "Net total volume";
                 p13.Category |= SimCategory.Geometry | SimCategory.Communication;
@@ -1139,9 +1150,11 @@ namespace SIMULTAN.Data.Components
                 component.Parameters.Add(p13);
             }
 
-            if (!HasParameter(component, ReservedParameters.RP_LENGTH_MAX_TOTAL, "m", SimInfoFlow.Automatic))
+            if (!HasParameter(component, ReservedParameters.RP_LENGTH_MAX_TOTAL, ReservedParameterKeys.RP_LENGTH_MAX_TOTAL, "m", SimInfoFlow.Automatic))
             {
-                SimParameter p14 = new SimParameter(ReservedParameters.RP_LENGTH_MAX_TOTAL, "m", 0.0, 0.0, double.MaxValue);
+                SimParameter p14 = new SimParameter(ReservedParameterKeys.RP_LENGTH_MAX_TOTAL, "m", 0.0, 0.0, double.MaxValue);
+                var taxEntry = ReservedParameterKeys.GetReservedTaxonomyEntry(factory.ProjectData.Taxonomies, ReservedParameterKeys.RP_LENGTH_MAX_TOTAL);
+                p14.TaxonomyEntry = new SimTaxonomyEntryOrString(new SimTaxonomyEntryReference(taxEntry));
                 p14.IsAutomaticallyGenerated = true;
                 p14.TextValue = "Gross total length";
                 p14.Category |= SimCategory.Geometry | SimCategory.Communication;
@@ -1150,9 +1163,11 @@ namespace SIMULTAN.Data.Components
                 component.Parameters.Add(p14);
             }
 
-            if (!HasParameter(component, ReservedParameters.RP_AREA_MAX_TOTAL, "m²", SimInfoFlow.Automatic))
+            if (!HasParameter(component, ReservedParameters.RP_AREA_MAX_TOTAL, ReservedParameterKeys.RP_AREA_MAX_TOTAL, "m²", SimInfoFlow.Automatic))
             {
-                SimParameter p15 = new SimParameter(ReservedParameters.RP_AREA_MAX_TOTAL, "m²", 0.0, 0.0, double.MaxValue);
+                SimParameter p15 = new SimParameter(ReservedParameterKeys.RP_AREA_MAX_TOTAL, "m²", 0.0, 0.0, double.MaxValue);
+                var taxEntry = ReservedParameterKeys.GetReservedTaxonomyEntry(factory.ProjectData.Taxonomies, ReservedParameterKeys.RP_AREA_MAX_TOTAL);
+                p15.TaxonomyEntry = new SimTaxonomyEntryOrString(new SimTaxonomyEntryReference(taxEntry));
                 p15.IsAutomaticallyGenerated = true;
                 p15.TextValue = "Gross total area";
                 p15.Category |= SimCategory.Geometry | SimCategory.Communication;
@@ -1161,9 +1176,11 @@ namespace SIMULTAN.Data.Components
                 component.Parameters.Add(p15);
             }
 
-            if (!HasParameter(component, ReservedParameters.RP_VOLUME_MAX_TOTAL, "m³", SimInfoFlow.Automatic))
+            if (!HasParameter(component, ReservedParameters.RP_VOLUME_MAX_TOTAL, ReservedParameterKeys.RP_VOLUME_MAX_TOTAL, "m³", SimInfoFlow.Automatic))
             {
-                SimParameter p16 = new SimParameter(ReservedParameters.RP_VOLUME_MAX_TOTAL, "m³", 0.0, 0.0, double.MaxValue);
+                SimParameter p16 = new SimParameter(ReservedParameterKeys.RP_VOLUME_MAX_TOTAL, "m³", 0.0, 0.0, double.MaxValue);
+                var taxEntry = ReservedParameterKeys.GetReservedTaxonomyEntry(factory.ProjectData.Taxonomies, ReservedParameterKeys.RP_VOLUME_MAX_TOTAL);
+                p16.TaxonomyEntry = new SimTaxonomyEntryOrString(new SimTaxonomyEntryReference(taxEntry));
                 p16.IsAutomaticallyGenerated = true;
                 p16.TextValue = "Gross total volume";
                 p16.Category |= SimCategory.Geometry | SimCategory.Communication;
@@ -1172,9 +1189,11 @@ namespace SIMULTAN.Data.Components
                 component.Parameters.Add(p16);
             }
 
-            if (!HasParameter(component, ReservedParameters.RP_COUNT, "-", SimInfoFlow.Automatic))
+            if (!HasParameter(component, ReservedParameters.RP_COUNT, ReservedParameterKeys.RP_COUNT, "-", SimInfoFlow.Automatic))
             {
-                SimParameter p17 = new SimParameter(ReservedParameters.RP_COUNT, "-", 0.0, 0.0, 10000);
+                SimParameter p17 = new SimParameter(ReservedParameterKeys.RP_COUNT, "-", 0.0, 0.0, 10000);
+                var taxEntry = ReservedParameterKeys.GetReservedTaxonomyEntry(factory.ProjectData.Taxonomies, ReservedParameterKeys.RP_COUNT);
+                p17.TaxonomyEntry = new SimTaxonomyEntryOrString(new SimTaxonomyEntryReference(taxEntry));
                 p17.IsAutomaticallyGenerated = true;
                 p17.TextValue = "Total number";
                 p17.Category |= SimCategory.Geometry | SimCategory.Communication;
@@ -1183,9 +1202,11 @@ namespace SIMULTAN.Data.Components
                 component.Parameters.Add(p17);
             }
         }
-        private static bool HasParameter(SimComponent component, string name, string unit, SimInfoFlow propagation)
+
+        private static bool HasParameter(SimComponent component, string name, string key, string unit, SimInfoFlow propagation)
         {
-            return component.Parameters.Any(x => x.Name == name && x.Unit == unit && x.Propagation == propagation);
+            // check for name or taxonomy, cause old parameters probably don't have their taxonomies replaced yet
+            return component.Parameters.Any(x => (x.TaxonomyEntry.Name == name || x.HasReservedTaxonomyEntry(key)) && x.Unit == unit && x.Propagation == propagation);
         }
 
         #endregion

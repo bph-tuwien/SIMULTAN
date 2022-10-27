@@ -163,6 +163,15 @@ namespace SIMULTAN.Serializer.DXF
         internal DXFStructArrayEntryParserElement(ParamStructCommonSaveCode code, Func<DXFParserResultSet, DXFParserInfo, T> parser,
             IEnumerable<DXFEntryParserElement> elements)
             : this((int)code, parser, elements) { }
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DXFStructArrayEntryParserElement{T}"/> class
+        /// </summary>
+        /// <param name="code">The code of the count entry</param>
+        /// <param name="parser">Method that converts the parsed data of a single element into the desired target type</param>
+        /// <param name="elements">The elements in each entry</param>
+        internal DXFStructArrayEntryParserElement(ValueMappingSaveCode code, Func<DXFParserResultSet, DXFParserInfo, T> parser,
+            IEnumerable<DXFEntryParserElement> elements)
+            : this((int)code, parser, elements) { }
 
         /// <inheritdoc />
         internal override object ParseInternal(DXFStreamReader reader, DXFParserInfo info)

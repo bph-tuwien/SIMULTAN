@@ -144,12 +144,12 @@ namespace SIMULTAN.Tests.Components
             LoadProject(componentProject);
 
             var root = projectData.Components.First(x => x.Name == "Root");
-            var aParam = root.Parameters.First(x => x.Name == "a");
+            var aParam = root.Parameters.First(x => x.TaxonomyEntry.Name == "a");
 
             var copy = new SimComponent(root);
-            var copyaParam = copy.Parameters.First(x => x.Name == "a");
+            var copyaParam = copy.Parameters.First(x => x.TaxonomyEntry.Name == "a");
 
-            Assert.AreEqual(aParam.Name, copyaParam.Name);
+            Assert.AreEqual(aParam.TaxonomyEntry.Name, copyaParam.TaxonomyEntry.Name);
             Assert.AreEqual(SimId.Empty, copyaParam.Id);
             Assert.AreEqual(aParam.Propagation, copyaParam.Propagation);
             Assert.AreEqual(aParam.ValueCurrent, copyaParam.ValueCurrent);

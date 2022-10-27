@@ -23,13 +23,13 @@ namespace SIMULTAN.Exchange.GeometryConnectors
         {
             using (AccessCheckingDisabler.Disable(Placement.Instance.Factory))
             {
-                ExchangeHelpers.CreateParameterIfNotExists(placement.Instance.Component, ReservedParameters.RP_AREA,
+                ExchangeHelpers.CreateParameterIfNotExists(placement.Instance.Component, ReservedParameterKeys.RP_AREA, ReservedParameters.RP_AREA,
                     SimParameterInstancePropagation.PropagateNever, 0.0);
-                ExchangeHelpers.CreateParameterIfNotExists(placement.Instance.Component, ReservedParameters.RP_COUNT,
+                ExchangeHelpers.CreateParameterIfNotExists(placement.Instance.Component, ReservedParameterKeys.RP_COUNT,ReservedParameters.RP_COUNT,
                     SimParameterInstancePropagation.PropagateNever, 0.0);
-                ExchangeHelpers.CreateParameterIfNotExists(placement.Instance.Component, ReservedParameters.RP_MATERIAL_COMPOSITE_D_IN,
+                ExchangeHelpers.CreateParameterIfNotExists(placement.Instance.Component, ReservedParameterKeys.RP_MATERIAL_COMPOSITE_D_IN,ReservedParameters.RP_MATERIAL_COMPOSITE_D_IN,
                     SimParameterInstancePropagation.PropagateIfInstance, 0.0);
-                ExchangeHelpers.CreateParameterIfNotExists(placement.Instance.Component, ReservedParameters.RP_MATERIAL_COMPOSITE_D_OUT,
+                ExchangeHelpers.CreateParameterIfNotExists(placement.Instance.Component, ReservedParameterKeys.RP_MATERIAL_COMPOSITE_D_OUT,ReservedParameters.RP_MATERIAL_COMPOSITE_D_OUT,
                     SimParameterInstancePropagation.PropagateIfInstance, 0.0);
             }
         }
@@ -38,14 +38,14 @@ namespace SIMULTAN.Exchange.GeometryConnectors
         {
             using (AccessCheckingDisabler.Disable(Placement.Instance.Component.Factory))
             {
-                var countParam = Placement.Instance.Component.Parameters.FirstOrDefault(x => x.Name == ReservedParameters.RP_COUNT);
+                var countParam = Placement.Instance.Component.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_COUNT));
                 if (countParam != null)
                 {
                     Placement.Instance.InstanceParameterValuesPersistent[countParam] = placementDeleted ? 0.0 : 1.0;
                     countParam.ValueCurrent = Placement.Instance.Component.Instances.Sum(x => x.InstanceParameterValuesPersistent[countParam]);
                 }
 
-                var areaParam = Placement.Instance.Component.Parameters.FirstOrDefault(x => x.Name == ReservedParameters.RP_AREA);
+                var areaParam = Placement.Instance.Component.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_AREA));
                 if (areaParam != null)
                 {
                     Placement.Instance.InstanceParameterValuesPersistent[areaParam] = 

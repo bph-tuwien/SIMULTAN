@@ -194,7 +194,7 @@ namespace SIMULTAN.Data.Components
                     if (usedOutParameters.Contains(p))
                         return CalculationValidationResult.PARAMS_OUT_DUPLICATE;
 
-                    var otherCalculations = p.GetReferencingCalculations();
+                    var otherCalculations = p.ReferencingCalculations;
                     if (otherCalculations.Any(x => x != calculation && (x.ReturnParams.ContainsValue(p))))
                         return CalculationValidationResult.PARAMS_OUT_DUPLICATE;
                 }
@@ -442,7 +442,7 @@ namespace SIMULTAN.Data.Components
 
             // look locally first
             SimParameter p_corresp = _comp.Parameters.FirstOrDefault(
-                x => x.Name == _p.Name &&
+                x => x.TaxonomyEntry.Equals(_p.TaxonomyEntry) &&
                      x.Unit == _p.Unit &&
                      x.Propagation == _p.Propagation
                 );

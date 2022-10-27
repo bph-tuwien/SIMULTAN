@@ -217,7 +217,7 @@ namespace SIMULTAN.Data.MultiValues
                     if (paramEntry.Value == null)
                     {
                         var param = new SimParameter(
-                            string.Format(paramEntry.Key, this.TargetParameter.Name),
+                            string.Format(paramEntry.Key, this.TargetParameter.TaxonomyEntry.Name),
                             valuePointerParameterUnits[paramEntry.Key],
                             0.0, SimParameterOperations.EditValue);
                         comp.Parameters.Add(param);
@@ -275,8 +275,8 @@ namespace SIMULTAN.Data.MultiValues
             {
                 foreach (var key in valuePointerParameters.Keys.ToList())
                 {
-                    var paramName = string.Format(key, TargetParameter.Name);
-                    ReplaceValuePointerParameter(key, targetParameter.Component.Parameters.FirstOrDefault(x => x.Name == paramName));
+                    var paramName = string.Format(key, TargetParameter.TaxonomyEntry.Name);
+                    ReplaceValuePointerParameter(key, targetParameter.Component.Parameters.FirstOrDefault(x => x.TaxonomyEntry.Name == paramName));
                 }
             }
         }
@@ -312,7 +312,7 @@ namespace SIMULTAN.Data.MultiValues
                     foreach (var item in e.NewItems)
                     {
                         var itemParam = (SimParameter)item;
-                        var key = valuePointerParameters.Keys.FirstOrDefault(x => string.Format(x, TargetParameter.Name) == itemParam.Name);
+                        var key = valuePointerParameters.Keys.FirstOrDefault(x => string.Format(x, TargetParameter.TaxonomyEntry.Name) == itemParam.TaxonomyEntry.Name);
                         if (key != null)
                             ReplaceValuePointerParameter(key, itemParam);
                     }
@@ -322,7 +322,7 @@ namespace SIMULTAN.Data.MultiValues
                     foreach (var item in e.OldItems)
                     {
                         var itemParam = (SimParameter)item;
-                        var key = valuePointerParameters.Keys.FirstOrDefault(x => string.Format(x, TargetParameter.Name) == itemParam.Name);
+                        var key = valuePointerParameters.Keys.FirstOrDefault(x => string.Format(x, TargetParameter.TaxonomyEntry.Name) == itemParam.TaxonomyEntry.Name);
                         if (key != null)
                             ReplaceValuePointerParameter(key, null);
                     }

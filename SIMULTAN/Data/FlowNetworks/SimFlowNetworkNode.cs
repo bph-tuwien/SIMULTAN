@@ -204,7 +204,7 @@ namespace SIMULTAN.Data.FlowNetworks
             if (this.Content == null) return;
 
             // get the appropriate instance and update its parameter slots w/o resetting
-            SimComponentInstance instance = this.GetUpdatedInstance(_in_flow_dir);
+            SimComponentInstance instance = this.Content;
             if (instance == null) return;
             this.UpdateContentInstance();
             // Debug.WriteLine("START Instance:\t\t\t" + instance.ToString());
@@ -232,10 +232,10 @@ namespace SIMULTAN.Data.FlowNetworks
                             if (e.Content == null) continue;
                             if (!e.CanCalculateFlow(_in_flow_dir)) continue;
 
-                            SimComponentInstance instance_in_e = e.GetUpdatedInstance(_in_flow_dir);
+                            SimComponentInstance instance_in_e = e.Content;
                             SimParameter p_e_Operand = e.GetFirstParamBySuffix(rule.Suffix_Operands, _in_flow_dir);
                             SimParameter p_e_Result = e.GetFirstParamBySuffix(rule.Suffix_Result, _in_flow_dir);
-                            SimComponentInstance instance_in_eStart = e.Start.GetUpdatedInstance(_in_flow_dir);
+                            SimComponentInstance instance_in_eStart = e.Start.Content;
                             SimParameter p_eStart_Operand = e.Start.GetFirstParamBySuffix(rule.Suffix_Operands, _in_flow_dir);
 
                             if (instance_in_e == null || p_e_Operand == null || p_e_Result == null) continue;
@@ -266,10 +266,10 @@ namespace SIMULTAN.Data.FlowNetworks
                             if (e.Content == null) continue;
                             if (!e.CanCalculateFlow(_in_flow_dir)) continue;
 
-                            SimComponentInstance instance_in_e = e.GetUpdatedInstance(_in_flow_dir);
+                            SimComponentInstance instance_in_e = e.Content;
                             SimParameter p_e_Operand = e.GetFirstParamBySuffix(rule.Suffix_Operands, _in_flow_dir);
                             SimParameter p_e_Result = e.GetFirstParamBySuffix(rule.Suffix_Result, _in_flow_dir);
-                            SimComponentInstance instance_in_eEnd = e.End.GetUpdatedInstance(_in_flow_dir);
+                            SimComponentInstance instance_in_eEnd = e.End.Content;
                             SimParameter p_eEnd_Operand = e.End.GetFirstParamBySuffix(rule.Suffix_Operands, _in_flow_dir);
 
                             if (instance_in_e == null || p_e_Operand == null || p_e_Result == null) continue;

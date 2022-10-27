@@ -16,6 +16,7 @@ using static SIMULTAN.Data.Components.CalculationParameterMetaData;
 using SIMULTAN.Data.FlowNetworks;
 using SIMULTAN.Excel;
 using SIMULTAN.Data.SimNetworks;
+using SIMULTAN.Data.ValueMappings;
 
 namespace SIMULTAN.Serializer.DXF
 {
@@ -74,7 +75,7 @@ namespace SIMULTAN.Serializer.DXF
         IDXFDataConverter<SimMultiValueType>, IDXFDataConverter<SimCategory>, IDXFDataConverter<SimInfoFlow>,
         IDXFDataConverter<SimParameterInstancePropagation>, IDXFDataConverter<SimParameterOperations>,
         IDXFDataConverter<ResourceReference>,
-        IDXFDataConverter<ComponentIndexUsage>,
+        IDXFDataConverter<SimComponentIndexUsage>,
         IDXFDataConverter<MultiValueCalculationBinaryOperation>, IDXFDataConverter<DeviationModeType>,
         IDXFDataConverter<SimResultAggregationMethod>, IDXFDataConverter<SimInstanceType>,
         IDXFDataConverter<SimInstanceConnectionState>, IDXFDataConverter<SimInstanceSizeTransferSource>,
@@ -566,20 +567,20 @@ namespace SIMULTAN.Serializer.DXF
         }
 
         /// <inheritdoc />
-        public string ToDXFString(ComponentIndexUsage value)
+        public string ToDXFString(SimComponentIndexUsage value)
         {
             return ((uint)value).ToString();
         }
         /// <inheritdoc />
-        ComponentIndexUsage IDXFDataConverter<ComponentIndexUsage>.FromDXFString(string value, DXFParserInfo info)
+        SimComponentIndexUsage IDXFDataConverter<SimComponentIndexUsage>.FromDXFString(string value, DXFParserInfo info)
         {
             if (info.FileVersion < 12)
             {
-                return (ComponentIndexUsage) Enum.Parse(typeof(ComponentIndexUsage), value, true);
+                return (SimComponentIndexUsage) Enum.Parse(typeof(SimComponentIndexUsage), value, true);
             }
             else
             {
-                return (ComponentIndexUsage)uint.Parse(value);
+                return (SimComponentIndexUsage)uint.Parse(value);
             }
         }
 

@@ -1,6 +1,7 @@
 ﻿using SIMULTAN.Data.Assets;
 using SIMULTAN.Data.Components;
 using SIMULTAN.Data.Geometry;
+using SIMULTAN.Data.Taxonomy;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,36 +16,37 @@ namespace SIMULTAN.Exchange
         private static readonly Dictionary<string, (string unit, SimParameterOperations operations, SimInfoFlow propagation)> reservedParameterInfo =
             new Dictionary<string, (string unit, SimParameterOperations operations, SimInfoFlow propagation)>
             {
-                { ReservedParameters.RP_AREA,                       ("m²", SimParameterOperations.None, SimInfoFlow.Input) },
-                { ReservedParameters.RP_AREA_MIN,                   ("m²", SimParameterOperations.None, SimInfoFlow.Input) },
-                { ReservedParameters.RP_AREA_MAX,                   ("m²", SimParameterOperations.None, SimInfoFlow.Input) },
-                { ReservedParameters.RP_COUNT,                      ("-", SimParameterOperations.None, SimInfoFlow.Input) },
-                { ReservedParameters.RP_MATERIAL_COMPOSITE_D_IN,    ("m", SimParameterOperations.EditValue, SimInfoFlow.Mixed) },
-                { ReservedParameters.RP_MATERIAL_COMPOSITE_D_OUT,   ("m", SimParameterOperations.EditValue, SimInfoFlow.Mixed) },
-                { ReservedParameters.RP_WIDTH,                      ("m", SimParameterOperations.None, SimInfoFlow.Input) },
-                { ReservedParameters.RP_WIDTH_MIN,                  ("m", SimParameterOperations.None, SimInfoFlow.Input) },
-                { ReservedParameters.RP_WIDTH_MAX,                  ("m", SimParameterOperations.None, SimInfoFlow.Input) },
-                { ReservedParameters.RP_HEIGHT,                     ("m", SimParameterOperations.None, SimInfoFlow.Input) },
-                { ReservedParameters.RP_HEIGHT_MIN,                 ("m", SimParameterOperations.None, SimInfoFlow.Input) },
-                { ReservedParameters.RP_HEIGHT_MAX,                 ("m", SimParameterOperations.None, SimInfoFlow.Input) },
-                { ReservedParameters.RP_K_FOK,                      ("m", SimParameterOperations.None, SimInfoFlow.Input) },
-                { ReservedParameters.RP_K_FOK_ROH,                  ("m", SimParameterOperations.None, SimInfoFlow.Input) },
-                { ReservedParameters.RP_K_F_AXES,                   ("m", SimParameterOperations.None, SimInfoFlow.Input) },
-                { ReservedParameters.RP_K_DUK,                      ("m", SimParameterOperations.None, SimInfoFlow.Input) },
-                { ReservedParameters.RP_K_DUK_ROH,                  ("m", SimParameterOperations.None, SimInfoFlow.Input) },
-                { ReservedParameters.RP_K_D_AXES,                   ("m", SimParameterOperations.None, SimInfoFlow.Input) },
-                { ReservedParameters.RP_H_NET,                      ("m", SimParameterOperations.None, SimInfoFlow.Input) },
-                { ReservedParameters.RP_H_GROSS,                    ("m", SimParameterOperations.None, SimInfoFlow.Input) },
-                { ReservedParameters.RP_H_AXES,                     ("m", SimParameterOperations.None, SimInfoFlow.Input) },
-                { ReservedParameters.RP_L_PERIMETER,                ("m", SimParameterOperations.None, SimInfoFlow.Input) },
-                { ReservedParameters.RP_AREA_BGF,                   ("m²", SimParameterOperations.None, SimInfoFlow.Input) },
-                { ReservedParameters.RP_AREA_NGF,                   ("m²", SimParameterOperations.None, SimInfoFlow.Input) },
-                { ReservedParameters.RP_AREA_NF,                    ("m²", SimParameterOperations.None, SimInfoFlow.Input) },
-                { ReservedParameters.RP_AREA_AXES,                  ("m²", SimParameterOperations.None, SimInfoFlow.Input) },
-                { ReservedParameters.RP_VOLUME_BRI,                 ("m³", SimParameterOperations.None, SimInfoFlow.Input) },
-                { ReservedParameters.RP_VOLUME_NRI,                 ("m³", SimParameterOperations.None, SimInfoFlow.Input) },
-                { ReservedParameters.RP_VOLUME_NRI_NF,              ("m³", SimParameterOperations.None, SimInfoFlow.Input) },
-                { ReservedParameters.RP_VOLUME_AXES,                ("m³", SimParameterOperations.None, SimInfoFlow.Input) },
+                { ReservedParameterKeys.RP_AREA,                       ("m²", SimParameterOperations.None, SimInfoFlow.Input) },
+                { ReservedParameterKeys.RP_AREA_MIN,                   ("m²", SimParameterOperations.None, SimInfoFlow.Input) },
+                { ReservedParameterKeys.RP_AREA_MAX,                   ("m²", SimParameterOperations.None, SimInfoFlow.Input) },
+                { ReservedParameterKeys.RP_LENGTH,                     ("m", SimParameterOperations.None, SimInfoFlow.Input) },
+                { ReservedParameterKeys.RP_COUNT,                      ("-", SimParameterOperations.None, SimInfoFlow.Input) },
+                { ReservedParameterKeys.RP_MATERIAL_COMPOSITE_D_IN,    ("m", SimParameterOperations.EditValue, SimInfoFlow.Mixed) },
+                { ReservedParameterKeys.RP_MATERIAL_COMPOSITE_D_OUT,   ("m", SimParameterOperations.EditValue, SimInfoFlow.Mixed) },
+                { ReservedParameterKeys.RP_WIDTH,                      ("m", SimParameterOperations.None, SimInfoFlow.Input) },
+                { ReservedParameterKeys.RP_WIDTH_MIN,                  ("m", SimParameterOperations.None, SimInfoFlow.Input) },
+                { ReservedParameterKeys.RP_WIDTH_MAX,                  ("m", SimParameterOperations.None, SimInfoFlow.Input) },
+                { ReservedParameterKeys.RP_HEIGHT,                     ("m", SimParameterOperations.None, SimInfoFlow.Input) },
+                { ReservedParameterKeys.RP_HEIGHT_MIN,                 ("m", SimParameterOperations.None, SimInfoFlow.Input) },
+                { ReservedParameterKeys.RP_HEIGHT_MAX,                 ("m", SimParameterOperations.None, SimInfoFlow.Input) },
+                { ReservedParameterKeys.RP_K_FOK,                      ("m", SimParameterOperations.None, SimInfoFlow.Input) },
+                { ReservedParameterKeys.RP_K_FOK_ROH,                  ("m", SimParameterOperations.None, SimInfoFlow.Input) },
+                { ReservedParameterKeys.RP_K_F_AXES,                   ("m", SimParameterOperations.None, SimInfoFlow.Input) },
+                { ReservedParameterKeys.RP_K_DUK,                      ("m", SimParameterOperations.None, SimInfoFlow.Input) },
+                { ReservedParameterKeys.RP_K_DUK_ROH,                  ("m", SimParameterOperations.None, SimInfoFlow.Input) },
+                { ReservedParameterKeys.RP_K_D_AXES,                   ("m", SimParameterOperations.None, SimInfoFlow.Input) },
+                { ReservedParameterKeys.RP_H_NET,                      ("m", SimParameterOperations.None, SimInfoFlow.Input) },
+                { ReservedParameterKeys.RP_H_GROSS,                    ("m", SimParameterOperations.None, SimInfoFlow.Input) },
+                { ReservedParameterKeys.RP_H_AXES,                     ("m", SimParameterOperations.None, SimInfoFlow.Input) },
+                { ReservedParameterKeys.RP_L_PERIMETER,                ("m", SimParameterOperations.None, SimInfoFlow.Input) },
+                { ReservedParameterKeys.RP_AREA_BGF,                   ("m²", SimParameterOperations.None, SimInfoFlow.Input) },
+                { ReservedParameterKeys.RP_AREA_NGF,                   ("m²", SimParameterOperations.None, SimInfoFlow.Input) },
+                { ReservedParameterKeys.RP_AREA_NF,                    ("m²", SimParameterOperations.None, SimInfoFlow.Input) },
+                { ReservedParameterKeys.RP_AREA_AXES,                  ("m²", SimParameterOperations.None, SimInfoFlow.Input) },
+                { ReservedParameterKeys.RP_VOLUME_BRI,                 ("m³", SimParameterOperations.None, SimInfoFlow.Input) },
+                { ReservedParameterKeys.RP_VOLUME_NRI,                 ("m³", SimParameterOperations.None, SimInfoFlow.Input) },
+                { ReservedParameterKeys.RP_VOLUME_NRI_NF,              ("m³", SimParameterOperations.None, SimInfoFlow.Input) },
+                { ReservedParameterKeys.RP_VOLUME_AXES,                ("m³", SimParameterOperations.None, SimInfoFlow.Input) },
             };
 
         /// <summary>
@@ -53,27 +55,39 @@ namespace SIMULTAN.Exchange
         /// is set to True
         /// </summary>
         /// <param name="component">The component in which the parameter should be created</param>
-        /// <param name="parameterName">The name of the parameter</param>
+        /// <param name="parameterKey">The key of the reserved parameter taxonomy entry</param>
+        /// <param name="name">The name of the parameter. Used as a fallback check when the parameterKey didn't already match the taxonomy entry</param>
         /// <param name="propagation">The propagation mode for the parameter</param>
-        /// <param name="value">The inital numerical value of the parameter (ignored when the parameter exists)</param>
+        /// <param name="value">The initial numerical value of the parameter (ignored when the parameter exists)</param>
         /// <returns>Returns the parameter</returns>
-        internal static SimParameter CreateParameterIfNotExists(SimComponent component, string parameterName,
+        internal static SimParameter CreateParameterIfNotExists(SimComponent component, string parameterKey, string name,
             SimParameterInstancePropagation propagation, double value)
         {
-            var parameter = component.Parameters.FirstOrDefault(x => x.Name == parameterName);
+            var parameter = component.Parameters.FirstOrDefault(x =>
+            {
+                var ret = x.HasReservedTaxonomyEntry(parameterKey);
+                if (!ret && name != null)
+                {
+                    ret = x.TaxonomyEntry.Name == name;
+                }
+                return ret;
+            });
 
             if (parameter == null)
             {
-                if (!reservedParameterInfo.TryGetValue(parameterName, out var pInfo))
+                if (!reservedParameterInfo.TryGetValue(parameterKey, out var pInfo))
                     pInfo = ("-", SimParameterOperations.All, SimInfoFlow.Mixed);
 
-                parameter = new SimParameter(parameterName, pInfo.unit, value, double.MinValue, double.MaxValue, pInfo.operations)
+                var taxonomyEntry = ReservedParameterKeys.GetReservedTaxonomyEntry(component.Factory.ProjectData.Taxonomies, parameterKey);
+
+                parameter = new SimParameter(taxonomyEntry.Name, pInfo.unit, value, double.MinValue, double.MaxValue, pInfo.operations)
                 {
                     Propagation = pInfo.propagation,
                     InstancePropagationMode = propagation,
                     IsAutomaticallyGenerated = true,
                     TextValue = "generated",
                     Category = SimCategory.Geometry,
+                    TaxonomyEntry = new SimTaxonomyEntryOrString(new SimTaxonomyEntryReference(taxonomyEntry)),
                 };
                 component.Parameters.Add(parameter);
             }
@@ -89,13 +103,13 @@ namespace SIMULTAN.Exchange
         /// Sets the parameter value if a parameter with that name exists
         /// </summary>
         /// <param name="placement">The placement in which the parameter should exist</param>
-        /// <param name="parameterName">The name of the parameter</param>
+        /// <param name="parameterKey">The key of the reserved parameter taxonomy entry</param>
         /// <param name="value">The new value. Only used when a parameter with the given name exists</param>
-        internal static void SetParameterIfExists(SimInstancePlacementGeometry placement, string parameterName, double value)
+        internal static void SetParameterIfExists(SimInstancePlacementGeometry placement, string parameterKey, double value)
         {
             if (placement.Instance != null && placement.Instance.Component != null)
             {
-                var param = placement.Instance.Component.Parameters.FirstOrDefault(x => x.Name == parameterName);
+                var param = placement.Instance.Component.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(parameterKey));
                 if (param != null)
                 {
                     param.ValueCurrent = value;

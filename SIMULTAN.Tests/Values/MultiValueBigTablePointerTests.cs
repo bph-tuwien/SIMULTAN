@@ -230,7 +230,7 @@ namespace SIMULTAN.Tests.Values
 
             //Find ptr
             var comp = projectData.Components.First(x => x.Name == "WithPointer");
-            var param = comp.Parameters.First(x => x.Name == "Target");
+            var param = comp.Parameters.First(x => x.TaxonomyEntry.Name == "Target");
 
             var ptr = (SimMultiValueBigTable.SimMultiValueBigTablePointer)param.MultiValuePointer;
             CheckPointer(ptr, (SimMultiValueBigTable)ptr.ValueField, 1, 1);
@@ -247,9 +247,9 @@ namespace SIMULTAN.Tests.Values
 
             //Find ptr
             var comp = projectData.Components.First(x => x.Name == "WithPointer");
-            var param = comp.Parameters.First(x => x.Name == "Target");
-            var colParam = comp.Parameters.First(x => x.Name == "Target.ValuePointer.OffsetColumn");
-            var rowParam = comp.Parameters.First(x => x.Name == "Target.ValuePointer.OffsetRow");
+            var param = comp.Parameters.First(x => x.TaxonomyEntry.Name == "Target");
+            var colParam = comp.Parameters.First(x => x.TaxonomyEntry.Name == "Target.ValuePointer.OffsetColumn");
+            var rowParam = comp.Parameters.First(x => x.TaxonomyEntry.Name == "Target.ValuePointer.OffsetRow");
 
             var ptr = (SimMultiValueBigTable.SimMultiValueBigTablePointer)param.MultiValuePointer;
             ptr.ValueChanged += (s, e) => eventCounter++;
@@ -273,9 +273,9 @@ namespace SIMULTAN.Tests.Values
 
             //Find ptr
             var comp = projectData.Components.First(x => x.Name == "WithPointer");
-            var param = comp.Parameters.First(x => x.Name == "Target");
-            var colParam = comp.Parameters.First(x => x.Name == "Target.ValuePointer.OffsetColumn");
-            var rowParam = comp.Parameters.First(x => x.Name == "Target.ValuePointer.OffsetRow");
+            var param = comp.Parameters.First(x => x.TaxonomyEntry.Name == "Target");
+            var colParam = comp.Parameters.First(x => x.TaxonomyEntry.Name == "Target.ValuePointer.OffsetColumn");
+            var rowParam = comp.Parameters.First(x => x.TaxonomyEntry.Name == "Target.ValuePointer.OffsetRow");
 
             var ptr = (SimMultiValueBigTable.SimMultiValueBigTablePointer)param.MultiValuePointer;
             ptr.ValueChanged += (s, e) => eventCounter++;
@@ -299,12 +299,12 @@ namespace SIMULTAN.Tests.Values
             LoadProject(testProject);
 
             var comp = projectData.Components.First(x => x.Name == "NoParameters");
-            var param = comp.Parameters.First(x => x.Name == "Target");
+            var param = comp.Parameters.First(x => x.TaxonomyEntry.Name == "Target");
 
             param.MultiValuePointer.CreateValuePointerParameters(projectData.UsersManager.Users.First());
 
-            var colParam = comp.Parameters.FirstOrDefault(x => x.Name == "Target.ValuePointer.OffsetColumn");
-            var rowParam = comp.Parameters.FirstOrDefault(x => x.Name == "Target.ValuePointer.OffsetRow");
+            var colParam = comp.Parameters.FirstOrDefault(x => x.TaxonomyEntry.Name == "Target.ValuePointer.OffsetColumn");
+            var rowParam = comp.Parameters.FirstOrDefault(x => x.TaxonomyEntry.Name == "Target.ValuePointer.OffsetRow");
 
             Assert.IsNotNull(colParam);
             Assert.IsNotNull(rowParam);
@@ -322,7 +322,7 @@ namespace SIMULTAN.Tests.Values
             LoadProject(testProject);
 
             var comp = projectData.Components.First(x => x.Name == "WithPointer");
-            var param = comp.Parameters.First(x => x.Name == "Target");
+            var param = comp.Parameters.First(x => x.TaxonomyEntry.Name == "Target");
 
             WeakReference ptrRef = new WeakReference(param.MultiValuePointer);
             param.MultiValuePointer = null;
@@ -341,7 +341,7 @@ namespace SIMULTAN.Tests.Values
             LoadProject(testProject);
 
             var comp = projectData.Components.First(x => x.Name == "WithPointer");
-            var param = comp.Parameters.First(x => x.Name == "Target");
+            var param = comp.Parameters.First(x => x.TaxonomyEntry.Name == "Target");
 
             WeakReference ptrRef = new WeakReference(param.MultiValuePointer);
 
@@ -361,7 +361,7 @@ namespace SIMULTAN.Tests.Values
             LoadProject(testProject);
 
             var comp = projectData.Components.First(x => x.Name == "WithPointer");
-            var param = comp.Parameters.First(x => x.Name == "Target");
+            var param = comp.Parameters.First(x => x.TaxonomyEntry.Name == "Target");
 
             var table = (SimMultiValueBigTable)param.MultiValuePointer.ValueField;
             table[3, 2] = 9977;

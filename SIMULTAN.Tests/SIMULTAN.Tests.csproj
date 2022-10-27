@@ -137,6 +137,7 @@
     <Compile Include="IO\ComponentDXFResourceTests.cs" />
     <Compile Include="IO\ComponentDXFTestsBase.cs" />
     <Compile Include="IO\ComponentDXFUserComponentListTests.cs" />
+    <Compile Include="IO\ComponentDXFValueMappingTests.cs" />
     <Compile Include="IO\ExcelDxfTests.cs" />
     <Compile Include="IO\MetaDxfIOTests.cs" />
     <Compile Include="IO\MultiValueDxfTests.cs" />
@@ -146,6 +147,7 @@
     <Compile Include="IO\SimLinksDXFTests.cs" />
     <Compile Include="IO\SitePlannerDXFTests.cs" />
     <Compile Include="IO\SimUserDXFTests.cs" />
+    <Compile Include="IO\SimTaxonomyDxfTests.cs" />
     <Compile Include="Mapping\CalculatorMappingTests.cs" />
     <Compile Include="Calculations\CalculationAlgorithmsTests.cs" />
     <Compile Include="Calculations\CalculationTests.cs" />
@@ -161,6 +163,7 @@
     </Compile>
     <Compile Include="SimNetworks\SimNetworkTests.cs" />
     <Compile Include="StyleChecks\StyleChecks.cs" />
+    <Compile Include="Taxonomy\TaxonomyTests.cs" />
     <Compile Include="UnitTestSetup.cs" />
     <Compile Include="Util\AssertUtil.cs" />
     <Compile Include="Util\BaseProjectTest.cs" />
@@ -173,6 +176,11 @@
     <Compile Include="Util\SimFactoryEventCounter.cs" />
     <Compile Include="Util\StringStream.cs" />
     <Compile Include="Util\UnitTestAuthentificationService.cs" />
+    <Compile Include="ValueMappings\SimThresholdColorMapTests.cs" />
+    <Compile Include="ValueMappings\SimLinearGradientColorMapTests.cs" />
+    <Compile Include="ValueMappings\SimPrefilterTests.cs" />
+    <Compile Include="ValueMappings\SimValueMappingCollectionTests.cs" />
+    <Compile Include="ValueMappings\SimValueMappingTests.cs" />
     <Compile Include="Values\MultiValueFunctionPointerTests.cs" />
     <Compile Include="Values\SimMultiValueBigTableHeaderTests.cs" />
     <Compile Include="Values\MultiValueBigTablePointerTests.cs" />
@@ -279,9 +287,26 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <None Include="IO\MultiValueDXFResults\DXFSerializer_MVDXF_Empty.txt" />
+    <None Include="IO\MultiValueDXFResults\DXFSerializer_ReadMVDXF_EmptyV12.txt" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="IO\SiteplannerDXFResults\DXFSerializer_SPDXF_Associations.txt" />
+    <None Include="IO\SiteplannerDXFResults\DXFSerializer_SPDXF_Buildings.txt" />
+    <None Include="IO\SiteplannerDXFResults\DXFSerializer_SPDXF_GeoMaps.txt" />
+    <None Include="IO\SiteplannerDXFResults\DXFSerializer_SPDXF_Empty.txt" />
+    <None Include="IO\SimUserDXFResults\DXFSerializer_SIMUSER_UsersV12.txt" />
+    <None Include="IO\GeoMapDXFResults\DXFSerializer_ReadGMDXF_MapResourceV12.txt" />
+    <None Include="IO\GeoMapDXFResults\DXFSerializer_ReadGMDXF_GeoReferencesV12.txt" />
+    <None Include="IO\ComponentDXFParameterResults\DXFSerializer_ReadCODXF_ParameterV14.txt" />
+    <Content Include="IO\ComponentDXFParameterResults\DXFSerializer_WriteParameterWithTaxonomyEntry.txt" />
+    <Content Include="IO\SimTaxonomyDXFResults\DXFSerializer_TXDXF_Entries.txt" />
+    <Content Include="IO\SimTaxonomyDXFResults\DXFSerializer_TXDXF_Empty.txt" />
+    <None Include="IO\SimUserDXFResults\DXFSerializer_SIMUSER_Users.txt" />
+    <None Include="IO\SimUserDXFResults\DXFSerializer_ReadSIMUSER_EmptyV12.txt" />
+    <None Include="IO\SiteplannerDXFResults\DXFSerializer_SPDXF_EmptyV13.txt" />
+    <None Include="IO\SiteplannerDXFResults\DXFSerializer_SPDXF_GeoMapsV13.txt" />
+    <None Include="IO\SiteplannerDXFResults\DXFSerializer_SPDXF_BuildingsV13.txt" />
+    <None Include="IO\SiteplannerDXFResults\DXFSerializer_SPDXF_AssociationsV13.txt" />
     <None Include="IO\MetaDXFResults\DXFSerializer_METADXF_WriteMetaData.txt" />
     <None Include="IO\SimLinksDXFResults\DXFSerializer_SIMLINKS_ReadV11.txt" />
     <None Include="IO\SimLinksDXFResults\DXFSerializer_SIMLINKS_ReadV12.txt" />
@@ -294,9 +319,10 @@
     <None Include="IO\ParameterDXFResults\DXFSerializer_PADXF_Write.txt" />
     <None Include="IO\PPathResults\PPathSerializer_Read.txt" />
     <None Include="IO\PPathResults\PPathSerializer_Write.txt" />
-    <None Include="IO\SimUserDXFResults\DXFSerializer_SIMUSER_UsersV11.txt" />
+    <None Include="IO\SimUserDXFResults\DXFSerializer_ReadSIMUSER_UsersV11.txt" />
     <None Include="IO\SimUserDXFResults\DXFSerializer_SIMUSER_Empty.txt" />
-    <None Include="IO\SimUserDXFResults\DXFSerializer_SIMUSER_UsersV12.txt" />
+    <None Include="IO\SimUserDXFResults\DXFSerializer_SIMUSER_Users.txt" />
+    <None Include="IO\SimUserDXFResults\DXFSerializer_ReadSIMUSER_UsersV12.txt" />
     <None Include="IO\SiteplannerDXFResults\DXFSerializer_SPDXF_AssociationsV5.txt" />
     <None Include="IO\SiteplannerDXFResults\DXFSerializer_SPDXF_AssociationsParseV12.txt" />
     <None Include="IO\SiteplannerDXFResults\DXFSerializer_SPDXF_AssociationsV12.txt" />
@@ -378,9 +404,11 @@
     <Content Include="IO\ComponentDXFParameterResults\DXFSerializer_WriteParameter.txt" />
     <None Include="IO\ComponentDXFParameterResults\DXFSerializer_WriteParameterWithPointer.txt" />
     <None Include="IO\GeoMapDXFResults\DXFSerializer_GMDXF_EmptyV11.txt" />
-    <None Include="IO\GeoMapDXFResults\DXFSerializer_ReadGMDXF_GeoReferencesV12.txt" />
+    <None Include="IO\GeoMapDXFResults\DXFSerializer_ReadGMDXF_GeoReferences.txt" />
     <None Include="IO\GeoMapDXFResults\DXFSerializer_ReadGMDXF_MapResourceV11.txt" />
-    <None Include="IO\GeoMapDXFResults\DXFSerializer_GMDXF_EmptyV12.txt" />
+    <None Include="IO\GeoMapDXFResults\DXFSerializer_GMDXF_Empty.txt" />
+    <None Include="IO\GeoMapDXFResults\DXFSerializer_ReadGMDXF_MapResource.txt" />
+    <None Include="IO\GeoMapDXFResults\DXFSerializer_GMDXF_WriteEmpty.txt" />
     <None Include="IO\GeoMapDXFResults\DXFSerializer_ReadGMDXF_MapResourceV12.txt" />
     <None Include="IO\GeoMapDXFResults\DXFSerializer_ReadGMDXF_MapResourceOtherProjectV12.txt" />
     <None Include="IO\ComponentDXFResourceResults\DXFSerializer_WriteResourceDirectory_Simple.txt" />
@@ -452,7 +480,27 @@
     <None Include="IO\MetaDXFResults\DXFSerializer_METADXF_ReadMetaDataV12.txt" />
     <None Include="IO\MetaDXFResults\DXFSerializer_METADXF_ReadV12.txt" />
     <None Include="IO\MetaDXFResults\DXFSerializer_METADXF_ReadV11.txt" />
+    <None Include="IO\ComponentDXFValueMappingResults\DXFSerializer_CODXF_WritePrefilterDefault.txt" />
+    <None Include="IO\ComponentDXFValueMappingResults\DXFSerializer_CODXF_WritePrefilterMinimum.txt" />
+    <None Include="IO\ComponentDXFValueMappingResults\DXFSerializer_CODXF_WritePrefilterMaximum.txt" />
+    <None Include="IO\ComponentDXFValueMappingResults\DXFSerializer_CODXF_WritePrefilterAverage.txt" />
+    <None Include="IO\ComponentDXFValueMappingResults\DXFSerializer_CODXF_WriteColorMapLinearGradient.txt" />
+    <None Include="IO\ComponentDXFValueMappingResults\DXFSerializer_CODXF_WriteColorMapThreshold.txt" />
+    <None Include="IO\ComponentDXFValueMappingResults\DXFSerializer_ReadCODXF_ColorMapThresholdV13.txt" />
+    <None Include="IO\ComponentDXFValueMappingResults\DXFSerializer_ReadCODXF_ColorMapLinearGradientV13.txt" />
+    <None Include="IO\ComponentDXFValueMappingResults\DXFSerializer_ReadCODXF_PrefilterDefaultV13.txt" />
+    <None Include="IO\ComponentDXFValueMappingResults\DXFSerializer_ReadCODXF_PrefilterMinimumV13.txt" />
+    <None Include="IO\ComponentDXFValueMappingResults\DXFSerializer_ReadCODXF_PrefilterMaximumV13.txt" />
+    <None Include="IO\ComponentDXFValueMappingResults\DXFSerializer_ReadCODXF_PrefilterAverageV13.txt" />
+    <None Include="IO\ComponentDXFValueMappingResults\DXFSerializer_CODXF_WriteValueMapping.txt" />
+    <None Include="IO\ComponentDXFValueMappingResults\DXFSerializer_ReadCODXF_ValueMappingV13.txt" />
+    <None Include="IO\ComponentDXFValueMappingResults\DXFSerializer_CODXF_WriteValueMappingSection.txt" />
+    <None Include="IO\ComponentDXFValueMappingResults\DXFSerializer_ReadCODXF_ValueMappingSectionV13.txt" />
+    <None Include="IO\ComponentDXFResults\DXFSerializer_ReadCODXFV13.txt" />
+    <None Include="IO\GeoMapDXFResults\DXFSerializer_GMDXF_WriteMapResource.txt" />
+    <None Include="IO\GeoMapDXFResults\DXFSerializer_GMDXF_WriteGeoReferences.txt" />
     <Content Include="IO\MultiValueDXFResults\DXFSerializer_ReadMVDXF_BigTableV10.txt" />
+    <None Include="IO\MultiValueDXFResults\DXFSerializer_MVDXF_Empty.txt" />
     <Content Include="IO\MultiValueDXFResults\DXFSerializer_ReadMVDXF_MultipleV3.txt" />
     <Content Include="IO\MultiValueDXFResults\DXFSerializer_ReadMVDXF_MultipleV5.txt" />
     <Content Include="IO\MultiValueDXFResults\DXFSerializer_ReadMVDXF_MultipleV12.txt" />

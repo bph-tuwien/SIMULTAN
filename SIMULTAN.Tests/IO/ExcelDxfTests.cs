@@ -144,8 +144,8 @@ namespace SIMULTAN.Tests.IO
             Assert.AreEqual(new Point(1, 2), child1.OffsetFromParent);
             Assert.AreEqual(MappingSubject.Parameter, child1.Subject);
             Assert.AreEqual(1, child1.Properties.Count);
-            Assert.IsTrue(child1.Properties.ContainsKey("Name"));
-            Assert.AreEqual(typeof(string), child1.Properties["Name"]);
+            Assert.IsTrue(child1.Properties.ContainsKey("TaxonomyEntry"));
+            Assert.AreEqual(typeof(string), child1.Properties["TaxonomyEntry"]);
             Assert.AreEqual(ExcelMappingRange.SingleValue, child1.RangeOfValuesPerProperty);
             Assert.AreEqual(true, child1.OrderHorizontally);
             Assert.AreEqual(0, child1.PatternsToMatchInProperty.Count);
@@ -165,8 +165,8 @@ namespace SIMULTAN.Tests.IO
             Assert.AreEqual(new Point(1, 2), child2.OffsetFromParent);
             Assert.AreEqual(MappingSubject.Parameter, child2.Subject);
             Assert.AreEqual(1, child2.Properties.Count);
-            Assert.IsTrue(child2.Properties.ContainsKey("Name"));
-            Assert.AreEqual(typeof(string), child2.Properties["Name"]);
+            Assert.IsTrue(child2.Properties.ContainsKey("TaxonomyEntry"));
+            Assert.AreEqual(typeof(string), child2.Properties["TaxonomyEntry"]);
             Assert.AreEqual(ExcelMappingRange.SingleValue, child2.RangeOfValuesPerProperty);
             Assert.AreEqual(true, child2.OrderHorizontally);
             Assert.AreEqual(0, child2.PatternsToMatchInProperty.Count);

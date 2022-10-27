@@ -1,4 +1,5 @@
 ﻿using SIMULTAN.Data.MultiValues;
+using SIMULTAN.Data.Taxonomy;
 using SIMULTAN.Utils;
 using System;
 using System.Collections.Generic;
@@ -42,10 +43,14 @@ namespace SIMULTAN.Data.Components
                 _comp.Factory == null || _value_factory == null)
                 return;
 
-            SimParameter p_orientation = _comp.Parameters.FirstOrDefault(x => x.Name == ReservedParameters.RP_ORIENTATION_HRZ);
+            SimParameter p_orientation = _comp.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_ORIENTATION_HRZ));
             if (p_orientation == null)
             {
-                p_orientation = new SimParameter(ReservedParameters.RP_ORIENTATION_HRZ, "-", 1.0);
+                var taxEntry = ReservedParameterKeys.GetReservedTaxonomyEntry(_comp.Factory.ProjectData.Taxonomies, ReservedParameterKeys.RP_ORIENTATION_HRZ);
+                p_orientation = new SimParameter(ReservedParameterKeys.RP_ORIENTATION_HRZ, "-", 1.0)
+                {
+                    TaxonomyEntry = new SimTaxonomyEntryOrString(new SimTaxonomyEntryReference(taxEntry))
+                };
                 p_orientation.IsAutomaticallyGenerated = true;
                 p_orientation.ValueMin = 0.0;
                 p_orientation.ValueMax = 1.0;
@@ -55,10 +60,14 @@ namespace SIMULTAN.Data.Components
                 _comp.Parameters.Add(p_orientation);
             }
 
-            SimParameter p_table = _comp.Parameters.FirstOrDefault(x => x.Name == ReservedParameters.RP_TABLE_POINTER);
+            SimParameter p_table = _comp.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_TABLE_POINTER));
             if (p_table == null)
             {
-                p_table = new SimParameter(ReservedParameters.RP_TABLE_POINTER, "-", 0.0);
+                var taxEntry = ReservedParameterKeys.GetReservedTaxonomyEntry(_comp.Factory.ProjectData.Taxonomies, ReservedParameterKeys.RP_TABLE_POINTER);
+                p_table = new SimParameter(ReservedParameterKeys.RP_TABLE_POINTER, "-", 0.0)
+                {
+                    TaxonomyEntry = new SimTaxonomyEntryOrString(new SimTaxonomyEntryReference(taxEntry))
+                };
                 p_table.IsAutomaticallyGenerated = true;
                 p_table.ValueMin = double.MinValue;
                 p_table.ValueMax = double.MaxValue;
@@ -68,10 +77,14 @@ namespace SIMULTAN.Data.Components
                 _comp.Parameters.Add(p_table);
             }
 
-            SimParameter p_aggreg_fct = _comp.Parameters.FirstOrDefault(x => x.Name == ReservedParameters.RP_AGGREGATION_OPERATION);
+            SimParameter p_aggreg_fct = _comp.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_AGGREGATION_OPERATION));
             if (p_aggreg_fct == null)
             {
-                p_aggreg_fct = new SimParameter(ReservedParameters.RP_AGGREGATION_OPERATION, "-", 0.0);
+                var taxEntry = ReservedParameterKeys.GetReservedTaxonomyEntry(_comp.Factory.ProjectData.Taxonomies, ReservedParameterKeys.RP_AGGREGATION_OPERATION);
+                p_aggreg_fct = new SimParameter(ReservedParameterKeys.RP_AGGREGATION_OPERATION, "-", 0.0)
+                {
+                    TaxonomyEntry = new SimTaxonomyEntryOrString(new SimTaxonomyEntryReference(taxEntry))
+                };
                 p_aggreg_fct.IsAutomaticallyGenerated = true;
                 p_aggreg_fct.ValueMin = double.MinValue;
                 p_aggreg_fct.ValueMax = double.MaxValue;
@@ -81,10 +94,14 @@ namespace SIMULTAN.Data.Components
                 _comp.Parameters.Add(p_aggreg_fct);
             }
 
-            SimParameter p_label = _comp.Parameters.FirstOrDefault(x => x.Name == ReservedParameters.RP_LABEL_SOURCE);
+            SimParameter p_label = _comp.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_LABEL_SOURCE));
             if (p_label == null)
             {
-                p_label = new SimParameter(ReservedParameters.RP_LABEL_SOURCE, "-", 0.0);
+                var taxEntry = ReservedParameterKeys.GetReservedTaxonomyEntry(_comp.Factory.ProjectData.Taxonomies, ReservedParameterKeys.RP_LABEL_SOURCE);
+                p_label = new SimParameter(ReservedParameterKeys.RP_LABEL_SOURCE, "-", 0.0)
+                {
+                    TaxonomyEntry = new SimTaxonomyEntryOrString(new SimTaxonomyEntryReference(taxEntry))
+                };
                 p_label.IsAutomaticallyGenerated = true;
                 p_label.ValueMin = double.MinValue;
                 p_label.ValueMax = double.MaxValue;
@@ -95,11 +112,11 @@ namespace SIMULTAN.Data.Components
             }
 
             List<KeyValuePair<string, List<SimParameter>>> to_aggregate = new List<KeyValuePair<string, List<SimParameter>>>();
-            List<SimParameter> filter = _comp.Parameters.Where(x => x != null && x.Name != ReservedParameters.RP_ORIENTATION_HRZ &&
-                x.Name != ReservedParameters.RP_TABLE_POINTER &&
-                x.Name != ReservedParameters.RP_AGGREGATION_OPERATION &&
-                x.Name != ReservedParameters.RP_LABEL_SOURCE &&
-                x.Name != ReservedParameters.RP_INST_PROPAGATE).ToList();
+            List<SimParameter> filter = _comp.Parameters.Where(x => x != null && 
+                x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_ORIENTATION_HRZ) &&
+                x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_TABLE_POINTER) &&
+                x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_AGGREGATION_OPERATION) &&
+                x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_LABEL_SOURCE)).ToList();
 
             if (filter.Count > 0)
             {
@@ -135,7 +152,7 @@ namespace SIMULTAN.Data.Components
                 {
                     foreach (var fp in filter)
                     {
-                        SimMultiValueBigTable corresponding = tables.FirstOrDefault(x => x.Name.Contains("[" + fp.Name + "]"));
+                        SimMultiValueBigTable corresponding = tables.FirstOrDefault(x => x.Name.Contains("[" + fp.TaxonomyEntry.Name + "]"));
                         if (corresponding != null)
                             OverrideValueField(fp, corresponding, _value_factory);
                         else
@@ -199,14 +216,14 @@ namespace SIMULTAN.Data.Components
             List<KeyValuePair<string, List<SimParameter>>> found = new List<KeyValuePair<string, List<SimParameter>>>();
             if (_comp.Id.LocalId != _excluded_id && _comp.InstanceType != SimInstanceType.Group)
             {
-                var locally_found = _comp.Parameters.Where(x => _filter.FirstOrDefault(y => y.Name == x.Name && y.Unit == x.Unit) != null);
-                List<SimParameter> locally_found_sorted = locally_found.OrderBy(x => x.Name).ToList();
+                var locally_found = _comp.Parameters.Where(x => _filter.FirstOrDefault(y => y.TaxonomyEntry.Equals(x.TaxonomyEntry) && y.Unit == x.Unit) != null);
+                List<SimParameter> locally_found_sorted = locally_found.OrderBy(x => x.TaxonomyEntry.Name).ToList();
                 if (locally_found_sorted.Count > 0)
                 {
                     string key = _comp.Name + " " + _comp.Description;
                     if (!(string.IsNullOrEmpty(_label_paramter_name)))
                     {
-                        SimParameter label_p = _comp.Parameters.FirstOrDefault(x => x != null && x.Name == _label_paramter_name);
+                        SimParameter label_p = _comp.Parameters.FirstOrDefault(x => x != null && x.TaxonomyEntry.Name == _label_paramter_name);
                         if (label_p != null)
                             key = label_p.TextValue;
                     }
@@ -301,7 +318,7 @@ namespace SIMULTAN.Data.Components
                         List<double> row_values = aligned_parameter_lists[i].Select(x => (x == null) ? double.NaN : x.ValueCurrent).ToList();
                         values.Add(row_values);
 
-                        List<string> col_names = aligned_parameter_lists[i].Select(x => (x == null) ? string.Empty : x.Name).ToList();
+                        List<string> col_names = aligned_parameter_lists[i].Select(x => (x == null) ? string.Empty : x.TaxonomyEntry.Name).ToList();
                         List<string> col_units = aligned_parameter_lists[i].Select(x => (x == null) ? string.Empty : x.Unit).ToList();
                         for (int col = 0; col < col_names.Count; col++)
                         {
@@ -330,7 +347,7 @@ namespace SIMULTAN.Data.Components
                         List<double> row_values = aligned_parameter_lists[i].Select(x => (x == null) ? double.NaN : x.ValueCurrent).ToList();
                         values.Add(row_values);
 
-                        List<string> row_names_i = aligned_parameter_lists[i].Select(x => (x == null) ? string.Empty : x.Name).ToList();
+                        List<string> row_names_i = aligned_parameter_lists[i].Select(x => (x == null) ? string.Empty : x.TaxonomyEntry.Name).ToList();
                         for (int col = 0; col < row_names_i.Count; col++)
                         {
                             if (string.IsNullOrEmpty(row_names[col]) && !string.IsNullOrEmpty(row_names_i[col]))
@@ -355,7 +372,7 @@ namespace SIMULTAN.Data.Components
                 for (int p = 0; p < aligned_parameter_lists[0].Count; p++)
                 {
                     List<SimParameter> params_of_same_name = aligned_parameter_lists.Select(x => x[p]).ToList();
-                    string params_name = params_of_same_name.SkipWhile(x => x == null).Take(1).First().Name;
+                    string params_name = params_of_same_name.SkipWhile(x => x == null).Take(1).First().TaxonomyEntry.Name;
                     string params_unit = params_of_same_name.SkipWhile(x => x == null).Take(1).First().Unit;
                     List<string> labels = _to_aggregate.Select(x => x.Key + ": " + params_name).ToList();
 
@@ -405,13 +422,13 @@ namespace SIMULTAN.Data.Components
             foreach (var entry in _lists)
             {
                 aligned.Add(new List<SimParameter>());
-                all_names.AddRange(entry.Select(x => x.Name));
+                all_names.AddRange(entry.Select(x => x.TaxonomyEntry.Name));
             }
             List<string> unique_names = all_names.GroupBy(x => x).Select(gr => gr.First()).ToList();
 
             foreach (string n in unique_names)
             {
-                var n_lists = _lists.Select(x => x.SkipWhile(y => y.Name != n).TakeWhile(y => y.Name == n)).ToList();
+                var n_lists = _lists.Select(x => x.SkipWhile(y => y.TaxonomyEntry.Name != n).TakeWhile(y => y.TaxonomyEntry.Name == n)).ToList();
                 int max_list_length_for_n = n_lists.Select(x => x.Count()).Max();
                 for (int k = 0; k < _lists.Count; k++)
                 {
@@ -529,7 +546,7 @@ namespace SIMULTAN.Data.Components
 
                     // direct reference
                     List<SimParameter> to_synch = closest_source.Where(x => x.Key.Propagation == SimInfoFlow.FromReference &&
-                        x.Key.MultiValuePointer == null && x.Key.Name == _p.Name &&
+                        x.Key.MultiValuePointer == null && x.Key.TaxonomyEntry.Name == _p.TaxonomyEntry.Name &&
                         x.Value.Id.LocalId == _p.Id.LocalId).Select(x => x.Key).ToList();
 
                     foreach (SimParameter cP in to_synch)
@@ -538,10 +555,10 @@ namespace SIMULTAN.Data.Components
                     }
 
                     // reference as a minimum value
-                    if (_p.Name.EndsWith("MIN"))
+                    if (_p.TaxonomyEntry.Name.EndsWith("MIN"))
                     {
-                        string p_name_only = _p.Name.Substring(0, _p.Name.Length - 3);
-                        List<SimParameter> to_synch_min = closest_sourceMIN.Where(x => x.Key.Name == p_name_only && x.Value.Id.LocalId == _p.Id.LocalId)
+                        string p_name_only = _p.TaxonomyEntry.Name.Substring(0, _p.TaxonomyEntry.Name.Length - 3);
+                        List<SimParameter> to_synch_min = closest_sourceMIN.Where(x => x.Key.TaxonomyEntry.Name == p_name_only && x.Value.Id.LocalId == _p.Id.LocalId)
                             .Select(y => y.Key).ToList();
                         if (to_synch_min != null && to_synch_min.Count > 0)
                         {
@@ -554,10 +571,10 @@ namespace SIMULTAN.Data.Components
                     }
 
                     // reference as a maximum value
-                    if (_p.Name.EndsWith("MAX"))
+                    if (_p.TaxonomyEntry.Name.EndsWith("MAX"))
                     {
-                        string p_name_only = _p.Name.Substring(0, _p.Name.Length - 3);
-                        List<SimParameter> to_synch_max = closest_sourceMAX.Where(x => x.Key.Name == p_name_only && x.Value.Id.LocalId == _p.Id.LocalId)
+                        string p_name_only = _p.TaxonomyEntry.Name.Substring(0, _p.TaxonomyEntry.Name.Length - 3);
+                        List<SimParameter> to_synch_max = closest_sourceMAX.Where(x => x.Key.TaxonomyEntry.Name == p_name_only && x.Value.Id.LocalId == _p.Id.LocalId)
                             .Select(y => y.Key).ToList();
                         if (to_synch_max != null && to_synch_max.Count > 0)
                         {
@@ -667,10 +684,10 @@ namespace SIMULTAN.Data.Components
 
                 //if (p.Propagation == InfoFlow.REF_IN)
                 {
-                    SimComponent c_source_R = comps_referenced_by_this_or_parent.FirstOrDefault(x => x.Parameters.Where(y => y.Name == p.Name).Count() > 0);
+                    SimComponent c_source_R = comps_referenced_by_this_or_parent.FirstOrDefault(x => x.Parameters.Where(y => y.TaxonomyEntry.Name == p.TaxonomyEntry.Name).Count() > 0);
                     if (c_source_R != null)
                     {
-                        SimParameter p_source = c_source_R.Parameters.FirstOrDefault(x => x.Name == p.Name);
+                        SimParameter p_source = c_source_R.Parameters.FirstOrDefault(x => x.TaxonomyEntry.Name == p.TaxonomyEntry.Name);
                         if (p_source != null)
                             references.Add(p, p_source);
                     }
@@ -679,19 +696,19 @@ namespace SIMULTAN.Data.Components
                 //if (p.Propagation != InfoFlow.TYPE)
                 {
                     string limit_key = "MAX";
-                    SimComponent c_source_UL = comps_referenced_by_this_or_parent.FirstOrDefault(x => x.Parameters.Where(y => y.Name.EndsWith(limit_key) && y.Name.Substring(0, y.Name.Length - limit_key.Length) == p.Name).Count() > 0);
+                    SimComponent c_source_UL = comps_referenced_by_this_or_parent.FirstOrDefault(x => x.Parameters.Where(y => y.TaxonomyEntry.Name.EndsWith(limit_key) && y.TaxonomyEntry.Name.Substring(0, y.TaxonomyEntry.Name.Length - limit_key.Length) == p.TaxonomyEntry.Name).Count() > 0);
                     if (c_source_UL != null)
                     {
-                        SimParameter p_source = c_source_UL.Parameters.FirstOrDefault(x => x.Name.EndsWith(limit_key) && x.Name.Substring(0, x.Name.Length - limit_key.Length) == p.Name);
+                        SimParameter p_source = c_source_UL.Parameters.FirstOrDefault(x => x.TaxonomyEntry.Name.EndsWith(limit_key) && x.TaxonomyEntry.Name.Substring(0, x.TaxonomyEntry.Name.Length - limit_key.Length) == p.TaxonomyEntry.Name);
                         if (p_source != null)
                             upper_limits.Add(p, p_source);
                     }
 
                     limit_key = "MIN";
-                    SimComponent c_source_LL = comps_referenced_by_this_or_parent.FirstOrDefault(x => x.Parameters.Where(y => y.Name.EndsWith(limit_key) && y.Name.Substring(0, y.Name.Length - limit_key.Length) == p.Name).Count() > 0);
+                    SimComponent c_source_LL = comps_referenced_by_this_or_parent.FirstOrDefault(x => x.Parameters.Where(y => y.TaxonomyEntry.Name.EndsWith(limit_key) && y.TaxonomyEntry.Name.Substring(0, y.TaxonomyEntry.Name.Length - limit_key.Length) == p.TaxonomyEntry.Name).Count() > 0);
                     if (c_source_LL != null)
                     {
-                        SimParameter p_source = c_source_LL.Parameters.FirstOrDefault(x => x.Name.EndsWith(limit_key) && x.Name.Substring(0, x.Name.Length - limit_key.Length) == p.Name);
+                        SimParameter p_source = c_source_LL.Parameters.FirstOrDefault(x => x.TaxonomyEntry.Name.EndsWith(limit_key) && x.TaxonomyEntry.Name.Substring(0, x.TaxonomyEntry.Name.Length - limit_key.Length) == p.TaxonomyEntry.Name);
                         if (p_source != null)
                             lower_limits.Add(p, p_source);
                     }

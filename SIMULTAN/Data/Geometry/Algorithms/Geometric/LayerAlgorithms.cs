@@ -1,4 +1,5 @@
-﻿using SIMULTAN.Utils.UndoRedo;
+﻿using SIMULTAN.Data.Geometry.UndoRedo;
+using SIMULTAN.Utils.UndoRedo;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -61,9 +62,9 @@ namespace SIMULTAN.Data.Geometry
             deleteGeometry.AddRange(geom);
 
             if (layer.Parent == null)
-                undoItems.Add(CollectionUndoItem.Remove(layer.Model.Layers, layer));
+                undoItems.Add(new RemoveLayerUndoItem(layer.Model.Layers, layer));
             else
-                undoItems.Add(CollectionUndoItem.Remove(layer.Parent.Layers, layer));
+                undoItems.Add(new RemoveLayerUndoItem(layer.Parent.Layers, layer));
         }
     }
 }

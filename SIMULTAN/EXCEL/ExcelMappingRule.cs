@@ -1310,14 +1310,14 @@ namespace SIMULTAN.Excel
             if (p == null) return (result, false);
             #region TRACE
             {
-                var infoString = "{" + p.Id.LocalId + "}" + p.Name + " " + p.ValueCurrent.ToString("F2");
+                var infoString = "{" + p.Id.LocalId + "}" + p.TaxonomyEntry.Name + " " + p.ValueCurrent.ToString("F2");
                 _trace.AddStep(this.GetRuleDepth() + 1, this.node_name, infoString, infoString + " ---------------------------------- PASSED FILTER!", false, false);
             }
             #endregion
 
             Point current_pos = new Point(_starting_position.X + this.offset_from_parent.X, _starting_position.Y + this.offset_from_parent.Y);
             // ............................................. tracking ............................................... //
-            current_pos = this.PerformOffsetCorrectionBasedOnTracking(_tracker, current_pos, p.Name, false, TRACKER_IS_VERBOSE);
+            current_pos = this.PerformOffsetCorrectionBasedOnTracking(_tracker, current_pos, p.TaxonomyEntry.Name, false, TRACKER_IS_VERBOSE);
             // ............................................. tracking ............................................... //
 
             // 1. get parameter property values (size 1x1 only)
@@ -1453,7 +1453,7 @@ namespace SIMULTAN.Excel
 
                     foreach (var p in values)
                     {
-                        labels.Add(p.Key.Name);
+                        labels.Add(p.Key.TaxonomyEntry.Name);
                         all_values[1, labels.Count - 1] = p.Value;
                     }
 
@@ -1465,7 +1465,7 @@ namespace SIMULTAN.Excel
 
                     foreach (var p in values)
                     {
-                        all_labels.Add(new List<string> { p.Key.Name });
+                        all_labels.Add(new List<string> { p.Key.TaxonomyEntry.Name });
                         all_values[all_labels.Count - 1, 1] = p.Value;
                     }
                 }
@@ -1672,6 +1672,10 @@ namespace SIMULTAN.Excel
                         else
                             property_values.Add(comp2.ParentContainer.Slot.ToSerializerString());
                     }
+                    else if(p_info.Name == nameof(SimParameter.TaxonomyEntry) && _instance is SimParameter param)
+                    {
+                        property_values.Add(param.TaxonomyEntry.Name);
+                    }
                     else if (p_info.PropertyType == p_type)
                     {
                         object value = p_info.GetValue(_instance);
@@ -1699,7 +1703,11 @@ namespace SIMULTAN.Excel
                 PropertyInfo p_info = typeof(T).GetProperty(prop_name);
                 if (p_info != null)
                 {
-                    if (p_info.PropertyType == typeof(string))
+                    if(p_info.Name == nameof(SimParameter.TaxonomyEntry) && _instance is SimParameter param)
+                    {
+                        passes_filter &= param.TaxonomyEntry.Name.Contains(pattern.ToString());
+                    }
+                    else if (p_info.PropertyType == typeof(string))
                     {
                         string prop_value = p_info.GetValue(_instance).ToString();
                         passes_filter &= (prop_value.Contains(pattern.ToString()));

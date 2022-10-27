@@ -433,6 +433,12 @@ namespace SIMULTAN.Serializer
                 //Fix properties
                 FixV7PropertyNames(properties, subject);
             }
+            if(info.FileVersion < 15)
+            {
+                FixV14FilterNames(filter, subject);
+
+                FixV14PropertyNames(properties, subject);
+            }
 
             try
             {
@@ -480,6 +486,18 @@ namespace SIMULTAN.Serializer
             return new KeyValuePair<string, Type>(key, propertyValue);
         }
 
+        private static void FixV14FilterNames(List<(string property, object filter)> filter, MappingSubject subject)
+        {
+            for (int i = 0; i < filter.Count; ++i)
+            {
+                if (subject == MappingSubject.Parameter)
+                {
+                    if (filter[i].property == "Name")
+                        filter[i] = ("TaxonomyEntry", filter[i].filter);
+                }
+            }
+        }
+
         private static void FixV7FilterNames(List<(string property, object filter)> filter, MappingSubject subject)
         {
             for (int i = 0; i < filter.Count; ++i)
@@ -505,6 +523,15 @@ namespace SIMULTAN.Serializer
             }
         }
 
+        private static void FixV14PropertyNames(Dictionary<string, Type> properties, MappingSubject subject)
+        {
+            if (subject == MappingSubject.Parameter && properties.ContainsKey("Name"))
+            {
+                var type = properties["Name"];
+                properties.Remove("Name");
+                properties[nameof(SimParameter.TaxonomyEntry)] = type;
+            }
+        }
         private static void FixV7PropertyNames(Dictionary<string, Type> properties, MappingSubject subject)
         {
             if (properties.ContainsKey("IsBoundInNW"))
@@ -525,7 +552,7 @@ namespace SIMULTAN.Serializer
             if (subject == MappingSubject.Component && properties.ContainsKey("ID"))
             {
                 var type = properties["ID"];
-                properties.Remove("InstanceParameterValuesPersistent");
+                properties.Remove("ID");
                 properties[nameof(SimComponent.LocalID)] = type;
             }
             if (properties.ContainsKey("LastChangeToSave"))

@@ -275,7 +275,7 @@ namespace SIMULTAN.Serializer.SpecializedExporters
         public static List<string> GetElectricalGridEdge(SimFlowNetwork network, FileInfo target, SimFlowNetworkEdge edge, bool exportUnits)
         {
             List<string> row = new List<string>();
-            SimComponentInstance geomRelationship = edge.GetUpdatedInstance(false);
+            SimComponentInstance geomRelationship = edge.Content;
 
             row.Add(edge.ID.ToString());
 
@@ -353,7 +353,7 @@ namespace SIMULTAN.Serializer.SpecializedExporters
 
             var parameterValues = edge.Content.InstanceParameterValuesPersistent;
 
-            row.Add(parameterValues.FirstOrDefault(p => p.Key.Name == "Nennquerschnitt").Value.ToString((CultureInfo.InvariantCulture)));
+            row.Add(parameterValues.FirstOrDefault(p => p.Key.TaxonomyEntry.Name == "Nennquerschnitt").Value.ToString((CultureInfo.InvariantCulture)));
 
             if (geomRelationship != null)
             {
@@ -365,9 +365,9 @@ namespace SIMULTAN.Serializer.SpecializedExporters
             }
             //Getting the parameters 
 
-            row.Add(parameterValues.FirstOrDefault(p => p.Key.Name == "Leitungsmaterial").Value.ToString((CultureInfo.InvariantCulture)));
-            row.Add(parameterValues.FirstOrDefault(p => p.Key.Name == "Zustand").Value.ToString((CultureInfo.InvariantCulture)));
-            row.Add(parameterValues.FirstOrDefault(p => p.Key.Name == "Anteil").Value.ToString((CultureInfo.InvariantCulture)));
+            row.Add(parameterValues.FirstOrDefault(p => p.Key.TaxonomyEntry.Name == "Leitungsmaterial").Value.ToString((CultureInfo.InvariantCulture)));
+            row.Add(parameterValues.FirstOrDefault(p => p.Key.TaxonomyEntry.Name == "Zustand").Value.ToString((CultureInfo.InvariantCulture)));
+            row.Add(parameterValues.FirstOrDefault(p => p.Key.TaxonomyEntry.Name == "Anteil").Value.ToString((CultureInfo.InvariantCulture)));
 
             return row;
         }
@@ -380,7 +380,7 @@ namespace SIMULTAN.Serializer.SpecializedExporters
         {
             List<string> row = new List<string>();
 
-            SimComponentInstance geomRelationship = edge.GetUpdatedInstance(false);
+            SimComponentInstance geomRelationship = edge.Content;
 
             row.Add(edge.ID.ToString());
 
@@ -455,7 +455,7 @@ namespace SIMULTAN.Serializer.SpecializedExporters
             //This code switches the start switches the start and end node´s name. have to be removed later 2020.02.21
             //Also switches the two whenever has a content name Anschluss. Probably because of the same reason as noted in february but something must have chaged in the project (naming..)  2020.05.11
 
-            if (edge.Content.Component.Parameters.Any(p => p.Name == "Anteil") || edge.Content.Name == "Anschluss")
+            if (edge.Content.Component.Parameters.Any(p => p.TaxonomyEntry.Name == "Anteil") || edge.Content.Name == "Anschluss")
             {
                 row.Add(eName);
                 row.Add(sName);
@@ -466,7 +466,7 @@ namespace SIMULTAN.Serializer.SpecializedExporters
                 row.Add(eName);
             }
 
-            if (!edge.Content.Component.Parameters.Any(p => p.Name == "Anteil"))
+            if (!edge.Content.Component.Parameters.Any(p => p.TaxonomyEntry.Name == "Anteil"))
             {
                 if (geomRelationship != null)
                 {
@@ -478,17 +478,17 @@ namespace SIMULTAN.Serializer.SpecializedExporters
                 }
                 //Getting the parameters 
                 var parameterValues = edge.Content.InstanceParameterValuesPersistent;
-                row.Add(parameterValues.First(p => p.Key.Name == "d_i").Value.ToString((CultureInfo.InvariantCulture)));
-                row.Add(parameterValues.First(p => p.Key.Name == "s_1").Value.ToString((CultureInfo.InvariantCulture)));
-                row.Add(parameterValues.First(p => p.Key.Name == "s_2").Value.ToString((CultureInfo.InvariantCulture)));
-                row.Add(parameterValues.First(p => p.Key.Name == "Lambda_1").Value.ToString((CultureInfo.InvariantCulture)));
-                row.Add(parameterValues.First(p => p.Key.Name == "Lambda_2").Value.ToString((CultureInfo.InvariantCulture)));
-                row.Add(parameterValues.First(p => p.Key.Name == "Alpha_a").Value.ToString((CultureInfo.InvariantCulture)));
-                row.Add(parameterValues.First(p => p.Key.Name == "Alpha_i").Value.ToString((CultureInfo.InvariantCulture)));
-                row.Add(parameterValues.First(p => p.Key.Name == "n_k").Value.ToString((CultureInfo.InvariantCulture)));
-                row.Add(parameterValues.First(p => p.Key.Name == "Beta_k").Value.ToString((CultureInfo.InvariantCulture)));
-                row.Add(parameterValues.First(p => p.Key.Name == "v_k").Value.ToString((CultureInfo.InvariantCulture)));
-                row.Add(parameterValues.First(p => p.Key.Name == "Zeta").Value.ToString((CultureInfo.InvariantCulture)));
+                row.Add(parameterValues.First(p => p.Key.TaxonomyEntry.Name == "d_i").Value.ToString((CultureInfo.InvariantCulture)));
+                row.Add(parameterValues.First(p => p.Key.TaxonomyEntry.Name == "s_1").Value.ToString((CultureInfo.InvariantCulture)));
+                row.Add(parameterValues.First(p => p.Key.TaxonomyEntry.Name == "s_2").Value.ToString((CultureInfo.InvariantCulture)));
+                row.Add(parameterValues.First(p => p.Key.TaxonomyEntry.Name == "Lambda_1").Value.ToString((CultureInfo.InvariantCulture)));
+                row.Add(parameterValues.First(p => p.Key.TaxonomyEntry.Name == "Lambda_2").Value.ToString((CultureInfo.InvariantCulture)));
+                row.Add(parameterValues.First(p => p.Key.TaxonomyEntry.Name == "Alpha_a").Value.ToString((CultureInfo.InvariantCulture)));
+                row.Add(parameterValues.First(p => p.Key.TaxonomyEntry.Name == "Alpha_i").Value.ToString((CultureInfo.InvariantCulture)));
+                row.Add(parameterValues.First(p => p.Key.TaxonomyEntry.Name == "n_k").Value.ToString((CultureInfo.InvariantCulture)));
+                row.Add(parameterValues.First(p => p.Key.TaxonomyEntry.Name == "Beta_k").Value.ToString((CultureInfo.InvariantCulture)));
+                row.Add(parameterValues.First(p => p.Key.TaxonomyEntry.Name == "v_k").Value.ToString((CultureInfo.InvariantCulture)));
+                row.Add(parameterValues.First(p => p.Key.TaxonomyEntry.Name == "Zeta").Value.ToString((CultureInfo.InvariantCulture)));
                 row.Add("");
 
             }
@@ -600,7 +600,7 @@ namespace SIMULTAN.Serializer.SpecializedExporters
                     row.Add(nodeParameter);
                     foreach (var node in chillerNodes)
                     {
-                        row.Add(node.Content.InstanceParameterValuesPersistent.First(p => p.Key.Name == nodeParameter)
+                        row.Add(node.Content.InstanceParameterValuesPersistent.First(p => p.Key.TaxonomyEntry.Name == nodeParameter)
                             .Value.ToString(CultureInfo.InvariantCulture));
                     }
                     row_list.Add(row);
@@ -708,7 +708,7 @@ namespace SIMULTAN.Serializer.SpecializedExporters
                 name = name.Substring(0, index);
             }
 
-            SimComponentInstance geomRelationship = node.GetUpdatedInstance(true);
+            SimComponentInstance geomRelationship = node.Content;
 
             List<string> row = new List<string>();
             row.Add(node.ID.ToString());
@@ -737,8 +737,8 @@ namespace SIMULTAN.Serializer.SpecializedExporters
             }
 
             var parameterValues = node.Content.InstanceParameterValuesPersistent;
-            row.Add(parameterValues.First(p => p.Key.Name == "Nennleistung").Value.ToString((CultureInfo.InvariantCulture)));
-            row.Add(parameterValues.First(p => p.Key.Name == "Einspeisung").Value.ToString((CultureInfo.InvariantCulture)));
+            row.Add(parameterValues.First(p => p.Key.TaxonomyEntry.Name == "Nennleistung").Value.ToString((CultureInfo.InvariantCulture)));
+            row.Add(parameterValues.First(p => p.Key.TaxonomyEntry.Name == "Einspeisung").Value.ToString((CultureInfo.InvariantCulture)));
 
             return row;
         }
@@ -801,7 +801,7 @@ namespace SIMULTAN.Serializer.SpecializedExporters
             row.Add(name);
 
             // If the content holds a load profile it should be Type "LastProfile" --> this is not quite the best way to do it. 
-            if (node.Content.Component.Parameters.Any(n => n.Name == "Lastprofil"))
+            if (node.Content.Component.Parameters.Any(n => n.TaxonomyEntry.Name == "Lastprofil"))
             {
                 row.Add("Lastprofil");
             }

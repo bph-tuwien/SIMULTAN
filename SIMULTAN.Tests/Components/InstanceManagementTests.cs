@@ -280,8 +280,8 @@ namespace SIMULTAN.Tests.Components
 
             var archComp = this.projectData.Components.First(x => x.Name == "ArchComp");
             var bphComp = this.projectData.Components.First(x => x.Name == "BPHComp");
-            var param1 = archComp.Parameters.First(x => x.Name == "Parameter1");
-            var param2 = bphComp.Parameters.First(x => x.Name == "Parameter2");
+            var param1 = archComp.Parameters.First(x => x.TaxonomyEntry.Name == "Parameter1");
+            var param2 = bphComp.Parameters.First(x => x.TaxonomyEntry.Name == "Parameter2");
 
             //Instance outside of tree
             //It's not possible to edit parameters before the instance has been added to the component
@@ -302,8 +302,8 @@ namespace SIMULTAN.Tests.Components
 
             var archComp = this.projectData.Components.First(x => x.Name == "ArchComp");
             var bphComp = this.projectData.Components.First(x => x.Name == "BPHComp");
-            var param1 = archComp.Parameters.First(x => x.Name == "Parameter1");
-            var param2 = bphComp.Parameters.First(x => x.Name == "Parameter2");
+            var param1 = archComp.Parameters.First(x => x.TaxonomyEntry.Name == "Parameter1");
+            var param2 = bphComp.Parameters.First(x => x.TaxonomyEntry.Name == "Parameter2");
 
             //Instance outside of tree
             //It's not possible to edit parameters before the instance has been added to the component

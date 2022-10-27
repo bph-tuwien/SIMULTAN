@@ -220,6 +220,9 @@ namespace SIMULTAN.Serializer.DXF
             }
         }
 
+        /// <summary>
+        /// Closes the logfile writer and frees all ressources associated with logging
+        /// </summary>
         public void FinishLog()
         {
             if (logFileWriter != null)

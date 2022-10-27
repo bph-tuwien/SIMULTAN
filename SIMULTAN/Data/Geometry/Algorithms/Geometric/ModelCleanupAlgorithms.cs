@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Windows;
+using System.Windows.Data;
 using System.Windows.Media.Media3D;
 
 namespace SIMULTAN.Data.Geometry
@@ -112,7 +113,7 @@ namespace SIMULTAN.Data.Geometry
             /// An entry for the MergeTracker. Keeps track of all the merged geometries and their last remaining entry.
             /// </summary>
             /// <typeparam name="T">the type of BaseGeometry</typeparam>
-            public class MergeTrackEntry<T> where T: BaseGeometry
+            public class MergeTrackEntry
             {
                 /// <summary>
                 /// The last entry that remains after the merge
@@ -138,14 +139,14 @@ namespace SIMULTAN.Data.Geometry
             /// <summary>
             /// The tracked merges.
             /// </summary>
-            public List<MergeTrackEntry<T>> Tracked { get; }
+            public List<MergeTrackEntry> Tracked { get; }
 
             /// <summary>
             /// Creates a new MergeTracker.
             /// </summary>
             public MergeTracker()
             {
-                Tracked = new List<MergeTrackEntry<T>>();
+                Tracked = new List<MergeTrackEntry>();
             }
 
             /// <summary>
@@ -184,7 +185,7 @@ namespace SIMULTAN.Data.Geometry
                 }
                 else
                 {
-                    Tracked.Add(new MergeTrackEntry<T>(new T[] {a, b}, a));
+                    Tracked.Add(new MergeTrackEntry(new T[] {a, b}, a));
                 }
             }
 
@@ -369,6 +370,7 @@ namespace SIMULTAN.Data.Geometry
         /// <param name="tolerance">The distance below which Vertices are merged</param>
         /// <param name="vertexGrid">Speedup structure containing all vertices</param>
         /// <param name="edgeGrid">Speedup structure containing all edges</param>
+        /// <param name="mergeTracker">Tracks changes of component assignments. May be null when no tracking is needed</param>
         /// <param name="backgroundInfo">The background algorithm info for this task</param>
         public static int RemoveDuplicateVertices(GeometryModelData model, double tolerance, 
             ref AABBGrid vertexGrid, ref AABBGrid edgeGrid, MergeTracker<Vertex> mergeTracker = null,
@@ -569,8 +571,10 @@ namespace SIMULTAN.Data.Geometry
         /// </summary>
         /// <param name="model">The model</param>
         /// <param name="edgeGrid">Speedup structure containing all edges</param>
+        /// <param name="mergeTracker">Tracks changes of component assignments. May be null when no tracking is needed</param>
         /// <param name="backgroundInfo">The background algorithm info for this task</param>
-        public static int RemoveDuplicateEdges(GeometryModelData model, ref AABBGrid edgeGrid, MergeTracker<Edge> mergeTracker = null, IBackgroundAlgorithmInfo backgroundInfo = null)
+        public static int RemoveDuplicateEdges(GeometryModelData model, ref AABBGrid edgeGrid, MergeTracker<Edge> mergeTracker = null, 
+            IBackgroundAlgorithmInfo backgroundInfo = null)
         {
             if (backgroundInfo == null)
                 backgroundInfo = new EmptyBackgroundAlgorithmInfo();
@@ -660,6 +664,7 @@ namespace SIMULTAN.Data.Geometry
         /// </summary>
         /// <param name="model">The model to check</param>
         /// <param name="faceGrid">Speedup structure containing all faces</param>
+        /// <param name="mergeTracker">Tracks changes of component assignments. May be null when no tracking is needed</param>
         /// <param name="backgroundInfo">The background algorithm info for this task</param>
         public static int RemoveDuplicateFaces(GeometryModelData model, ref AABBGrid faceGrid, MergeTracker<Face> mergeTracker = null,
             IBackgroundAlgorithmInfo backgroundInfo = null)
@@ -915,6 +920,7 @@ namespace SIMULTAN.Data.Geometry
         /// </summary>
         /// <param name="model">The geometry model</param>
         /// <param name="backgroundInfo">A background worker info. May be Null when no background worker exists</param>
+        /// <param name="mergeTracker">Tracks changes of component assignments. May be null when no tracking is needed</param>
         /// <param name="volumeGrid">The grid used to handle volumes</param>
         public static int RemoveDuplicateVolumes(GeometryModelData model, ref AABBGrid volumeGrid, MergeTracker<Volume> mergeTracker = null,
             IBackgroundAlgorithmInfo backgroundInfo = null)
@@ -1056,7 +1062,7 @@ namespace SIMULTAN.Data.Geometry
             if (aabb != null)
                 faceGrid.Remove(aabb);
         }
- 
+
 
 
         /// <summary>
@@ -1065,8 +1071,10 @@ namespace SIMULTAN.Data.Geometry
         /// <param name="model">The model</param>
         /// <param name="tolerance">Tolerance for the calculation</param>
         /// <param name="edgeGrid">Speedup structure containing all edges</param>
+        /// <param name="replacementTracker">Tracks changes of component assignments. May be null when no tracking is needed</param>
         /// <param name="backgroundInfo">The background algorithm info for this task</param>
-        public static int SplitEdgeEdgeIntersections(GeometryModelData model, double tolerance, ref AABBGrid edgeGrid, ReplacementTracker<Edge> replacementTracker = null,
+        public static int SplitEdgeEdgeIntersections(GeometryModelData model, double tolerance, ref AABBGrid edgeGrid, 
+            ReplacementTracker<Edge> replacementTracker = null,
             IBackgroundAlgorithmInfo backgroundInfo = null)
         {
             if (backgroundInfo == null)
@@ -1186,6 +1194,7 @@ namespace SIMULTAN.Data.Geometry
         /// <param name="tolerance">The calculation tolerance</param>
         /// <param name="vertexGrid">Speedup structure containing all vertices</param>
         /// <param name="edgeGrid">Speedup structure containing all edges</param>
+        /// <param name="replacementTracker">Tracks changes of component assignments. May be null when no tracking is needed</param>
         /// <param name="backgroundInfo">The background algorithm info for this task</param>
         public static int SplitEdgeVertexIntersections(GeometryModelData model, double tolerance,
             ref AABBGrid vertexGrid, ref AABBGrid edgeGrid, ReplacementTracker<Edge> replacementTracker = null,
@@ -1237,6 +1246,9 @@ namespace SIMULTAN.Data.Geometry
                                 {
                                     var vjbox = vertexCell[j];
                                     var vj = (Vertex)vjbox.Content;
+
+                                    if (vj.Id == 421)
+                                        Console.WriteLine("Break");
 
                                     var dt = EdgeAlgorithms.EdgePointIntersection(ei, vj.Position);
 
@@ -1346,6 +1358,7 @@ namespace SIMULTAN.Data.Geometry
         /// Supports two arguments: 0 is the name of the original face, 1 is a running number identifying the split face part
         /// </param>
         /// <param name="errorLayerName">The name of the layer used to store invalid geometry. The layer is (if needed) created unless it exists</param>
+        /// <param name="replacementTracker">Tracks changes of component assignments. May be null when no tracking is needed</param>
         /// <param name="backgroundInfo">The background algorithm info for this task</param>
         public static SplitFaceResult SplitFaces(GeometryModelData model, double tolerance, ref AABBGrid vertexGrid, ref AABBGrid faceGrid,
             string errorLayerName, string splitNameFormat = "{0} ({1})", ReplacementTracker<Face> replacementTracker = null,
@@ -1967,6 +1980,96 @@ namespace SIMULTAN.Data.Geometry
                     loopi--;
                 }
             }
+        }
+
+        /// <summary>
+        /// Searches for subloops in all edgeloops are removes subloops which have zero area
+        /// </summary>
+        /// <param name="modelData">The model to check</param>
+        /// <param name="tolerance">Tolerance for the size. All subloops with an area smaller than tolerance^2 are removed</param>
+        /// <param name="backgroundInfo">The background algorithm info for this task</param>
+        /// <returns>The number of subloops removed</returns>
+        public static int RemoveZeroLengthSubLoops(GeometryModelData modelData, double tolerance, IBackgroundAlgorithmInfo backgroundInfo = null)
+        {
+            int removedLoops = 0;
+            double t2 = tolerance * tolerance;
+
+            if (backgroundInfo == null)
+                backgroundInfo = new EmptyBackgroundAlgorithmInfo();
+
+            backgroundInfo.ReportProgress(0);
+
+            modelData.StartBatchOperation();
+
+            int loopCount = modelData.EdgeLoops.Count;
+
+            for (int edgeLoopIndex = 0; edgeLoopIndex < loopCount; edgeLoopIndex++)
+            {
+                var el = modelData.EdgeLoops[edgeLoopIndex];
+
+                for (int i = 1; i < el.Edges.Count; ++i)
+                {
+                    var vi = el.Edges[i].StartVertex;
+                    bool wasMerged = false;
+
+                    for (int j = i - 1; j >= 0; --j)
+                    {
+                        var vj = el.Edges[j].StartVertex;
+
+                        if ((vi.Position - vj.Position).LengthSquared <= t2)
+                        {
+                            //Check if area is empty
+                            var loopPoints = el.Edges.Skip(j).Take(i - j + 1).Select(x => x.StartVertex.Position).ToArray();
+                            var area = EdgeLoopAlgorithms.Area(loopPoints);
+
+                            //NaN is needed because normal can't be calculated for exactly 0 size
+                            if (area <= t2 || double.IsNaN(area))
+                            {
+                                removedLoops++;
+
+                                //Merge first and last point
+                                var lastEdge = el.Edges[i];
+                                lastEdge.Edge.Vertices[lastEdge.Edge.Vertices.IndexOf(vi)] = vj;
+
+                                //Remove affected edges
+                                for (int removeCounter = j; removeCounter < i; removeCounter++)
+                                {
+                                    var removeEdge = el.Edges[j];
+                                    el.Edges.RemoveAt(j);
+                                    removeEdge.Edge.PEdges.Remove(removeEdge);
+                                    if (removeEdge.Edge.PEdges.Count == 0)
+                                    {
+                                        removeEdge.Edge.RemoveFromModel();
+
+                                        //Maybe remove vertices too
+                                    }
+                                }
+
+                                wasMerged = true;
+                                break; //Restart face
+                            }
+                        }
+                    }
+
+                    if (wasMerged)
+                    {
+                        edgeLoopIndex--;
+                        break; //Restart face
+                    }
+                }
+
+                if (backgroundInfo.CancellationPending)
+                {
+                    modelData.EndBatchOperation();
+                    backgroundInfo.Cancel = true;
+                    return 0;
+                }
+
+                backgroundInfo.ReportProgress((int)((double)edgeLoopIndex / (double)loopCount * 100.0));
+            }
+
+            modelData.EndBatchOperation();
+            return removedLoops;
         }
 
         #endregion

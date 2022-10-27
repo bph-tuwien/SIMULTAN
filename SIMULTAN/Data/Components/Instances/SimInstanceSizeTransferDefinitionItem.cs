@@ -75,7 +75,7 @@ namespace SIMULTAN.Data.Components
             {
                 if (loadingParameterName != null && instance.Component != null)
                 {
-                    var param = instance.Component.Parameters.FirstOrDefault(x => x.Name == loadingParameterName);
+                    var param = instance.Component.Parameters.FirstOrDefault(x => x.TaxonomyEntry.Name == loadingParameterName);
                     if (param != null)
                         Parameter = param;
                 }

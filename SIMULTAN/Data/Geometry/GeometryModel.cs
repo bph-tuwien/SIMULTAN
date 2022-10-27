@@ -1,4 +1,5 @@
 ﻿using SIMULTAN.Data.Assets;
+using SIMULTAN.Data.ValueMappings;
 using SIMULTAN.Exchange;
 using System;
 using System.Collections.ObjectModel;
@@ -171,6 +172,45 @@ namespace SIMULTAN.Data.Geometry
         }
 
         private ComponentGeometryExchange offsetQuery = null;
+
+        /// <summary>
+        /// Stores the <see cref="SimValueMapping"/> that can be applied to this <see cref="GeometryModel"/>
+        /// </summary>
+        public ObservableCollection<SimValueMapping> ValueMappings { get; } = new ObservableCollection<SimValueMapping>();
+
+        /// <summary>
+        /// Stores the currently active value mapping of this model
+        /// </summary>
+        public SimValueMapping ActiveValueMapping
+        {
+            get { return activeValueMapping; }
+            set
+            {
+                if (activeValueMapping != value)
+                {
+                    this.activeValueMapping = value;
+                    NotifyPropertyChanged(nameof(ActiveValueMapping));
+                }
+            }
+        }
+        private SimValueMapping activeValueMapping = null;
+
+        /// <summary>
+        /// Stores whether the value mapping is currently active
+        /// </summary>
+        public bool IsValueMappingEnabled
+        {
+            get { return isValueMappingEnabled; }
+            set
+            {
+                if (isValueMappingEnabled != value)
+                {
+                    isValueMappingEnabled = value;
+                    NotifyPropertyChanged(nameof(IsValueMappingEnabled));
+                }
+            }
+        }
+        private bool isValueMappingEnabled = false;
 
         #endregion
 

@@ -33,7 +33,7 @@ namespace SIMULTAN.Tests.IO
             var id = Guid.NewGuid();
 
             List<SimUser> users = null;
-            using (var reader = new DXFStreamReader(StringStream.Create(Properties.Resources.DXFSerializer_SIMUSER_Empty)))
+            using (var reader = new DXFStreamReader(StringStream.Create(Properties.Resources.DXFSerializer_ReadSIMUSER_EmptyV12)))
             {
                 users = SimUserDxfIO.Read(reader, new DXFParserInfo(id, projectData));
             }
@@ -68,7 +68,7 @@ namespace SIMULTAN.Tests.IO
             var id = Guid.NewGuid();
 
             List<SimUser> users = null;
-            using (var reader = new DXFStreamReader(StringStream.Create(Properties.Resources.DXFSerializer_SIMUSER_UsersV11)))
+            using (var reader = new DXFStreamReader(StringStream.Create(Properties.Resources.DXFSerializer_ReadSIMUSER_UsersV11)))
             {
                 users = SimUserDxfIO.Read(reader, new DXFParserInfo(id, projectData),false);
             }
@@ -97,7 +97,7 @@ namespace SIMULTAN.Tests.IO
             var id = Guid.NewGuid();
 
             List<SimUser> users = null;
-            using (var reader = new DXFStreamReader(StringStream.Create(Properties.Resources.DXFSerializer_SIMUSER_UsersV12)))
+            using (var reader = new DXFStreamReader(StringStream.Create(Properties.Resources.DXFSerializer_ReadSIMUSER_UsersV12)))
             {
                 users = SimUserDxfIO.Read(reader, new DXFParserInfo(id, projectData));
             }
@@ -120,7 +120,7 @@ namespace SIMULTAN.Tests.IO
         }
 
         [TestMethod]
-        public void WriteUsersV12()
+        public void WriteUsers()
         {
             var name = "TestUser";
             var user1 = new SimUser(user1Id, name, user1PwHash, user1Enc, SimUserRole.ADMINISTRATOR);
@@ -142,7 +142,7 @@ namespace SIMULTAN.Tests.IO
                 export = Encoding.UTF8.GetString(array);
             }
 
-            AssertUtil.AreEqualMultiline(Properties.Resources.DXFSerializer_SIMUSER_UsersV12, export);
+            AssertUtil.AreEqualMultiline(Properties.Resources.DXFSerializer_SIMUSER_Users, export);
         }
 
         [TestMethod]

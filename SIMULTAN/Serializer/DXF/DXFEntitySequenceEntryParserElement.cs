@@ -92,6 +92,27 @@ namespace SIMULTAN.Serializer.DXF
         /// <param name="entityElement">The entity in this collection</param>
         internal DXFEntitySequenceEntryParserElement(FlowNetworkSaveCode code, DXFEntityParserElementBase<T> entityElement)
             : this((int)code, entityElement) { }
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DXFEntitySequenceEntryParserElement{T}"/> class
+        /// </summary>
+        /// <param name="code">The code of this entry</param>
+        /// <param name="entityElements">The entities in this collection</param>
+        internal DXFEntitySequenceEntryParserElement(ValueMappingSaveCode code, IEnumerable<DXFEntityParserElementBase<T>> entityElements)
+            : this((int)code, entityElements) { }
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DXFEntitySequenceEntryParserElement{T}"/> class
+        /// </summary>
+        /// <param name="code">The code of this entry</param>
+        /// <param name="entityElement">The entity in this collection</param>
+        internal DXFEntitySequenceEntryParserElement(TaxonomySaveCode code, DXFEntityParserElementBase<T> entityElement)
+            : this((int)code, entityElement) { }
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DXFEntitySequenceEntryParserElement{T}"/> class
+        /// </summary>
+        /// <param name="code">The code of this entry</param>
+        /// <param name="entityElements">The entities in this collection</param>
+        internal DXFEntitySequenceEntryParserElement(TaxonomySaveCode code, IEnumerable<DXFEntityParserElementBase<T>> entityElements)
+            : this((int)code, entityElements) { }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DXFEntitySequenceEntryParserElement{T}"/> class

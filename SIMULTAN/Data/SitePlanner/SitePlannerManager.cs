@@ -37,7 +37,7 @@ namespace SIMULTAN.Data.SitePlanner
         public ProjectData ProjectData { get; }
 
         private HashSet<GeoMap> OpenGeoMaps { get; set; }
-        private HashSet<SitePlannerProject> OpenSitePlannerProjects { get; set; }
+        private HashSet<SitePlannerProject> OpenSitePlannerProjects { get; }
 
         /// <inheritdoc/>
         public IReferenceLocation CalledFromLocation
@@ -63,7 +63,7 @@ namespace SIMULTAN.Data.SitePlanner
         /// <summary>
         /// List of all SitePlannerProjects in the project
         /// </summary>
-        public ObservableCollection<SitePlannerProject> SitePlannerProjects { get; private set; }
+        public SitePlannerProjectsCollection SitePlannerProjects { get; }
 
         /// <summary>
         /// Initializes a new instance of the SitePlannerManager class
@@ -73,7 +73,7 @@ namespace SIMULTAN.Data.SitePlanner
             this.ProjectData = projectData;
 
             GeoMaps = new ObservableCollection<GeoMap>();
-            SitePlannerProjects = new ObservableCollection<SitePlannerProject>();
+            SitePlannerProjects = new SitePlannerProjectsCollection(this);
 
             OpenGeoMaps = new HashSet<GeoMap>();
             OpenSitePlannerProjects = new HashSet<SitePlannerProject>();

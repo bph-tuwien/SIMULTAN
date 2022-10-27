@@ -268,6 +268,9 @@ namespace SIMULTAN.Data.Geometry
         /// <param name="model">The model to check</param>
         public static void CheckConsistency(GeometryModelData model)
         {
+            //Build lookup structure
+            Dictionary<Layer, HashSet<BaseGeometry>> layerGeometryLookup = new Dictionary<Layer, HashSet<BaseGeometry>>();
+
             foreach (var layer in model.Layers)
                 CheckLayerConsistency(layer, model);
 
@@ -275,12 +278,12 @@ namespace SIMULTAN.Data.Geometry
             foreach (var volume in model.Volumes)
             {
                 foreach (var pface in volume.Faces)
-                    if (!model.Faces.Contains(pface.Face))
+                    if (!model.ContainsGeometry(pface.Face))
                         throw new ModelInconsistentException(string.Format("Face {0} (Id={1}) not contained in model but used in Volume {2} (Id={3})",
                             pface.Face.Name, pface.Face.Id, volume.Name, volume.Id
                             ));
 
-                if (!volume.Layer.Elements.Contains(volume))
+                if (!GeometryExistsOnLayer(volume, layerGeometryLookup))
                     throw new ModelInconsistentException(string.Format("Volume {0} (Id={1}) not present on it's Layer {2} (Id={3})",
                             volume.Name, volume.Id, volume.Layer.Name, volume.Layer.Id
                             ));
@@ -289,18 +292,18 @@ namespace SIMULTAN.Data.Geometry
             //Check if all loops of a face are contained in model
             foreach (var face in model.Faces)
             {
-                if (!model.EdgeLoops.Contains(face.Boundary))
+                if (!model.ContainsGeometry(face.Boundary))
                     throw new ModelInconsistentException(string.Format("EdgeLoop {0} (Id={1}) not contained in model but used as boundary in Face {2} (Id={3})",
                             face.Boundary.Name, face.Boundary.Id, face.Name, face.Id
                             ));
 
                 foreach (var loop in face.Holes)
-                    if (!model.EdgeLoops.Contains(loop))
+                    if (!model.ContainsGeometry(loop))
                         throw new ModelInconsistentException(string.Format("EdgeLoop {0} (Id={1}) not contained in model but used as hole in Face {2} (Id={3})",
                                 loop.Name, loop.Id, face.Name, face.Id
                                 ));
 
-                if (!face.Layer.Elements.Contains(face))
+                if (!GeometryExistsOnLayer(face, layerGeometryLookup))
                     throw new ModelInconsistentException(string.Format("Face {0} (Id={1}) not present on it's Layer {2} (Id={3})",
                             face.Name, face.Id, face.Layer.Name, face.Layer.Id
                             ));
@@ -310,12 +313,12 @@ namespace SIMULTAN.Data.Geometry
             foreach (var loop in model.EdgeLoops)
             {
                 foreach (var pedge in loop.Edges)
-                    if (!model.Edges.Contains(pedge.Edge))
+                    if (!model.ContainsGeometry(pedge.Edge))
                         throw new ModelInconsistentException(string.Format("Edge {0} (Id={1}) not contained in model but used in EdgeLoop {2} (Id={3})",
                                 pedge.Edge.Name, pedge.Edge.Id, loop.Name, loop.Id
                                 ));
 
-                if (!loop.Layer.Elements.Contains(loop))
+                if (!GeometryExistsOnLayer(loop, layerGeometryLookup))
                     throw new ModelInconsistentException(string.Format("EdgeLoop {0} (Id={1}) not present on it's Layer {2} (Id={3})",
                             loop.Name, loop.Id, loop.Layer.Name, loop.Layer.Id
                             ));
@@ -325,12 +328,12 @@ namespace SIMULTAN.Data.Geometry
             foreach (var loop in model.Polylines)
             {
                 foreach (var pedge in loop.Edges)
-                    if (!model.Edges.Contains(pedge.Edge))
+                    if (!model.ContainsGeometry(pedge.Edge))
                         throw new ModelInconsistentException(string.Format("Edge {0} (Id={1}) not contained in model but used in Polyline {2} (Id={3})",
                                 pedge.Edge.Name, pedge.Edge.Id, loop.Name, loop.Id
                                 ));
 
-                if (!loop.Layer.Elements.Contains(loop))
+                if (!GeometryExistsOnLayer(loop, layerGeometryLookup))
                     throw new ModelInconsistentException(string.Format("Polyline {0} (Id={1}) not present on it's Layer {2} (Id={3})",
                             loop.Name, loop.Id, loop.Layer.Name, loop.Layer.Id
                             ));
@@ -340,12 +343,12 @@ namespace SIMULTAN.Data.Geometry
             foreach (var edge in model.Edges)
             {
                 foreach (var vertex in edge.Vertices)
-                    if (!model.Vertices.Contains(vertex))
+                    if (!model.ContainsGeometry(vertex))
                         throw new ModelInconsistentException(string.Format("Vertex {0} (Id={1}) not contained in model but used in Edge {2} (Id={3})",
                                     vertex.Name, vertex.Id, edge.Name, edge.Id
                                     ));
 
-                if (!edge.Layer.Elements.Contains(edge))
+                if (!GeometryExistsOnLayer(edge, layerGeometryLookup))
                     throw new ModelInconsistentException(string.Format("Edge {0} (Id={1}) not present on it's Layer {2} (Id={3})",
                             edge.Name, edge.Id, edge.Layer.Name, edge.Layer.Id
                             ));
@@ -354,7 +357,7 @@ namespace SIMULTAN.Data.Geometry
             //Check vertices
             foreach (var vertex in model.Vertices)
             {
-                if (!vertex.Layer.Elements.Contains(vertex))
+                if (!GeometryExistsOnLayer(vertex, layerGeometryLookup))
                     throw new ModelInconsistentException(string.Format("Vertex {0} (Id={1}) not present on it's Layer {2} (Id={3})",
                             vertex.Name, vertex.Id, vertex.Layer.Name, vertex.Layer.Id
                             ));
@@ -386,6 +389,19 @@ namespace SIMULTAN.Data.Geometry
                 CheckLayerConsistency(sublayer, model);
             }
         }
+
+        private static bool GeometryExistsOnLayer(BaseGeometry geometry, Dictionary<Layer, HashSet<BaseGeometry>> layerGeometryLookup)
+        {
+            if (!layerGeometryLookup.TryGetValue(geometry.Layer, out var lg))
+            {
+                lg = geometry.Layer.Elements.ToHashSet();
+                layerGeometryLookup.Add(geometry.Layer, lg);
+            }
+
+            return lg.Contains(geometry);
+        }
+
+
 
         /// <summary>
         /// Computes the union of 2 geometry models to sustain existing IDs and adds everything else from newGeometryModel 

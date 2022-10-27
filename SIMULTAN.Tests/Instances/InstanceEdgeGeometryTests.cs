@@ -141,8 +141,8 @@ namespace SIMULTAN.Tests.Instances
 
             Assert.AreEqual(2, comp.Parameters.Count);
 
-            var lParam = comp.Parameters.FirstOrDefault(x => x.Name == "L");
-            var nrtotalParam = comp.Parameters.FirstOrDefault(x => x.Name == "NRᴛᴏᴛᴀʟ");
+            var lParam = comp.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_LENGTH));
+            var nrtotalParam = comp.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_COUNT));
 
             Assert.AreNotEqual(null, lParam);
             Assert.AreNotEqual(null, nrtotalParam);
@@ -210,7 +210,7 @@ namespace SIMULTAN.Tests.Instances
             var comp = projectData.Components.First(x => x.Name == "Edge 2");
             var edgeB = gm.Geometry.Edges.First(f => f.Name == "Edge B");
             var vertex = gm.Geometry.Vertices.First(f => f.Name == "Vertex C");
-            var lParam = comp.Parameters.FirstOrDefault(x => x.Name == "L");
+            var lParam = comp.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_LENGTH));
             var inst = comp.Instances[0];
             var instPath = inst.InstancePath.ToList();
 
@@ -236,7 +236,7 @@ namespace SIMULTAN.Tests.Instances
             var comp = projectData.Components.First(x => x.Name == "Edge 2");
             var vertex1 = gm.Geometry.Vertices.First(f => f.Name == "Vertex C");
             var vertex2 = gm.Geometry.Vertices.First(f => f.Name == "Vertex D");
-            var lParam = comp.Parameters.FirstOrDefault(x => x.Name == "L");
+            var lParam = comp.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_LENGTH));
 
             AssertUtil.AssertDoubleEqual(5.0, lParam.ValueCurrent);
 
@@ -261,7 +261,7 @@ namespace SIMULTAN.Tests.Instances
             var comp = projectData.Components.First(x => x.Name == "Edge 2");
             var vertex1 = gm.Geometry.Vertices.First(f => f.Name == "Vertex C");
             var vertex2 = gm.Geometry.Vertices.First(f => f.Name == "Vertex D");
-            var lParam = comp.Parameters.FirstOrDefault(x => x.Name == "L");
+            var lParam = comp.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_LENGTH));
 
             var edgeA = gm.Geometry.Edges.First(f => f.Name == "Edge B");
 
@@ -335,7 +335,7 @@ namespace SIMULTAN.Tests.Instances
 
             var comp = projectData.Components.First(x => x.Name == "Edge 2");
             var edgeB = gm.Geometry.Edges.First(f => f.Name == "Edge B");
-            var lParam = comp.Parameters.FirstOrDefault(x => x.Name == "L");
+            var lParam = comp.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_LENGTH));
             var instance = comp.Instances.First(i =>
                 i.Placements.Any(p => p is SimInstancePlacementGeometry pg && pg.GeometryId == edgeB.Id && pg.FileId == resource.Key));
 
@@ -370,7 +370,7 @@ namespace SIMULTAN.Tests.Instances
 
             var comp = projectData.Components.First(x => x.Name == "Edge 2");
             var edgeB = gm.Geometry.Edges.First(f => f.Name == "Edge B");
-            var lParam = comp.Parameters.FirstOrDefault(x => x.Name == "L");
+            var lParam = comp.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_LENGTH));
             var instance = comp.Instances.First(i =>
                 i.Placements.Any(p => p is SimInstancePlacementGeometry pg && pg.GeometryId == edgeB.Id && pg.FileId == resource.Key));
             var geomPlacement = instance.Placements[0] as SimInstancePlacementGeometry;
@@ -442,8 +442,8 @@ namespace SIMULTAN.Tests.Instances
             Assert.AreEqual(1, comp.Instances.Count);
             Assert.IsTrue(comp.Instances.Any(i => i.Placements.Any(pl => pl is SimInstancePlacementGeometry gp && gp.GeometryId == edgeB.Id)));
 
-            var lParam = comp.Parameters.FirstOrDefault(x => x.Name == "L");
-            var nrtotalParam = comp.Parameters.FirstOrDefault(x => x.Name == "NRᴛᴏᴛᴀʟ");
+            var lParam = comp.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_LENGTH));
+            var nrtotalParam = comp.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_COUNT));
 
             projectData.ComponentGeometryExchange.Disassociate(comp, edgeB);
 
@@ -492,8 +492,8 @@ namespace SIMULTAN.Tests.Instances
 
             edgeB.RemoveFromModel();
 
-            var lParam = comp.Parameters.FirstOrDefault(x => x.Name == "L");
-            var nrtotalParam = comp.Parameters.FirstOrDefault(x => x.Name == "NRᴛᴏᴛᴀʟ");
+            var lParam = comp.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_LENGTH));
+            var nrtotalParam = comp.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_COUNT));
 
             Assert.AreNotEqual(null, lParam);
             Assert.AreNotEqual(null, nrtotalParam);

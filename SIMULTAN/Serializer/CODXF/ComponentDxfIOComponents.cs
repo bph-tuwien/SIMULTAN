@@ -2,6 +2,7 @@
 using SIMULTAN.Data.Components;
 using SIMULTAN.Data.FlowNetworks;
 using SIMULTAN.Data.MultiValues;
+using SIMULTAN.Data.Taxonomy;
 using SIMULTAN.Data.Users;
 using SIMULTAN.Excel;
 using SIMULTAN.Serializer.DXF;
@@ -39,6 +40,9 @@ namespace SIMULTAN.Serializer.CODXF
                     new DXFSingleEntryParserElement<string>(ParameterSaveCode.NAME),
                     new DXFSingleEntryParserElement<string>(ParameterSaveCode.UNIT),
                     new DXFSingleEntryParserElement<SimCategory>(ParameterSaveCode.CATEGORY),
+                    new DXFSingleEntryParserElement<Guid>(ParameterSaveCode.TAXONOMY_PROJECT_ID) {IsOptional = true, MinVersion = 14 },
+                    new DXFSingleEntryParserElement<long>(ParameterSaveCode.TAXONOMY_ID) {IsOptional = true, MinVersion = 14 },
+                    new DXFSingleEntryParserElement<long>(ParameterSaveCode.TAXONOMY_ENTRY_ID) {IsOptional = true, MinVersion = 14 },
                     new DXFSingleEntryParserElement<SimInfoFlow>(ParameterSaveCode.PROPAGATION),
                     new DXFSingleEntryParserElement<SimParameterInstancePropagation>(ParameterSaveCode.INSTANCE_PROPAGATION),
                     new DXFSingleEntryParserElement<double>(ParameterSaveCode.VALUE_MIN),
@@ -671,7 +675,7 @@ namespace SIMULTAN.Serializer.CODXF
             {
                 if (instanceType == SimInstanceType.AttributesFace)
                 {
-                    var propagationParameter = containedParameters.FirstOrDefault(x => x.Name == ReservedParameters.RP_INST_PROPAGATE);
+                    var propagationParameter = containedParameters.FirstOrDefault(x => x.TaxonomyEntry.Name == ReservedParameters.RP_INST_PROPAGATE);
                     if (propagationParameter != null)
                     {
                         propagationParameter.ValueCurrent = 1.0;
@@ -689,7 +693,7 @@ namespace SIMULTAN.Serializer.CODXF
                             {
                                 if (instance.LoadingParameterValuesPersistent[i].id.LocalId == param.Id.LocalId ||
                                     (instance.LoadingParameterValuesPersistent[i].id == SimId.Empty &&
-                                     instance.LoadingParameterValuesPersistent[i].parameterName == param.Name))
+                                     instance.LoadingParameterValuesPersistent[i].parameterName == param.TaxonomyEntry.Name))
                                 {
                                     instance.LoadingParameterValuesPersistent.RemoveAt(i);
                                     i--;
@@ -702,7 +706,7 @@ namespace SIMULTAN.Serializer.CODXF
             if (info.FileVersion < 11)
             {
                 //Instance propagation parameter
-                var propagationParameter = containedParameters.FirstOrDefault(x => x.Name == ReservedParameters.RP_INST_PROPAGATE);
+                var propagationParameter = containedParameters.FirstOrDefault(x => x.TaxonomyEntry.Name == ReservedParameters.RP_INST_PROPAGATE);
                 if (propagationParameter != null)
                 {
                     foreach (var instance in instances)
@@ -789,9 +793,15 @@ namespace SIMULTAN.Serializer.CODXF
             writer.Write(ParamStructCommonSaveCode.CLASS_NAME, typeof(SimParameter));
             writer.Write(ParamStructCommonSaveCode.ENTITY_LOCAL_ID, parameter.Id.LocalId);
 
-            writer.Write(ParameterSaveCode.NAME, parameter.Name);
+            writer.Write(ParameterSaveCode.NAME, parameter.TaxonomyEntry.Name);
             writer.Write(ParameterSaveCode.UNIT, parameter.Unit);
             writer.Write(ParameterSaveCode.CATEGORY, parameter.Category);
+
+            if (parameter.TaxonomyEntry.HasTaxonomyEntry()) {
+                writer.WriteGlobalId(ParameterSaveCode.TAXONOMY_PROJECT_ID, parameter.TaxonomyEntry.TaxonomyEntryReference.TaxonomyId.GlobalId, parameter.Id.GlobalId);
+                writer.Write(ParameterSaveCode.TAXONOMY_ID, parameter.TaxonomyEntry.TaxonomyEntryReference.TaxonomyId.LocalId); 
+                writer.Write(ParameterSaveCode.TAXONOMY_ENTRY_ID, parameter.TaxonomyEntry.TaxonomyEntryReference.TaxonomyEntryId.LocalId); 
+            }
 
             writer.Write(ParameterSaveCode.PROPAGATION, parameter.Propagation);
             writer.Write(ParameterSaveCode.INSTANCE_PROPAGATION, parameter.InstancePropagationMode);
@@ -815,6 +825,8 @@ namespace SIMULTAN.Serializer.CODXF
             var name = data.Get<string>(ParameterSaveCode.NAME, "");
             var unit = data.Get<string>(ParameterSaveCode.UNIT, "");
             var category = data.Get<SimCategory>(ParameterSaveCode.CATEGORY, SimCategory.None);
+            var taxonomyId = data.GetSimId(ParameterSaveCode.TAXONOMY_PROJECT_ID, ParameterSaveCode.TAXONOMY_ID, info.GlobalId);
+            var taxonomyEntryId = data.GetSimId(ParameterSaveCode.TAXONOMY_PROJECT_ID, ParameterSaveCode.TAXONOMY_ENTRY_ID, info.GlobalId);
             var infoFlow = data.Get<SimInfoFlow>(ParameterSaveCode.PROPAGATION, SimInfoFlow.Input);
             var instancePropagation = data.Get<SimParameterInstancePropagation>(ParameterSaveCode.INSTANCE_PROPAGATION, 
                 SimParameterInstancePropagation.PropagateIfInstance);
@@ -847,7 +859,7 @@ namespace SIMULTAN.Serializer.CODXF
                 info.Log(string.Format("Multiple Parameters with Id {0} found. Name=\"{1}\" Other Parameter Name=\"{2}\"" +
                     " New Id current: {3}, New Id original: {4}",
                     localId, name,
-                    originalParameter != null ? originalParameter.Name : "???",
+                    originalParameter != null ? originalParameter.TaxonomyEntry.Name : "???",
                     newId, originalParameter != null ? originalParameter.Id.LocalId : -1
                     ));
             }
@@ -861,6 +873,13 @@ namespace SIMULTAN.Serializer.CODXF
                 SimParameter parameter = new SimParameter(localId, name, unit,
                     category, infoFlow, valueCurrent, valueMin, valueMax, valueText, multiValuePointer,
                     operations, instancePropagation, isAutogenerated);
+
+                if(taxonomyId.LocalId != 0 && taxonomyEntryId.LocalId != 0)
+                {
+                    var taxref = new SimTaxonomyEntryReference(taxonomyEntryId, taxonomyId);
+                    parameter.TaxonomyEntry = new SimTaxonomyEntryOrString(taxref);
+                }
+
                 return parameter;
             }
             catch (Exception e)
