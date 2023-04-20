@@ -2,12 +2,9 @@
 using SIMULTAN.Data;
 using SIMULTAN.Data.MultiValues;
 using SIMULTAN.Data.ValueMappings;
-using SIMULTAN.Tests.Utils;
+using SIMULTAN.Tests.TestUtils;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Media;
 
 namespace SIMULTAN.Tests.ValueMappings
@@ -18,7 +15,7 @@ namespace SIMULTAN.Tests.ValueMappings
         internal static SimValueMapping CreateMapping()
         {
             var prefilter = new SimDefaultPrefilter();
-            var colorMap = new SimLinearGradientColorMap(new List<SimColorMarker> { 
+            var colorMap = new SimLinearGradientColorMap(new List<SimColorMarker> {
                 new SimColorMarker(0.0, Colors.Red),
                 new SimColorMarker(5.0, Colors.Blue)
             });
@@ -29,6 +26,9 @@ namespace SIMULTAN.Tests.ValueMappings
 
             return new SimValueMapping("mapping1", table, prefilter, colorMap);
         }
+
+
+
 
         [TestMethod]
         public void CtorExceptions()
@@ -197,6 +197,7 @@ namespace SIMULTAN.Tests.ValueMappings
             Assert.AreEqual(1, count);
         }
 
+
         [TestMethod]
         public void ValueMappingChangedMapMarkerValue()
         {
@@ -219,6 +220,21 @@ namespace SIMULTAN.Tests.ValueMappings
             mapping.ValueMappingChanged += (s) => count++;
 
             ((SimLinearGradientColorMap)mapping.ColorMap).ColorMarkers[0].Color = Colors.Pink;
+
+            Assert.AreEqual(1, count);
+        }
+
+
+
+        [TestMethod]
+        public void CheckDifferentParamTypeMapping()
+        {
+            var mapping = CreateMapping();
+
+            int count = 0;
+            mapping.ValueMappingChanged += (s) => count++;
+
+            ((SimLinearGradientColorMap)mapping.ColorMap).ColorMarkers.RemoveAt(0);
 
             Assert.AreEqual(1, count);
         }

@@ -23,7 +23,7 @@ namespace SIMULTAN.Data.ValueMappings
         /// <summary>
         /// The color of the marker
         /// </summary>
-        public Color Color 
+        public Color Color
         {
             get { return color; }
             set

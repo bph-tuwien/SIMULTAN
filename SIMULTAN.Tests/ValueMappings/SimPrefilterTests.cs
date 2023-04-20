@@ -1,6 +1,6 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SIMULTAN.Data.ValueMappings;
-using SIMULTAN.Tests.Utils;
+using SIMULTAN.Tests.TestUtils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -61,7 +61,7 @@ namespace SIMULTAN.Tests.ValueMappings
 
             Assert.ThrowsException<ArgumentNullException>(() => { prefilter.Filter(null, 0).ToList(); });
 
-            AssertUtil.ContainEqualValues(new double[] { 3.0}, prefilter.Filter(values, 1));
+            AssertUtil.ContainEqualValues(new double[] { 3.0 }, prefilter.Filter(values, 1));
             //Outside (doesn't matter)
             AssertUtil.ContainEqualValues(new double[] { 3.0 }, prefilter.Filter(values, 99));
         }

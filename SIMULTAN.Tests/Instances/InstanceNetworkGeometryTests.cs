@@ -5,7 +5,7 @@ using SIMULTAN.Data.Components;
 using SIMULTAN.Data.FlowNetworks;
 using SIMULTAN.Data.Geometry;
 using SIMULTAN.Exchange.NetworkConnectors;
-using SIMULTAN.Tests.Utils;
+using SIMULTAN.Tests.TestUtils;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -94,9 +94,9 @@ namespace SIMULTAN.Tests.Instances
             Assert.AreEqual(node4.GetInstanceSize().Max, v4.ProxyGeometries[0].Size);
 
             // check colors
-            Assert.AreEqual(System.Windows.Media.Color.FromRgb(0xA0, 0xA0, 0xA0), v1.Color.Color);
-            Assert.AreEqual(System.Windows.Media.Color.FromRgb(0xA0, 0xA0, 0xA0), v2.Color.Color);
-            Assert.AreEqual(System.Windows.Media.Color.FromRgb(0xA0, 0xA0, 0xA0), v3.Color.Color);
+            Assert.AreEqual(System.Windows.Media.Color.FromRgb(0xFF, 0xFF, 0xFF), v1.Color.Color);
+            Assert.AreEqual(System.Windows.Media.Color.FromRgb(0xFF, 0xFF, 0xFF), v2.Color.Color);
+            Assert.AreEqual(System.Windows.Media.Color.FromRgb(0xFF, 0xFF, 0xFF), v3.Color.Color);
             Assert.AreEqual(System.Windows.Media.Color.FromRgb(0x40, 0x40, 0x40), v4.Color.Color);
             Assert.AreEqual(System.Windows.Media.Color.FromRgb(0xFF, 0xFF, 0xFF), e1.Color.Color);
             Assert.AreEqual(System.Windows.Media.Color.FromRgb(0xFF, 0xFF, 0xFF), e2.Color.Color);
@@ -124,393 +124,10 @@ namespace SIMULTAN.Tests.Instances
 
             var network = projectData.NetworkManager.NetworkRecord.First(x => x.Name == "GeometryNetwork");
 
-            Assert.ThrowsException<ArgumentException>(() => {
-                projectData.ComponentGeometryExchange.ConvertNetwork(network, new FileInfo("asdf.simgeo")); 
+            Assert.ThrowsException<ArgumentException>(() =>
+            {
+                projectData.ComponentGeometryExchange.ConvertNetwork(network, new FileInfo("asdf.simgeo"));
             });
-        }
-
-        #endregion
-
-
-        #region Instance Path
-
-        [TestMethod]
-        public void InstancePathNodeVertexMoved()
-        {
-            LoadProject(instanceProject, "arch", "arch");
-
-            var network = projectData.NetworkManager.NetworkRecord.First(x => x.Name == "GeometryNetwork");
-            var middleNode = network.ContainedFlowNetworks.Values.First().ContainedNodes.Values.First(x => x.ID.LocalId == 36);
-
-            //Open Geometry to initialize ComponentExchange
-            (var gm, var resource) = ProjectUtils.LoadGeometry("Network.simgeo", projectData, sp);
-
-            Assert.AreEqual(1, middleNode.Content.InstancePath.Count);
-            Assert.AreEqual(new Point3D(2.99, 0, 2.23), middleNode.Content.InstancePath[0]);
-
-            //Change position of vertex
-            var vertex = gm.Geometry.GeometryFromId(middleNode.RepresentationReference.GeometryId) as Vertex;
-            Assert.IsNotNull(vertex);
-
-            vertex.Position = new Point3D(-10.0, 5.0, -2.0);
-            Assert.AreEqual(1, middleNode.Content.InstancePath.Count);
-            Assert.AreEqual(new Point3D(-10.0, 5.0, -2.0), middleNode.Content.InstancePath[0]);
-        }
-
-        [TestMethod]
-        public void InstancePathNodeVertexMovedBatch()
-        {
-            LoadProject(instanceProject, "arch", "arch");
-
-            var network = projectData.NetworkManager.NetworkRecord.First(x => x.Name == "GeometryNetwork");
-            var middleNode = network.ContainedFlowNetworks.Values.First().ContainedNodes.Values.First(x => x.ID.LocalId == 36);
-
-            //Open Geometry to initialize ComponentExchange
-            (var gm, var resource) = ProjectUtils.LoadGeometry("Network.simgeo", projectData, sp);
-
-            Assert.AreEqual(1, middleNode.Content.InstancePath.Count);
-            Assert.AreEqual(new Point3D(2.99, 0, 2.23), middleNode.Content.InstancePath[0]);
-
-            //Change position of vertex
-            var vertex = gm.Geometry.GeometryFromId(middleNode.RepresentationReference.GeometryId) as Vertex;
-            Assert.IsNotNull(vertex);
-
-            gm.Geometry.StartBatchOperation();
-
-            vertex.Position = new Point3D(-10.0, 5.0, -2.0);
-            //No change, batch still ongoing
-            Assert.AreEqual(1, middleNode.Content.InstancePath.Count);
-            Assert.AreEqual(new Point3D(2.99, 0, 2.23), middleNode.Content.InstancePath[0]);
-
-            gm.Geometry.EndBatchOperation();
-
-            //Changed after batch
-            Assert.AreEqual(1, middleNode.Content.InstancePath.Count);
-            Assert.AreEqual(new Point3D(-10.0, 5.0, -2.0), middleNode.Content.InstancePath[0]);
-        }
-
-        [TestMethod]
-        public void InstancePathEdgeEndVertexMoved()
-        {
-            LoadProject(instanceProject, "arch", "arch");
-
-            var network = projectData.NetworkManager.NetworkRecord.First(x => x.Name == "GeometryNetwork");
-            var edge = network.ContainedEdges.Values.First(x => x.Name == "TopEdge");
-
-            //Open Geometry to initialize ComponentExchange
-            (var gm, var resource) = ProjectUtils.LoadGeometry("Network.simgeo", projectData, sp);
-
-            Assert.AreEqual(3, edge.Content.InstancePath.Count);
-            AssertUtil.AreEqual(new Point3D(0.35, 0, 1.25), edge.Content.InstancePath[0], 0.001);
-            AssertUtil.AreEqual(new Point3D(0.35, 0, 4.631), edge.Content.InstancePath[1], 0.001);
-            AssertUtil.AreEqual(new Point3D(2.992, 0, 4.631), edge.Content.InstancePath[2], 0.001);
-
-            var vertex = gm.Geometry.Vertices.First(x => x.Name == "Start");
-            vertex.Position = new Point3D(-2, 1, 3.25);
-
-            Assert.AreEqual(3, edge.Content.InstancePath.Count);
-            AssertUtil.AreEqual(new Point3D(-2, 1, 3.25), edge.Content.InstancePath[0], 0.001);
-            AssertUtil.AreEqual(new Point3D(0.35, 0, 4.631), edge.Content.InstancePath[1], 0.001);
-            AssertUtil.AreEqual(new Point3D(2.992, 0, 4.631), edge.Content.InstancePath[2], 0.001);
-        }
-
-        [TestMethod]
-        public void InstancePathEdgeEndVertexMovedBatch()
-        {
-            LoadProject(instanceProject, "arch", "arch");
-
-            var network = projectData.NetworkManager.NetworkRecord.First(x => x.Name == "GeometryNetwork");
-            var edge = network.ContainedEdges.Values.First(x => x.Name == "TopEdge");
-
-            //Open Geometry to initialize ComponentExchange
-            (var gm, var resource) = ProjectUtils.LoadGeometry("Network.simgeo", projectData, sp);
-
-            Assert.AreEqual(3, edge.Content.InstancePath.Count);
-            AssertUtil.AreEqual(new Point3D(0.35, 0, 1.25), edge.Content.InstancePath[0], 0.001);
-            AssertUtil.AreEqual(new Point3D(0.35, 0, 4.631), edge.Content.InstancePath[1], 0.001);
-            AssertUtil.AreEqual(new Point3D(2.992, 0, 4.631), edge.Content.InstancePath[2], 0.001);
-
-            var vertex = gm.Geometry.Vertices.First(x => x.Name == "Start");
-
-            gm.Geometry.StartBatchOperation();
-
-            vertex.Position = new Point3D(-2, 1, 3.25);
-
-            AssertUtil.AreEqual(new Point3D(0.35, 0, 1.25), edge.Content.InstancePath[0], 0.001);
-            AssertUtil.AreEqual(new Point3D(0.35, 0, 4.631), edge.Content.InstancePath[1], 0.001);
-            AssertUtil.AreEqual(new Point3D(2.992, 0, 4.631), edge.Content.InstancePath[2], 0.001);
-
-            gm.Geometry.EndBatchOperation();
-
-            Assert.AreEqual(3, edge.Content.InstancePath.Count);
-            AssertUtil.AreEqual(new Point3D(-2, 1, 3.25), edge.Content.InstancePath[0], 0.001);
-            AssertUtil.AreEqual(new Point3D(0.35, 0, 4.631), edge.Content.InstancePath[1], 0.001);
-            AssertUtil.AreEqual(new Point3D(2.992, 0, 4.631), edge.Content.InstancePath[2], 0.001);
-        }
-
-        [TestMethod]
-        public void InstancePathEdgeMiddleVertexMoved()
-        {
-            LoadProject(instanceProject, "arch", "arch");
-
-            var network = projectData.NetworkManager.NetworkRecord.First(x => x.Name == "GeometryNetwork");
-            var edge = network.ContainedEdges.Values.First(x => x.Name == "TopEdge");
-
-            //Open Geometry to initialize ComponentExchange
-            (var gm, var resource) = ProjectUtils.LoadGeometry("Network.simgeo", projectData, sp);
-
-            Assert.AreEqual(3, edge.Content.InstancePath.Count);
-            AssertUtil.AreEqual(new Point3D(0.35, 0, 1.25), edge.Content.InstancePath[0], 0.001);
-            AssertUtil.AreEqual(new Point3D(0.35, 0, 4.631), edge.Content.InstancePath[1], 0.001);
-            AssertUtil.AreEqual(new Point3D(2.992, 0, 4.631), edge.Content.InstancePath[2], 0.001);
-
-            var vertex = gm.Geometry.Vertices.First(x => x.Name == "PolylineCenter");
-            vertex.Position = new Point3D(-2, 1, 3.25);
-
-            Assert.AreEqual(3, edge.Content.InstancePath.Count);
-            AssertUtil.AreEqual(new Point3D(0.35, 0, 1.25), edge.Content.InstancePath[0], 0.001);
-            AssertUtil.AreEqual(new Point3D(-2, 1, 3.25), edge.Content.InstancePath[1], 0.001);
-            AssertUtil.AreEqual(new Point3D(2.992, 0, 4.631), edge.Content.InstancePath[2], 0.001);
-        }
-
-        [TestMethod]
-        public void InstancePathEdgeMiddleVertexMovedBatch()
-        {
-            LoadProject(instanceProject, "arch", "arch");
-
-            var network = projectData.NetworkManager.NetworkRecord.First(x => x.Name == "GeometryNetwork");
-            var edge = network.ContainedEdges.Values.First(x => x.Name == "TopEdge");
-
-            //Open Geometry to initialize ComponentExchange
-            (var gm, var resource) = ProjectUtils.LoadGeometry("Network.simgeo", projectData, sp);
-
-            Assert.AreEqual(3, edge.Content.InstancePath.Count);
-            AssertUtil.AreEqual(new Point3D(0.35, 0, 1.25), edge.Content.InstancePath[0], 0.001);
-            AssertUtil.AreEqual(new Point3D(0.35, 0, 4.631), edge.Content.InstancePath[1], 0.001);
-            AssertUtil.AreEqual(new Point3D(2.992, 0, 4.631), edge.Content.InstancePath[2], 0.001);
-
-            gm.Geometry.StartBatchOperation();
-
-            var vertex = gm.Geometry.Vertices.First(x => x.Name == "PolylineCenter");
-            vertex.Position = new Point3D(-2, 1, 3.25);
-
-            Assert.AreEqual(3, edge.Content.InstancePath.Count);
-            AssertUtil.AreEqual(new Point3D(0.35, 0, 1.25), edge.Content.InstancePath[0], 0.001);
-            AssertUtil.AreEqual(new Point3D(0.35, 0, 4.631), edge.Content.InstancePath[1], 0.001);
-            AssertUtil.AreEqual(new Point3D(2.992, 0, 4.631), edge.Content.InstancePath[2], 0.001);
-
-            gm.Geometry.EndBatchOperation();
-
-            Assert.AreEqual(3, edge.Content.InstancePath.Count);
-            AssertUtil.AreEqual(new Point3D(0.35, 0, 1.25), edge.Content.InstancePath[0], 0.001);
-            AssertUtil.AreEqual(new Point3D(-2, 1, 3.25), edge.Content.InstancePath[1], 0.001);
-            AssertUtil.AreEqual(new Point3D(2.992, 0, 4.631), edge.Content.InstancePath[2], 0.001);
-        }
-
-        [TestMethod]
-        public void InstancePathEdgeSplit()
-        {
-            LoadProject(instanceProject, "arch", "arch");
-
-            var network = projectData.NetworkManager.NetworkRecord.First(x => x.Name == "GeometryNetwork");
-            var edge = network.ContainedEdges.Values.First(x => x.Name == "TopEdge");
-
-            //Open Geometry to initialize ComponentExchange
-            (var gm, var resource) = ProjectUtils.LoadGeometry("Network.simgeo", projectData, sp);
-            var polyline = (Polyline)gm.Geometry.GeometryFromId(edge.RepresentationReference.GeometryId);
-
-            gm.Geometry.StartBatchOperation();
-
-            var pe = polyline.Edges[0];
-            polyline.Edges.RemoveAt(0);
-
-            var splitV = new Vertex(gm.Geometry.Layers.First(), "SplitV", new Point3D(99, 99, 99));
-            var splitE1 = new Edge(gm.Geometry.Layers.First(), "SplitE1", new Vertex[] { pe.StartVertex, splitV });
-            var splitE2 = new Edge(gm.Geometry.Layers.First(), "SplitE2", new Vertex[] { splitV, pe.EndVertex });
-
-            polyline.Edges.Insert(0, new PEdge(splitE1, GeometricOrientation.Forward, polyline));
-            polyline.Edges.Insert(1, new PEdge(splitE2, GeometricOrientation.Forward, polyline));
-
-            pe.Edge.RemoveFromModel();
-
-            gm.Geometry.EndBatchOperation();
-
-            Assert.AreEqual(4, edge.Content.InstancePath.Count);
-            AssertUtil.AreEqual(new Point3D(0.35, 0, 1.25), edge.Content.InstancePath[0], 0.001);
-            AssertUtil.AreEqual(new Point3D(99, 99, 99), edge.Content.InstancePath[1], 0.001);
-            AssertUtil.AreEqual(new Point3D(0.35, 0, 4.631), edge.Content.InstancePath[2], 0.001);
-            AssertUtil.AreEqual(new Point3D(2.992, 0, 4.631), edge.Content.InstancePath[3], 0.001);
-        }
-
-        [TestMethod]
-        public void InstancePathEdgeUnsplit()
-        {
-            LoadProject(instanceProject, "arch", "arch");
-
-            var network = projectData.NetworkManager.NetworkRecord.First(x => x.Name == "GeometryNetwork");
-            var edge = network.ContainedEdges.Values.First(x => x.Name == "TopEdge");
-
-            //Open Geometry to initialize ComponentExchange
-            (var gm, var resource) = ProjectUtils.LoadGeometry("Network.simgeo", projectData, sp);
-            var polyline = (Polyline)gm.Geometry.GeometryFromId(edge.RepresentationReference.GeometryId);
-
-            gm.Geometry.StartBatchOperation();
-
-            var pe1 = polyline.Edges[0];
-            var pe2 = polyline.Edges[1];
-            polyline.Edges.Remove(pe1);
-            polyline.Edges.Remove(pe2);
-
-            var unsplitE = new Edge(gm.Geometry.Layers.First(), "UnsplitE", new Vertex[]
-                { pe1.StartVertex, pe2.EndVertex });
-
-            polyline.Edges.Insert(0, new PEdge(unsplitE, GeometricOrientation.Forward, polyline));
-
-            pe1.Edge.RemoveFromModel();
-            pe2.Edge.RemoveFromModel();
-            pe1.EndVertex.RemoveFromModel();
-
-            gm.Geometry.EndBatchOperation();
-
-            Assert.AreEqual(2, edge.Content.InstancePath.Count);
-            AssertUtil.AreEqual(new Point3D(0.35, 0, 1.25), edge.Content.InstancePath[0], 0.001);
-            AssertUtil.AreEqual(new Point3D(2.992, 0, 4.631), edge.Content.InstancePath[1], 0.001);
-        }
-
-        [TestMethod]
-        public void InstancePathEdgeSplitReplace()
-        {
-            LoadProject(instanceProject, "arch", "arch");
-
-            var network = projectData.NetworkManager.NetworkRecord.First(x => x.Name == "GeometryNetwork");
-            var edge = network.ContainedEdges.Values.First(x => x.Name == "TopEdge");
-
-            //Open Geometry to initialize ComponentExchange
-            (var gm, var resource) = ProjectUtils.LoadGeometry("Network.simgeo", projectData, sp);
-
-            //Clone and find edge
-            var gmClone = gm.Geometry.Clone();
-            var polyline = (Polyline)gmClone.GeometryFromId(edge.RepresentationReference.GeometryId);
-
-            //Split edge
-            gmClone.StartBatchOperation();
-
-            var pe = polyline.Edges[0];
-            polyline.Edges.RemoveAt(0);
-
-            var splitV = new Vertex(gmClone.Layers.First(), "SplitV", new Point3D(99, 99, 99));
-            var splitE1 = new Edge(gmClone.Layers.First(), "SplitE1", new Vertex[] { pe.StartVertex, splitV });
-            var splitE2 = new Edge(gmClone.Layers.First(), "SplitE2", new Vertex[] { splitV, pe.EndVertex });
-
-            polyline.Edges.Insert(0, new PEdge(splitE1, GeometricOrientation.Forward, polyline));
-            polyline.Edges.Insert(1, new PEdge(splitE2, GeometricOrientation.Forward, polyline));
-
-            pe.Edge.RemoveFromModel();
-
-            gmClone.EndBatchOperation();
-
-            //Replace
-            gm.Geometry = gmClone;
-
-            Assert.AreEqual(4, edge.Content.InstancePath.Count);
-            AssertUtil.AreEqual(new Point3D(0.35, 0, 1.25), edge.Content.InstancePath[0], 0.001);
-            AssertUtil.AreEqual(new Point3D(99, 99, 99), edge.Content.InstancePath[1], 0.001);
-            AssertUtil.AreEqual(new Point3D(0.35, 0, 4.631), edge.Content.InstancePath[2], 0.001);
-            AssertUtil.AreEqual(new Point3D(2.992, 0, 4.631), edge.Content.InstancePath[3], 0.001);
-        }
-
-        [TestMethod]
-        public void InstancePathEdgeUnsplitReplace()
-        {
-            LoadProject(instanceProject, "arch", "arch");
-
-            var network = projectData.NetworkManager.NetworkRecord.First(x => x.Name == "GeometryNetwork");
-            var edge = network.ContainedEdges.Values.First(x => x.Name == "TopEdge");
-
-            //Open Geometry to initialize ComponentExchange
-            (var gm, var resource) = ProjectUtils.LoadGeometry("Network.simgeo", projectData, sp);
-
-            //Clone and find edge
-            var gmClone = gm.Geometry.Clone();
-            var polyline = (Polyline)gmClone.GeometryFromId(edge.RepresentationReference.GeometryId);
-
-            gmClone.StartBatchOperation();
-
-            var pe1 = polyline.Edges[0];
-            var pe2 = polyline.Edges[1];
-            polyline.Edges.Remove(pe1);
-            polyline.Edges.Remove(pe2);
-
-            var unsplitE = new Edge(gmClone.Layers.First(), "UnsplitE", new Vertex[]
-                { pe1.StartVertex, pe2.EndVertex });
-
-            polyline.Edges.Insert(0, new PEdge(unsplitE, GeometricOrientation.Forward, polyline));
-
-            pe1.Edge.RemoveFromModel();
-            pe2.Edge.RemoveFromModel();
-            pe1.EndVertex.RemoveFromModel();
-
-            gmClone.EndBatchOperation();
-
-            //Replace
-            gm.Geometry = gmClone;
-
-            Assert.AreEqual(2, edge.Content.InstancePath.Count);
-            AssertUtil.AreEqual(new Point3D(0.35, 0, 1.25), edge.Content.InstancePath[0], 0.001);
-            AssertUtil.AreEqual(new Point3D(2.992, 0, 4.631), edge.Content.InstancePath[1], 0.001);
-        }
-
-        #endregion
-
-        #region State / Parenting
-
-        [TestMethod]
-        public void StateSetParent()
-        {
-            LoadProject(instanceProject);
-
-            var network = projectData.NetworkManager.NetworkRecord.First(x => x.Name == "GeometryNetwork");
-            var node = network.ContainedFlowNetworks.Values.First().ContainedNodes.Values.First(x => x.ID.LocalId == 36);
-
-            //Open Geometry to initialize ComponentExchange
-            (var gm, var resource) = ProjectUtils.LoadGeometry("Building.simgeo", projectData, sp);
-            var room = gm.Geometry.Volumes.First(x => x.Name == "LeftRoom");
-            var nodeVertex = gm.LinkedModels.First().Geometry.GeometryFromId(node.RepresentationReference.GeometryId);
-
-            Assert.IsFalse(node.Content.Placements.Any(x => x is SimInstancePlacementGeometry));
-            Assert.AreEqual(new SimInstanceState(false, SimInstanceConnectionState.Ok), node.Content.State);
-
-            //Set parent of geometry
-            nodeVertex.Parent = new GeometryReference(room, projectData.GeometryModels);
-
-            Assert.AreEqual(new SimInstanceState(true, SimInstanceConnectionState.Ok), node.Content.State);
-            Assert.AreEqual(1, node.Content.Placements.Count(x => x is SimInstancePlacementGeometry));
-            var placement = (SimInstancePlacementGeometry)node.Content.Placements.First(x => x is SimInstancePlacementGeometry);
-            Assert.AreEqual(gm.File.Key, placement.FileId);
-            Assert.AreEqual(room.Id, placement.GeometryId);
-        }
-
-        [TestMethod]
-        public void StateUnsetParent()
-        {
-            LoadProject(instanceProject);
-
-            var network = projectData.NetworkManager.NetworkRecord.First(x => x.Name == "GeometryNetwork");
-            var node = network.ContainedNodes.Values.First(x => x.Name == "Start");
-
-            //Open Geometry to initialize ComponentExchange
-            (var gm, var resource) = ProjectUtils.LoadGeometry("Building.simgeo", projectData, sp);
-            var room = gm.Geometry.Volumes.First(x => x.Name == "LeftRoom");
-            var nodeVertex = gm.LinkedModels.First().Geometry.Vertices.First(x => x.Name == "Start");
-            nodeVertex.Parent = new GeometryReference(room, projectData.GeometryModels);
-
-            Assert.AreEqual(new SimInstanceState(true, SimInstanceConnectionState.Ok), node.Content.State);
-
-            //Unset
-            nodeVertex.Parent = null;
-
-            Assert.AreEqual(new SimInstanceState(false, SimInstanceConnectionState.Ok), node.Content.State);
-            Assert.AreEqual(0, node.Content.Placements.Count(x => x is SimInstancePlacementGeometry));
         }
 
         #endregion
@@ -715,7 +332,7 @@ namespace SIMULTAN.Tests.Instances
                     Assert.IsNotNull(vertex);
                     vertices.Add(node, vertex);
                 }
-                
+
                 Assert.IsTrue(nw.ContainedFlowNetworks.Values.Count <= 1);
                 nw = nw.ContainedFlowNetworks.Values.FirstOrDefault();
             }
@@ -803,63 +420,6 @@ namespace SIMULTAN.Tests.Instances
 
         #endregion
 
-        #region Assign Component to Network
-
-        [TestMethod]
-        public void NodeInstancePathAddInstance()
-        {
-            LoadProject(instanceProject);
-
-            var network = projectData.NetworkManager.NetworkRecord.First(x => x.Name == "GeometryNetwork")
-                .ContainedFlowNetworks.Values.First();
-
-            //Open Geometry to initialize ComponentExchange
-            (var gm, var resource) = ProjectUtils.LoadGeometry("Network.simgeo", projectData, sp);
-            Assert.AreEqual(5, gm.Geometry.Vertices.Count);
-
-            var node = network.ContainedNodes.Values.First(x => x.ID.LocalId == 32);
-            var v = gm.Geometry.GeometryFromId(node.RepresentationReference.GeometryId) as Vertex;
-            var comp = projectData.Components.First(x => x.Name == "gmUnusedNode");
-
-            //Create instance
-            var instance = new SimComponentInstance(node, new Point(0, 0));
-            comp.Instances.Add(instance);
-
-            //Check if instance path is correct
-            Assert.AreEqual(1, instance.InstancePath.Count);
-            Assert.AreEqual(v.Position, instance.InstancePath[0]);
-        }
-
-        [TestMethod]
-        public void EdgeInstancePathAddInstance()
-        {
-            LoadProject(instanceProject);
-
-            var network = projectData.NetworkManager.NetworkRecord.First(x => x.Name == "GeometryNetwork")
-                .ContainedFlowNetworks.Values.First();
-
-            //Open Geometry to initialize ComponentExchange
-            (var gm, var resource) = ProjectUtils.LoadGeometry("Network.simgeo", projectData, sp);
-            Assert.AreEqual(5, gm.Geometry.Vertices.Count);
-
-            var edge = network.ContainedEdges.Values.First(x => x.ID.LocalId == 38);
-            var p = gm.Geometry.GeometryFromId(edge.RepresentationReference.GeometryId) as Polyline;
-            var comp = projectData.Components.First(x => x.Name == "gmUnusedEdge");
-
-            //Create instance
-            var instance = new SimComponentInstance(edge, new Point(0, 0));
-            comp.Instances.Add(instance);
-
-            //Check if instance path is correct
-            Assert.AreEqual(p.Edges.Count + 1, instance.InstancePath.Count);
-
-            for (int i = 0; i < p.Edges.Count; i++)
-                Assert.AreEqual(p.Edges[i].StartVertex.Position, instance.InstancePath[i]);
-            Assert.AreEqual(p.Edges.Last().EndVertex.Position, instance.InstancePath.Last());
-        }
-
-        #endregion
-
         #region Names
 
         [TestMethod]
@@ -875,7 +435,7 @@ namespace SIMULTAN.Tests.Instances
             var vertex = gm.Geometry.GeometryFromId(middleNode.RepresentationReference.GeometryId) as Vertex;
 
             middleNode.Name = "asdfNode";
-            Assert.AreEqual("asdfNode", vertex.Name); 
+            Assert.AreEqual("asdfNode", vertex.Name);
         }
 
         [TestMethod]
@@ -1132,23 +692,6 @@ namespace SIMULTAN.Tests.Instances
 
         #region Colors
 
-        [TestMethod]
-        public void InitialNodeColorUnassigned()
-        {
-            LoadProject(instanceProject);
-
-            var network = projectData.NetworkManager.NetworkRecord.First(x => x.Name == "GeometryNetwork");
-
-            var n = network.ContainedFlowNetworks.Values.First().ContainedNodes.Values.First(x => x.ID.LocalId == 36);
-
-            //Open Geometry to initialize ComponentExchange
-            (var gm, var resource) = ProjectUtils.LoadGeometry("Network.simgeo", projectData, sp);
-
-            var vertex = gm.Geometry.GeometryFromId(n.RepresentationReference.GeometryId);
-
-            Assert.AreEqual(NetworkColors.COL_UNASSIGNED, vertex.Color.Color);
-            Assert.AreEqual(false, vertex.Color.IsFromParent);
-        }
 
         [TestMethod]
         public void InitialNodeColorEmpty()
@@ -1250,8 +793,8 @@ namespace SIMULTAN.Tests.Instances
             comp.Instances.Add(new SimComponentInstance(n, new Point(0, 0)));
             var vertex = gm.Geometry.GeometryFromId(n.RepresentationReference.GeometryId);
 
-            Assert.AreEqual(NetworkColors.COL_UNASSIGNED, vertex.Color.Color);
-            Assert.AreEqual(false, vertex.Color.IsFromParent);
+            Assert.AreEqual(NetworkColors.COL_NEUTRAL, vertex.Color.Color);
+            Assert.AreEqual(true, vertex.Color.IsFromParent);
         }
 
         [TestMethod]
@@ -1270,47 +813,6 @@ namespace SIMULTAN.Tests.Instances
             var vertex = gm.Geometry.GeometryFromId(n.RepresentationReference.GeometryId);
 
             Assert.AreEqual(NetworkColors.COL_EMPTY, vertex.Color.Color);
-            Assert.AreEqual(false, vertex.Color.IsFromParent);
-        }
-
-        [TestMethod]
-        public void NodeColorChangeParentSet()
-        {
-            LoadProject(instanceProject);
-
-            var network = projectData.NetworkManager.NetworkRecord.First(x => x.Name == "GeometryNetwork");
-
-            var n = network.ContainedFlowNetworks.Values.First().ContainedNodes.Values.First(x => x.ID.LocalId == 36);
-
-            //Open Geometry to initialize ComponentExchange
-            (var gm, var resource) = ProjectUtils.LoadGeometry("Building.simgeo", projectData, sp);
-
-            var vertex = gm.LinkedModels.First().Geometry.GeometryFromId(n.RepresentationReference.GeometryId);
-            var volume = gm.Geometry.Volumes.First();
-
-            vertex.Parent = new GeometryReference(volume, projectData.GeometryModels);
-
-            Assert.AreEqual(NetworkColors.COL_NEUTRAL, vertex.Color.Color);
-            Assert.AreEqual(true, vertex.Color.IsFromParent);
-        }
-
-        [TestMethod]
-        public void NodeColorChangeParentRemoved()
-        {
-            LoadProject(instanceProject);
-
-            var network = projectData.NetworkManager.NetworkRecord.First(x => x.Name == "GeometryNetwork");
-
-            var n = network.ContainedNodes.Values.First(x => x.ID.LocalId == 27);
-
-            //Open Geometry to initialize ComponentExchange
-            (var gm, var resource) = ProjectUtils.LoadGeometry("Network.simgeo", projectData, sp);
-
-            var vertex = gm.Geometry.GeometryFromId(n.RepresentationReference.GeometryId);
-
-            vertex.Parent = null;
-
-            Assert.AreEqual(NetworkColors.COL_UNASSIGNED, vertex.Color.Color);
             Assert.AreEqual(false, vertex.Color.IsFromParent);
         }
 

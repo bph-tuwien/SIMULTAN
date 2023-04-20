@@ -1,11 +1,8 @@
-﻿using SIMULTAN.Data.Components;
-using SIMULTAN.Serializer.DXF;
-using SIMULTAN.Utils;
+﻿using SIMULTAN.Utils;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using System.Text;
 using System.Windows.Media.Media3D;
 
 namespace SIMULTAN.Data.MultiValues
@@ -225,7 +222,7 @@ namespace SIMULTAN.Data.MultiValues
 
 
         #region Properties & Members
-        
+
         /// <summary>
         /// Returns the data entries in the field. Index is the index along the axis, the value is the value at that index.
         /// </summary>
@@ -495,245 +492,27 @@ namespace SIMULTAN.Data.MultiValues
         }
         #endregion
 
-        #region To String
-
-        /// <inheritdoc />
-        [Obsolete]
-        public override string ToString()
-        {
-            string mvt_string = "(" + this.Id.ToString() + ") "
-                                + this.MVType.ToString() + " ["
-                                + this.UnitX + ", " + this.UnitY + ", " + this.UnitZ + "]:["
-                                + this.XAxis.Count + ", " + this.YAxis.Count + ", " + this.ZAxis.Count + "]";
-            return mvt_string;
-        }
-
-        #endregion
-
         #region External Pointer
-
-        /// <summary>
-        /// Value pointer for SimMultiValueField3D instances
-        /// </summary>
-        public sealed class SimMultiValueField3DPointer : SimMultiValuePointer
-        {
-            /// <summary>
-            /// Stores the values along the axis. NOT the position in the value field
-            /// </summary>
-            double axisValueX, axisValueY, axisValueZ;
-            private SimMultiValueField3D table;
-
-            /// <summary>
-            /// Returns the value on the X-Axis (NOT the index/position)
-            /// </summary>
-            public double AxisValueX => axisValueX;
-            /// <summary>
-            /// Returns the value on the Y-Axis (NOT the index/position)
-            /// </summary>
-            public double AxisValueY => axisValueY;
-            /// <summary>
-            /// Returns the value on the Z-Axis (NOT the index/position)
-            /// </summary>
-            public double AxisValueZ => axisValueZ;
-
-            /// <inheritdoc />
-            public override SimMultiValue ValueField
-            {
-                get { return table; }
-                set
-                {
-                    if (value is SimMultiValueField3D)
-                        table = (SimMultiValueField3D)value;
-                    else
-                        throw new ArgumentException("SimMultiValueField3DPointer only supports SimMultiValueField3D fields");
-                }
-            }
-
-            /// <summary>
-            /// Initializes a new instance of the SimMultiValueField3DPointer class
-            /// </summary>
-            /// <param name="table">The table</param>
-            /// <param name="axisValueX">The value on the X-Axis (NOT the index/position)</param>
-            /// <param name="axisValueY">The value on the Y-Axis (NOT the index/position)</param>
-            /// <param name="axisValueZ">The value on the Z-Axis (NOT the index/position)</param>
-            public SimMultiValueField3DPointer(SimMultiValueField3D table, double axisValueX, double axisValueY, double axisValueZ) : base(table)
-            {
-                AttachEvents();
-                this.axisValueX = axisValueX;
-                this.axisValueY = axisValueY;
-                this.axisValueZ = axisValueZ;
-
-                RegisterParameter(ReservedParameters.MVT_OFFSET_X_FORMAT, table.UnitX);
-                RegisterParameter(ReservedParameters.MVT_OFFSET_Y_FORMAT, table.UnitY);
-                RegisterParameter(ReservedParameters.MVT_OFFSET_Z_FORMAT, table.UnitZ);
-            }
-
-            /// <inheritdoc />
-            public override double GetValue()
-            {
-                if (IsDisposed)
-                    throw new InvalidOperationException("You're trying to get the value of an unsubscribed value pointer");
-
-                if (double.IsNaN(axisValueX) || double.IsNaN(axisValueY) || double.IsNaN(axisValueZ))
-                    return double.NaN;
-
-                var lookupPos = GetAxisLookupPosition();
-                return table.GetValue(lookupPos);
-            }
-
-            private Point3D GetAxisLookupPosition()
-            {
-                var pos = GetLookupPosition();
-
-                Point3D lookupPos = new Point3D(
-                    table.AxisPositionFromValue(Axis.X, pos.X),
-                    table.AxisPositionFromValue(Axis.Y, pos.Y),
-                    table.AxisPositionFromValue(Axis.Z, pos.Z)
-                    );
-
-                return lookupPos;
-            }
-
-            private Point3D GetLookupPosition()
-            {
-                double addX = 0.0, addY = 0.0, addZ = 0.0;
-                var paramX = GetValuePointerParameter(ReservedParameters.MVT_OFFSET_X_FORMAT);
-                if (paramX != null)
-                    addX = paramX.ValueCurrent;
-
-                var paramY = GetValuePointerParameter(ReservedParameters.MVT_OFFSET_Y_FORMAT);
-                if (paramY != null)
-                    addY = paramY.ValueCurrent;
-
-                var paramZ = GetValuePointerParameter(ReservedParameters.MVT_OFFSET_Z_FORMAT);
-                if (paramZ != null)
-                    addZ = paramZ.ValueCurrent;
-
-                Point3D lookupPos = new Point3D(
-                    axisValueX + addX,
-                    axisValueY + addY,
-                    axisValueZ + addZ
-                    );
-
-                return lookupPos;
-            }
-
-            /// <inheritdoc />
-            public override SimMultiValuePointer Clone()
-            {
-                return new SimMultiValueField3DPointer(table, axisValueX, axisValueY, axisValueZ);
-            }
-
-            /// <inheritdoc />
-            public override void SetFromParameters(double axisValueX, double axisValueY, double axisValueZ, string gs)
-            {
-                this.axisValueX = axisValueX;
-                this.axisValueY = axisValueY;
-                this.axisValueZ = axisValueZ;
-            }
-
-            /// <inheritdoc />
-            public override bool IsSamePointer(SimMultiValuePointer other)
-            {
-                var otherMyType = other as SimMultiValueField3DPointer;
-                if (otherMyType != null)
-                {
-                    if (table == otherMyType.table && axisValueX.EqualsWithNan(otherMyType.axisValueX) &&
-                        axisValueY.EqualsWithNan(otherMyType.axisValueY) && axisValueZ.EqualsWithNan(otherMyType.axisValueZ))
-                        return true;
-                }
-
-                return false;
-            }
-
-            /// <inheritdoc />
-            protected override void Dispose(bool isDisposing)
-            {
-                if (!IsDisposed)
-                {
-                    DetachEvents();
-                }
-
-                base.Dispose(isDisposing);
-            }
-
-            private void SetPosition(double x, double y, double z)
-            {
-                this.axisValueX = x;
-                this.axisValueY = y;
-                this.axisValueZ = z;
-                NotifyValueChanged();
-            }
-
-            private void Table_ValueChanged(object sender, ValueChangedEventArgs args)
-            {
-                if (args.Range.Contains(GetLookupPosition()))
-                    NotifyValueChanged();
-            }
-
-            private void Table_AxisChanged(object sender, EventArgs e)
-            {
-                //Check if all axis are still in range
-                bool isXValid = this.axisValueX >= table.XAxis[0] && this.axisValueX <= table.XAxis[table.XAxis.Count - 1];
-                bool isYValid = this.axisValueY >= table.YAxis[0] && this.axisValueY <= table.YAxis[table.YAxis.Count - 1];
-                bool isZValid = this.axisValueZ >= table.ZAxis[0] && this.axisValueZ <= table.ZAxis[table.ZAxis.Count - 1];
-
-                if (!isXValid || !isYValid || !isZValid)
-                {
-                    SetPosition(double.NaN, double.NaN, double.NaN);
-                }
-
-                NotifyValueChanged();
-            }
-
-
-            private bool isAttached = false;
-
-            internal override void AttachEvents()
-            {
-                base.AttachEvents();
-
-                if (!isAttached && !IsDisposed)
-                {
-                    this.table.AxisChanged += Table_AxisChanged;
-                    this.table.ValueChanged += Table_ValueChanged;
-
-                    isAttached = true;
-                }
-            }
-
-            internal override void DetachEvents()
-            {
-                base.DetachEvents();
-
-                if (isAttached)
-                {
-                    isAttached = false;
-                    this.table.AxisChanged -= Table_AxisChanged;
-                    this.table.ValueChanged -= Table_ValueChanged;
-                }
-            }
-        }
 
         /// <summary>
         /// Returns an default pointer for this ValueField
         /// </summary>
-        public SimMultiValuePointer DefaultPointer
+        public SimMultiValueParameterSource DefaultPointer
         {
-            get { return new SimMultiValueField3DPointer(this, this.XAxis[0], this.YAxis[0], this.ZAxis[0]); }
+            get { return new SimMultiValueField3DParameterSource(this, this.XAxis[0], this.YAxis[0], this.ZAxis[0]); }
         }
 
         /// <inheritdoc />
-        public override SimMultiValuePointer CreateNewPointer()
+        public override SimMultiValueParameterSource CreateNewPointer()
         {
             return DefaultPointer;
         }
         /// <inheritdoc />
-        public override SimMultiValuePointer CreateNewPointer(SimMultiValuePointer source)
+        public override SimMultiValueParameterSource CreateNewPointer(SimMultiValueParameterSource source)
         {
-            if (source is SimMultiValueField3DPointer ptr)
+            if (source is SimMultiValueField3DParameterSource ptr)
             {
-                return new SimMultiValueField3DPointer(this, ptr.AxisValueX, ptr.AxisValueY, ptr.AxisValueZ);
+                return new SimMultiValueField3DParameterSource(this, ptr.AxisValueX, ptr.AxisValueY, ptr.AxisValueZ);
             }
             return DefaultPointer;
         }

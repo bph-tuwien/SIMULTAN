@@ -21,7 +21,7 @@ namespace SIMULTAN.Serializer.DXF
         /// </summary>
         /// <param name="entityName"></param>
         /// <param name="recursiveElementIdentifier"></param>
-        internal DXFRecursiveEntityParserElement(string entityName, string recursiveElementIdentifier) 
+        internal DXFRecursiveEntityParserElement(string entityName, string recursiveElementIdentifier)
             : base(entityName, new DXFEntryParserElement[] { })
         {
             this.recursiveElementIdentifier = recursiveElementIdentifier;
@@ -38,6 +38,8 @@ namespace SIMULTAN.Serializer.DXF
 
                 if (element != null)
                     this.recursiveElement = element as DXFEntityParserElementBase<T>;
+                else
+                    throw new Exception(string.Format("Unable to find recursive element with key \"{0}\"", this.recursiveElementIdentifier));
             }
 
             if (recursiveElement != null)

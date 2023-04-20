@@ -1,10 +1,12 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SIMULTAN.Data;
 using SIMULTAN.Data.MultiValues;
-using SIMULTAN.Tests.Utils;
+using SIMULTAN.Projects;
+using SIMULTAN.Tests.TestUtils;
 using SIMULTAN.Utils;
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using System.Windows.Media.Media3D;
 
 namespace SIMULTAN.Tests.Values
@@ -110,12 +112,16 @@ namespace SIMULTAN.Tests.Values
 
         internal static ((string name, List<double> xaxis, List<double> yaxis, List<double> zaxis, List<double> data,
             Dictionary<Point3D, double> dataDict,
-            string unitX, string unitY, string unitZ) data, SimMultiValueField3D table)
+            string unitX, string unitY, string unitZ) data, SimMultiValueField3D table, ExtendedProjectData projectData)
             TestDataTable(int xCount, int yCount, int zCount)
         {
+            ExtendedProjectData projectData = new ExtendedProjectData();
+
             var data = TestData(xCount, yCount, zCount);
             var mvt = new SimMultiValueField3D(data.name, data.xaxis, data.unitX, data.yaxis, data.unitY, data.zaxis, data.unitZ, data.data, true);
-            return (data, mvt);
+
+            projectData.ValueManager.Add(mvt);
+            return (data, mvt, projectData);
         }
 
         [TestMethod]
@@ -334,18 +340,18 @@ namespace SIMULTAN.Tests.Values
         [TestMethod]
         public void Clone()
         {
-            (var data, var mvt) = TestDataTable(3, 4, 5);
+            var data = TestDataTable(3, 4, 5);
 
-            var mvtcopy = (SimMultiValueField3D)mvt.Clone();
+            var mvtcopy = (SimMultiValueField3D)data.table.Clone();
 
-            Assert.AreEqual(data.name, mvtcopy.Name);
-            AssertUtil.ContainEqualValues(data.xaxis, mvtcopy.XAxis);
-            AssertUtil.ContainEqualValues(data.yaxis, mvtcopy.YAxis);
-            AssertUtil.ContainEqualValues(data.zaxis, mvtcopy.ZAxis);
-            Assert.AreEqual(data.unitX, mvtcopy.UnitX);
-            Assert.AreEqual(data.unitY, mvtcopy.UnitY);
-            Assert.AreEqual(data.unitZ, mvtcopy.UnitZ);
-            AssertData(mvtcopy, data.data, data.xaxis.Count, data.yaxis.Count, data.zaxis.Count);
+            Assert.AreEqual(data.data.name, mvtcopy.Name);
+            AssertUtil.ContainEqualValues(data.data.xaxis, mvtcopy.XAxis);
+            AssertUtil.ContainEqualValues(data.data.yaxis, mvtcopy.YAxis);
+            AssertUtil.ContainEqualValues(data.data.zaxis, mvtcopy.ZAxis);
+            Assert.AreEqual(data.data.unitX, mvtcopy.UnitX);
+            Assert.AreEqual(data.data.unitY, mvtcopy.UnitY);
+            Assert.AreEqual(data.data.unitZ, mvtcopy.UnitZ);
+            AssertData(mvtcopy, data.data.data, data.data.xaxis.Count, data.data.yaxis.Count, data.data.zaxis.Count);
             Assert.AreEqual(true, mvtcopy.CanInterpolate);
             Assert.AreEqual(SimId.Empty, mvtcopy.Id);
             Assert.AreEqual(null, mvtcopy.Factory);
@@ -429,27 +435,27 @@ namespace SIMULTAN.Tests.Values
         [TestMethod]
         public void XAxisAdd()
         {
-            (var data, var mvt) = TestDataTable(2, 2, 2);
-            var eventCounter = new MultiValueTableEventCounter(mvt);
+            var data = TestDataTable(2, 2, 2);
+            var eventCounter = new MultiValueTableEventCounter(data.table);
 
-            mvt.XAxis.Add(-50);
-            Assert.AreEqual(3, mvt.XAxis.Count);
-            AssertUtil.ContainEqualValues(new double[] { -50, 0, 1 }, mvt.XAxis);
-            Assert.AreEqual(12, mvt.Length);
+            data.table.XAxis.Add(-50);
+            Assert.AreEqual(3, data.table.XAxis.Count);
+            AssertUtil.ContainEqualValues(new double[] { -50, 0, 1 }, data.table.XAxis);
+            Assert.AreEqual(12, data.table.Length);
 
-            AssertField(mvt, new double[,,] {
+            AssertField(data.table, new double[,,] {
                 { { 0, 0, 1 }, { 0, 2, 3 } },
                 { { 0, 4, 5 }, { 0, 6, 7 } }
             });
 
             eventCounter.AssertCount(0, 0, 1);
 
-            mvt.XAxis.Add(1000);
-            Assert.AreEqual(4, mvt.XAxis.Count);
-            AssertUtil.ContainEqualValues(new double[] { -50, 0, 1, 1000 }, mvt.XAxis);
-            Assert.AreEqual(16, mvt.Length);
+            data.table.XAxis.Add(1000);
+            Assert.AreEqual(4, data.table.XAxis.Count);
+            AssertUtil.ContainEqualValues(new double[] { -50, 0, 1, 1000 }, data.table.XAxis);
+            Assert.AreEqual(16, data.table.Length);
 
-            AssertField(mvt, new double[,,] {
+            AssertField(data.table, new double[,,] {
                 { { 0, 0, 1, 0 }, { 0, 2, 3, 0 } },
                 { { 0, 4, 5, 0 }, { 0, 6, 7, 0 } }
             });
@@ -459,28 +465,28 @@ namespace SIMULTAN.Tests.Values
         [TestMethod]
         public void XAxisRemove()
         {
-            (var data, var mvt) = TestDataTable(3, 2, 2);
-            var eventCounter = new MultiValueTableEventCounter(mvt);
+            var data = TestDataTable(3, 2, 2);
+            var eventCounter = new MultiValueTableEventCounter(data.table);
 
-            mvt.XAxis.RemoveAt(1);
+            data.table.XAxis.RemoveAt(1);
             eventCounter.AssertCount(0, 0, 1);
 
-            Assert.AreEqual(2, mvt.XAxis.Count);
-            Assert.AreEqual(8, mvt.Length);
+            Assert.AreEqual(2, data.table.XAxis.Count);
+            Assert.AreEqual(8, data.table.Length);
 
-            AssertField(mvt, new double[,,]
+            AssertField(data.table, new double[,,]
             {
                 { { 0, 2 }, { 3, 5 } },
                 { { 6, 8 }, { 9, 11 } }
             });
 
-            mvt.XAxis.RemoveAt(1);
+            data.table.XAxis.RemoveAt(1);
             eventCounter.AssertCount(0, 0, 2);
-            mvt.XAxis.RemoveAt(0);
+            data.table.XAxis.RemoveAt(0);
             eventCounter.AssertCount(0, 0, 3);
-            Assert.AreEqual(1, mvt.XAxis.Count);
-            Assert.AreEqual(0, mvt.XAxis[0]);
-            AssertField(mvt, new double[,,]
+            Assert.AreEqual(1, data.table.XAxis.Count);
+            Assert.AreEqual(0, data.table.XAxis[0]);
+            AssertField(data.table, new double[,,]
             {
                 { { 0 }, { 0 } },
                 { { 0 }, { 0 } }
@@ -490,20 +496,20 @@ namespace SIMULTAN.Tests.Values
         [TestMethod]
         public void XAxisReplace()
         {
-            (var data, var mvt) = TestDataTable(2, 2, 2);
-            var eventCounter = new MultiValueTableEventCounter(mvt);
+            var data = TestDataTable(2, 2, 2);
+            var eventCounter = new MultiValueTableEventCounter(data.table);
 
-            mvt.XAxis[1] = -99;
+            data.table.XAxis[1] = -99;
 
-            AssertField(mvt, new double[,,]
+            AssertField(data.table, new double[,,]
             {
                 { {1, 0 }, {3, 2 } },
                 { {5, 4 }, {7, 6 } }
             });
 
-            Assert.AreEqual(2, mvt.XAxis.Count);
-            Assert.AreEqual(-99, mvt.XAxis[0]);
-            Assert.AreEqual(0, mvt.XAxis[1]);
+            Assert.AreEqual(2, data.table.XAxis.Count);
+            Assert.AreEqual(-99, data.table.XAxis[0]);
+            Assert.AreEqual(0, data.table.XAxis[1]);
 
             eventCounter.AssertCount(0, 0, 1);
         }
@@ -511,19 +517,19 @@ namespace SIMULTAN.Tests.Values
         [TestMethod]
         public void XAxisClear()
         {
-            (var data, var mvt) = TestDataTable(2, 2, 2);
-            var eventCounter = new MultiValueTableEventCounter(mvt);
+            var data = TestDataTable(2, 2, 2);
+            var eventCounter = new MultiValueTableEventCounter(data.table);
 
-            mvt.XAxis.Clear();
+            data.table.XAxis.Clear();
 
-            AssertField(mvt, new double[,,]
+            AssertField(data.table, new double[,,]
             {
                 { { 0 }, { 0 } },
                 { { 0 }, { 0 } }
             });
 
-            Assert.AreEqual(1, mvt.XAxis.Count);
-            Assert.AreEqual(0, mvt.XAxis[0]);
+            Assert.AreEqual(1, data.table.XAxis.Count);
+            Assert.AreEqual(0, data.table.XAxis[0]);
 
             eventCounter.AssertCount(0, 0, 1);
         }
@@ -532,27 +538,27 @@ namespace SIMULTAN.Tests.Values
         [TestMethod]
         public void YAxisAdd()
         {
-            (var data, var mvt) = TestDataTable(2, 2, 2);
-            var eventCounter = new MultiValueTableEventCounter(mvt);
+            var data = TestDataTable(2, 2, 2);
+            var eventCounter = new MultiValueTableEventCounter(data.table);
 
-            mvt.YAxis.Add(-50);
-            Assert.AreEqual(3, mvt.YAxis.Count);
-            AssertUtil.ContainEqualValues(new double[] { -50, 0, 0.01 }, mvt.YAxis);
-            Assert.AreEqual(12, mvt.Length);
+            data.table.YAxis.Add(-50);
+            Assert.AreEqual(3, data.table.YAxis.Count);
+            AssertUtil.ContainEqualValues(new double[] { -50, 0, 0.01 }, data.table.YAxis);
+            Assert.AreEqual(12, data.table.Length);
 
-            AssertField(mvt, new double[,,] {
+            AssertField(data.table, new double[,,] {
                 { { 0, 0 }, { 0, 1 }, { 2, 3 } },
                 { { 0, 0 }, { 4, 5 }, { 6, 7 } },
             });
 
             eventCounter.AssertCount(0, 0, 1);
 
-            mvt.YAxis.Add(1000);
-            Assert.AreEqual(4, mvt.YAxis.Count);
-            AssertUtil.ContainEqualValues(new double[] { -50, 0, 0.01, 1000 }, mvt.YAxis);
-            Assert.AreEqual(16, mvt.Length);
+            data.table.YAxis.Add(1000);
+            Assert.AreEqual(4, data.table.YAxis.Count);
+            AssertUtil.ContainEqualValues(new double[] { -50, 0, 0.01, 1000 }, data.table.YAxis);
+            Assert.AreEqual(16, data.table.Length);
 
-            AssertField(mvt, new double[,,] {
+            AssertField(data.table, new double[,,] {
                 { { 0, 0 }, { 0, 1 }, { 2, 3 }, {0, 0 } },
                 { { 0, 0 }, { 4, 5 }, { 6, 7 }, {0, 0 } },
             });
@@ -563,27 +569,27 @@ namespace SIMULTAN.Tests.Values
         [TestMethod]
         public void YAxisRemove()
         {
-            (var data, var mvt) = TestDataTable(2, 3, 2);
-            var eventCounter = new MultiValueTableEventCounter(mvt);
+            var data = TestDataTable(2, 3, 2);
+            var eventCounter = new MultiValueTableEventCounter(data.table);
 
-            mvt.YAxis.RemoveAt(1);
+            data.table.YAxis.RemoveAt(1);
             eventCounter.AssertCount(0, 0, 1);
-            Assert.AreEqual(2, mvt.YAxis.Count);
-            Assert.AreEqual(8, mvt.Length);
+            Assert.AreEqual(2, data.table.YAxis.Count);
+            Assert.AreEqual(8, data.table.Length);
 
-            AssertField(mvt, new double[,,]
+            AssertField(data.table, new double[,,]
             {
                 { { 0, 1 }, { 4, 5 } },
                 { { 6, 7 }, { 10, 11 } }
             });
 
-            mvt.YAxis.RemoveAt(1);
+            data.table.YAxis.RemoveAt(1);
             eventCounter.AssertCount(0, 0, 2);
-            mvt.YAxis.RemoveAt(0);
+            data.table.YAxis.RemoveAt(0);
             eventCounter.AssertCount(0, 0, 3);
-            Assert.AreEqual(1, mvt.YAxis.Count);
-            Assert.AreEqual(0, mvt.YAxis[0]);
-            AssertField(mvt, new double[,,]
+            Assert.AreEqual(1, data.table.YAxis.Count);
+            Assert.AreEqual(0, data.table.YAxis[0]);
+            AssertField(data.table, new double[,,]
             {
                 { { 0, 0 } },
                 { { 0, 0 } }
@@ -593,20 +599,20 @@ namespace SIMULTAN.Tests.Values
         [TestMethod]
         public void YAxisReplace()
         {
-            (var data, var mvt) = TestDataTable(2, 2, 2);
-            var eventCounter = new MultiValueTableEventCounter(mvt);
+            var data = TestDataTable(2, 2, 2);
+            var eventCounter = new MultiValueTableEventCounter(data.table);
 
-            mvt.YAxis[1] = -99;
+            data.table.YAxis[1] = -99;
 
-            AssertField(mvt, new double[,,]
+            AssertField(data.table, new double[,,]
             {
                 { {2, 3 }, {0, 1 } },
                 { {6, 7 }, {4, 5 } }
             });
 
-            Assert.AreEqual(2, mvt.YAxis.Count);
-            Assert.AreEqual(-99, mvt.YAxis[0]);
-            Assert.AreEqual(0, mvt.YAxis[1]);
+            Assert.AreEqual(2, data.table.YAxis.Count);
+            Assert.AreEqual(-99, data.table.YAxis[0]);
+            Assert.AreEqual(0, data.table.YAxis[1]);
 
             eventCounter.AssertCount(0, 0, 1);
         }
@@ -614,19 +620,19 @@ namespace SIMULTAN.Tests.Values
         [TestMethod]
         public void YAxisClear()
         {
-            (var data, var mvt) = TestDataTable(2, 2, 2);
-            var eventCounter = new MultiValueTableEventCounter(mvt);
+            var data = TestDataTable(2, 2, 2);
+            var eventCounter = new MultiValueTableEventCounter(data.table);
 
-            mvt.YAxis.Clear();
+            data.table.YAxis.Clear();
 
-            AssertField(mvt, new double[,,]
+            AssertField(data.table, new double[,,]
             {
                 { { 0, 0 } },
                 { { 0, 0 } },
             });
 
-            Assert.AreEqual(1, mvt.YAxis.Count);
-            Assert.AreEqual(0, mvt.YAxis[0]);
+            Assert.AreEqual(1, data.table.YAxis.Count);
+            Assert.AreEqual(0, data.table.YAxis[0]);
 
             eventCounter.AssertCount(0, 0, 1);
         }
@@ -635,15 +641,15 @@ namespace SIMULTAN.Tests.Values
         [TestMethod]
         public void ZAxisAdd()
         {
-            (var data, var mvt) = TestDataTable(2, 2, 2);
-            var eventCounter = new MultiValueTableEventCounter(mvt);
+            var data = TestDataTable(2, 2, 2);
+            var eventCounter = new MultiValueTableEventCounter(data.table);
 
-            mvt.ZAxis.Add(-50);
-            Assert.AreEqual(3, mvt.ZAxis.Count);
-            AssertUtil.ContainEqualValues(new double[] { -50, 0, 100 }, mvt.ZAxis);
-            Assert.AreEqual(12, mvt.Length);
+            data.table.ZAxis.Add(-50);
+            Assert.AreEqual(3, data.table.ZAxis.Count);
+            AssertUtil.ContainEqualValues(new double[] { -50, 0, 100 }, data.table.ZAxis);
+            Assert.AreEqual(12, data.table.Length);
 
-            AssertField(mvt, new double[,,] {
+            AssertField(data.table, new double[,,] {
                 { { 0, 0 }, { 0, 0 } },
                 { { 0, 1 }, { 2, 3 } },
                 { { 4, 5 }, { 6, 7 } },
@@ -651,12 +657,12 @@ namespace SIMULTAN.Tests.Values
 
             eventCounter.AssertCount(0, 0, 1);
 
-            mvt.ZAxis.Add(1000);
-            Assert.AreEqual(4, mvt.ZAxis.Count);
-            AssertUtil.ContainEqualValues(new double[] { -50, 0, 100, 1000 }, mvt.ZAxis);
-            Assert.AreEqual(16, mvt.Length);
+            data.table.ZAxis.Add(1000);
+            Assert.AreEqual(4, data.table.ZAxis.Count);
+            AssertUtil.ContainEqualValues(new double[] { -50, 0, 100, 1000 }, data.table.ZAxis);
+            Assert.AreEqual(16, data.table.Length);
 
-            AssertField(mvt, new double[,,] {
+            AssertField(data.table, new double[,,] {
                 { { 0, 0 }, { 0, 0 } },
                 { { 0, 1 }, { 2, 3 } },
                 { { 4, 5 }, { 6, 7 } },
@@ -669,27 +675,27 @@ namespace SIMULTAN.Tests.Values
         [TestMethod]
         public void ZAxisRemove()
         {
-            (var data, var mvt) = TestDataTable(2, 2, 3);
-            var eventCounter = new MultiValueTableEventCounter(mvt);
+            var data = TestDataTable(2, 2, 3);
+            var eventCounter = new MultiValueTableEventCounter(data.table);
 
-            mvt.ZAxis.RemoveAt(1);
+            data.table.ZAxis.RemoveAt(1);
             eventCounter.AssertCount(0, 0, 1);
-            Assert.AreEqual(2, mvt.ZAxis.Count);
-            Assert.AreEqual(8, mvt.Length);
+            Assert.AreEqual(2, data.table.ZAxis.Count);
+            Assert.AreEqual(8, data.table.Length);
 
-            AssertField(mvt, new double[,,]
+            AssertField(data.table, new double[,,]
             {
                 { { 0, 1 }, { 2, 3 } },
                 { { 8, 9 }, { 10, 11 } }
             });
 
-            mvt.ZAxis.RemoveAt(1);
+            data.table.ZAxis.RemoveAt(1);
             eventCounter.AssertCount(0, 0, 2);
-            mvt.ZAxis.RemoveAt(0);
+            data.table.ZAxis.RemoveAt(0);
             eventCounter.AssertCount(0, 0, 3);
-            Assert.AreEqual(1, mvt.ZAxis.Count);
-            Assert.AreEqual(0, mvt.ZAxis[0]);
-            AssertField(mvt, new double[,,]
+            Assert.AreEqual(1, data.table.ZAxis.Count);
+            Assert.AreEqual(0, data.table.ZAxis[0]);
+            AssertField(data.table, new double[,,]
             {
                 { { 0, 0 }, { 0, 0 } },
             });
@@ -698,7 +704,7 @@ namespace SIMULTAN.Tests.Values
         [TestMethod]
         public void ZAxisReplace()
         {
-            (var data, var mvt) = TestDataTable(2, 2, 2);
+            (var data, var mvt, _) = TestDataTable(2, 2, 2);
             var eventCounter = new MultiValueTableEventCounter(mvt);
 
             mvt.ZAxis[1] = -99;
@@ -719,7 +725,7 @@ namespace SIMULTAN.Tests.Values
         [TestMethod]
         public void ZAxisClear()
         {
-            (var data, var mvt) = TestDataTable(2, 2, 2);
+            (var data, var mvt, _) = TestDataTable(2, 2, 2);
             var eventCounter = new MultiValueTableEventCounter(mvt);
 
             mvt.ZAxis.Clear();
@@ -816,7 +822,10 @@ namespace SIMULTAN.Tests.Values
             var data = TestData(3, 4, 5);
             var mvt = new SimMultiValueField3D(data.name, data.xaxis, data.unitX, data.yaxis, data.unitY, data.zaxis, data.unitZ, data.data, true);
 
-            var mvp = mvt.CreateNewPointer() as SimMultiValueField3D.SimMultiValueField3DPointer;
+            ExtendedProjectData projectData = new ExtendedProjectData();
+            projectData.ValueManager.Add(mvt);
+
+            var mvp = mvt.CreateNewPointer() as SimMultiValueField3DParameterSource;
 
             AssertUtil.AssertDoubleEqual(0, mvp.AxisValueX);
             AssertUtil.AssertDoubleEqual(0, mvp.AxisValueY);
@@ -852,7 +861,7 @@ namespace SIMULTAN.Tests.Values
         [TestMethod]
         public void Count()
         {
-            (var data, var mvt) = TestDataTable(3, 4, 5);
+            (var data, var mvt, _) = TestDataTable(3, 4, 5);
 
             Assert.AreEqual(3, mvt.Count(0));
             Assert.AreEqual(4, mvt.Count(1));
@@ -886,7 +895,7 @@ namespace SIMULTAN.Tests.Values
         [TestMethod]
         public void CanInterpolateChanged()
         {
-            (var data, var mvt) = TestDataTable(3, 4, 5);
+            (var data, var mvt, _) = TestDataTable(3, 4, 5);
             var eventCounter = new MultiValueTableEventCounter(mvt);
 
             Assert.AreEqual(4.0, mvt.GetValue(new Point3D(0.25, 0.25, 0.25)));
@@ -905,7 +914,7 @@ namespace SIMULTAN.Tests.Values
         [TestMethod]
         public void PropertyChanged()
         {
-            (var data, var mvt) = TestDataTable(3, 4, 5);
+            (var data, var mvt, _) = TestDataTable(3, 4, 5);
             var eventCounter = new MultiValueTableEventCounter(mvt);
 
             mvt.UnitX = "asdf";

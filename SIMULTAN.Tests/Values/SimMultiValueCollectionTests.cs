@@ -1,14 +1,11 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SIMULTAN.Data;
 using SIMULTAN.Data.MultiValues;
-using SIMULTAN.Tests.Utils;
+using SIMULTAN.Tests.TestUtils;
 using SIMULTAN.Utils;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Media.Media3D;
 
 namespace SIMULTAN.Tests.Values
@@ -249,7 +246,7 @@ namespace SIMULTAN.Tests.Values
             DateTime startTime = DateTime.Now;
 
             LoadProject(bigTableProject);
-            var testData = SimMultiValueBigTableTests.TestData(3, 4);
+            var testData = SimMultiValueBigTableTests.DoubleTestData(3, 4);
             var factoryEvents = new SimFactoryEventCounter(projectData.ValueManager);
 
             Assert.ThrowsException<ArgumentNullException>(() => { projectData.ValueManager.Add(null); });
@@ -282,7 +279,7 @@ namespace SIMULTAN.Tests.Values
         public void BigTableInsert()
         {
             LoadProject(bigTableProject);
-            var testData = SimMultiValueBigTableTests.TestData(3, 4);
+            var testData = SimMultiValueBigTableTests.DoubleTestData(3, 4);
             var factoryEvents = new SimFactoryEventCounter(projectData.ValueManager);
 
             Assert.ThrowsException<ArgumentNullException>(() => { projectData.ValueManager.Insert(0, null); });
@@ -311,7 +308,7 @@ namespace SIMULTAN.Tests.Values
         public void BigTableReplace()
         {
             LoadProject(bigTableProject);
-            var testData = SimMultiValueBigTableTests.TestData(3, 4);
+            var testData = SimMultiValueBigTableTests.DoubleTestData(3, 4);
             var factoryEvents = new SimFactoryEventCounter(projectData.ValueManager);
 
             Assert.ThrowsException<ArgumentNullException>(() => { projectData.ValueManager[0] = null; });
@@ -358,13 +355,20 @@ namespace SIMULTAN.Tests.Values
             eventCounter.AssertEventCount(1);
         }
 
+        private WeakReference BigTableRemoveMemoryLeakTest_Action()
+        {
+            WeakReference unusedTableRef = new WeakReference(projectData.ValueManager.First(x => x.Name == "unused_table"));
+            projectData.ValueManager.Remove((SimMultiValueBigTable)unusedTableRef.Target);
+
+            return unusedTableRef;
+        }
+
         [TestMethod]
         public void BigTableRemoveMemoryLeakTest()
         {
             LoadProject(bigTableProject);
 
-            WeakReference unusedTableRef = new WeakReference(projectData.ValueManager.First(x => x.Name == "unused_table"));
-            projectData.ValueManager.Remove((SimMultiValueBigTable)unusedTableRef.Target);
+            var unusedTableRef = BigTableRemoveMemoryLeakTest_Action();
 
             GC.Collect();
             GC.WaitForPendingFinalizers();
@@ -686,13 +690,19 @@ namespace SIMULTAN.Tests.Values
             eventCounter.AssertEventCount(1);
         }
 
+        private WeakReference Field3DRemoveMemoryLeakTest_Action()
+        {
+            WeakReference unusedTableRef = new WeakReference(projectData.ValueManager.First(x => x.Name == "unused_field"));
+            projectData.ValueManager.Remove((SimMultiValueField3D)unusedTableRef.Target);
+            return unusedTableRef;
+        }
+
         [TestMethod]
         public void Field3DRemoveMemoryLeakTest()
         {
             LoadProject(field3DProject);
 
-            WeakReference unusedTableRef = new WeakReference(projectData.ValueManager.First(x => x.Name == "unused_field"));
-            projectData.ValueManager.Remove((SimMultiValueField3D)unusedTableRef.Target);
+            WeakReference unusedTableRef = Field3DRemoveMemoryLeakTest_Action();
 
             GC.Collect();
             GC.WaitForPendingFinalizers();
@@ -1036,13 +1046,19 @@ namespace SIMULTAN.Tests.Values
             eventCounter.AssertEventCount(1);
         }
 
+        private WeakReference FunctionRemoveMemoryLeakTest_Action()
+        {
+            WeakReference unusedTableRef = new WeakReference(projectData.ValueManager.First(x => x.Name == "unused_function"));
+            projectData.ValueManager.Remove((SimMultiValueFunction)unusedTableRef.Target);
+            return unusedTableRef;
+        }
+
         [TestMethod]
         public void FunctionRemoveMemoryLeakTest()
         {
             LoadProject(functionProject);
 
-            WeakReference unusedTableRef = new WeakReference(projectData.ValueManager.First(x => x.Name == "unused_function"));
-            projectData.ValueManager.Remove((SimMultiValueFunction)unusedTableRef.Target);
+            WeakReference unusedTableRef = FunctionRemoveMemoryLeakTest_Action();
 
             GC.Collect();
             GC.WaitForPendingFinalizers();

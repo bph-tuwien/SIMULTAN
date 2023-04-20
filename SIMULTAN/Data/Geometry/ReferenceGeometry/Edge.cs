@@ -1,5 +1,4 @@
-﻿using SIMULTAN;
-using SIMULTAN.Utils;
+﻿using SIMULTAN.Utils;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -45,6 +44,8 @@ namespace SIMULTAN.Data.Geometry
                 throw new ArgumentNullException(nameof(vertices));
             if (vertices.Count() != 2)
                 throw new ArgumentException(string.Format("{0} has to contain exactly two elements", nameof(vertices)));
+            if (vertices.Any(t => t == null))
+                throw new ArgumentException(string.Format("{0} vertex can not be null", nameof(vertices)));
             if (nameFormat == null)
                 throw new ArgumentNullException(nameof(nameFormat));
 

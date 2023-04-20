@@ -38,16 +38,20 @@ namespace SIMULTAN.Data.Geometry
         /// </summary>
         /// <param name="min">Minimum position of the grid</param>
         /// <param name="max">Maximum position of the grid</param>
-        /// <param name="cellSize">The desired cell size</param>
-		public AABBGrid(Point3D min, Point3D max, Vector3D cellSize)
+        /// <param name="desiredCellSize">The desired cell size. Used to calculate the number of cells.
+        /// To prevent memory issues in large models, the number of cells is fixed between [0, maxCellSize], which may lead to larger 
+        /// cell sizes than expected
+        /// </param>
+        /// <param name="maxCellSize">The maximum number of cells along each axis. Prevents memory issues with very large models.</param>
+		public AABBGrid(Point3D min, Point3D max, Vector3D desiredCellSize, int maxCellSize = 1000)
         {
             //Calculate size of grid
             Min = min;
             Max = max;
 
-            int numCellsX = Math.Max(1, (int)Math.Ceiling((Max.X - Min.X) / cellSize.X));
-            int numCellsY = Math.Max(1, (int)Math.Ceiling((Max.Y - Min.Y) / cellSize.Y));
-            int numCellsZ = Math.Max(1, (int)Math.Ceiling((Max.Z - Min.Z) / cellSize.Z));
+            int numCellsX = Math.Min(maxCellSize, Math.Max(1, (int)Math.Ceiling((Max.X - Min.X) / desiredCellSize.X)));
+            int numCellsY = Math.Min(maxCellSize, Math.Max(1, (int)Math.Ceiling((Max.Y - Min.Y) / desiredCellSize.Y)));
+            int numCellsZ = Math.Min(maxCellSize, Math.Max(1, (int)Math.Ceiling((Max.Z - Min.Z) / desiredCellSize.Z)));
 
             this.ActualCellSize = new Vector3D(
                 Math.Max((Max.X - Min.X) / numCellsX, 1),

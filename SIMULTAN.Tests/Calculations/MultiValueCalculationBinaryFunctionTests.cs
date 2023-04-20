@@ -1,12 +1,8 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SIMULTAN.Data.Components;
-using SIMULTAN.Tests.Utils;
-using System;
+using SIMULTAN.Tests.TestUtils;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SIMULTAN.Tests.Calculations
 {
@@ -21,11 +17,11 @@ namespace SIMULTAN.Tests.Calculations
         public void PropertyChanged()
         {
             LoadProject(calculationProject);
-            var demoParams = projectData.GetParameters("MVCalcEmpty");
+            var demoParams = projectData.GetParameters<SimDoubleParameter>("MVCalcEmpty");
 
             SimCalculation calc = new SimCalculation("a + b", "calc",
-                new Dictionary<string, SimParameter> { { "a", demoParams["in1"] }, { "b", demoParams["in2"] } },
-                new Dictionary<string, SimParameter> { { "out", demoParams["out1"] } });
+                new Dictionary<string, SimDoubleParameter> { { "a", demoParams["in1"] }, { "b", demoParams["in2"] } },
+                new Dictionary<string, SimDoubleParameter> { { "out", demoParams["out1"] } });
             calc.IsMultiValueCalculation = true;
 
             var rootStep = ((SimMultiValueExpressionBinary)calc.MultiValueCalculation);
@@ -45,11 +41,11 @@ namespace SIMULTAN.Tests.Calculations
         public void MatrixSumTest()
         {
             LoadProject(calculationProject);
-            var demoParams = projectData.GetParameters("MVCalcEmpty");
+            var demoParams = projectData.GetParameters<SimDoubleParameter>("MVCalcEmpty");
 
             SimCalculation calc = new SimCalculation("a + b", "calc",
-                new Dictionary<string, SimParameter> { { "a", demoParams["in1"] }, { "b", demoParams["in2"] } },
-                new Dictionary<string, SimParameter> { { "out", demoParams["out1"] } });
+                new Dictionary<string, SimDoubleParameter> { { "a", demoParams["in1"] }, { "b", demoParams["in2"] } },
+                new Dictionary<string, SimDoubleParameter> { { "out", demoParams["out1"] } });
             calc.IsMultiValueCalculation = true;
 
             var rootStep = ((SimMultiValueExpressionBinary)calc.MultiValueCalculation);
@@ -71,11 +67,11 @@ namespace SIMULTAN.Tests.Calculations
         public void MatrixSumRepeatColumnTest()
         {
             LoadProject(calculationProject);
-            var demoParams = projectData.GetParameters("MVCalcEmpty");
+            var demoParams = projectData.GetParameters<SimDoubleParameter>("MVCalcEmpty");
 
             SimCalculation calc = new SimCalculation("a + b", "calc",
-                new Dictionary<string, SimParameter> { { "a", demoParams["in1"] }, { "b", demoParams["in2"] } },
-                new Dictionary<string, SimParameter> { { "out", demoParams["out1"] } });
+                new Dictionary<string, SimDoubleParameter> { { "a", demoParams["in1"] }, { "b", demoParams["in2"] } },
+                new Dictionary<string, SimDoubleParameter> { { "out", demoParams["out1"] } });
             calc.IsMultiValueCalculation = true;
 
             var rootStep = ((SimMultiValueExpressionBinary)calc.MultiValueCalculation);
@@ -97,11 +93,11 @@ namespace SIMULTAN.Tests.Calculations
         public void MatrixSumRepeatRowColumnTest()
         {
             LoadProject(calculationProject);
-            var demoParams = projectData.GetParameters("MVCalcEmpty");
+            var demoParams = projectData.GetParameters<SimDoubleParameter>("MVCalcEmpty");
 
             SimCalculation calc = new SimCalculation("a + b", "calc",
-                new Dictionary<string, SimParameter> { { "a", demoParams["in1"] }, { "b", demoParams["in2"] } },
-                new Dictionary<string, SimParameter> { { "out", demoParams["out1"] } });
+                new Dictionary<string, SimDoubleParameter> { { "a", demoParams["in1"] }, { "b", demoParams["in2"] } },
+                new Dictionary<string, SimDoubleParameter> { { "out", demoParams["out1"] } });
             calc.IsMultiValueCalculation = true;
 
             var rootStep = ((SimMultiValueExpressionBinary)calc.MultiValueCalculation);
@@ -127,11 +123,11 @@ namespace SIMULTAN.Tests.Calculations
         public void InnerProductTest()
         {
             LoadProject(calculationProject);
-            var demoParams = projectData.GetParameters("MVCalcEmpty");
+            var demoParams = projectData.GetParameters<SimDoubleParameter>("MVCalcEmpty");
 
             SimCalculation calc = new SimCalculation("a * b", "calc",
-                new Dictionary<string, SimParameter> { { "a", demoParams["in1"] }, { "b", demoParams["in2"] } },
-                new Dictionary<string, SimParameter> { { "out", demoParams["out1"] } });
+                new Dictionary<string, SimDoubleParameter> { { "a", demoParams["in1"] }, { "b", demoParams["in2"] } },
+                new Dictionary<string, SimDoubleParameter> { { "out", demoParams["out1"] } });
             calc.IsMultiValueCalculation = true;
 
             var rootStep = ((SimMultiValueExpressionBinary)calc.MultiValueCalculation);
@@ -149,11 +145,11 @@ namespace SIMULTAN.Tests.Calculations
         public void OuterProductTest()
         {
             LoadProject(calculationProject);
-            var demoParams = projectData.GetParameters("MVCalcEmpty");
+            var demoParams = projectData.GetParameters<SimDoubleParameter>("MVCalcEmpty");
 
             SimCalculation calc = new SimCalculation("a * b", "calc",
-                new Dictionary<string, SimParameter> { { "a", demoParams["in1"] }, { "b", demoParams["in2"] } },
-                new Dictionary<string, SimParameter> { { "out", demoParams["out1"] } });
+                new Dictionary<string, SimDoubleParameter> { { "a", demoParams["in1"] }, { "b", demoParams["in2"] } },
+                new Dictionary<string, SimDoubleParameter> { { "out", demoParams["out1"] } });
             calc.IsMultiValueCalculation = true;
 
             var rootStep = ((SimMultiValueExpressionBinary)calc.MultiValueCalculation);
@@ -175,11 +171,11 @@ namespace SIMULTAN.Tests.Calculations
         public void OuterProductFlatTest()
         {
             LoadProject(calculationProject);
-            var demoParams = projectData.GetParameters("MVCalcEmpty");
+            var demoParams = projectData.GetParameters<SimDoubleParameter>("MVCalcEmpty");
 
             SimCalculation calc = new SimCalculation("a * b", "calc",
-                new Dictionary<string, SimParameter> { { "a", demoParams["in1"] }, { "b", demoParams["in2"] } },
-                new Dictionary<string, SimParameter> { { "out", demoParams["out1"] } });
+                new Dictionary<string, SimDoubleParameter> { { "a", demoParams["in1"] }, { "b", demoParams["in2"] } },
+                new Dictionary<string, SimDoubleParameter> { { "out", demoParams["out1"] } });
             calc.IsMultiValueCalculation = true;
 
             var rootStep = ((SimMultiValueExpressionBinary)calc.MultiValueCalculation);
@@ -210,11 +206,11 @@ namespace SIMULTAN.Tests.Calculations
         public void MatrixProductTest()
         {
             LoadProject(calculationProject);
-            var demoParams = projectData.GetParameters("MVCalcEmpty");
+            var demoParams = projectData.GetParameters<SimDoubleParameter>("MVCalcEmpty");
 
             SimCalculation calc = new SimCalculation("a * b", "calc",
-                new Dictionary<string, SimParameter> { { "a", demoParams["in2"] }, { "b", demoParams["in3"] } },
-                new Dictionary<string, SimParameter> { { "out", demoParams["out1"] } });
+                new Dictionary<string, SimDoubleParameter> { { "a", demoParams["in2"] }, { "b", demoParams["in3"] } },
+                new Dictionary<string, SimDoubleParameter> { { "out", demoParams["out1"] } });
             calc.IsMultiValueCalculation = true;
 
             var rootStep = ((SimMultiValueExpressionBinary)calc.MultiValueCalculation);
@@ -233,11 +229,11 @@ namespace SIMULTAN.Tests.Calculations
         public void MatrixProductPerElementTest()
         {
             LoadProject(calculationProject);
-            var demoParams = projectData.GetParameters("MVCalcEmpty");
+            var demoParams = projectData.GetParameters<SimDoubleParameter>("MVCalcEmpty");
 
             SimCalculation calc = new SimCalculation("a * b", "calc",
-                new Dictionary<string, SimParameter> { { "a", demoParams["in1"] }, { "b", demoParams["in2"] } },
-                new Dictionary<string, SimParameter> { { "out", demoParams["out1"] } });
+                new Dictionary<string, SimDoubleParameter> { { "a", demoParams["in1"] }, { "b", demoParams["in2"] } },
+                new Dictionary<string, SimDoubleParameter> { { "out", demoParams["out1"] } });
             calc.IsMultiValueCalculation = true;
 
             var rootStep = ((SimMultiValueExpressionBinary)calc.MultiValueCalculation);
@@ -259,11 +255,11 @@ namespace SIMULTAN.Tests.Calculations
         public void MatrixProductPerElementRepeatTest()
         {
             LoadProject(calculationProject);
-            var demoParams = projectData.GetParameters("MVCalcEmpty");
+            var demoParams = projectData.GetParameters<SimDoubleParameter>("MVCalcEmpty");
 
             SimCalculation calc = new SimCalculation("a * b", "calc",
-                new Dictionary<string, SimParameter> { { "a", demoParams["in1"] }, { "b", demoParams["in2"] } },
-                new Dictionary<string, SimParameter> { { "out", demoParams["out1"] } });
+                new Dictionary<string, SimDoubleParameter> { { "a", demoParams["in1"] }, { "b", demoParams["in2"] } },
+                new Dictionary<string, SimDoubleParameter> { { "out", demoParams["out1"] } });
             calc.IsMultiValueCalculation = true;
 
             var rootStep = ((SimMultiValueExpressionBinary)calc.MultiValueCalculation);
@@ -289,11 +285,11 @@ namespace SIMULTAN.Tests.Calculations
         public void ColumnSelectionTest()
         {
             LoadProject(calculationProject);
-            var demoParams = projectData.GetParameters("MVCalcEmpty");
+            var demoParams = projectData.GetParameters<SimDoubleParameter>("MVCalcEmpty");
 
             SimCalculation calc = new SimCalculation("a * b", "calc",
-                new Dictionary<string, SimParameter> { { "a", demoParams["in1"] }, { "b", demoParams["in_idx"] } },
-                new Dictionary<string, SimParameter> { { "out", demoParams["out1"] } });
+                new Dictionary<string, SimDoubleParameter> { { "a", demoParams["in1"] }, { "b", demoParams["in_idx"] } },
+                new Dictionary<string, SimDoubleParameter> { { "out", demoParams["out1"] } });
             calc.IsMultiValueCalculation = true;
 
             var rootStep = ((SimMultiValueExpressionBinary)calc.MultiValueCalculation);
@@ -311,11 +307,11 @@ namespace SIMULTAN.Tests.Calculations
         public void ColumnSelectionMatrixTest()
         {
             LoadProject(calculationProject);
-            var demoParams = projectData.GetParameters("MVCalcEmpty");
+            var demoParams = projectData.GetParameters<SimDoubleParameter>("MVCalcEmpty");
 
             SimCalculation calc = new SimCalculation("a * b", "calc",
-                new Dictionary<string, SimParameter> { { "a", demoParams["in1"] }, { "b", demoParams["in_idx"] } },
-                new Dictionary<string, SimParameter> { { "out", demoParams["out1"] } });
+                new Dictionary<string, SimDoubleParameter> { { "a", demoParams["in1"] }, { "b", demoParams["in_idx"] } },
+                new Dictionary<string, SimDoubleParameter> { { "out", demoParams["out1"] } });
             calc.IsMultiValueCalculation = true;
 
             var rootStep = ((SimMultiValueExpressionBinary)calc.MultiValueCalculation);
@@ -337,11 +333,11 @@ namespace SIMULTAN.Tests.Calculations
         public void ColumnSelectionDiagonalMatrixTest()
         {
             LoadProject(calculationProject);
-            var demoParams = projectData.GetParameters("MVCalcEmpty");
+            var demoParams = projectData.GetParameters<SimDoubleParameter>("MVCalcEmpty");
 
             SimCalculation calc = new SimCalculation("a * b", "calc",
-                new Dictionary<string, SimParameter> { { "a", demoParams["in1"] }, { "b", demoParams["in_idx"] } },
-                new Dictionary<string, SimParameter> { { "out", demoParams["out1"] } });
+                new Dictionary<string, SimDoubleParameter> { { "a", demoParams["in1"] }, { "b", demoParams["in_idx"] } },
+                new Dictionary<string, SimDoubleParameter> { { "out", demoParams["out1"] } });
             calc.IsMultiValueCalculation = true;
 
             var rootStep = ((SimMultiValueExpressionBinary)calc.MultiValueCalculation);
@@ -377,11 +373,11 @@ namespace SIMULTAN.Tests.Calculations
         public void GroupBySumTest()
         {
             LoadProject(calculationProject);
-            var demoParams = projectData.GetParameters("MVCalcEmpty");
+            var demoParams = projectData.GetParameters<SimDoubleParameter>("MVCalcEmpty");
 
             SimCalculation calc = new SimCalculation("a * b", "calc",
-                new Dictionary<string, SimParameter> { { "a", demoParams["in1"] }, { "b", demoParams["in_cat"] } },
-                new Dictionary<string, SimParameter> { { "out", demoParams["out1"] } });
+                new Dictionary<string, SimDoubleParameter> { { "a", demoParams["in1"] }, { "b", demoParams["in_cat"] } },
+                new Dictionary<string, SimDoubleParameter> { { "out", demoParams["out1"] } });
             calc.IsMultiValueCalculation = true;
 
             var rootStep = ((SimMultiValueExpressionBinary)calc.MultiValueCalculation);
@@ -400,11 +396,11 @@ namespace SIMULTAN.Tests.Calculations
         public void GroupByAverageTest()
         {
             LoadProject(calculationProject);
-            var demoParams = projectData.GetParameters("MVCalcEmpty");
+            var demoParams = projectData.GetParameters<SimDoubleParameter>("MVCalcEmpty");
 
             SimCalculation calc = new SimCalculation("a * b", "calc",
-                new Dictionary<string, SimParameter> { { "a", demoParams["in1"] }, { "b", demoParams["in_cat"] } },
-                new Dictionary<string, SimParameter> { { "out", demoParams["out1"] } });
+                new Dictionary<string, SimDoubleParameter> { { "a", demoParams["in1"] }, { "b", demoParams["in_cat"] } },
+                new Dictionary<string, SimDoubleParameter> { { "out", demoParams["out1"] } });
             calc.IsMultiValueCalculation = true;
 
             var rootStep = ((SimMultiValueExpressionBinary)calc.MultiValueCalculation);
@@ -423,11 +419,11 @@ namespace SIMULTAN.Tests.Calculations
         public void GroupByMinTest()
         {
             LoadProject(calculationProject);
-            var demoParams = projectData.GetParameters("MVCalcEmpty");
+            var demoParams = projectData.GetParameters<SimDoubleParameter>("MVCalcEmpty");
 
             SimCalculation calc = new SimCalculation("a * b", "calc",
-                new Dictionary<string, SimParameter> { { "a", demoParams["in1"] }, { "b", demoParams["in_cat"] } },
-                new Dictionary<string, SimParameter> { { "out", demoParams["out1"] } });
+                new Dictionary<string, SimDoubleParameter> { { "a", demoParams["in1"] }, { "b", demoParams["in_cat"] } },
+                new Dictionary<string, SimDoubleParameter> { { "out", demoParams["out1"] } });
             calc.IsMultiValueCalculation = true;
 
             var rootStep = ((SimMultiValueExpressionBinary)calc.MultiValueCalculation);
@@ -446,11 +442,11 @@ namespace SIMULTAN.Tests.Calculations
         public void GroupByMaxTest()
         {
             LoadProject(calculationProject);
-            var demoParams = projectData.GetParameters("MVCalcEmpty");
+            var demoParams = projectData.GetParameters<SimDoubleParameter>("MVCalcEmpty");
 
             SimCalculation calc = new SimCalculation("a * b", "calc",
-                new Dictionary<string, SimParameter> { { "a", demoParams["in1"] }, { "b", demoParams["in_cat"] } },
-                new Dictionary<string, SimParameter> { { "out", demoParams["out1"] } });
+                new Dictionary<string, SimDoubleParameter> { { "a", demoParams["in1"] }, { "b", demoParams["in_cat"] } },
+                new Dictionary<string, SimDoubleParameter> { { "out", demoParams["out1"] } });
             calc.IsMultiValueCalculation = true;
 
             var rootStep = ((SimMultiValueExpressionBinary)calc.MultiValueCalculation);
@@ -473,11 +469,11 @@ namespace SIMULTAN.Tests.Calculations
         public void SelectMinTests()
         {
             LoadProject(calculationProject);
-            var demoParams = projectData.GetParameters("MVCalcEmpty");
+            var demoParams = projectData.GetParameters<SimDoubleParameter>("MVCalcEmpty");
 
             SimCalculation calc = new SimCalculation("a * 5", "calc",
-                new Dictionary<string, SimParameter> { { "a", demoParams["in1"] } },
-                new Dictionary<string, SimParameter> { { "out", demoParams["out1"] } });
+                new Dictionary<string, SimDoubleParameter> { { "a", demoParams["in1"] } },
+                new Dictionary<string, SimDoubleParameter> { { "out", demoParams["out1"] } });
             calc.IsMultiValueCalculation = true;
 
             var rootStep = ((SimMultiValueExpressionBinary)calc.MultiValueCalculation);
@@ -495,11 +491,10 @@ namespace SIMULTAN.Tests.Calculations
         public void SelectMaxTests()
         {
             LoadProject(calculationProject);
-            var demoParams = projectData.GetParameters("MVCalcEmpty");
-
+            var demoParams = projectData.GetParameters<SimDoubleParameter>("MVCalcEmpty");
             SimCalculation calc = new SimCalculation("a * 5", "calc",
-                new Dictionary<string, SimParameter> { { "a", demoParams["in1"] } },
-                new Dictionary<string, SimParameter> { { "out", demoParams["out1"] } });
+                new Dictionary<string, SimDoubleParameter> { { "a", demoParams["in1"] } },
+                new Dictionary<string, SimDoubleParameter> { { "out", demoParams["out1"] } });
             calc.IsMultiValueCalculation = true;
 
             var rootStep = ((SimMultiValueExpressionBinary)calc.MultiValueCalculation);

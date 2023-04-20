@@ -2,10 +2,7 @@
 using SIMULTAN.Data.FlowNetworks;
 using SIMULTAN.Data.Geometry;
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Media;
 
 namespace SIMULTAN.Exchange.NetworkConnectors
@@ -48,18 +45,16 @@ namespace SIMULTAN.Exchange.NetworkConnectors
             EdgeGeometry.Name = Edge.Name;
 
             OrientEdgeLoop();
-            UpdateInstancePath();
             UpdateColor();
         }
 
-        
+
 
         #region BaseNetworkConnector
 
         /// <inheritdoc />
         internal override void OnGeometryChanged()
         {
-            UpdateInstancePath();
         }
         /// <inheritdoc />
         internal override void ChangeBaseGeometry(BaseGeometry geometry)
@@ -67,12 +62,10 @@ namespace SIMULTAN.Exchange.NetworkConnectors
             EdgeGeometry = geometry as Polyline;
 
             OrientEdgeLoop();
-            UpdateInstancePath();
         }
         /// <inheritdoc />
         internal override void OnTopologyChanged()
         {
-            UpdateInstancePath();
         }
         /// <inheritdoc />
         public override void Dispose()
@@ -86,7 +79,6 @@ namespace SIMULTAN.Exchange.NetworkConnectors
         {
             if (e.PropertyName == nameof(SimFlowNetworkEdge.Content))
             {
-                UpdateInstancePath();
                 UpdateColor();
             }
             else if (e.PropertyName == nameof(SimFlowNetworkEdge.Name))
@@ -122,22 +114,9 @@ namespace SIMULTAN.Exchange.NetworkConnectors
             }
         }
 
-        private void UpdateInstancePath()
-        {
-            if (Edge.Content != null)
-            {
-                using (AccessCheckingDisabler.Disable(Edge.Content.Factory))
-                {
-                    Edge.Content.InstancePath = EdgeGeometry.Edges.Select(x => x.StartVertex.Position)
-                        .Append(EdgeGeometry.Edges.Last().EndVertex.Position).ToList();
-                }
-            }
-        }
-
         internal void OnEdgeRedirected()
         {
             OrientEdgeLoop();
-            UpdateInstancePath();
         }
 
         private void UpdateColor()

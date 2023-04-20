@@ -7,7 +7,7 @@ using SIMULTAN.Serializer.CODXF;
 using SIMULTAN.Serializer.DXF;
 using SIMULTAN.Tests.Properties;
 using SIMULTAN.Tests.Util;
-using SIMULTAN.Tests.Utils;
+using SIMULTAN.Tests.TestUtils;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -228,6 +228,10 @@ namespace SIMULTAN.Tests.IO
             ResourceDirectoryEntry rootDirectory = new ResourceDirectoryEntry(projectData.AssetManager,
                 SimUserRole.BUILDING_PHYSICS, "RootFolder", false, 3, false);
 
+            // get some tax entry to test tags
+            var taxEntry = TaxonomyUtils.GetDefaultTaxonomies().GetReservedParameter(ReservedParameterKeys.RP_AGGREGATION_OPERATION);
+            rootDirectory.Tags.Add(new Data.Taxonomy.SimTaxonomyEntryReference(taxEntry));
+
             string exportedString = null;
             using (MemoryStream stream = new MemoryStream())
             {
@@ -251,6 +255,14 @@ namespace SIMULTAN.Tests.IO
         {
             ExtendedProjectData projectData = CreateTestData();
 
+            // get some tax entry to test tags
+            var taxEntry = TaxonomyUtils.GetDefaultTaxonomies().GetReservedParameter(ReservedParameterKeys.RP_AGGREGATION_OPERATION);
+
+            var dir = projectData.AssetManager.Resources[0] as ResourceDirectoryEntry;
+            dir.Tags.Add(new Data.Taxonomy.SimTaxonomyEntryReference(taxEntry));
+            var subdir = dir.Children.First(x => x is ResourceDirectoryEntry) as ResourceDirectoryEntry;
+            subdir.Tags.Add(new Data.Taxonomy.SimTaxonomyEntryReference(taxEntry));
+
             string exportedString = null;
             using (MemoryStream stream = new MemoryStream())
             {
@@ -268,6 +280,83 @@ namespace SIMULTAN.Tests.IO
             }
 
             AssertUtil.AreEqualMultiline(Properties.Resources.DXFSerializer_WriteResourceDirectory_Multiple, exportedString);
+        }
+
+        [TestMethod]
+        public void ReadResourceDirectoryV16()
+        {
+            ExtendedProjectData projectData = new ExtendedProjectData();
+            projectData.AssetManager.WorkingDirectory = workingDirectory.FullName;
+            projectData.AssetManager.PathsToResourceFiles.Add(linkDirectory.FullName);
+            Guid guid = Guid.NewGuid();
+            var otherGuid = Guid.Parse("da7d8f7c-8eec-423b-b127-9d6e17f52522");
+
+            ResourceDirectoryEntry directory = null;
+
+            using (DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_ReadCODXF_ResourceDirectoryV16)))
+            {
+                var info = new DXFParserInfo(guid, projectData);
+                info.FileVersion = 16;
+
+                reader.Read();
+
+                directory = ComponentDxfIOResources.ResourceDirectoryEntityElement.Parse(reader, info) as ResourceDirectoryEntry;
+            }
+
+            Assert.IsNotNull(directory);
+            Assert.AreEqual("RootFolder", directory.CurrentRelativePath);
+            Assert.AreEqual(SimUserRole.BUILDING_PHYSICS, directory.UserWithWritingAccess);
+            Assert.AreEqual(3, directory.Key);
+            Assert.AreEqual(SimComponentVisibility.AlwaysVisible, directory.Visibility);
+            Assert.AreEqual(1, directory.Tags.Count);
+            Assert.AreEqual(guid, directory.Tags[0].TaxonomyEntryId.GlobalId);
+            Assert.AreEqual(47, directory.Tags[0].TaxonomyEntryId.LocalId);
+
+            Assert.AreEqual(2, directory.Children.Count);
+
+            var childFolder1 = directory.Children[0] as ResourceDirectoryEntry;
+            Assert.IsNotNull(childFolder1);
+            Assert.AreEqual("RootFolder\\ChildFolder1", childFolder1.CurrentRelativePath);
+            Assert.AreEqual(SimUserRole.ARCHITECTURE, childFolder1.UserWithWritingAccess);
+            Assert.AreEqual(4, childFolder1.Key);
+            Assert.AreEqual(SimComponentVisibility.VisibleInProject, childFolder1.Visibility);
+            Assert.AreEqual(1, childFolder1.Tags.Count);
+            Assert.AreEqual(guid, childFolder1.Tags[0].TaxonomyEntryId.GlobalId);
+            Assert.AreEqual(47, childFolder1.Tags[0].TaxonomyEntryId.LocalId);
+
+            var childFolder2 = directory.Children[1] as ResourceDirectoryEntry;
+            Assert.IsNotNull(childFolder2);
+            Assert.AreEqual("RootFolder\\ChildFolder2", childFolder2.CurrentRelativePath);
+            Assert.AreEqual(SimUserRole.ARCHITECTURE, childFolder2.UserWithWritingAccess);
+            Assert.AreEqual(5, childFolder2.Key);
+            Assert.AreEqual(SimComponentVisibility.VisibleInProject, childFolder2.Visibility);
+            Assert.AreEqual(1, childFolder2.Tags.Count);
+            Assert.AreEqual(guid, childFolder2.Tags[0].TaxonomyEntryId.GlobalId);
+            Assert.AreEqual(47, childFolder2.Tags[0].TaxonomyEntryId.LocalId);
+
+            Assert.AreEqual(2, childFolder1.Children.Count);
+            var containedFile1 = childFolder1.Children[0] as ContainedResourceFileEntry;
+            Assert.IsNotNull(containedFile1);
+            Assert.AreEqual("RootFolder\\ChildFolder1\\MyContainedFile.txt", containedFile1.CurrentRelativePath);
+            Assert.AreEqual(SimUserRole.BUILDING_PHYSICS, containedFile1.UserWithWritingAccess);
+            Assert.AreEqual(11, containedFile1.Key);
+            Assert.AreEqual(true, containedFile1.Exists);
+            Assert.AreEqual(SimComponentVisibility.AlwaysVisible, containedFile1.Visibility);
+            Assert.AreEqual(1, containedFile1.Tags.Count);
+            Assert.AreEqual(guid, containedFile1.Tags[0].TaxonomyEntryId.GlobalId);
+            Assert.AreEqual(47, containedFile1.Tags[0].TaxonomyEntryId.LocalId);
+
+            var linkedFile1 = childFolder1.Children[1] as LinkedResourceFileEntry;
+            Assert.IsNotNull(linkedFile1);
+            Assert.AreEqual("MyLinkedFile.txt", linkedFile1.CurrentRelativePath);
+            Assert.AreEqual(linkDirectory.FullName + "\\MyLinkedFile.txt", linkedFile1.CurrentFullPath);
+            Assert.AreEqual(SimUserRole.BUILDING_DEVELOPER, linkedFile1.UserWithWritingAccess);
+            Assert.AreEqual(12, linkedFile1.Key);
+            Assert.AreEqual(true, linkedFile1.Exists);
+            Assert.AreEqual(SimComponentVisibility.AlwaysVisible, linkedFile1.Visibility);
+            Assert.AreEqual(1, linkedFile1.Tags.Count);
+            Assert.AreEqual(guid, linkedFile1.Tags[0].TaxonomyEntryId.GlobalId);
+            Assert.AreEqual(47, linkedFile1.Tags[0].TaxonomyEntryId.LocalId);
         }
 
         [TestMethod]
@@ -410,6 +499,10 @@ namespace SIMULTAN.Tests.IO
             ContainedResourceFileEntry file = new ContainedResourceFileEntry(projectData.AssetManager,
                 SimUserRole.BUILDING_DEVELOPER, "MyContainedFile.txt", false, 11, false);
 
+            // get some tax entry to test tags
+            var taxEntry = TaxonomyUtils.GetDefaultTaxonomies().GetReservedParameter(ReservedParameterKeys.RP_AGGREGATION_OPERATION);
+            file.Tags.Add(new Data.Taxonomy.SimTaxonomyEntryReference(taxEntry));
+
             string exportedString = null;
             using (MemoryStream stream = new MemoryStream())
             {
@@ -428,6 +521,36 @@ namespace SIMULTAN.Tests.IO
             AssertUtil.AreEqualMultiline(Properties.Resources.DXFSerializer_WriteContainedResourceFile, exportedString);
         }
 
+        [TestMethod]
+        public void ReadContainedResourceFileV16()
+        {
+            ExtendedProjectData projectData = new ExtendedProjectData();
+            projectData.AssetManager.WorkingDirectory = workingDirectory.FullName;
+            Guid guid = Guid.NewGuid();
+            var otherGuid = Guid.Parse("da7d8f7c-8eec-423b-b127-9d6e17f52522");
+
+            ContainedResourceFileEntry file = null;
+
+            using (DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_ReadCODXF_ContainedFileV16)))
+            {
+                var info = new DXFParserInfo(guid, projectData);
+                info.FileVersion = 16;
+
+                reader.Read();
+
+                file = ComponentDxfIOResources.ContainedResourceFileEntityElement.Parse(reader, info) as ContainedResourceFileEntry;
+            }
+
+            Assert.IsNotNull(file);
+            Assert.AreEqual("MyContainedFile.txt", file.CurrentRelativePath);
+            Assert.AreEqual(SimUserRole.BUILDING_PHYSICS, file.UserWithWritingAccess);
+            Assert.AreEqual(11, file.Key);
+            Assert.AreEqual(SimComponentVisibility.AlwaysVisible, file.Visibility);
+            Assert.AreEqual(1, file.Tags.Count);
+            Assert.AreEqual(guid, file.Tags[0].TaxonomyEntryId.GlobalId);
+            Assert.AreEqual(47, file.Tags[0].TaxonomyEntryId.LocalId);
+
+        }
         [TestMethod]
         public void ReadContainedResourceFileV12()
         {
@@ -500,6 +623,10 @@ namespace SIMULTAN.Tests.IO
             LinkedResourceFileEntry file = new LinkedResourceFileEntry(projectData.AssetManager,
                 SimUserRole.BUILDING_DEVELOPER, "MyLinkedFile.txt", false, 12);
 
+            // get some tax entry to test tags
+            var taxEntry = TaxonomyUtils.GetDefaultTaxonomies().GetReservedParameter(ReservedParameterKeys.RP_AGGREGATION_OPERATION);
+            file.Tags.Add(new Data.Taxonomy.SimTaxonomyEntryReference(taxEntry));
+
             string exportedString = null;
             using (MemoryStream stream = new MemoryStream())
             {
@@ -516,6 +643,37 @@ namespace SIMULTAN.Tests.IO
             }
 
             AssertUtil.AreEqualMultiline(Properties.Resources.DXFSerializer_WriteLinkedResourceFile, exportedString);
+        }
+
+        [TestMethod]
+        public void ReadLinkedResourceFileV16()
+        {
+            ExtendedProjectData projectData = new ExtendedProjectData();
+            projectData.AssetManager.WorkingDirectory = new DirectoryInfo("./TestWorkingDirectory").FullName;
+            projectData.AssetManager.PathsToResourceFiles.Add(linkDirectory.FullName);
+            Guid guid = Guid.NewGuid();
+            var otherGuid = Guid.Parse("da7d8f7c-8eec-423b-b127-9d6e17f52522");
+
+            LinkedResourceFileEntry file = null;
+
+            using (DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_ReadCODXF_LinkedFileV16)))
+            {
+                var info = new DXFParserInfo(guid, projectData);
+                info.FileVersion = 16;
+
+                reader.Read();
+
+                file = ComponentDxfIOResources.LinkedResourceFileEntityElement.Parse(reader, info) as LinkedResourceFileEntry;
+            }
+
+            Assert.IsNotNull(file);
+            Assert.AreEqual("MyLinkedFile.txt", file.CurrentRelativePath);
+            Assert.AreEqual(SimUserRole.BUILDING_DEVELOPER, file.UserWithWritingAccess);
+            Assert.AreEqual(12, file.Key);
+            Assert.AreEqual(SimComponentVisibility.AlwaysVisible, file.Visibility);
+            Assert.AreEqual(1, file.Tags.Count);
+            Assert.AreEqual(guid, file.Tags[0].TaxonomyEntryId.GlobalId);
+            Assert.AreEqual(47, file.Tags[0].TaxonomyEntryId.LocalId);
         }
 
         [TestMethod]

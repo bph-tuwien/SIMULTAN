@@ -1,14 +1,9 @@
 ﻿using SIMULTAN.Serializer.DXF;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SIMULTAN.Data.Components
 {
     /// <summary>
-    /// Specifies the type of operations expected on a <see cref="SimParameter"/>
+    /// Specifies the type of operations expected on a <see cref="SimBaseParameter"/>
     /// </summary>
     [DXFSerializerTypeNameAttribute("ParameterStructure.Component.InfoFlow")]
     public enum SimInfoFlow

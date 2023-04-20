@@ -1,0 +1,36 @@
+﻿0
+PARAMETER
+1034
+2
+100
+SIMULTAN.Data.Components.SimBoolParameter
+900
+99
+1001
+Parameter X
+1003
+66592
+1004
+1
+1014
+2
+1007
+1
+1010
+text value with spaces
+1012
+3
+1013
+1
+1218
+2255
+1215
+3.00000000
+1216
+-1.50000000
+1217
+0.00000000
+1214
+graph 2
+0
+ENDSEC

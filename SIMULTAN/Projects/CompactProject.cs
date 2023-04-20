@@ -1,6 +1,5 @@
 ﻿using SIMULTAN.Projects.ManagedFiles;
 using SIMULTAN.Serializer.DXF;
-using SIMULTAN.Utils;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -56,9 +55,7 @@ namespace SIMULTAN.Projects
         /// </summary>
         public void UpdateBackupFile()
         {
-            int index = this.ProjectFile.FullName.LastIndexOf(ParamStructFileExtensions.FILE_EXT_PROJECT_COMPACT);
-
-            string path = this.ProjectFile.FullName.Substring(0, index) + ParamStructFileExtensions.FILE_EXT_PROJECT_COMPACT_BACKUP;
+            var path = Path.Combine(this.ProjectFile.DirectoryName, this.ProjectFile.Name + ParamStructFileExtensions.FILE_EXT_PROJECT_COMPACT_BACKUP);
             File.Delete(path);
             File.Copy(this.ProjectFile.FullName, path, false);
         }

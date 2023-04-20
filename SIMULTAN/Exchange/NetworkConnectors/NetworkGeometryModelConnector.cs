@@ -4,8 +4,6 @@ using SIMULTAN.Data.Geometry;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Media.Media3D;
 
 namespace SIMULTAN.Exchange.NetworkConnectors
@@ -292,7 +290,7 @@ namespace SIMULTAN.Exchange.NetworkConnectors
 
             foreach (var subNet in network.ContainedFlowNetworks.Values)
                 UpdateEdges(subNet, existingConnectors);
-        }    
+        }
         private void AddEdge(SimFlowNetworkEdge edge, Dictionary<ulong, BaseNetworkConnector> existingConnectors)
         {
             var startNode = edge.Start is SimFlowNetwork ? ((SimFlowNetwork)edge.Start).ConnectionToParentExitNode : edge.Start;
@@ -413,7 +411,7 @@ namespace SIMULTAN.Exchange.NetworkConnectors
                 }
             }
         }
-    
+
         /// <summary>
         /// Frees all ressources created by this connector and detaches all event handler
         /// </summary>

@@ -100,7 +100,7 @@ namespace SIMULTAN.Serializer.METADXF
         internal static HierarchicProjectMetaData Read(DXFStreamReader reader, DXFParserInfo parserInfo)
         {
             //Version section
-            if(CommonParserElements.VersionSectionElement.IsParsable(reader, parserInfo))
+            if (CommonParserElements.VersionSectionElement.IsParsable(reader, parserInfo))
             {
                 parserInfo = CommonParserElements.VersionSectionElement.Parse(reader, parserInfo).First();
             }

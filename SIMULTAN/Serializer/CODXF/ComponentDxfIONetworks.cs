@@ -330,7 +330,7 @@ namespace SIMULTAN.Serializer.CODXF
 
             try
             {
-                return new SimFlowNetworkEdge(info.GlobalId, id, name, description, isValid, 
+                return new SimFlowNetworkEdge(info.GlobalId, id, name, description, isValid,
                     startId, endId)
                 {
                     RepresentationReference = new Data.GeometricReference(geomFile, geomId)
@@ -362,7 +362,7 @@ namespace SIMULTAN.Serializer.CODXF
         {
             var suffixOperands = data.Get<string>(FlowNetworkSaveCode.CALC_RULE_SUFFIX_OPERANDS, string.Empty);
             var suffixResult = data.Get<string>(FlowNetworkSaveCode.CALC_RULE_SUFFIX_RESULT, string.Empty);
-            var direction = data.Get<SimFlowNetworkCalcDirection>(FlowNetworkSaveCode.CALC_RULE_DIRECTION, 
+            var direction = data.Get<SimFlowNetworkCalcDirection>(FlowNetworkSaveCode.CALC_RULE_DIRECTION,
                 SimFlowNetworkCalcDirection.Forward);
             var op = data.Get<SimFlowNetworkOperator>(FlowNetworkSaveCode.CALC_RULE_OPERATOR, SimFlowNetworkOperator.Addition);
 

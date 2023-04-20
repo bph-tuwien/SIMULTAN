@@ -1,0 +1,24 @@
+﻿0
+PARAMETER
+1034
+3
+900
+99
+1001
+Parameter X
+1003
+66592
+1017
+1201
+1004
+1
+1014
+2
+1007
+test string
+1010
+text value with spaces
+1012
+3
+1013
+1

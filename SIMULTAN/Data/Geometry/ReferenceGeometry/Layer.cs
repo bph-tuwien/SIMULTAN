@@ -172,7 +172,7 @@ namespace SIMULTAN.Data.Geometry
             this.Layers = new ObservableCollection<Layer>();
 
             this.Layers.CollectionChanged += Layers_CollectionChanged;
-            AttachEvents();   
+            AttachEvents();
         }
 
         /// <summary>

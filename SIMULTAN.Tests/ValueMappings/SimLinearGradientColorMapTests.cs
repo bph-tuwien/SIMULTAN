@@ -25,7 +25,7 @@ namespace SIMULTAN.Tests.ValueMappings
         {
             Assert.ThrowsException<ArgumentNullException>(() => { new SimLinearGradientColorMap(null); });
 
-            var map = new SimLinearGradientColorMap(new SimColorMarker[] 
+            var map = new SimLinearGradientColorMap(new SimColorMarker[]
             {
                 new SimColorMarker(1.0, Colors.Red),
                 new SimColorMarker(5.0, Colors.Blue)

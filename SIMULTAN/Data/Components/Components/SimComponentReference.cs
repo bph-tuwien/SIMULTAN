@@ -1,4 +1,5 @@
-﻿using SIMULTAN.Utils;
+﻿using SIMULTAN.Data.Taxonomy;
+using SIMULTAN.Utils;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -94,7 +95,14 @@ namespace SIMULTAN.Data.Components
             {
                 if (this.slot != value)
                 {
+                    if (slot.SlotBase != null)
+                        slot.SlotBase.RemoveDeleteAction();
+
                     this.slot = value;
+
+                    if (slot.SlotBase != null)
+                        slot.SlotBase.SetDeleteAction(SlotBaseTaxonomyEntryDeleted);
+
                     NotifyPropertyChanged(nameof(Slot));
                 }
             }
@@ -184,6 +192,14 @@ namespace SIMULTAN.Data.Components
             if (this.Owner == null || this.Owner.Factory == null)
                 throw new InvalidOperationException("Reference has to be added to an active component first");
 
+            if (!(Slot.SlotBase is SimPlaceholderTaxonomyEntryReference))
+            {
+                var entry = Owner.Factory.ProjectData.IdGenerator.GetById<SimTaxonomyEntry>(Slot.SlotBase.TaxonomyEntryId);
+                if (entry == null)
+                    throw new TaxonomyEntryNotFoundException(String.Format("Slot taxonomy entry with id {0} of component Reference could not be found", Slot.SlotBase.TaxonomyEntryId));
+                this.Slot = new SimSlot(new SimTaxonomyEntryReference(entry), Slot.SlotExtension);
+            }
+
             if (this.Target == null)
             {
                 this.Target = this.Owner.Factory.ProjectData.IdGenerator.GetById<SimComponent>(this.TargetId);
@@ -213,6 +229,15 @@ namespace SIMULTAN.Data.Components
         {
             this.Target = null;
             this.TargetId = SimId.Empty;
+        }
+
+        private void SlotBaseTaxonomyEntryDeleted(SimTaxonomyEntry caller)
+        {
+            if (Owner != null && Owner.Factory != null)
+            {
+                var undefinedTax = Owner.GetDefaultSlotTaxonomyEntry(SimDefaultSlotKeys.Undefined);
+                Slot = new SimSlot(new SimTaxonomyEntryReference(undefinedTax), Slot.SlotExtension);
+            }
         }
     }
 }

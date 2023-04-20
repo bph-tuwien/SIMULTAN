@@ -1,10 +1,7 @@
 ﻿using SIMULTAN.Excel;
 using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Runtime.CompilerServices;
 
 namespace SIMULTAN.Data
 {
@@ -28,7 +25,6 @@ namespace SIMULTAN.Data
         /// <summary>
         /// Returns only the local id of the instance.
         /// </summary>
-        [ExcelMappingProperty("SIM_OBJECT_LOCALID")]
         public long LocalID { get { return this.id.LocalId; } }
         /// <summary>
         /// Returns only the global location of the instance.
@@ -38,7 +34,6 @@ namespace SIMULTAN.Data
         /// <summary>
         /// The description of the object.
         /// </summary>
-        [ExcelMappingProperty("SIM_OBJECT_DESCRIPTION")]
         public string Description
         {
             get { return this.description; }
@@ -65,9 +60,12 @@ namespace SIMULTAN.Data
         /// Invokes the PropertyChanged event
         /// </summary>
         /// <param name="property">Name of the property</param>
-        protected virtual void NotifyPropertyChanged(string property)
+        protected virtual void NotifyPropertyChanged([CallerMemberName] string property = null)
         {
-            this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(property));
+            if (property != null)
+            {
+                this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(property));
+            }
         }
 
         #endregion

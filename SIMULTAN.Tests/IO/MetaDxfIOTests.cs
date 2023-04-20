@@ -5,7 +5,7 @@ using SIMULTAN.Serializer.DXF;
 using SIMULTAN.Serializer.METADXF;
 using SIMULTAN.Tests.Properties;
 using SIMULTAN.Tests.Util;
-using SIMULTAN.Tests.Utils;
+using SIMULTAN.Tests.TestUtils;
 using System;
 using System.Collections.Generic;
 using System.IO;

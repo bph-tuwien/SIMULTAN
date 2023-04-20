@@ -4,7 +4,7 @@ using SIMULTAN.Projects;
 using SIMULTAN.Serializer.DXF;
 using SIMULTAN.Serializer.SIMUSER;
 using SIMULTAN.Tests.Util;
-using SIMULTAN.Tests.Utils;
+using SIMULTAN.Tests.TestUtils;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -58,7 +58,7 @@ namespace SIMULTAN.Tests.IO
                 export = Encoding.UTF8.GetString(array);
             }
 
-            AssertUtil.AreEqualMultiline(Properties.Resources.DXFSerializer_SIMUSER_Empty, export);
+            AssertUtil.AreEqualMultiline(Properties.Resources.DXFSerializer_SIMUSER_WriteEmpty, export);
         }
 
         [TestMethod]
@@ -70,7 +70,7 @@ namespace SIMULTAN.Tests.IO
             List<SimUser> users = null;
             using (var reader = new DXFStreamReader(StringStream.Create(Properties.Resources.DXFSerializer_ReadSIMUSER_UsersV11)))
             {
-                users = SimUserDxfIO.Read(reader, new DXFParserInfo(id, projectData),false);
+                users = SimUserDxfIO.Read(reader, new DXFParserInfo(id, projectData), false);
             }
 
             Assert.AreEqual(2, users.Count);
@@ -142,7 +142,7 @@ namespace SIMULTAN.Tests.IO
                 export = Encoding.UTF8.GetString(array);
             }
 
-            AssertUtil.AreEqualMultiline(Properties.Resources.DXFSerializer_SIMUSER_Users, export);
+            AssertUtil.AreEqualMultiline(Properties.Resources.DXFSerializer_SIMUSER_WriteUsers, export);
         }
 
         [TestMethod]

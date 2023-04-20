@@ -14,6 +14,12 @@ namespace SIMULTAN.Projects.ManagedFiles
     /// </summary>
     public class ManagedTaxonomyFile : ManagedFile
     {
+        /// <summary>
+        /// Stores the version of the last loaded file. Might be used to handle restore operations
+        /// specific for a version.
+        /// </summary>
+        public ulong LoadedFileVersion { get; private set; }
+
         /// <inheritdoc/>
         public ManagedTaxonomyFile(ManagedFile _original, FileInfo _new_file_location) : base(_original, _new_file_location)
         {
@@ -27,7 +33,7 @@ namespace SIMULTAN.Projects.ManagedFiles
         /// <inheritdoc/>
         public override void Open(bool _clear_before_open)
         {
-            ProjectIO.OpenTaxonomyFile(File, ProjectData);
+            LoadedFileVersion = ProjectIO.OpenTaxonomyFile(File, ProjectData);
         }
 
         /// <inheritdoc/>

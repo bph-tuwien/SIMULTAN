@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SIMULTAN.Data.Geometry
 {
@@ -176,6 +172,24 @@ namespace SIMULTAN.Data.Geometry
                     );
             }
         }
+
+
+        /// <summary>
+        /// Returns the default permission set for Network models
+        /// </summary>
+        public static OperationPermission DefaultSimNetworkPermissions
+        {
+            get
+            {
+                return new OperationPermission(
+                    GeometryModelOperationPermissions.None,
+                    GeometryOperationPermissions.Move | GeometryOperationPermissions.Split | GeometryOperationPermissions.Unsplit | GeometryOperationPermissions.ModifyColor |
+                    GeometryOperationPermissions.ModifyName | GeometryOperationPermissions.ModifyParent,
+                    LayerOperationPermissions.ModifyColor
+                    );
+            }
+        }
+
 
         /// <summary>
         /// Returns a permission set that allows everything

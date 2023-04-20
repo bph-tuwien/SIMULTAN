@@ -12,7 +12,7 @@ namespace SIMULTAN.Data.ValueMappings
     /// Interface to unify mapping a set of values to a color
     /// </summary>
     public abstract class SimColorMap
-    { 
+    {
         /// <summary>
         /// The ValueMapping this color map belongs to
         /// </summary>

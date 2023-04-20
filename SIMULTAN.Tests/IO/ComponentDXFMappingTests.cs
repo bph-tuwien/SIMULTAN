@@ -6,14 +6,13 @@ using SIMULTAN.Serializer.CODXF;
 using SIMULTAN.Serializer.DXF;
 using SIMULTAN.Tests.Properties;
 using SIMULTAN.Tests.Util;
-using SIMULTAN.Tests.Utils;
+using SIMULTAN.Tests.TestUtils;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
-using System.Threading.Tasks;
 using static SIMULTAN.Data.Components.CalculatorMapping;
 
 namespace SIMULTAN.Tests.IO
@@ -31,12 +30,12 @@ namespace SIMULTAN.Tests.IO
             {
                 Id = new Data.SimId(guid, 123)
             };
-            component1.Parameters.Add(new SimParameter("I1", "", 15.0) 
+            component1.Parameters.Add(new SimDoubleParameter("I1", "", 15.0)
             {
                 Propagation = SimInfoFlow.Input,
                 Id = new Data.SimId(guid, 200)
             });
-            component1.Parameters.Add(new SimParameter("O1", "", 0.0)
+            component1.Parameters.Add(new SimDoubleParameter("O1", "", 0.0)
             {
                 Propagation = SimInfoFlow.Output,
                 Id = new Data.SimId(guid, 201)
@@ -46,20 +45,20 @@ namespace SIMULTAN.Tests.IO
             {
                 Id = new Data.SimId(guid, 124)
             };
-            component2.Parameters.Add(new SimParameter("I2", "", 20.0) 
+            component2.Parameters.Add(new SimDoubleParameter("I2", "", 20.0)
             {
                 Propagation = SimInfoFlow.Input,
                 Id = new Data.SimId(guid, 202)
             });
-            component2.Parameters.Add(new SimParameter("O2", "", 0.0) 
-            { 
+            component2.Parameters.Add(new SimDoubleParameter("O2", "", 0.0)
+            {
                 Propagation = SimInfoFlow.Output,
                 Id = new Data.SimId(guid, 203)
             });
 
-            var mapping = component2.CreateMappingTo("My Custom Mapping", component1, 
-                new MappingParameterTuple[] { new MappingParameterTuple(component2.Parameters[0], component1.Parameters[0]) },
-                new MappingParameterTuple[] { new MappingParameterTuple(component2.Parameters[1], component1.Parameters[1]) });
+            var mapping = component2.CreateMappingTo("My Custom Mapping", component1,
+                new MappingParameterTuple[] { new MappingParameterTuple(component2.Parameters[0] as SimDoubleParameter, component1.Parameters[0] as SimDoubleParameter) },
+                new MappingParameterTuple[] { new MappingParameterTuple(component2.Parameters[1] as SimDoubleParameter, component1.Parameters[1] as SimDoubleParameter) });
 
             string exportedString = null;
             using (MemoryStream stream = new MemoryStream())

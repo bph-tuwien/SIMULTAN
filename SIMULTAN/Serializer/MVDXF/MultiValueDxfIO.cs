@@ -167,7 +167,7 @@ namespace SIMULTAN.Serializer.MVDXF
         internal static void Read(DXFStreamReader reader, DXFParserInfo parserInfo)
         {
             //Version section
-            if(CommonParserElements.VersionSectionElement.IsParsable(reader, parserInfo))
+            if (CommonParserElements.VersionSectionElement.IsParsable(reader, parserInfo))
             {
                 parserInfo = CommonParserElements.VersionSectionElement.Parse(reader, parserInfo).First();
             }
@@ -237,10 +237,10 @@ namespace SIMULTAN.Serializer.MVDXF
             });
 
             //Data
-            sw.Write(MultiValueSaveCode.MVDATA_ROW_COUNT, table.Values.Count);
-            sw.Write(MultiValueSaveCode.MVDATA_COLUMN_COUNT, table.Values.Count > 0 ? table.Values[0].Count : 0);
+            sw.Write(MultiValueSaveCode.MVDATA_ROW_COUNT, table.Count(0));
+            sw.Write(MultiValueSaveCode.MVDATA_COLUMN_COUNT, table.Count(1));
 
-            ParallelBigTableSerializer ps = new ParallelBigTableSerializer(table.Values, 1000, 
+            ParallelBigTableSerializer ps = new ParallelBigTableSerializer(table, 1000,
                 (int)MultiValueSaveCode.MV_DATA);
             Task value_task = Task.Run(async () => await ps.SerializeValuesAsync(sw));
             value_task.Wait();
@@ -277,9 +277,9 @@ namespace SIMULTAN.Serializer.MVDXF
                 var columnHeaders = ParseHeader(data, MultiValueSaveCode.MV_COL_NAMES, MultiValueSaveCode.MV_COL_UNITS);
 
                 //Data
-                List<List<double>> values = new List<List<double>>(rowHeaders.Count);
+                List<List<object>> values = new List<List<object>>(rowHeaders.Count);
 
-                var valueTasks = data.Get<Task<List<List<double>>>[]>(MultiValueSaveCode.MVDATA_ROW_COUNT, null);
+                var valueTasks = data.Get<Task<List<List<object>>>[]>(MultiValueSaveCode.MVDATA_ROW_COUNT, null);
                 if (valueTasks != null)
                 {
                     Task.WaitAll(valueTasks);
@@ -472,8 +472,8 @@ namespace SIMULTAN.Serializer.MVDXF
             });
 
             //Graphs positions
-            sw.WriteNestedList<SimMultiValueFunctionPointList, Point3D>(MultiValueSaveCode.MVDATA_ROW_COUNT, 
-                field.Graphs.Select(x => x.Points), (x, ccode, lsw) => 
+            sw.WriteNestedList<SimMultiValueFunctionPointList, Point3D>(MultiValueSaveCode.MVDATA_ROW_COUNT,
+                field.Graphs.Select(x => x.Points), (x, ccode, lsw) =>
                 {
                     lsw.Write(ParamStructCommonSaveCode.X_VALUE, x.X);
                     lsw.Write(ParamStructCommonSaveCode.Y_VALUE, x.Y);

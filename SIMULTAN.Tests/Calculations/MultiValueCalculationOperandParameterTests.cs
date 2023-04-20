@@ -1,15 +1,12 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SIMULTAN.Data.Components;
 using SIMULTAN.Data.MultiValues;
-using SIMULTAN.Tests.Utils;
+using SIMULTAN.Tests.TestUtils;
 using SIMULTAN.Utils;
 using SIMULTAN.Utils.Randomize;
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SIMULTAN.Tests.Calculations
 {
@@ -63,11 +60,11 @@ namespace SIMULTAN.Tests.Calculations
         public void DefaultSettings()
         {
             LoadProject(calculationProject);
-            var demoParams = projectData.GetParameters("MVCalcEmpty");
+            var demoParams = projectData.GetParameters<SimDoubleParameter>("MVCalcEmpty");
 
             SimCalculation calc = new SimCalculation("a * a", "calc",
-                new Dictionary<string, SimParameter> { { "a", null } },
-                new Dictionary<string, SimParameter> { { "out", demoParams["out1"] } });
+                new Dictionary<string, SimDoubleParameter> { { "a", null } },
+                new Dictionary<string, SimDoubleParameter> { { "out", demoParams["out1"] } });
             calc.IsMultiValueCalculation = true;
 
             var aMeta = calc.InputParams.GetMetaData("a");
@@ -87,11 +84,11 @@ namespace SIMULTAN.Tests.Calculations
         public void SymbolNotBound()
         {
             LoadProject(calculationProject);
-            var demoParams = projectData.GetParameters("MVCalcEmpty");
+            var demoParams = projectData.GetParameters<SimDoubleParameter>("MVCalcEmpty");
 
             SimCalculation calc = new SimCalculation("a * a", "calc",
-                new Dictionary<string, SimParameter> { { "a", null } },
-                new Dictionary<string, SimParameter> { { "out", demoParams["out1"] } });
+                new Dictionary<string, SimDoubleParameter> { { "a", null } },
+                new Dictionary<string, SimDoubleParameter> { { "out", demoParams["out1"] } });
             calc.IsMultiValueCalculation = true;
             var aOperand = FindOperand(calc, "a");
 
@@ -104,11 +101,11 @@ namespace SIMULTAN.Tests.Calculations
         public void ParameterBound()
         {
             LoadProject(calculationProject);
-            var demoParams = projectData.GetParameters("MVCalcEmpty");
+            var demoParams = projectData.GetParameters<SimDoubleParameter>("MVCalcEmpty");
 
             SimCalculation calc = new SimCalculation("a * a", "calc",
-                new Dictionary<string, SimParameter> { { "a", demoParams["in1"] } },
-                new Dictionary<string, SimParameter> { { "out", demoParams["out1"] } });
+                new Dictionary<string, SimDoubleParameter> { { "a", demoParams["in1"] } },
+                new Dictionary<string, SimDoubleParameter> { { "out", demoParams["out1"] } });
             calc.IsMultiValueCalculation = true;
             var aOperand = FindOperand(calc, "a");
 
@@ -128,11 +125,11 @@ namespace SIMULTAN.Tests.Calculations
         public void ParameterRange()
         {
             LoadProject(calculationProject);
-            var demoParams = projectData.GetParameters("MVCalcEmpty");
+            var demoParams = projectData.GetParameters<SimDoubleParameter>("MVCalcEmpty");
 
             SimCalculation calc = new SimCalculation("a * a", "calc",
-                new Dictionary<string, SimParameter> { { "a", demoParams["in1"] } },
-                new Dictionary<string, SimParameter> { { "out", demoParams["out1"] } });
+                new Dictionary<string, SimDoubleParameter> { { "a", demoParams["in1"] } },
+                new Dictionary<string, SimDoubleParameter> { { "out", demoParams["out1"] } });
             calc.IsMultiValueCalculation = true;
             var aOperand = FindOperand(calc, "a");
             var aMeta = calc.InputParams.GetMetaData("a");
@@ -196,11 +193,11 @@ namespace SIMULTAN.Tests.Calculations
             CalculationParameterMetaData.Randomizer = new FakeRandomizer(9);
 
             LoadProject(calculationProject);
-            var demoParams = projectData.GetParameters("MVCalcEmpty");
+            var demoParams = projectData.GetParameters<SimDoubleParameter>("MVCalcEmpty");
 
             SimCalculation calc = new SimCalculation("a * a", "calc",
-                new Dictionary<string, SimParameter> { { "a", demoParams["in_scalar1"] } },
-                new Dictionary<string, SimParameter> { { "out", demoParams["out1"] } });
+                new Dictionary<string, SimDoubleParameter> { { "a", demoParams["in_scalar1"] } },
+                new Dictionary<string, SimDoubleParameter> { { "out", demoParams["out1"] } });
             calc.IsMultiValueCalculation = true;
 
             var aOperand = FindOperand(calc, "a");
@@ -225,11 +222,11 @@ namespace SIMULTAN.Tests.Calculations
             CalculationParameterMetaData.Randomizer = new FakeRandomizer(9);
 
             LoadProject(calculationProject);
-            var demoParams = projectData.GetParameters("MVCalcEmpty");
+            var demoParams = projectData.GetParameters<SimDoubleParameter>("MVCalcEmpty");
 
             SimCalculation calc = new SimCalculation("a * a", "calc",
-                new Dictionary<string, SimParameter> { { "a", demoParams["in_scalar1"] } },
-                new Dictionary<string, SimParameter> { { "out", demoParams["out1"] } });
+                new Dictionary<string, SimDoubleParameter> { { "a", demoParams["in_scalar1"] } },
+                new Dictionary<string, SimDoubleParameter> { { "out", demoParams["out1"] } });
             calc.IsMultiValueCalculation = true;
 
             var aOperand = FindOperand(calc, "a");
@@ -257,11 +254,11 @@ namespace SIMULTAN.Tests.Calculations
             CalculationParameterMetaData.Randomizer = new FakeRandomizer(9);
 
             LoadProject(calculationProject);
-            var demoParams = projectData.GetParameters("MVCalcEmpty");
+            var demoParams = projectData.GetParameters<SimDoubleParameter>("MVCalcEmpty");
 
             SimCalculation calc = new SimCalculation("a * a", "calc",
-                new Dictionary<string, SimParameter> { { "a", demoParams["in_scalar1"] } },
-                new Dictionary<string, SimParameter> { { "out", demoParams["out1"] } });
+                new Dictionary<string, SimDoubleParameter> { { "a", demoParams["in_scalar1"] } },
+                new Dictionary<string, SimDoubleParameter> { { "out", demoParams["out1"] } });
             calc.IsMultiValueCalculation = true;
 
             var aOperand = FindOperand(calc, "a");
@@ -305,11 +302,11 @@ namespace SIMULTAN.Tests.Calculations
             CalculationParameterMetaData.Randomizer = new FakeRandomizer(9);
 
             LoadProject(calculationProject);
-            var demoParams = projectData.GetParameters("MVCalcEmpty");
+            var demoParams = projectData.GetParameters<SimDoubleParameter>("MVCalcEmpty");
 
             SimCalculation calc = new SimCalculation("a * a", "calc",
-                new Dictionary<string, SimParameter> { { "a", demoParams["in_scalar1"] } },
-                new Dictionary<string, SimParameter> { { "out", demoParams["out1"] } });
+                new Dictionary<string, SimDoubleParameter> { { "a", demoParams["in_scalar1"] } },
+                new Dictionary<string, SimDoubleParameter> { { "out", demoParams["out1"] } });
             calc.IsMultiValueCalculation = true;
 
             var aOperand = FindOperand(calc, "a");
@@ -385,18 +382,17 @@ namespace SIMULTAN.Tests.Calculations
 
             calc.Calculate(projectData.ValueManager);
 
-            var resultParam = calcComp.Parameters.First(x => x.TaxonomyEntry.Name == "out");
+            var resultParam = calcComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "out");
 
-            Assert.IsTrue(resultParam.MultiValuePointer != null);
-            Assert.IsTrue(resultParam.MultiValuePointer.ValueField != null);
-            Assert.IsTrue(resultParam.MultiValuePointer.ValueField is SimMultiValueBigTable);
+            Assert.IsTrue(resultParam.ValueSource != null);
+            Assert.IsTrue(resultParam.ValueSource is SimMultiValueBigTableParameterSource);
 
-            var resultTable = (SimMultiValueBigTable)resultParam.MultiValuePointer.ValueField;
-            AssertUtil.ContainEqualValues(new double[,]
+            var resultTable = ((SimMultiValueBigTableParameterSource)resultParam.ValueSource).Table;
+            AssertUtil.ContainEqualValues(new object[,]
             {
-                { 4, 9 },
-                { 16, 25 },
-                { 36, 49 }
+                { 4.0, 9.0 },
+                { 16.0, 25.0 },
+                { 36.0, 49.0 }
             }, resultTable);
         }
 

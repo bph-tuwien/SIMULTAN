@@ -3,7 +3,6 @@ using SIMULTAN.Data.Assets;
 using SIMULTAN.Data.Components;
 using SIMULTAN.Data.Geometry;
 using SIMULTAN.Data.MultiValues;
-using SIMULTAN.Data.SitePlanner;
 using SIMULTAN.Data.Users;
 using SIMULTAN.Exceptions;
 using SIMULTAN.Projects.ManagedFiles;
@@ -35,10 +34,17 @@ namespace SIMULTAN.Projects
     {
         #region Collections
 
+        /// <summary>
+        /// Collection for storing child projects
+        /// </summary>
         public class ChildProjectCollection : ObservableCollection<HierarchicalProject>
         {
             private HierarchicalProject owner;
 
+            /// <summary>
+            /// Initializes a new instance of the <see cref="ChildProjectCollection"/>
+            /// </summary>
+            /// <param name="owner"></param>
             public ChildProjectCollection(HierarchicalProject owner)
             {
                 this.owner = owner;
@@ -247,7 +253,7 @@ namespace SIMULTAN.Projects
                     this.all_project_data_managers.AssetManager.ChildResourceCollectionChanged -= Resources_CollectionChanged;
                     this.all_project_data_managers.AssetManager.ResourceRenamed -= Resource_Renamed;
                     this.all_project_data_managers.ParameterLibraryManager.ParameterRecord.CollectionChanged -= ParameterRecord_CollectionChanged;
-                    this.all_project_data_managers.ExcelToolMappingManager.RegisteredTools.CollectionChanged -= ExcelToolRecord_CollectionChanged;
+                    this.all_project_data_managers.DataMappingTools.CollectionChanged -= DataMappingTools_CollectionChanged;
                 }
 
                 this.all_project_data_managers = value;
@@ -260,7 +266,7 @@ namespace SIMULTAN.Projects
                     this.all_project_data_managers.AssetManager.ChildResourceCollectionChanged += Resources_CollectionChanged;
                     this.all_project_data_managers.AssetManager.ResourceRenamed += Resource_Renamed;
                     this.all_project_data_managers.ParameterLibraryManager.ParameterRecord.CollectionChanged += ParameterRecord_CollectionChanged;
-                    this.all_project_data_managers.ExcelToolMappingManager.RegisteredTools.CollectionChanged += ExcelToolRecord_CollectionChanged;
+                    this.all_project_data_managers.DataMappingTools.CollectionChanged += DataMappingTools_CollectionChanged;
                 }
             }
         }
@@ -545,7 +551,7 @@ namespace SIMULTAN.Projects
         /// </summary>
         /// <param name="_parameter">the querying parameter</param>
         /// <returns>true if the containing parameter is in this project</returns>
-        public bool IsInProject(SimParameter _parameter)
+        public bool IsInProject(SimBaseParameter _parameter)
         {
             if (_parameter == null)
                 throw new ArgumentNullException(nameof(_parameter));
@@ -845,7 +851,7 @@ namespace SIMULTAN.Projects
                 return (del_test.exists, del_test.can_delete);
 
             //Remove from siteplanner (in case of siteplanner file)
-            if (_resource_to_delete is ContainedResourceFileEntry fe && fe.Extension == ParamStructFileExtensions.FILE_EXT_SITEPLANNER)
+            if (_resource_to_delete is ContainedResourceFileEntry fe && Path.GetExtension(fe.Name) == ParamStructFileExtensions.FILE_EXT_SITEPLANNER)
             {
                 var spProject = this.AllProjectDataManagers.SitePlannerManager.SitePlannerProjects.FirstOrDefault(x => x.SitePlannerFile == fe);
                 if (spProject != null)
@@ -853,6 +859,12 @@ namespace SIMULTAN.Projects
                     this.AllProjectDataManagers.ComponentGeometryExchange.RemoveSiteplannerProject(spProject);
                     this.AllProjectDataManagers.SitePlannerManager.SitePlannerProjects.Remove(spProject);
                 }
+            }
+
+            // remove relations of geometry file
+            if (_resource_to_delete is ContainedResourceFileEntry cfe && Path.GetExtension(cfe.Name) == ParamStructFileExtensions.FILE_EXT_GEOMETRY_INTERNAL)
+            {
+                AllProjectDataManagers.GeometryRelations.RemoveWhere(x => x.Source.FileId == cfe.Key || x.Target.FileId == cfe.Key);
             }
 
             DisableProjectUnpackFolderWatcher();
@@ -968,7 +980,7 @@ namespace SIMULTAN.Projects
 
             var geometry = new GeometryModelData();
             geometry.Layers.Add(new Layer(geometry, "0") { Color = new DerivedColor(Colors.White) });
-            var model = new GeometryModel(Guid.NewGuid(), _initial_file_name, resource, OperationPermission.DefaultWallModelPermissions, geometry);
+            var model = new GeometryModel(_initial_file_name, resource, OperationPermission.DefaultWallModelPermissions, geometry);
 
             try
             {
@@ -1570,16 +1582,16 @@ namespace SIMULTAN.Projects
 
         }
 
-        private void ExcelToolRecord_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+        private void DataMappingTools_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
             if (!this.IsLoaded || this.IsLoadingData || this.IsUnloadingData) return;
 
             // check for adding a managed file
             if (e.Action == NotifyCollectionChangedAction.Add)
             {
-                if (this.AllProjectDataManagers.ExcelToolMappingManager.RegisteredTools.Count > 0)
+                if (this.AllProjectDataManagers.DataMappingTools.Any())
                 {
-                    if (this.ManagedFiles.ExcelToolEntries.Count() == 0)
+                    if (this.ManagedFiles.ExcelToolEntries.Any())
                     {
                         // an excel tool library file needs to be created and saved
                         string file_path_excel_lib = Path.Combine(this.ProjectUnpackFolder.FullName, "ExcelToolLibrary" + ParamStructFileExtensions.FILE_EXT_EXCEL_TOOL_COLLECTION);
@@ -1762,7 +1774,7 @@ namespace SIMULTAN.Projects
                     FileState.WaitFile(resource_file);
                     localDispatcher.Invoke(new Action(() =>
                     {
-                        resource.OnResourceChanged();
+                        resource.NotifyResourceChanged();
                     }));
                 }
                 catch (TimeoutException)
@@ -2032,6 +2044,7 @@ namespace SIMULTAN.Projects
 
             this.AllProjectDataManagers.ValueManager.ResetChanges();
             this.AllProjectDataManagers.Components.ResetChanges();
+            this.AllProjectDataManagers.GeometryRelations.ResetChanges();
         }
 
         /// <summary>
@@ -2133,9 +2146,15 @@ namespace SIMULTAN.Projects
             GetAssociatedFiles();
 
             // Load default taxonomies, everything else needs to be loaded first so IDs don't collide, then merge them with existing ones
-            if(LoadDefaultTaxonomies(_data_manager))
+            if (LoadDefaultTaxonomies(_data_manager))
             {
-                _data_manager.Components.RestoreDefaultTaxonomyReferences();
+                var managedTaxonomyFile = managed_files.Files.FirstOrDefault(x => x is ManagedTaxonomyFile);
+                ulong version = 0;
+                if (managedTaxonomyFile != null)
+                {
+                    version = ((ManagedTaxonomyFile)managedTaxonomyFile).LoadedFileVersion;
+                }
+                _data_manager.Components.RestoreDefaultTaxonomyReferences(version);
             }
 
             // done
@@ -2143,15 +2162,22 @@ namespace SIMULTAN.Projects
             IsLoadingData = false;
         }
 
-        private static bool LoadDefaultTaxonomies(ExtendedProjectData projectData)
+        /// <summary>
+        /// Loads the default taxonomies into the provided <see cref="ExtendedProjectData"/>.
+        /// The imported default taxonomies are merged with the existing ones. It also retrun if changes to the existing default
+        /// taxonomies were made. If changes were made, existing references need to be restored on components by calling <see cref="SimComponentCollection.RestoreDefaultTaxonomyReferences"/>
+        /// </summary>
+        /// <param name="projectData">The project data to load the taxonomies into.</param>
+        /// <returns>True if the existing default taxonomies were changed by the import.</returns>
+        public static bool LoadDefaultTaxonomies(ExtendedProjectData projectData)
         {
             var assembly = Assembly.GetExecutingAssembly();
             bool hasChanged = false;
-            using (var default_tax_stream = assembly.GetManifestResourceStream("SIMULTAN.Data.Taxonomy.Default.default_taxonomies.txdxf")) 
+            using (var default_tax_stream = assembly.GetManifestResourceStream("SIMULTAN.Data.Taxonomy.Default.default_taxonomies.txdxf"))
             {
                 var dummyProjectData = new ExtendedProjectData();
-                dummyProjectData.SetCallingLocation(new DummyReferenceLocation(projectData.Project.GlobalID));
-                var tmpParserInfo = new DXFParserInfo(projectData.Project.GlobalID, dummyProjectData);
+                dummyProjectData.SetCallingLocation(new DummyReferenceLocation(Guid.Empty));
+                var tmpParserInfo = new DXFParserInfo(Guid.Empty, dummyProjectData);
                 SimTaxonomyDxfIO.Import(new DXFStreamReader(default_tax_stream), tmpParserInfo);
                 hasChanged = projectData.Taxonomies.MergeWithDefaults(dummyProjectData.Taxonomies);
             }

@@ -169,28 +169,5 @@ namespace SIMULTAN.Data.FlowNetworks
 
             return null;
         }
-
-        public void UpdateRealization()
-        {
-        }
-
-        internal override void CommunicatePositionUpdateToContent()
-        {
-            if (this.Content != null && this.RepresentationReference == GeometricReference.Empty)
-            {
-                var placement = (SimInstancePlacementNetwork)this.Content.Placements.FirstOrDefault(x => x is SimInstancePlacementNetwork p && p.NetworkElement == this);
-                if (placement != null)
-                {
-                    var nwOffset = GetOffset();
-                    var startPos = new Point3D((Start.Position.X + nwOffset.X) * placement.PathScale, 0, (Start.Position.Y + nwOffset.Y) * placement.PathScale);
-                    var endPos = new Point3D((End.Position.X + nwOffset.X) * placement.PathScale, 0, (End.Position.Y + nwOffset.Y) * placement.PathScale);
-
-                    using (AccessCheckingDisabler.Disable(this.Content.Component.Factory))
-                    {
-                        this.Content.InstancePath = new List<Point3D> { startPos, endPos };
-                    }
-                }
-            }
-        }
     }
 }

@@ -143,7 +143,17 @@ namespace SIMULTAN.Serializer.CSV
                 for (int i = 0; i < table.ColumnHeaders.Count; i++)
                 {
                     var cel = table[j, i];
-                    data_row_list_record.Add(cel.ToString(cNf));
+
+                    if (cel is double d)
+                        data_row_list_record.Add(d.ToString(cNf));
+                    else if (cel is int n)
+                        data_row_list_record.Add(n.ToString(cNf));
+                    else if (cel is bool b)
+                        data_row_list_record.Add(b.ToString());
+                    else if (cel is string s)
+                        data_row_list_record.Add(s);
+                    else
+                        data_row_list_record.Add(string.Empty);
                 }
                 //data_row_list.Add(data_col_list);
 

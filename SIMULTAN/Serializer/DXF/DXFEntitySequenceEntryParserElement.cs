@@ -55,8 +55,15 @@ namespace SIMULTAN.Serializer.DXF
         /// </summary>
         /// <param name="code">The code of this entry</param>
         /// <param name="entityElement">The entity in this collection</param>
-        internal DXFEntitySequenceEntryParserElement(ExcelMappingSaveCode code, DXFEntityParserElementBase<T> entityElement)
+        internal DXFEntitySequenceEntryParserElement(DataMappingSaveCode code, DXFEntityParserElementBase<T> entityElement)
             : this((int)code, entityElement) { }
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DXFEntitySequenceEntryParserElement{T}"/> class
+        /// </summary>
+        /// <param name="code">The code of this entry</param>
+        /// <param name="entityElements">The entity in this collection</param>
+        internal DXFEntitySequenceEntryParserElement(DataMappingSaveCode code, IEnumerable<DXFEntityParserElementBase<T>> entityElements)
+            : this((int)code, entityElements) { }
         /// <summary>
         /// Initializes a new instance of the <see cref="DXFEntitySequenceEntryParserElement{T}"/> class
         /// </summary>
@@ -142,7 +149,7 @@ namespace SIMULTAN.Serializer.DXF
 
             return ParseBody(reader, info, count);
         }
-    
+
         /// <summary>
         /// Parses the data from a DXF stream and converts it into an object
         /// </summary>

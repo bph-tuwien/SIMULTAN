@@ -4,13 +4,27 @@ using System.Collections.Generic;
 
 namespace SIMULTAN.Data.SimNetworks
 {
-    public partial class SimNetwork : BaseSimNetworkElement
+    public partial class SimNetwork : BaseSimNetworkElement, INetwork
     {
         /// <summary>
         /// Collection storing the <see cref="SimNetwork"/>, and also serves as the Factory for the contained elements, handling the ID assignment
         /// </summary>
         public class SimNetworkCollection : SimManagedCollection<SimNetwork>
         {
+
+            /// <summary>
+            /// Sets IndexOfGeometricRepFile to -1 for SimNetworks in the collection which has resource_id as the IndexOfGeometricRepFile
+            /// </summary>
+            /// <param name="resource_id">The id of the resource</param>
+            public void DisconnectAllInstances(int resource_id)
+            {
+                foreach (SimNetwork nw in this)
+                {
+                    if (nw.IndexOfGeometricRepFile == resource_id)
+                        nw.IndexOfGeometricRepFile = -1;
+                }
+            }
+
 
             /// <summary>
             /// Initializes a new instance of the SimNetworkCollection class
@@ -111,7 +125,7 @@ namespace SIMULTAN.Data.SimNetworks
                 item.OnIsBeingDeleted();
                 this.ProjectData.IdGenerator.Remove(item);
                 item.Id = new SimId(item.Id.GlobalId, item.Id.LocalId);
-                
+
                 item.ParentNetwork = null;
 
                 item.Factory = null;
@@ -167,7 +181,7 @@ namespace SIMULTAN.Data.SimNetworks
                 this.IsLoading = true;
             }
             /// <summary>
-            /// Ends the loading operation and reenables Id checking
+            /// Ends the loading operation and re-enables Id checking
             /// </summary>
             public void EndLoading()
             {

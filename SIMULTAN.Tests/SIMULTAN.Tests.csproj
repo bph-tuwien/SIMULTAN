@@ -85,6 +85,13 @@
     <Compile Include="Components\ReferenceTests.cs" />
     <Compile Include="Components\UserRootComponentCollectionTests.cs" />
     <Compile Include="Components\SlotTests.cs" />
+    <Compile Include="DataMapping\ComponentRuleTests.cs" />
+    <Compile Include="DataMapping\DataMappingToolTests.cs" />
+    <Compile Include="DataMapping\FaceRuleTests.cs" />
+    <Compile Include="DataMapping\InstanceRuleTests.cs" />
+    <Compile Include="DataMapping\ParameterRuleTests.cs" />
+    <Compile Include="DataMapping\ReadRuleTests.cs" />
+    <Compile Include="DataMapping\VolumeRuleTests.cs" />
     <Compile Include="Geometry\Algorithms\BaseGeometryAlgorithmsTests.cs" />
     <Compile Include="Geometry\Algorithms\FaceAlgorithmTests.cs" />
     <Compile Include="Geometry\Algorithms\GeoReferenceAlgorithmsTests.cs" />
@@ -98,7 +105,6 @@
     <Compile Include="Geometry\BaseGeometries\EdgeTests.cs" />
     <Compile Include="Geometry\BaseGeometries\FaceTests.cs" />
     <Compile Include="Geometry\BaseGeometries\GeometryModelTests.cs" />
-    <Compile Include="Geometry\BaseGeometries\GeometryReferenceTests.cs" />
     <Compile Include="Geometry\BaseGeometries\GeometrySelectionModelTests.cs" />
     <Compile Include="Geometry\BaseGeometries\LayerTests.cs" />
     <Compile Include="Geometry\BaseGeometries\PEdgeTests.cs" />
@@ -112,6 +118,16 @@
     <Compile Include="Geometry\EventData\PropertyChangedEventData.cs" />
     <Compile Include="Geometry\EventData\SelectionModelEventData.cs" />
     <Compile Include="Geometry\GeometryModelCollectionTests.cs" />
+    <Compile Include="Geometry\GeometryRelations\GeometryRelationsTests.cs" />
+    <Compile Include="Geometry\GeometryValueSource\EdgeLengthGeometrySourceTests.cs" />
+    <Compile Include="Geometry\GeometryValueSource\FaceAreaGeometrySourceTests.cs" />
+    <Compile Include="Geometry\GeometryValueSource\FaceInclineGeometrySourceTests.cs" />
+    <Compile Include="Geometry\GeometryValueSource\FaceOrientationGeometrySourceTests.cs" />
+    <Compile Include="Geometry\GeometryValueSource\VolumeCeilingElevationGeometrySourceTests.cs" />
+    <Compile Include="Geometry\GeometryValueSource\VolumeFloorAreaGeometrySourceTests.cs" />
+    <Compile Include="Geometry\GeometryValueSource\VolumeFloorElevationGeometrySourceTests.cs" />
+    <Compile Include="Geometry\GeometryValueSource\VolumeHeightGeometrySourceTests.cs" />
+    <Compile Include="Geometry\GeometryValueSource\VolumeVolumeGeometrySourceTests.cs" />
     <Compile Include="Instances\InstanceVertexGeometryTests.cs" />
     <Compile Include="Instances\InstanceEdgeGeometryTests.cs" />
     <Compile Include="Instances\InstanceFaceGeometryTests.cs" />
@@ -119,8 +135,6 @@
     <Compile Include="Instances\InstanceNetworkTests.cs" />
     <Compile Include="Instances\InstanceSitePlannerTests.cs" />
     <Compile Include="Instances\InstanceTests.cs" />
-    <Compile Include="Excel\FilterTests.cs" />
-    <Compile Include="Excel\MapablePropertiesTests.cs" />
     <Compile Include="Instances\InstanceVolumeGeometryTests.cs" />
     <Compile Include="IO\ComponentDXFPublicTests.cs" />
     <Compile Include="IO\ComponentDXFSimNetworkTests.cs" />
@@ -129,7 +143,6 @@
     <Compile Include="IO\ComponentDXFCalculationTests.cs" />
     <Compile Include="IO\ComponentDXFChatItemTests.cs" />
     <Compile Include="IO\ComponentDXFComponentTests.cs" />
-    <Compile Include="IO\ComponentDXFExcelMappingTests.cs" />
     <Compile Include="IO\ComponentDXFInstanceTests.cs" />
     <Compile Include="IO\ComponentDXFMappingTests.cs" />
     <Compile Include="IO\ComponentDXFNetworkTests.cs" />
@@ -138,12 +151,20 @@
     <Compile Include="IO\ComponentDXFTestsBase.cs" />
     <Compile Include="IO\ComponentDXFUserComponentListTests.cs" />
     <Compile Include="IO\ComponentDXFValueMappingTests.cs" />
+    <Compile Include="IO\ComponentParameterDXFTests\ComponentDxfDoubleParameterTests.cs" />
+    <Compile Include="IO\ComponentParameterDXFTests\ComponentDxfIntegerParameterTests.cs" />
+    <Compile Include="IO\ComponentParameterDXFTests\ComponentDxfStringParameterTests.cs" />
+    <Compile Include="IO\ComponentParameterDXFTests\ComponentDxfBoolParameterTests.cs" />
+    <Compile Include="IO\ComponentParameterDXFTests\ComponentDxfEnumParameterTests.cs" />
     <Compile Include="IO\ExcelDxfTests.cs" />
     <Compile Include="IO\MetaDxfIOTests.cs" />
     <Compile Include="IO\MultiValueDxfTests.cs" />
     <Compile Include="IO\GeoMapDxfTests.cs" />
     <Compile Include="IO\ParameterDXFTests.cs" />
     <Compile Include="IO\PPathTests.cs" />
+    <Compile Include="IO\ProjectIOTests.cs" />
+    <Compile Include="IO\GeometryRelationsFileMappingDXFTests.cs" />
+    <Compile Include="IO\SimGeometryRelationsDXFTests.cs" />
     <Compile Include="IO\SimLinksDXFTests.cs" />
     <Compile Include="IO\SitePlannerDXFTests.cs" />
     <Compile Include="IO\SimUserDXFTests.cs" />
@@ -153,37 +174,49 @@
     <Compile Include="Calculations\CalculationTests.cs" />
     <Compile Include="Calculations\MultiValueCalculationOperandParameterTests.cs" />
     <Compile Include="Calculations\MultiValueCalculationParserTests.cs" />
-    <Compile Include="Parameters\ParameterTests.cs" />
-    <Compile Include="Projects\ProjectImportExportTests.cs" />
+    <Compile Include="Parameters\BoolParameterTests.cs" />
+    <Compile Include="Parameters\EnumParameterTests.cs" />
+    <Compile Include="Parameters\StringParameterTests.cs" />
+    <Compile Include="Parameters\IntParameterTests.cs" />
+    <Compile Include="Parameters\ParameterMultiValuePointerTests.cs" />
+    <Compile Include="Parameters\DoubleParameterTests.cs" />
+    <Compile Include="Projects\ProjectExportImportTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <Compile Include="ResourceEntríes\ResourceEntryTests.cs" />
+    <Compile Include="SimNetworks\SimNetworkGeometryConnectorTests.cs" />
     <Compile Include="SimNetworks\SimNetworkTests.cs" />
     <Compile Include="StyleChecks\StyleChecks.cs" />
     <Compile Include="Taxonomy\TaxonomyTests.cs" />
     <Compile Include="UnitTestSetup.cs" />
-    <Compile Include="Util\AssertUtil.cs" />
-    <Compile Include="Util\BaseProjectTest.cs" />
-    <Compile Include="Util\CollectionChangedEventCounter.cs" />
-    <Compile Include="Util\DummyMachineHashGenerator.cs" />
-    <Compile Include="Util\DummyResourceFileEntry.cs" />
-    <Compile Include="Util\ProjectUtils.cs" />
-    <Compile Include="Util\PropertyChangedEventCounter.cs" />
-    <Compile Include="Util\PropertyTestUtils.cs" />
-    <Compile Include="Util\SimFactoryEventCounter.cs" />
-    <Compile Include="Util\StringStream.cs" />
-    <Compile Include="Util\UnitTestAuthentificationService.cs" />
+    <Compile Include="TestUtils\AssertUtil.cs" />
+    <Compile Include="TestUtils\BaseProjectTest.cs" />
+    <Compile Include="TestUtils\CollectionChangedEventCounter.cs" />
+    <Compile Include="TestUtils\DummyMachineHashGenerator.cs" />
+    <Compile Include="TestUtils\DummyResourceFileEntry.cs" />
+    <Compile Include="TestUtils\ProjectUtils.cs" />
+    <Compile Include="TestUtils\PropertyChangedEventCounter.cs" />
+    <Compile Include="TestUtils\PropertyTestUtils.cs" />
+    <Compile Include="TestUtils\SimFactoryEventCounter.cs" />
+    <Compile Include="TestUtils\StringStream.cs" />
+    <Compile Include="TestUtils\TaxonomyUtils.cs" />
+    <Compile Include="TestUtils\UnitTestAuthentificationService.cs" />
+    <Compile Include="Util\RowColumnRangeTests.cs" />
     <Compile Include="ValueMappings\SimThresholdColorMapTests.cs" />
     <Compile Include="ValueMappings\SimLinearGradientColorMapTests.cs" />
     <Compile Include="ValueMappings\SimPrefilterTests.cs" />
     <Compile Include="ValueMappings\SimValueMappingCollectionTests.cs" />
     <Compile Include="ValueMappings\SimValueMappingTests.cs" />
+    <Compile Include="Values\MultiValueBigTableBoolPointerTests.cs" />
+    <Compile Include="Values\MultiValueBigTableStringPointerTests.cs" />
+    <Compile Include="Values\MultiValueBigTableIntegerPointerTests.cs" />
     <Compile Include="Values\MultiValueFunctionPointerTests.cs" />
     <Compile Include="Values\SimMultiValueBigTableHeaderTests.cs" />
-    <Compile Include="Values\MultiValueBigTablePointerTests.cs" />
+    <Compile Include="Values\MultiValueBigTableDoublePointerTests.cs" />
     <Compile Include="Values\SimMultiValueBigTableTests.cs" />
     <Compile Include="Values\MultiValueField3DPointerTests.cs" />
     <Compile Include="Values\SimMultiValueCollectionTests.cs" />
@@ -223,7 +256,7 @@
     <None Include="EmptyProject.simultan">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="ExcelMappingFilterTests.simultan">
+    <None Include="ExcelMappingTests.simultan">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="Field3DTestsProject.simultan">
@@ -238,10 +271,19 @@
     <None Include="GeometryInstanceTestsProject.simultan">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Include="GeometryRelationsTest.simultan">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="GeometryValueSourceTests.simultan">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="InstancePropagationMigrationTest_v10.simultan">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="InstanceTestsProject.simultan">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="LegacyParentMigrationTest.simultan">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="ModelCleanupAlgorithmsTestProject.simultan">
@@ -254,7 +296,13 @@
     <None Include="ParameterTestsProject.simultan">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Include="ProjectUpgradeV16toV17.simultan">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="ReferencesTestProject.simultan">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="SimNetworkGeometryConnectorTest.simultan">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="SimultanSimNetworkUnitTest.simultan">
@@ -290,15 +338,82 @@
     <None Include="IO\MultiValueDXFResults\DXFSerializer_ReadMVDXF_EmptyV12.txt" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="IO\SiteplannerDXFResults\DXFSerializer_SPDXF_Associations.txt" />
-    <None Include="IO\SiteplannerDXFResults\DXFSerializer_SPDXF_Buildings.txt" />
-    <None Include="IO\SiteplannerDXFResults\DXFSerializer_SPDXF_GeoMaps.txt" />
-    <None Include="IO\SiteplannerDXFResults\DXFSerializer_SPDXF_Empty.txt" />
-    <None Include="IO\SimUserDXFResults\DXFSerializer_SIMUSER_UsersV12.txt" />
+    <None Include="IO\SiteplannerDXFResults\DXFSerializer_SPDXF_WriteAssociations.txt" />
+    <None Include="IO\SiteplannerDXFResults\DXFSerializer_SPDXF_WriteBuildings.txt" />
+    <None Include="IO\SiteplannerDXFResults\DXFSerializer_SPDXF_WriteGeoMaps.txt" />
+    <None Include="IO\SiteplannerDXFResults\DXFSerializer_SPDXF_WriteEmpty.txt" />
     <None Include="IO\GeoMapDXFResults\DXFSerializer_ReadGMDXF_MapResourceV12.txt" />
     <None Include="IO\GeoMapDXFResults\DXFSerializer_ReadGMDXF_GeoReferencesV12.txt" />
     <None Include="IO\ComponentDXFParameterResults\DXFSerializer_ReadCODXF_ParameterV14.txt" />
+    <None Include="IO\ComponentDXFParameterResults\DXFSerializer_WriteParameterWithGeometrySource.txt" />
+    <None Include="IO\ComponentDXFParameterResults\DXFSerializer_ReadCODXF_ParameterWithPointerV17.txt" />
+    <None Include="IO\ComponentDXFParameterResults\DXFSerializer_ReadCODXF_ParameterWithGeometrySourceV17.txt" />
+    <None Include="IO\ComponentDXFParameterResults\DXFSerializer_WriteParameterBool.txt" />
+    <None Include="IO\ComponentDXFParameterResults\DXFSerializer_WriteParameterWithGeometrySourceBool.txt" />
+    <None Include="IO\ComponentDXFParameterResults\DXFSerializer_WriteMVPointer_Field3D_Bool.txt" />
+    <None Include="IO\ComponentDXFParameterResults\DXFSerializer_ReadMVPointer_Field3DV19_Bool.txt" />
+    <None Include="IO\ComponentDXFParameterResults\DXFSerializer_ReadMVPointer_FunctionV12_Bool.txt" />
+    <None Include="IO\ComponentDXFParameterResults\DXFSerializer_WriteParameterWithPointer_Bool.txt" />
+    <None Include="IO\ComponentDXFParameterResults\DXFSerializer_ReadMVPointer_Field3DV12_Int.txt" />
+    <None Include="IO\ComponentDXFParameterResults\DXFSerializer_ReadMVPointer_FunctionV12_Int.txt" />
+    <None Include="IO\ComponentDXFParameterResults\DXFSerializer_WriteParameterWithGeometrySource_Int.txt" />
+    <None Include="IO\ComponentDXFParameterResults\DXFSerializer_WriteParameterWithPointer_Int.txt" />
+    <None Include="IO\ComponentDXFParameterResults\DXFSerializer_ReadMVPointer_Field3DV12_String.txt" />
+    <None Include="IO\ComponentDXFParameterResults\DXFSerializer_ReadMVPointer_FunctionV12_String.txt" />
+    <None Include="IO\ComponentDXFParameterResults\DXFSerializer_WriteParameterWithGeometrySource_String.txt" />
+    <None Include="IO\ComponentDXFParameterResults\DXFSerializer_WriteParameterWithPointer_String.txt" />
+    <None Include="IO\ComponentDXFParameterResults\DXFSerializer_WriteMVPointer_BigTable_Int.txt" />
+    <Content Include="IO\ComponentDXFParameterResults\DXFSerializer_ReadMVPointer_Field3DV19_Int.txt" />
+    <None Include="IO\ComponentDXFParameterResults\DXFSerializer_ReadMVPointer_Field3DV19_String.txt" />
+    <None Include="IO\ComponentDXFParameterResults\DXFSerializer_ReadMVPointer_FunctionV19_String.txt" />
     <Content Include="IO\ComponentDXFParameterResults\DXFSerializer_WriteParameterWithTaxonomyEntry.txt" />
+    <None Include="IO\ComponentDXFResourceResults\DXFSerializer_ReadCODXF_ResourceDirectoryV16.txt" />
+    <None Include="IO\ComponentDXFResourceResults\DXFSerializer_ReadCODXF_LinkedFileV16.txt" />
+    <None Include="IO\ComponentDXFResourceResults\DXFSerializer_ReadCODXF_ContainedFileV16.txt" />
+    <None Include="IO\MultiValueDXFResults\DXFSerializer_ReadMVDXF_BigTableV18.txt" />
+    <Content Include="IO\GeometryRelationsFileMappingResults\DXFSerializer_GRFMDXF_ReadEmptyV20.txt" />
+    <Content Include="IO\GeometryRelationsFileMappingResults\DXFSerializer_GRFMDXF_ReadMappingsV20.txt" />
+    <Content Include="IO\GeometryRelationsFileMappingResults\DXFSerializer_GRFMDXF_WriteMappings.txt" />
+    <Content Include="IO\GeometryRelationsFileMappingResults\DXFSerializer_GRFMDXF_WriteEmpty.txt" />
+    <Content Include="IO\SimGeometryRelationsDXFResults\DXFSerializer_GRDXF_ReadEmptyV20.txt" />
+    <Content Include="IO\SimGeometryRelationsDXFResults\DXFSerializer_GRDXF_ReadRelationsV20.txt" />
+    <None Include="IO\ComponentDXFParameterResults\DXFSerializer_WriteParameterWithTaxonomyEntry_Bool.txt" />
+    <None Include="IO\ComponentDXFParameterResults\DXFSerializer_WriteParameter_Int.txt" />
+    <None Include="IO\ComponentDXFParameterResults\DXFSerializer_WriteParameterWithTaxonomyEntry_Int.txt" />
+    <None Include="IO\ComponentDXFParameterResults\DXFSerializer_WriteParameter_String.txt" />
+    <None Include="IO\ComponentDXFParameterResults\DXFSerializer_WriteParameterWithTaxonomyEntry_String.txt" />
+    <None Include="IO\ComponentDXFParameterResults\DXFSerializer_WriteParameter_Enum.txt" />
+    <None Include="IO\ComponentDXFParameterResults\DXFSerializer_WriteParameterWithTaxonomyEntry_Enum.txt" />
+    <Content Include="IO\SimTaxonomyDXFResults\DXFSerializer_TXDXF_WriteEntries.txt" />
+    <Content Include="IO\SimTaxonomyDXFResults\DXFSerializer_TXDXF_WriteEmpty.txt" />
+    <None Include="IO\SimUserDXFResults\DXFSerializer_SIMUSER_WriteUsers.txt" />
+    <Content Include="IO\SimGeometryRelationsDXFResults\DXFSerializer_GRDXF_WriteRelations.txt" />
+    <Content Include="IO\SimGeometryRelationsDXFResults\DXFSerializer_GRDXF_WriteEmpty.txt" />
+    <None Include="IO\ExcelToolsResults\DXFSerializer_ETDXF_WriteDMRuleComponent.txt" />
+    <None Include="IO\ExcelToolsResults\DXFSerializer_ETDXF_ReadDMRuleComponentV21.txt" />
+    <None Include="IO\ExcelToolsResults\DXFSerializer_ETDXF_WriteDMRuleComponentChildren.txt" />
+    <None Include="IO\ExcelToolsResults\DXFSerializer_ETDXF_ReadDMRuleChildrenV21.txt" />
+    <None Include="IO\ExcelToolsResults\DXFSerializer_ETDXF_WriteDataMappingTool.txt" />
+    <None Include="IO\ExcelToolsResults\DXFSerializer_ETDXF_ReadDMToolV21.txt" />
+    <None Include="IO\ExcelToolsResults\DXFSerializer_ETDXF_ReadV21.txt" />
+    <None Include="IO\ExcelToolsResults\DXFSerializer_ETDXF_WriteDMRuleParameter.txt" />
+    <None Include="IO\ExcelToolsResults\DXFSerializer_ETDXF_ReadDMRuleParameterV21.txt" />
+    <None Include="IO\ExcelToolsResults\DXFSerializer_ETDXF_WriteDMRuleInstance.txt" />
+    <None Include="IO\ExcelToolsResults\DXFSerializer_ETDXF_WriteDMRuleInstanceChildren.txt" />
+    <None Include="IO\ExcelToolsResults\DXFSerializer_ETDXF_ReadDMRuleInstanceV21.txt" />
+    <None Include="IO\ExcelToolsResults\DXFSerializer_ETDXF_ReadDMRuleInstanceChildrenV21.txt" />
+    <None Include="IO\ExcelToolsResults\DXFSerializer_ETDXF_WriteDMRuleFace.txt" />
+    <None Include="IO\ExcelToolsResults\DXFSerializer_ETDXF_WriteDMRuleFaceChildren.txt" />
+    <None Include="IO\ExcelToolsResults\DXFSerializer_ETDXF_ReadDMRuleFaceV21.txt" />
+    <None Include="IO\ExcelToolsResults\DXFSerializer_ETDXF_ReadDMRuleFaceChildrenV21.txt" />
+    <None Include="IO\ExcelToolsResults\DXFSerializer_ETDXF_WriteDMRuleVolume.txt" />
+    <None Include="IO\ExcelToolsResults\DXFSerializer_ETDXF_WriteDMRuleVolumeChildren.txt" />
+    <None Include="IO\ExcelToolsResults\DXFSerializer_ETDXF_ReadDMRuleVolumeV21.txt" />
+    <None Include="IO\ExcelToolsResults\DXFSerializer_ETDXF_ReadDMRuleVolumeChildrenV21.txt" />
+    <None Include="IO\ExcelToolsResults\DXFSerializer_ETDXF_WriteDataMappingToolMappings.txt" />
+    <None Include="IO\ExcelToolsResults\DXFSerializer_ETDXF_ReadDMToolMappingsV21.txt" />
+    <None Include="IO\ExcelToolsResults\DXFSerializer_ETDXF_WriteDMReadRule.txt" />
+    <None Include="IO\ExcelToolsResults\DXFSerializer_ETDXF_ReadDMReadRuleV21.txt" />
     <Content Include="IO\SimTaxonomyDXFResults\DXFSerializer_TXDXF_Entries.txt" />
     <Content Include="IO\SimTaxonomyDXFResults\DXFSerializer_TXDXF_Empty.txt" />
     <None Include="IO\SimUserDXFResults\DXFSerializer_SIMUSER_Users.txt" />
@@ -320,8 +435,7 @@
     <None Include="IO\PPathResults\PPathSerializer_Read.txt" />
     <None Include="IO\PPathResults\PPathSerializer_Write.txt" />
     <None Include="IO\SimUserDXFResults\DXFSerializer_ReadSIMUSER_UsersV11.txt" />
-    <None Include="IO\SimUserDXFResults\DXFSerializer_SIMUSER_Empty.txt" />
-    <None Include="IO\SimUserDXFResults\DXFSerializer_SIMUSER_Users.txt" />
+    <None Include="IO\SimUserDXFResults\DXFSerializer_SIMUSER_WriteEmpty.txt" />
     <None Include="IO\SimUserDXFResults\DXFSerializer_ReadSIMUSER_UsersV12.txt" />
     <None Include="IO\SiteplannerDXFResults\DXFSerializer_SPDXF_AssociationsV5.txt" />
     <None Include="IO\SiteplannerDXFResults\DXFSerializer_SPDXF_AssociationsParseV12.txt" />
@@ -374,10 +488,6 @@
     <None Include="IO\ComponentDXFComponentResults\DXFSerializer_ReadCODXF_MultipleV4.txt" />
     <None Include="IO\ComponentDXFComponentResults\DXFSerializer_ReadCODXF_MultipleV1.txt" />
     <None Include="IO\ComponentDXFComponentResults\DXFSerializer_ReadCODXF_MultipleV0.txt" />
-    <Content Include="IO\ComponentDXFExcelMappingResults\DXFSerializer_ReadCODXF_ExcelMappingV8.txt" />
-    <Content Include="IO\ComponentDXFExcelMappingResults\DXFSerializer_ReadCODXF_ExcelMappingV11.txt" />
-    <Content Include="IO\ComponentDXFExcelMappingResults\DXFSerializer_ReadCODXF_ExcelMappingV12.txt" />
-    <Content Include="IO\ComponentDXFExcelMappingResults\DXFSerializer_WriteExcelMapping.txt" />
     <Content Include="IO\ComponentDXFFlowNetworkResults\DXFSerializer_ReadCODXF_FlowNetworkEdgeV11.txt" />
     <Content Include="IO\ComponentDXFFlowNetworkResults\DXFSerializer_ReadCODXF_FlowNetworkNodeV11.txt" />
     <Content Include="IO\ComponentDXFFlowNetworkResults\DXFSerializer_ReadCODXF_FlowNetworkNodeV12.txt" />
@@ -500,7 +610,7 @@
     <None Include="IO\GeoMapDXFResults\DXFSerializer_GMDXF_WriteMapResource.txt" />
     <None Include="IO\GeoMapDXFResults\DXFSerializer_GMDXF_WriteGeoReferences.txt" />
     <Content Include="IO\MultiValueDXFResults\DXFSerializer_ReadMVDXF_BigTableV10.txt" />
-    <None Include="IO\MultiValueDXFResults\DXFSerializer_MVDXF_Empty.txt" />
+    <None Include="IO\MultiValueDXFResults\DXFSerializer_MVDXF_WriteEmpty.txt" />
     <Content Include="IO\MultiValueDXFResults\DXFSerializer_ReadMVDXF_MultipleV3.txt" />
     <Content Include="IO\MultiValueDXFResults\DXFSerializer_ReadMVDXF_MultipleV5.txt" />
     <Content Include="IO\MultiValueDXFResults\DXFSerializer_ReadMVDXF_MultipleV12.txt" />

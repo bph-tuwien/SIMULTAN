@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 
 namespace SIMULTAN.Serializer.DXF
 {
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+
     public static class ParamStructFileExtensions
     {
         public const string FILE_EXT_COMPONENTS = ".codxf";
@@ -32,6 +34,8 @@ namespace SIMULTAN.Serializer.DXF
         public const string FILE_EXT_GEOMAP = ".gmdxf";
         public const string FILE_EXT_SITEPLANNER = ".spdxf";
         public const string FILE_EXT_TAXONOMY = ".txdxf";
+        public const string FILE_EXT_GEOMETRY_RELATIONS = ".grdxf";
+        public const string FILE_EXT_GEOMETRY_RELATIONS_FILE_MAPPINGS = ".grfmdxf";
 
         /// <summary>
         /// The file extension for the file saving all public resource paths.
@@ -60,10 +64,13 @@ namespace SIMULTAN.Serializer.DXF
                 FILE_EXT_GEOMAP,
                 FILE_EXT_SITEPLANNER,
                 FILE_EXT_TAXONOMY,
+                FILE_EXT_GEOMETRY_RELATIONS,
 
                 FILE_EXT_GEOMETRY_INTERNAL,
             };
             return exts;
         }
     }
+
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
 }

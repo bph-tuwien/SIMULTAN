@@ -182,7 +182,7 @@ namespace SIMULTAN.Serializer.SPDXF
                     siteplannerEntityElement
                 });
 
-        private static Dictionary<String, Type> typeLookup= null;
+        private static Dictionary<String, Type> typeLookup = null;
         private static Type LookupType(string typename)
         {
             if (typeLookup == null)
@@ -204,7 +204,7 @@ namespace SIMULTAN.Serializer.SPDXF
                 typeLookup.Add("SIMULTAN.Data.SitePlanner.AveragePrefilter", typeof(SimAveragePrefilter));
             }
 
-            if(typeLookup.TryGetValue(typename, out var type))
+            if (typeLookup.TryGetValue(typename, out var type))
             {
                 return type;
             }
@@ -237,7 +237,7 @@ namespace SIMULTAN.Serializer.SPDXF
             }
 
             //Version section
-            if(CommonParserElements.VersionSectionElement.IsParsable(reader, parserInfo))
+            if (CommonParserElements.VersionSectionElement.IsParsable(reader, parserInfo))
             {
                 parserInfo = CommonParserElements.VersionSectionElement.Parse(reader, parserInfo).First();
             }
@@ -302,7 +302,7 @@ namespace SIMULTAN.Serializer.SPDXF
             writer.WriteArray<SimValueMapping>(SitePlannerSaveCode.VALUE_MAPPING_ASSOCIATIONS, sitePlannerProject.ValueMappings,
                 (vm, w) =>
                 {
-                    w.WriteGlobalId(SitePlannerSaveCode.VALUE_MAPPING_GLOBAL_ID, vm.Id.GlobalId, 
+                    w.WriteGlobalId(SitePlannerSaveCode.VALUE_MAPPING_GLOBAL_ID, vm.Id.GlobalId,
                         projectData.SitePlannerManager.CalledFromLocation.GlobalID);
                     w.Write<long>(SitePlannerSaveCode.VALUE_MAPPING_LOCAL_ID, vm.Id.LocalId);
                 });
@@ -399,7 +399,7 @@ namespace SIMULTAN.Serializer.SPDXF
             id = new Data.SimId(id.GlobalId, info.TranslateId(typeof(SimMultiValue), id.LocalId)); // translates if version < 6
 
             var table = info.ProjectData.ValueManager.GetByID(id.GlobalId, id.LocalId) as SimMultiValueBigTable;
-            if(table == null)
+            if (table == null)
             {
                 throw new Exception("Could not find Multi Value Table for ValueAssociation");
             }
@@ -483,7 +483,7 @@ namespace SIMULTAN.Serializer.SPDXF
                 //Color Maps
                 var colorMapTypeString = result.Get<String>(SitePlannerSaveCode.VALUE_MAPPING_COLOR_MAP_TYPE, null);
                 var colorMapType = LookupType(colorMapTypeString);
-                if(!String.IsNullOrEmpty(colorMapTypeString) && colorMapType == null)
+                if (!String.IsNullOrEmpty(colorMapTypeString) && colorMapType == null)
                 {
                     throw new Exception("Could not find type of color map: " + colorMapTypeString);
                 }
@@ -505,7 +505,7 @@ namespace SIMULTAN.Serializer.SPDXF
                 //Pre Filter
                 var prefilterTypeString = result.Get<String>(SitePlannerSaveCode.VALUE_MAPPING_PREFILTER_TYPE, null);
                 var prefilterType = LookupType(prefilterTypeString);
-                if(!String.IsNullOrEmpty(prefilterTypeString) && prefilterType == null)
+                if (!String.IsNullOrEmpty(prefilterTypeString) && prefilterType == null)
                 {
                     throw new Exception("Could not find type of value prefilter: " + prefilterTypeString);
                 }

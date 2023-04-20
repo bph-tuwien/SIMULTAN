@@ -1,4 +1,4 @@
-﻿using System.Text;
+﻿using System.Linq;
 using System.Windows;
 using static SIMULTAN.Data.SimNetworks.SimNetworkPort;
 
@@ -9,6 +9,7 @@ namespace SIMULTAN.Data.SimNetworks
     /// </summary>
     public abstract partial class BaseSimNetworkElement : SimNamedObject<ISimManagedCollection>
     {
+
         /// <summary>
         /// Representing the parent network.
         /// </summary>
@@ -17,6 +18,17 @@ namespace SIMULTAN.Data.SimNetworks
         /// Representing incoming ports 
         /// </summary>
         public SimNetworkPortCollection Ports { get; internal set; }
+        /// <summary>
+        /// Tells whether any of the ports of the block is connected 
+        /// </summary>
+        public bool IsConnected
+        {
+            get
+            {
+                return this.Ports.Any(p => p.IsConnected);
+            }
+        }
+
         /// <summary>
         /// Position of the network element on the network editor canvas
         /// </summary>
@@ -30,6 +42,28 @@ namespace SIMULTAN.Data.SimNetworks
             }
         }
         private Point position;
+
+
+        #region PROPERTIES: for geometric representation
+
+        private GeometricReference geom_representation_ref;
+        /// <summary>
+        /// Saves the reference to the *representing* geometry.
+        /// </summary>
+        public GeometricReference RepresentationReference
+        {
+            get { return this.geom_representation_ref; }
+            set
+            {
+                if (this.geom_representation_ref != value)
+                {
+                    this.geom_representation_ref = value;
+                    this.NotifyPropertyChanged(nameof(RepresentationReference));
+                }
+            }
+        }
+
+        #endregion
 
 
         /// <summary>

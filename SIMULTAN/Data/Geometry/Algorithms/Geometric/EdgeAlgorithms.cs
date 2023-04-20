@@ -385,7 +385,7 @@ namespace SIMULTAN.Data.Geometry
         [Obsolete("Same as ModelCleanupAlgorithms.SplitEdgeEdgeIntersections")]
         public static (Vertex v, Edge[] edges, IUndoItem undoItem) IntersectEdges(Edge edge1, Edge edge2, double tolerance = 0)
         {
-            if(edge1.ModelGeometry != edge2.ModelGeometry)
+            if (edge1.ModelGeometry != edge2.ModelGeometry)
             {
                 throw new ArgumentException("Edges can only be intersected if they are in the same geometry model.");
             }

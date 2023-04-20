@@ -1,7 +1,8 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SIMULTAN.Data;
 using SIMULTAN.Data.Components;
-using SIMULTAN.Tests.Utils;
+using SIMULTAN.Data.Taxonomy;
+using SIMULTAN.Tests.TestUtils;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -21,7 +22,8 @@ namespace SIMULTAN.Tests.Components
         [TestMethod]
         public void CtorNoTarget()
         {
-            var slot = new SimSlot(new SimSlotBase(SimDefaultSlots.Cost), "a1");
+            LoadProject(referencesProject, "admin", "admin");
+            var slot = new SimSlot(new SimTaxonomyEntryReference(projectData.Taxonomies.GetDefaultSlot(SimDefaultSlotKeys.Cost)), "a1");
             var guid = Guid.NewGuid();
 
             SimComponentReference ref1 = new SimComponentReference(slot);
@@ -29,7 +31,7 @@ namespace SIMULTAN.Tests.Components
             Assert.AreEqual(SimId.Empty, ref1.TargetId);
             Assert.AreEqual(null, ref1.Target);
 
-            ref1 = new SimComponentReference(slot, new SimId(guid, 100));
+            ref1 = new SimComponentReference(new SimSlot(slot), new SimId(guid, 100));
             Assert.AreEqual(slot, ref1.Slot);
             Assert.AreEqual(guid, ref1.TargetId.GlobalId);
             Assert.AreEqual(100, ref1.TargetId.LocalId);
@@ -41,7 +43,7 @@ namespace SIMULTAN.Tests.Components
         {
             LoadProject(referencesProject, "admin", "admin");
 
-            var slot = new SimSlot(new SimSlotBase(SimDefaultSlots.Cost), "a1");
+            var slot = new SimSlot(new SimTaxonomyEntryReference(projectData.Taxonomies.GetDefaultSlot(SimDefaultSlotKeys.Cost)), "a1");
             var target = projectData.Components.First(x => x.Name == "Root1");
 
             var ref1 = new SimComponentReference(slot, target);
@@ -59,7 +61,7 @@ namespace SIMULTAN.Tests.Components
         {
             LoadProject(referencesProject, "admin", "admin");
 
-            var slot = new SimSlot(new SimSlotBase(SimDefaultSlots.Cost), "a1");
+            var slot = new SimSlot(new SimTaxonomyEntryReference(projectData.Taxonomies.GetDefaultSlot(SimDefaultSlotKeys.Cost)), "a1");
             var target1 = projectData.Components.First(x => x.Name == "Root1");
             var target2 = target1.Components.First(x => x.Component.Name == "Child1").Component;
 
@@ -77,13 +79,13 @@ namespace SIMULTAN.Tests.Components
         {
             LoadProject(referencesProject, "admin", "admin");
 
-            var slot = new SimSlot(new SimSlotBase(SimDefaultSlots.Cost), "a1");
+            var slot = new SimSlot(new SimTaxonomyEntryReference(projectData.Taxonomies.GetDefaultSlot(SimDefaultSlotKeys.Cost)), "a1");
             var target1 = projectData.Components.First(x => x.Name == "Root1");
 
             var ref1 = new SimComponentReference(slot, target1);
             Assert.AreEqual(slot, ref1.Slot);
 
-            var slot2 = new SimSlot(new SimSlotBase(SimDefaultSlots.Joint), "b2");
+            var slot2 = new SimSlot(new SimTaxonomyEntryReference(projectData.Taxonomies.GetDefaultSlot(SimDefaultSlotKeys.Joint)), "b2");
             ref1.Slot = slot2;
             Assert.AreEqual(slot2, ref1.Slot);
         }

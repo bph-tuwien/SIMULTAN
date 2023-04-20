@@ -890,7 +890,7 @@ namespace SIMULTAN.Data.Geometry
         }
 
         /// <summary>
-        /// Returns the incline (angle to up vector) and the orientation (angle to north=[0,0,1]) of a face normal in radians
+        /// Returns the incline (angle to XZ-plane) and the orientation (angle to north=[0,0,1]) of a face normal in radians
         /// </summary>
         /// <param name="normal">The face normal</param>
         /// <param name="tolerance">Tolerance for calculations</param>

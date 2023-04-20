@@ -5,7 +5,7 @@ using System.IO;
 namespace SIMULTAN.Projects.ManagedFiles
 {
     /// <summary>
-    /// A management class for a single file containing <see cref="SimParameter"/> instances.
+    /// A management class for a single file containing <see cref="SimBaseParameter"/> instances.
     /// </summary>
     public class ManagedParameterFile : ManagedFile
     {

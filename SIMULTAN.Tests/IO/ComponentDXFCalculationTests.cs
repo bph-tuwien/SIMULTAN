@@ -6,13 +6,11 @@ using SIMULTAN.Serializer.CODXF;
 using SIMULTAN.Serializer.DXF;
 using SIMULTAN.Tests.Properties;
 using SIMULTAN.Tests.Util;
-using SIMULTAN.Tests.Utils;
+using SIMULTAN.Tests.TestUtils;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using static SIMULTAN.Data.Components.CalculationParameterMetaData;
 
 namespace SIMULTAN.Tests.IO
@@ -26,34 +24,34 @@ namespace SIMULTAN.Tests.IO
             var guid = Guid.NewGuid();
             var otherGuid = Guid.Parse("da7d8f7c-8eec-423b-b127-9d6e17f52522");
 
-            SimParameter xparam = new SimParameter("XParam", "", 17.4)
+            SimDoubleParameter xparam = new SimDoubleParameter("XParam", "", 17.4)
             {
                 Propagation = SimInfoFlow.Input,
                 Id = new SimId(guid, 6667)
             };
-            SimParameter yparam = new SimParameter("YParam", "", 17.4)
+            SimDoubleParameter yparam = new SimDoubleParameter("YParam", "", 17.4)
             {
                 Propagation = SimInfoFlow.Input,
                 Id = new SimId(otherGuid, 6668)
             };
 
-            SimParameter r1param = new SimParameter("r1", "", 17.4)
+            SimDoubleParameter r1param = new SimDoubleParameter("r1", "", 17.4)
             {
                 Propagation = SimInfoFlow.Output,
                 Id = new SimId(guid, 6669)
             };
-            SimParameter r2param = new SimParameter("r2", "", 17.4)
+            SimDoubleParameter r2param = new SimDoubleParameter("r2", "", 17.4)
             {
                 Propagation = SimInfoFlow.Output,
                 Id = new SimId(otherGuid, 6670)
             };
 
-            Dictionary<string, SimParameter> inputParameters = new Dictionary<string, SimParameter>
+            Dictionary<string, SimDoubleParameter> inputParameters = new Dictionary<string, SimDoubleParameter>
             {
                 { "x", xparam },
                 { "y", yparam },
             };
-            Dictionary<string, SimParameter> returnParameters = new Dictionary<string, SimParameter>
+            Dictionary<string, SimDoubleParameter> returnParameters = new Dictionary<string, SimDoubleParameter>
             {
                 { "r1", r1param },
                 { "r2", r2param },
@@ -89,34 +87,34 @@ namespace SIMULTAN.Tests.IO
             var guid = Guid.NewGuid();
             var otherGuid = Guid.Parse("da7d8f7c-8eec-423b-b127-9d6e17f52522");
 
-            SimParameter xparam = new SimParameter("XParam", "", 17.4)
+            SimDoubleParameter xparam = new SimDoubleParameter("XParam", "", 17.4)
             {
                 Propagation = SimInfoFlow.Input,
                 Id = new SimId(guid, 6667)
             };
-            SimParameter yparam = new SimParameter("YParam", "", 17.4)
+            SimDoubleParameter yparam = new SimDoubleParameter("YParam", "", 17.4)
             {
                 Propagation = SimInfoFlow.Input,
                 Id = new SimId(otherGuid, 6668)
             };
 
-            SimParameter r1param = new SimParameter("r1", "", 17.4)
+            SimDoubleParameter r1param = new SimDoubleParameter("r1", "", 17.4)
             {
                 Propagation = SimInfoFlow.Output,
                 Id = new SimId(guid, 6669)
             };
-            SimParameter r2param = new SimParameter("r2", "", 17.4)
+            SimDoubleParameter r2param = new SimDoubleParameter("r2", "", 17.4)
             {
                 Propagation = SimInfoFlow.Output,
                 Id = new SimId(otherGuid, 6670)
             };
 
-            Dictionary<string, SimParameter> inputParameters = new Dictionary<string, SimParameter>
+            Dictionary<string, SimDoubleParameter> inputParameters = new Dictionary<string, SimDoubleParameter>
             {
                 { "x", xparam },
                 { "y", yparam },
             };
-            Dictionary<string, SimParameter> returnParameters = new Dictionary<string, SimParameter>
+            Dictionary<string, SimDoubleParameter> returnParameters = new Dictionary<string, SimDoubleParameter>
             {
                 { "r1", r1param },
                 { "r2", r2param },

@@ -13,7 +13,7 @@ namespace SIMULTAN.Data.Taxonomy
     /// Struct that represents either a text OR an <see cref="SimTaxonomyEntry"/>.
     /// Used when a name, for example, could also be represented by a taxonomy entry.
     /// </summary>
-    public readonly struct SimTaxonomyEntryOrString 
+    public readonly struct SimTaxonomyEntryOrString
     {
         /// <summary>
         /// The name.
@@ -81,7 +81,7 @@ namespace SIMULTAN.Data.Taxonomy
         /// <param name="original">The original to copy.</param>
         public SimTaxonomyEntryOrString(SimTaxonomyEntryOrString original) : this()
         {
-            if(original.HasTaxonomyEntry())
+            if (original.HasTaxonomyEntry())
             {
                 this.taxonomyEntry = new SimTaxonomyEntryReference(original.TaxonomyEntryReference.Target);
                 this.name = null;
@@ -121,7 +121,7 @@ namespace SIMULTAN.Data.Taxonomy
         {
             if (HasTaxonomyEntry() != other.HasTaxonomyEntry())
                 return false;
-            if(HasTaxonomyEntry())
+            if (HasTaxonomyEntry())
             {
                 return TaxonomyEntryReference.Target == other.TaxonomyEntryReference.Target;
             }
@@ -143,9 +143,9 @@ namespace SIMULTAN.Data.Taxonomy
         public override int GetHashCode()
         {
             int hashCode = -1651061955;
-            if(HasTaxonomyEntry())
+            if (HasTaxonomyEntry())
                 hashCode = hashCode * -1521134295 + EqualityComparer<SimTaxonomyEntryReference>.Default.GetHashCode(this.TaxonomyEntryReference);
-            else 
+            else
                 hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(this.name);
             return hashCode;
         }

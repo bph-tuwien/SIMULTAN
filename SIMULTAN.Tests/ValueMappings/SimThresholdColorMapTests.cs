@@ -25,7 +25,7 @@ namespace SIMULTAN.Tests.ValueMappings
         {
             Assert.ThrowsException<ArgumentNullException>(() => { new SimThresholdColorMap(null); });
 
-            var map = new SimThresholdColorMap(new SimColorMarker[] 
+            var map = new SimThresholdColorMap(new SimColorMarker[]
             {
                 new SimColorMarker(1.0, Colors.Red),
                 new SimColorMarker(5.0, Colors.Blue)

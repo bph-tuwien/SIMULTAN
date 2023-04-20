@@ -1,11 +1,8 @@
 ﻿using SIMULTAN.Data.Components;
-using SIMULTAN.Serializer.DXF;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media.Media3D;
 
@@ -27,7 +24,6 @@ namespace SIMULTAN.Data.FlowNetworks
                     this.position = value;
                     var new_value = new Point(this.position.X, this.position.Y);
                     this.SetValidity();
-                    this.CommunicatePositionUpdateToContent();
                     this.NotifyPropertyChanged(nameof(Position));
                 }
             }
@@ -135,7 +131,7 @@ namespace SIMULTAN.Data.FlowNetworks
 
         // for parsing
         // the content component has to be parsed FIRST
-        internal SimFlowNetworkNode(Guid _location, long _id, string _name, string _description, bool _is_valid, Point _position, 
+        internal SimFlowNetworkNode(Guid _location, long _id, string _name, string _description, bool _is_valid, Point _position,
             IEnumerable<SimFlowNetworkCalcRule> _calc_rules)
             : base(_location, _id, _name, _description)
         {
@@ -217,7 +213,7 @@ namespace SIMULTAN.Data.FlowNetworks
                     continue;
 
                 // check if the rule applies to the type component of the instance in this node
-                SimParameter p_result = this.GetFirstParamBySuffix(rule.Suffix_Result, _in_flow_dir);
+                SimDoubleParameter p_result = this.GetFirstParamBySuffix(rule.Suffix_Result, _in_flow_dir);
                 if (p_result == null) continue;
 
                 if (!(instance.InstanceParameterValuesTemporary.Contains(p_result)))
@@ -233,10 +229,10 @@ namespace SIMULTAN.Data.FlowNetworks
                             if (!e.CanCalculateFlow(_in_flow_dir)) continue;
 
                             SimComponentInstance instance_in_e = e.Content;
-                            SimParameter p_e_Operand = e.GetFirstParamBySuffix(rule.Suffix_Operands, _in_flow_dir);
-                            SimParameter p_e_Result = e.GetFirstParamBySuffix(rule.Suffix_Result, _in_flow_dir);
+                            SimDoubleParameter p_e_Operand = e.GetFirstParamBySuffix(rule.Suffix_Operands, _in_flow_dir);
+                            SimDoubleParameter p_e_Result = e.GetFirstParamBySuffix(rule.Suffix_Result, _in_flow_dir);
                             SimComponentInstance instance_in_eStart = e.Start.Content;
-                            SimParameter p_eStart_Operand = e.Start.GetFirstParamBySuffix(rule.Suffix_Operands, _in_flow_dir);
+                            SimDoubleParameter p_eStart_Operand = e.Start.GetFirstParamBySuffix(rule.Suffix_Operands, _in_flow_dir);
 
                             if (instance_in_e == null || p_e_Operand == null || p_e_Result == null) continue;
                             if (!(instance_in_e.InstanceParameterValuesTemporary.Contains(p_e_Operand)) || !(instance_in_e.InstanceParameterValuesTemporary.Contains(p_e_Result)))
@@ -252,7 +248,7 @@ namespace SIMULTAN.Data.FlowNetworks
                             }
 
                             // perform operation in this node
-                            double operation_result = rule.Calculate(instance.InstanceParameterValuesTemporary[p_result], instance_in_e.InstanceParameterValuesTemporary[p_e_Operand]);
+                            double operation_result = rule.Calculate((double)instance.InstanceParameterValuesTemporary[p_result], (double)instance_in_e.InstanceParameterValuesTemporary[p_e_Operand]);
                             instance.InstanceParameterValuesTemporary[p_result] = operation_result;
                         }
                     }
@@ -267,10 +263,10 @@ namespace SIMULTAN.Data.FlowNetworks
                             if (!e.CanCalculateFlow(_in_flow_dir)) continue;
 
                             SimComponentInstance instance_in_e = e.Content;
-                            SimParameter p_e_Operand = e.GetFirstParamBySuffix(rule.Suffix_Operands, _in_flow_dir);
-                            SimParameter p_e_Result = e.GetFirstParamBySuffix(rule.Suffix_Result, _in_flow_dir);
+                            SimDoubleParameter p_e_Operand = e.GetFirstParamBySuffix(rule.Suffix_Operands, _in_flow_dir);
+                            SimDoubleParameter p_e_Result = e.GetFirstParamBySuffix(rule.Suffix_Result, _in_flow_dir);
                             SimComponentInstance instance_in_eEnd = e.End.Content;
-                            SimParameter p_eEnd_Operand = e.End.GetFirstParamBySuffix(rule.Suffix_Operands, _in_flow_dir);
+                            SimDoubleParameter p_eEnd_Operand = e.End.GetFirstParamBySuffix(rule.Suffix_Operands, _in_flow_dir);
 
                             if (instance_in_e == null || p_e_Operand == null || p_e_Result == null) continue;
                             if (!(instance_in_e.InstanceParameterValuesTemporary.Contains(p_e_Operand)) || !(instance_in_e.InstanceParameterValuesTemporary.Contains(p_e_Result)))
@@ -287,7 +283,7 @@ namespace SIMULTAN.Data.FlowNetworks
 
 
                             // perform operation in this node
-                            double operation_result = rule.Calculate(instance.InstanceParameterValuesTemporary[p_result], instance_in_e.InstanceParameterValuesTemporary[p_e_Operand]);
+                            double operation_result = rule.Calculate((double)instance.InstanceParameterValuesTemporary[p_result], (double)instance_in_e.InstanceParameterValuesTemporary[p_e_Operand]);
                             instance.InstanceParameterValuesTemporary[p_result] = operation_result;
                         }
                     }
@@ -301,52 +297,5 @@ namespace SIMULTAN.Data.FlowNetworks
 
 
         #endregion
-
-        #region METHODS: Connectivity Update for content
-
-        public void UpdateAdjacentEdgeRealization()
-        {
-            foreach (SimFlowNetworkEdge e_in in this.Edges_In)
-                e_in.UpdateRealization();
-
-            foreach (SimFlowNetworkEdge e_out in this.Edges_Out)
-                e_out.UpdateRealization();
-        }
-
-        #endregion
-
-        internal override void CommunicatePositionUpdateToContent()
-        {
-            CommunicatePositionUpdateToContent(true);
-        }
-
-        internal void CommunicatePositionUpdateToContent(bool propagateToEdges)
-        {
-            if (this.Content != null && this.RepresentationReference == GeometricReference.Empty)
-            {
-                var placement = (SimInstancePlacementNetwork)this.Content.Placements.FirstOrDefault(
-                    x => x is SimInstancePlacementNetwork p && p.NetworkElement == this);
-                if (placement != null)
-                {
-                    var nwOffset = GetOffset();
-                    var pos = new Point3D((Position.X + nwOffset.X) * placement.PathScale, 0, (Position.Y + nwOffset.Y) * placement.PathScale);
-
-                    using (AccessCheckingDisabler.Disable(this.Content.Factory))
-                    {
-                        this.Content.InstancePath = new List<Point3D> { pos };
-                    }
-                }
-            }
-
-            if (propagateToEdges)
-            {
-                foreach (SimFlowNetworkEdge e in this.Edges_In)
-                    e.CommunicatePositionUpdateToContent();
-
-                foreach (SimFlowNetworkEdge e in this.Edges_Out)
-                    e.CommunicatePositionUpdateToContent();
-            }
-        }
-
     }
 }

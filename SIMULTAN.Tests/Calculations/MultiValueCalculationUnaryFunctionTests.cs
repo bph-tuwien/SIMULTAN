@@ -1,12 +1,8 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SIMULTAN.Data.Components;
-using SIMULTAN.Tests.Utils;
-using System;
+using SIMULTAN.Tests.TestUtils;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SIMULTAN.Tests.Calculations
 {
@@ -19,11 +15,11 @@ namespace SIMULTAN.Tests.Calculations
         public void TransposeTest()
         {
             LoadProject(calculationProject);
-            var demoParams = projectData.GetParameters("MVCalcEmpty");
+            var demoParams = projectData.GetParameters<SimDoubleParameter>("MVCalcEmpty");
 
             SimCalculation calc = new SimCalculation("Transpose(a)", "calc",
-                new Dictionary<string, SimParameter> { { "a", demoParams["in1"] } },
-                new Dictionary<string, SimParameter> { { "out", demoParams["out1"] } });
+                new Dictionary<string, SimDoubleParameter> { { "a", demoParams["in1"] } },
+                new Dictionary<string, SimDoubleParameter> { { "out", demoParams["out1"] } });
             calc.IsMultiValueCalculation = true;
 
             var rootStep = ((SimMultiValueExpressionUnary)calc.MultiValueCalculation);
@@ -44,11 +40,11 @@ namespace SIMULTAN.Tests.Calculations
         public void NegateTest()
         {
             LoadProject(calculationProject);
-            var demoParams = projectData.GetParameters("MVCalcEmpty");
+            var demoParams = projectData.GetParameters<SimDoubleParameter>("MVCalcEmpty");
 
             SimCalculation calc = new SimCalculation("-a", "calc",
-                new Dictionary<string, SimParameter> { { "a", demoParams["in1"] } },
-                new Dictionary<string, SimParameter> { { "out", demoParams["out1"] } });
+                new Dictionary<string, SimDoubleParameter> { { "a", demoParams["in1"] } },
+                new Dictionary<string, SimDoubleParameter> { { "out", demoParams["out1"] } });
             calc.IsMultiValueCalculation = true;
 
             var rootStep = ((SimMultiValueExpressionUnary)calc.MultiValueCalculation);

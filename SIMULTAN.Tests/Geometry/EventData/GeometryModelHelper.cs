@@ -1,5 +1,6 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SIMULTAN.Data.Geometry;
+using SIMULTAN.Tests.TestUtils;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -9,7 +10,6 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Media;
 using System.Windows.Media.Media3D;
-using SIMULTAN.Tests.Util;
 
 namespace SIMULTAN.Tests.Geometry.EventData
 {
@@ -19,7 +19,7 @@ namespace SIMULTAN.Tests.Geometry.EventData
         {
             (var gm, var layer) = EmptyModelData();
 
-            GeometryModel model = new GeometryModel(Guid.NewGuid(), "TestModel", new DummyResourceFileEntry(@".\testing_dummy.geosim", 1), OperationPermission.All, gm);
+            GeometryModel model = new GeometryModel("TestModel", new DummyResourceFileEntry(@".\testing_dummy.geosim", 1), OperationPermission.All, gm);
 
             return (model, layer);
         }

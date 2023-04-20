@@ -1,14 +1,12 @@
-﻿using SIMULTAN.Data;
-using SIMULTAN.Data.Components;
+﻿using SIMULTAN.Data.Components;
+using SIMULTAN.Data.SimNetworks;
 using SIMULTAN.Data.Users;
-using SIMULTAN.Serializer.DXF;
 using SIMULTAN.Utils;
 using SIMULTAN.Utils.Collections;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
-using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Windows;
@@ -16,7 +14,7 @@ using System.Windows.Data;
 
 namespace SIMULTAN.Data.FlowNetworks
 {
-    public class SimFlowNetwork : SimFlowNetworkNode
+    public class SimFlowNetwork : SimFlowNetworkNode, INetwork
     {
         #region PROPERTIES EDITING: Manager
 
@@ -282,6 +280,21 @@ namespace SIMULTAN.Data.FlowNetworks
             this.NotifyPropertyChanged(nameof(Children));
         }
 
+        /// <summary>
+        /// Tells whether the network has a parent
+        /// </summary>
+        public bool HasParent
+        {
+            get
+            {
+                if (this.ParentNetwork == null)
+                {
+                    return false;
+                }
+                return true;
+            }
+        }
+
         #endregion
 
         #region PROPERTIES: directed or not
@@ -501,7 +514,7 @@ namespace SIMULTAN.Data.FlowNetworks
 
         internal SimFlowNetwork(Guid _location, long _id, string _name, string _description, bool _is_valid, Point _position,
                             SimUserRole _manager, int _index_of_geometry_rep_file,
-                            IEnumerable<SimFlowNetworkNode> _nodes, IEnumerable<SimFlowNetworkEdge> _edges, 
+                            IEnumerable<SimFlowNetworkNode> _nodes, IEnumerable<SimFlowNetworkEdge> _edges,
                             IEnumerable<SimFlowNetwork> _subnetworks,
                             long _node_start_id, long _node_end_id, bool _is_directed, IEnumerable<SimFlowNetworkCalcRule> _calc_rules)
             : base(_location, _id, _name, _description, _is_valid, _position, _calc_rules)
@@ -638,8 +651,8 @@ namespace SIMULTAN.Data.FlowNetworks
                 var ps = ComponentWalker.GetFlatParameters(c);
                 foreach (var p in ps)
                 {
-                    if (!names.Contains(p.TaxonomyEntry.Name))
-                        names.Add(p.TaxonomyEntry.Name);
+                    if (!names.Contains(p.NameTaxonomyEntry.Name))
+                        names.Add(p.NameTaxonomyEntry.Name);
                 }
             }
             return names.ToList();
@@ -696,7 +709,7 @@ namespace SIMULTAN.Data.FlowNetworks
             return contents;
         }
 
-        internal override SimParameter GetFirstParamBySuffix(string _suffix, bool _in_flow_dir)
+        internal override SimDoubleParameter GetFirstParamBySuffix(string _suffix, bool _in_flow_dir)
         {
             if (string.IsNullOrEmpty(_suffix)) return null;
 
@@ -1160,23 +1173,6 @@ namespace SIMULTAN.Data.FlowNetworks
 
         #endregion
 
-        #region METHODS: Position Update for Content OVERRIDE
-
-        internal override void CommunicatePositionUpdateToContent()
-        {
-            base.CommunicatePositionUpdateToContent();
-
-            foreach (var node in this.ContainedNodes.Values)
-                node.CommunicatePositionUpdateToContent(false);
-            foreach (var edge in this.ContainedEdges.Values)
-                edge.CommunicatePositionUpdateToContent();
-
-            foreach (var subnet in this.ContainedFlowNetworks.Values)
-                subnet.CommunicatePositionUpdateToContent();
-        }
-
-        #endregion
-
         #region METHODS: Sorting acc. to flow direction
 
         protected List<SimFlowNetworkNode> SortNodesInFlowDirection()
@@ -1381,15 +1377,6 @@ namespace SIMULTAN.Data.FlowNetworks
                 return null;
         }
 
-        internal SimFlowNetworkNode SortAndGetLastNode()
-        {
-            List<SimFlowNetworkNode> sorted = this.SortNodesInFlowDirectionUnfoldNW();
-            if (sorted.Count > 0)
-                return sorted[sorted.Count - 1];
-            else
-                return null;
-        }
-
         public List<SimFlowNetworkNode> GetNestedNodes()
         {
             if (this.IsInConsistentState)
@@ -1539,8 +1526,8 @@ namespace SIMULTAN.Data.FlowNetworks
                 instances_in_edges_prev = edges_prev.Select(x => x.Content).ToList();
 
             // document state BEFORE calculation step
-            var values_in_node_BEFORE = instance_in_node.InstanceParameterValuesTemporary.ToList();
-            var values_in_edges_prev_BEFORE = instances_in_edges_prev.Select(x => x.InstanceParameterValuesTemporary.ToList()).ToList();
+            var values_in_node_BEFORE = instance_in_node.InstanceParameterValuesTemporary.GetRecords<SimDoubleParameter, double>();
+            var values_in_edges_prev_BEFORE = instances_in_edges_prev.Select(x => x.InstanceParameterValuesTemporary.GetRecords<SimDoubleParameter, double>()).ToList();
 
             // CALCULATE FLOW
             _current_node.CalculateFlow(_in_flow_dir);
@@ -1562,7 +1549,7 @@ namespace SIMULTAN.Data.FlowNetworks
 
         private const double VALUE_TOLERANCE = 0.0001;
 
-        private static void ParallelDictionariesToString(List<KeyValuePair<SimParameter, double>> before, SimInstanceParameterCollection after, bool _show_only_differences, ref StringBuilder sb)
+        private static void ParallelDictionariesToString(List<KeyValuePair<SimDoubleParameter, double>> before, SimInstanceParameterCollection after, bool _show_only_differences, ref StringBuilder sb)
         {
             if (sb == null)
                 sb = new StringBuilder();
@@ -1576,15 +1563,15 @@ namespace SIMULTAN.Data.FlowNetworks
 
                     if (_show_only_differences)
                     {
-                        double diff = Math.Abs(beforeItem.Value - afterItem);
+                        double diff = Math.Abs((double)beforeItem.Value - (double)afterItem);
                         if (diff < VALUE_TOLERANCE)
                             continue;
                     }
 
-                    string line = "'" + beforeItem.Key.TaxonomyEntry.Name + "':";
+                    string line = "'" + beforeItem.Key.NameTaxonomyEntry.Name + "':";
                     line = line.PadRight(20, ' ') + "\t";
                     line += beforeItem.Value.ToString("F4") + " -> ";
-                    line += afterItem.ToString("F4");
+                    line += ((double)afterItem).ToString("F4");
                     sb.AppendLine(line);
                 }
             }

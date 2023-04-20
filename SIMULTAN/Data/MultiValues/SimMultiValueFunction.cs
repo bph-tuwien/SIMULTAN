@@ -1,12 +1,8 @@
-﻿using SIMULTAN.Data.Components;
-using SIMULTAN.Serializer.DXF;
-using SIMULTAN.Utils;
+﻿using SIMULTAN.Utils;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Collections.Specialized;
 using System.Linq;
-using System.Text;
 using System.Windows;
 using System.Windows.Media.Media3D;
 
@@ -329,255 +325,29 @@ namespace SIMULTAN.Data.MultiValues
             return new SimMultiValueFunction(this);
         }
 
-
-        #region To String
-
-        /// <inheritdoc />
-        [Obsolete]
-        public override string ToString()
-        {
-            string mvf_string = "(" + this.Id.ToString() + ") "
-                                + this.MVType.ToString() + " ["
-                                + this.UnitX + ", " + this.UnitY + ", " + this.UnitZ + "]: ["
-                                + this.Graphs.Count + " funct]";
-            return mvf_string;
-        }
-
-        #endregion
-
         #region METHODS: External Pointer
-
-        /// <summary>
-        /// Points into a SimMultiValueFunction field. This pointer performs a lookup on a specific graph depending on an X-Axis position
-        /// </summary>
-        public class MultiValueFunctionPointer : SimMultiValuePointer
-        {
-            private string graphName;
-            private double axisValueX, axisValueY;
-
-            private SimMultiValueFunction function;
-
-            /// <summary>
-            /// The name of the graph on which the values are queried
-            /// </summary>
-            private SimMultiValueFunctionGraph Graph
-            {
-                get { return graph; }
-                set
-                {
-                    if (IsDisposed)
-                        throw new InvalidOperationException("Unable to set graph on unsubscribed pointer");
-
-                    DetachEvents();
-
-                    graph = value;
-
-                    AttachEvents();
-                }
-            }
-            private SimMultiValueFunctionGraph graph;
-
-            /// <summary>
-            /// The name of the graph on which the values are queried.
-            /// This parameter has to exactly match the <see cref="SimMultiValueFunctionGraph.Name"/> property in order to find valid values.
-            /// </summary>
-            public string GraphName => graphName;
-            /// <summary>
-            /// The value on the X-Axis where the result is queried
-            /// </summary>
-            public double AxisValueX => axisValueX;
-            /// <summary>
-            /// The value on the Y-Axis which is used as a reference when the graph is not uniquely defined at the x position
-            /// </summary>
-            public double AxisValueY => axisValueY;
-
-            /// <inheritdoc />
-            public override SimMultiValue ValueField
-            {
-                get { return function; }
-                set
-                {
-                    if (value is SimMultiValueFunction)
-                        function = (SimMultiValueFunction)value;
-                    else
-                        throw new ArgumentException("MultiValueFunctionPointer only supports SimMultiValueFunction fields");
-                }
-            }
-
-            /// <summary>
-            /// Initializes a new instance of the MultiValueFunctionPointer class
-            /// </summary>
-            /// <param name="function">The function field</param>
-            /// <param name="graphName">The name of the graph on which values are searched.
-            /// This parameter has to exactly match the <see cref="SimMultiValueFunctionGraph.Name"/> property in order to find valid values.</param>
-            /// <param name="axisValueX">The x-value for the lookup</param>
-            /// <param name="axisValueY">The y reference value (used when the graph is not uniquely defined)</param>
-            public MultiValueFunctionPointer(SimMultiValueFunction function, string graphName, double axisValueX, double axisValueY) : base(function)
-            {
-                this.graphName = graphName;
-                this.axisValueX = axisValueX;
-                this.axisValueY = axisValueY;
-
-                this.Graph = function.Graphs.FirstOrDefault(x => x.Name == graphName);
-                if (graph == null)
-                    Reset();
-
-                RegisterParameter(ReservedParameters.MVF_OFFSET_X_FORMAT, function.UnitX);
-            }
-
-
-            /// <inheritdoc />
-            public override double GetValue()
-            {
-                if (IsDisposed)
-                    throw new InvalidOperationException("You're trying to get the value of an unsubscribed value pointer");
-
-                if (graph != null && !double.IsNaN(axisValueX) && !double.IsNaN(axisValueY))
-                {
-                    var addX = 0.0;
-                    var paramX = GetValuePointerParameter(ReservedParameters.MVF_OFFSET_X_FORMAT);
-                    if (paramX != null)
-                        addX = paramX.ValueCurrent;
-
-                    return graph.GetValueFromX(axisValueX + addX, axisValueY);
-                }
-
-                return double.NaN;
-            }
-            /// <inheritdoc />
-            public override SimMultiValuePointer Clone()
-            {
-                return new MultiValueFunctionPointer(function, graphName, axisValueX, axisValueY);
-            }
-            /// <inheritdoc />
-            public override void SetFromParameters(double axisValueX, double axisValueY, double axisValueZ, string gs)
-            {
-                this.axisValueX = axisValueX;
-                this.axisValueY = axisValueY;
-                this.graphName = gs;
-                this.Graph = this.function.Graphs.FirstOrDefault(x => x.Name == gs);
-                if (this.Graph == null)
-                    Reset();
-            }
-            /// <inheritdoc />
-            public override bool IsSamePointer(SimMultiValuePointer other)
-            {
-                var o = other as MultiValueFunctionPointer;
-                if (o != null)
-                {
-                    return (o.ValueField == ValueField && graphName == o.graphName && axisValueX.EqualsWithNan(o.axisValueX)
-                        && axisValueY.EqualsWithNan(o.axisValueY));
-                }
-
-                return false;
-            }
-
-            private void Reset()
-            {
-                this.Graph = null;
-                this.graphName = null;
-                this.axisValueX = double.NaN;
-                this.axisValueY = double.NaN;
-            }
-
-            /// <inheritdoc />
-            protected override void Dispose(bool isDisposing)
-            {
-                if (!IsDisposed && this.graph != null)
-                {
-                    DetachEvents();
-                }
-
-                base.Dispose(isDisposing);
-            }
-
-            private void Graphs_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
-            {
-                if (e.Action == NotifyCollectionChangedAction.Remove)
-                {
-                    foreach (var item in e.OldItems)
-                    {
-                        if (((SimMultiValueFunctionGraph)item).Name == this.graphName)
-                        {
-                            Reset();
-                            this.NotifyValueChanged();
-                        }
-                    }
-                }
-            }
-
-            private void Graph_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
-            {
-                if (e.PropertyName == nameof(SimMultiValueFunctionGraph.Name))
-                {
-                    this.graphName = Graph.Name;
-                    this.NotifyValueChanged();
-                }
-            }
-
-            private void Graph_Points_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
-            {
-                this.NotifyValueChanged();
-            }
-
-            private bool isAttached = false;
-
-            internal override void AttachEvents()
-            {
-                base.AttachEvents();
-
-                if (!isAttached && !IsDisposed)
-                {
-                    this.function.Graphs.CollectionChanged += Graphs_CollectionChanged;
-
-                    if (Graph != null)
-                    {
-                        this.Graph.Points.CollectionChanged += Graph_Points_CollectionChanged;
-                        this.Graph.PropertyChanged += Graph_PropertyChanged;
-                    }
-
-                    isAttached = true;
-                }
-            }
-
-            internal override void DetachEvents()
-            {
-                base.DetachEvents();
-
-                if (isAttached)
-                {
-                    this.function.Graphs.CollectionChanged -= Graphs_CollectionChanged;
-
-                    if (Graph != null)
-                    {
-                        this.Graph.Points.CollectionChanged -= Graph_Points_CollectionChanged;
-                        this.Graph.PropertyChanged -= Graph_PropertyChanged;
-                    }
-                }
-            }
-        }
 
         /// <summary>
         /// Creates a pointer pointing to a default location (no graph, NaN coordinates)
         /// </summary>
-        public SimMultiValuePointer DefaultPointer
+        public SimMultiValueParameterSource DefaultPointer
         {
             get
             {
-                return new MultiValueFunctionPointer(this, null, double.NaN, double.NaN);
+                return new SimMultiValueFunctionParameterSource(this, null, double.NaN, double.NaN);
             }
         }
         /// <inheritdoc />
-        public override SimMultiValuePointer CreateNewPointer()
+        public override SimMultiValueParameterSource CreateNewPointer()
         {
             return DefaultPointer;
         }
         /// <inheritdoc />
-        public override SimMultiValuePointer CreateNewPointer(SimMultiValuePointer source)
+        public override SimMultiValueParameterSource CreateNewPointer(SimMultiValueParameterSource source)
         {
-            if (source is MultiValueFunctionPointer ptr)
+            if (source is SimMultiValueFunctionParameterSource ptr)
             {
-                return new MultiValueFunctionPointer(this, ptr.GraphName, ptr.AxisValueX, ptr.AxisValueY);
+                return new SimMultiValueFunctionParameterSource(this, ptr.GraphName, ptr.AxisValueX, ptr.AxisValueY);
             }
             return DefaultPointer;
         }

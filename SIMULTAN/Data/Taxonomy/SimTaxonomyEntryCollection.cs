@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -29,9 +30,11 @@ namespace SIMULTAN.Data.Taxonomy
         {
             if (item == null)
                 throw new ArgumentNullException(nameof(item));
+            if (owner.IsReadonly)
+                throw new InvalidOperationException("Cannot add Taxonomy entries to a read only taxonomy");
 
             // is already in taxonomy, so must be moved
-            if(item.Taxonomy != null)
+            if (item.Taxonomy != null)
             {
                 if (item.Taxonomy != owner)
                     throw new ArgumentException("Item belongs to a different Taxonomy");
@@ -53,6 +56,9 @@ namespace SIMULTAN.Data.Taxonomy
         /// <inheritdoc />
         protected override void RemoveItem(int index)
         {
+            if (owner.IsReadonly)
+                throw new InvalidOperationException("Cannot remove Taxonomy entry from read only Taxonomy.");
+
             var oldItem = this[index];
 
             UnsetValues(oldItem, owner.Factory?.ProjectData.IdGenerator);
@@ -62,6 +68,9 @@ namespace SIMULTAN.Data.Taxonomy
         /// <inheritdoc />
         protected override void ClearItems()
         {
+            if (owner.IsReadonly)
+                throw new InvalidOperationException("Cannot clear Taxonomy entries of a read only Taxonomy.");
+
             foreach (var item in this)
             {
                 UnsetValues(item, owner.Factory?.ProjectData.IdGenerator);
@@ -75,6 +84,8 @@ namespace SIMULTAN.Data.Taxonomy
         {
             if (item == null)
                 throw new ArgumentNullException(nameof(item));
+            if (owner.IsReadonly)
+                throw new InvalidOperationException("Cannot set taxonomy entry because the taxonomy is read only.");
 
             var oldItem = this[index];
             UnsetValues(oldItem, owner.Factory?.ProjectData.IdGenerator);

@@ -2,16 +2,11 @@
 using SIMULTAN.Data.SimNetworks;
 using SIMULTAN.Data.Taxonomy;
 using SIMULTAN.Data.Users;
-using SIMULTAN.Excel;
-using SIMULTAN.Serializer.DXF;
 using SIMULTAN.Utils;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Globalization;
 using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Text;
 using System.Windows;
 using System.Windows.Media.Media3D;
 
@@ -25,16 +20,6 @@ namespace SIMULTAN.Data.Components
     /// Each instance has a size, which can either be set by the user directly (<see cref="InstanceSize"/>) or which can be derived from parameter
     /// values or from the path (<see cref="SizeTransfer"/>).
     /// Each instance also provides an orientation in space.
-    /// </para>
-    /// 
-    /// <para>Path</para>
-    /// <para>
-    /// The <see cref="InstancePath"/> contains geometric informations about the placement of an instance, depending on the current placements.
-    /// For placements in a network node, the path contains the Position of the <see cref="SimFlowNetworkNode"/>.
-    /// For placements in a network edge, the path contains the Position the start and end of the <see cref="SimFlowNetworkEdge"/>
-    /// When the network placement also has a geometric description, the positions from the geometry are used instead.
-    /// 
-    /// For descriptive face or edge loops, the path contains the Boundary Vertices.
     /// </para>
     /// 
     /// <para>Parameters</para>
@@ -90,10 +75,11 @@ namespace SIMULTAN.Data.Components
         /// <summary>
         /// Stores the simnetwork element id until all networks have been loaded. Afterwards: Always SimObjectId.Empty
         /// </summary>
+        [Obsolete]
         public SimId LoadingSimNetworkElmentId { get; private set; }
 
         //parameterName is only used when the id is not set (used for loading legacy projects)
-        internal List<(SimId id, string parameterName, double value)> LoadingParameterValuesPersistent { get; private set; }
+        internal List<(SimId id, string parameterName, object value)> LoadingParameterValuesPersistent { get; private set; }
 
         #endregion
 
@@ -356,60 +342,12 @@ namespace SIMULTAN.Data.Components
 
         #endregion
 
-        #region PROPERTIES: Path
-
-        /// <summary>
-        /// Stores geometric positions which describe this instance.
-        /// Contains different values based on the InstanceType. See the class description for details.
-        /// </summary>
-        public List<Point3D> InstancePath
-        {
-            get { return this.instancePath; }
-            set
-            {
-                if (this.instancePath != value)
-                {
-                    this.NotifyWriteAccess();
-
-                    this.instancePath = value; // in the GeometryViewer
-                    this.NotifyPropertyChanged(nameof(this.InstancePath));
-                    this.NotifyChanged();
-
-                    this.InstancePathLength = GetPathLength(this.instancePath);
-
-                    if (this.SizeTransfer != null && this.SizeTransfer.Any(x => x.Source == SimInstanceSizeTransferSource.Path))
-                        this.InstanceSize = this.ApplySizeTransferSettings(this.instanceSize);
-                }
-            }
-        }
-        private List<Point3D> instancePath;
-
-        /// <summary>
-        /// Length of the <see cref="InstancePath"/>. Only available when the Path contains at least two elements.
-        /// </summary>
-        public double InstancePathLength
-        {
-            get { return this.instancePathLength; }
-            private set
-            {
-                this.instancePathLength = value;
-                this.NotifyPropertyChanged(nameof(this.InstancePathLength));
-                this.NotifyChanged();
-
-                if (this.SizeTransfer != null && this.SizeTransfer.Any(x => x.Source == SimInstanceSizeTransferSource.Path))
-                    this.InstanceSize = this.ApplySizeTransferSettings(this.instanceSize);
-            }
-        }
-        private double instancePathLength;
-
-        #endregion
-
         #region PROPERTIES: Instance Parameters
 
         /// <summary>
         /// Specifies whether parameter values may be propagated to this instance.
         /// 
-        /// This setting is used in combination with <see cref="SimParameter.InstancePropagationMode"/> to identify 
+        /// This setting is used in combination with <see cref="SimBaseParameter.InstancePropagationMode"/> to identify 
         /// if a parameter value change should be propagated. When this property changes to True, a reevaluation of
         /// all parameters is performed.
         /// </summary>
@@ -433,7 +371,17 @@ namespace SIMULTAN.Data.Components
                                 ) &&
                                 this.InstanceParameterValuesPersistent.Contains(updateParam))
                             {
-                                this.InstanceParameterValuesPersistent.SetWithoutNotify(updateParam, updateParam.ValueCurrent);
+
+                                if (updateParam is SimEnumParameter enumParam)
+                                {
+                                    var newTaxonomyEntryRef = new SimTaxonomyEntryReference(enumParam.Value.Target);
+                                    this.InstanceParameterValuesPersistent.SetWithoutNotify(updateParam, newTaxonomyEntryRef);
+                                }
+                                else
+                                {
+                                    this.InstanceParameterValuesPersistent.SetWithoutNotify(updateParam, updateParam.Value);
+                                }
+
                             }
                         }
                         if (this.Component.Factory != null)
@@ -459,7 +407,6 @@ namespace SIMULTAN.Data.Components
         /// 
         /// In contrast to <see cref="InstanceParameterValuesTemporary"/>, this values are persisted when the project is saved.
         /// </summary>
-        [ExcelMappingProperty("SIM_INSTANCE_PARAMVALUESPERSISTENT", IsFilterable = false)]
         public SimInstanceParameterCollection InstanceParameterValuesPersistent { get; }
 
         /// <summary>
@@ -469,7 +416,6 @@ namespace SIMULTAN.Data.Components
         /// <para>NOTE: Do not update every time a parameter in the parent component changes, updates have to be performed manually by 
         /// calling <see cref="Reset"/>.</para>
         /// </summary>
-        [ExcelMappingProperty("SIM_INSTANCE_PARAMVALUES", IsFilterable = false)]
         public SimInstanceParameterCollection InstanceParameterValuesTemporary { get; }
 
         #endregion
@@ -511,8 +457,6 @@ namespace SIMULTAN.Data.Components
             this.InstanceType = SimInstanceType.None;
             this.InstanceSize = SimInstanceSize.Default;
             this.SizeTransfer = new SimInstanceSizeTransferDefinition();
-
-            this.InstancePath = new List<Point3D>();
         }
         /// <summary>
         /// Initializes a new instance of the ComponentInstance class
@@ -612,7 +556,7 @@ namespace SIMULTAN.Data.Components
 
             this.Name = string.Format("Geometry Placement {0}:{1}", fileId, geometryId);
             this.InstanceType = type;
-            var placement = new SimInstancePlacementGeometry(fileId, geometryId, relatedIds);
+            var placement = new SimInstancePlacementGeometry(fileId, geometryId, SimInstancePlacementState.Valid, relatedIds);
             this.Placements.Add(placement);
         }
 
@@ -640,7 +584,7 @@ namespace SIMULTAN.Data.Components
                                       IEnumerable<SimInstancePlacement> placements,
                                        Quaternion instanceRotation,
                                        SimInstanceSize instanceSize, SimInstanceSizeTransferDefinition sizeTransfer,
-                                       IEnumerable<Point3D> _i_path, List<(SimId id, string parameterName, double value)> parameterValuesPersistent, bool propagateParamterChanges)
+                                       IEnumerable<Point3D> _i_path, List<(SimId id, string parameterName, object value)> parameterValuesPersistent, bool propagateParamterChanges)
             : base(new SimId(localId))
         {
             this.Placements = new PlacementCollection(this);
@@ -661,71 +605,17 @@ namespace SIMULTAN.Data.Components
             this.InstanceRotation = instanceRotation;
 
             this.InstanceSize = instanceSize.Clone();
-            this.InstancePath = new List<Point3D>(_i_path);
 
             this.SizeTransfer = sizeTransfer;
 
             this.PropagateParameterChanges = propagateParamterChanges;
         }
 
-
-
-        /// <summary>
-        /// Initializes a new instance of the ComponentInstance class. May only be used during DXF file loading.
-        /// 
-        /// networkElementId and parameterValuesPersistent are only restored after calling <see cref="RestoreReferences(Dictionary{SimObjectId, SimFlowNetworkElement})"/>.
-        /// </summary>
-        /// <param name="localId">The local id of the instance</param>
-        /// <param name="name">The name of the instance</param>
-        /// <param name="instanceType">The instance type</param>
-        /// <param name="state">The current state of the instance</param>
-        /// <param name="geometryRef">Information about a geometry placement. When set to null, no <see cref="SimInstancePlacementGeometry"/> is created</param>
-        /// <param name="instanceRotation">Rotation of the instance</param>
-        /// <param name="instanceSize">Instance size</param>
-        /// <param name="sizeTransfer">Instance size transfer settings</param>
-        /// <param name="simNetworkElementId">Id for a SimNetworkElement where the Instance is placed.
-        /// When set to <see cref="SimObjectId.Empty"/>, no <see cref="SimInstancePlacementNetwork"/> is created
-        /// </param>
-        /// <param name="_i_path">The path (geometric information) of the instance</param>
-        /// <param name="parameterValuesPersistent">A list of all persistent parameter values present in this instance</param>
-        internal SimComponentInstance(long localId, string name, SimInstanceType instanceType, SimInstanceState state,
-                                       (int fileId, ulong geometryId, List<ulong> relatedIds)? geometryRef,
-                                       Quaternion instanceRotation,
-                                       SimInstanceSize instanceSize, SimInstanceSizeTransferDefinition sizeTransfer, SimId simNetworkElementId,
-                                       List<Point3D> _i_path, List<(SimId id, string parameterName, double value)> parameterValuesPersistent)
-            : base(new SimId(localId))
-        {
-            this.Placements = new PlacementCollection(this);
-
-            this.InstanceParameterValuesTemporary = new SimInstanceParameterCollectionTemporary(this);
-            this.InstanceParameterValuesPersistent = new SimInstanceParameterCollectionPersistent(this);
-
-            this.LoadingParameterValuesPersistent = parameterValuesPersistent;
-
-            this.Name = name;
-            this.State = state;
-
-            if (geometryRef.HasValue)
-            {
-                var geometryPlacement = new SimInstancePlacementGeometry(geometryRef.Value.fileId, geometryRef.Value.geometryId, geometryRef.Value.relatedIds);
-                this.Placements.Add(geometryPlacement);
-            }
-
-            this.InstanceType = instanceType;
-            this.InstanceRotation = instanceRotation;
-
-            this.InstanceSize = instanceSize.Clone();
-            this.LoadingSimNetworkElmentId = simNetworkElementId;
-            this.InstancePath = new List<Point3D>(_i_path);
-
-            this.SizeTransfer = sizeTransfer;
-        }
-
         #endregion
 
         #region METHODS: Instance Definition / Update
 
-        internal void ChangeParameterValue(SimParameter parameter)
+        internal void ChangeParameterValue(SimBaseParameter parameter)
         {
             if (parameter == null)
                 throw new ArgumentNullException(nameof(parameter));
@@ -768,11 +658,25 @@ namespace SIMULTAN.Data.Components
             {
                 // update value
                 if (this.InstanceParameterValuesPersistent.Contains(parameter))
-                    this.InstanceParameterValuesPersistent.SetWithoutNotify(parameter, parameter.ValueCurrent);
+                {
+                    if (parameter is SimEnumParameter enumParam)
+                    {
+                        SimTaxonomyEntryReference newValue = null;
+                        if (enumParam.Value != null)
+                        {
+                            newValue = new SimTaxonomyEntryReference(enumParam.Value.Target);
+                        }
+                        this.InstanceParameterValuesPersistent.SetWithoutNotify(enumParam, newValue);
+                    }
+                    else
+                    {
+                        this.InstanceParameterValuesPersistent.SetWithoutNotify(parameter, parameter.Value);
+                    }
+                }
             }
         }
 
-        internal void AddParameter(SimParameter parameter)
+        internal void AddParameter(SimBaseParameter parameter)
         {
             if (parameter == null)
                 throw new ArgumentNullException(nameof(parameter));
@@ -780,12 +684,12 @@ namespace SIMULTAN.Data.Components
             if (IsInstanceableParameter(parameter))
             {
                 // add or update
-                this.InstanceParameterValuesPersistent.Add(parameter, parameter.ValueCurrent);
-                this.InstanceParameterValuesTemporary.Add(parameter, parameter.ValueCurrent);
+                this.InstanceParameterValuesPersistent.Add(parameter, parameter.Value);
+                this.InstanceParameterValuesTemporary.Add(parameter, parameter.Value);
             }
         }
 
-        internal void RemoveParameter(SimParameter parameter)
+        internal void RemoveParameter(SimBaseParameter parameter)
         {
             if (parameter == null)
                 throw new ArgumentNullException(nameof(parameter));
@@ -799,14 +703,14 @@ namespace SIMULTAN.Data.Components
         /// Excludes special parameters like triangle (instance propagation)
         /// </summary>
         /// <returns>True when the parameter should be placed in the InstanceParameter* lists, otherwise False</returns>
-        private static bool IsInstanceableParameter(SimParameter parameter)
+        private static bool IsInstanceableParameter(SimBaseParameter parameter)
         {
-            return parameter.TaxonomyEntry.Name != ReservedParameters.RP_INST_PROPAGATE;
+            return parameter.NameTaxonomyEntry.Name != ReservedParameters.RP_INST_PROPAGATE;
         }
 
         private void UpdateInstanceParameters(SimInstanceParameterCollection instanceValues)
         {
-            HashSet<SimParameter> removeKeys = instanceValues.Keys.ToHashSet();
+            HashSet<SimBaseParameter> removeKeys = instanceValues.Keys.ToHashSet();
 
             //Make sure all component parameters are in instance
             foreach (var param in this.Component.Parameters)
@@ -814,8 +718,9 @@ namespace SIMULTAN.Data.Components
                 if (SimComponentInstance.IsInstanceableParameter(param))
                 {
                     if (!instanceValues.Contains(param))
-                        instanceValues.Add(param, param.ValueCurrent);
-
+                    {
+                        instanceValues.Add(param, param.Value);
+                    }
                     removeKeys.Remove(param);
                 }
             }
@@ -852,11 +757,23 @@ namespace SIMULTAN.Data.Components
                     return currentSize;
                 case SimInstanceSizeTransferSource.Parameter:
                     if (item.Parameter != null)
-                        return item.Parameter.ValueCurrent + item.Addend;
+                    {
+                        if (item.Parameter is SimDoubleParameter doubleParam)
+                        {
+                            return doubleParam.Value + item.Addend;
+                        }
+                        else
+                        {
+                            throw new NotImplementedException(item.Parameter.GetType().ToString());
+                        }
+                    }
                     else
+                    {
                         return item.Addend;
+                    }
+
                 case SimInstanceSizeTransferSource.Path:
-                    return this.InstancePathLength + item.Addend;
+                    return 0.0;
                 default:
                     //not possible
                     throw new NotSupportedException("Unknown enum value");
@@ -907,27 +824,39 @@ namespace SIMULTAN.Data.Components
                 {
                     Placements.RemoveAt(i);
                     i--;
-                }    
+                }
             }
-
             if (this.LoadingParameterValuesPersistent != null)
             {
                 foreach (var loadingData in this.LoadingParameterValuesPersistent)
                 {
-                    SimParameter parameter = null;
+                    SimBaseParameter parameter = null;
 
                     //For newer files: Search for parameter by id
                     if (loadingData.id != SimId.Empty)
                     {
-                        parameter = this.Factory.ProjectData.IdGenerator.GetById<SimParameter>(loadingData.id);
+                        parameter = this.Factory.ProjectData.IdGenerator.GetById<SimBaseParameter>(loadingData.id);
                     }
                     else //For old files: Search for parameter by name.
                     {
-                        parameter = this.Component.Parameters.FirstOrDefault(x => x.TaxonomyEntry.Name == loadingData.parameterName);
+                        parameter = this.Component.Parameters.FirstOrDefault(x => x.NameTaxonomyEntry.Name == loadingData.parameterName);
                     }
 
                     if (parameter != null && parameter.Component == this.Component && IsInstanceableParameter(parameter))
-                        this.InstanceParameterValuesPersistent[parameter] = loadingData.value;
+                    {
+                        if (parameter is SimEnumParameter enumParam)
+                        {
+                            if ((long)loadingData.value != long.MinValue)
+                            {
+                                var referece = new SimTaxonomyEntryReference(enumParam.Items.FirstOrDefault(t => t.LocalID == (long)loadingData.value));
+                                this.InstanceParameterValuesPersistent[parameter] = referece;
+                            }
+                        }
+                        else
+                        {
+                            this.InstanceParameterValuesPersistent[parameter] = loadingData.value;
+                        }
+                    }
                 }
             }
 
@@ -1061,11 +990,36 @@ namespace SIMULTAN.Data.Components
         }
 
 
-        private static void SetParameterIfExists(SimComponent component, string parameterKey, double value)
+        private static void SetParameterIfExists(SimComponent component, string parameterKey, object value)
         {
             var parameter = component.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(parameterKey));
             if (parameter != null)
-                parameter.ValueCurrent = value;
+            {
+                if (parameter is SimDoubleParameter doubleParam && (value is double || value is int))
+                {
+                    doubleParam.Value = Convert.ToDouble(value);
+                }
+                else if (parameter is SimStringParameter stringParam && value is string)
+                {
+                    stringParam.Value = (string)value;
+                }
+                else if (parameter is SimIntegerParameter integerParam && value is int)
+                {
+                    integerParam.Value = (int)value;
+                }
+                else if (parameter is SimBoolParameter boolParam && value is bool)
+                {
+                    boolParam.Value = (bool)value;
+                }
+                else if (parameter is SimEnumParameter simEnumParameter && value is SimTaxonomyEntryReference refVal)
+                {
+                    simEnumParameter.Value = new SimTaxonomyEntryReference(refVal.Target);
+                }
+                else
+                {
+                    throw new InvalidCastException("Type of the parameter should be the proposed value´s");
+                }
+            }
         }
 
         private static void AddCumulativSubcomponent(SimComponent component)
@@ -1095,8 +1049,9 @@ namespace SIMULTAN.Data.Components
             if (needsComponentCreate)
             {
                 // add to the parent
-                var slot = component.Components.FindAvailableSlot(new SimSlotBase(SimDefaultSlots.Position), "AG{0}");
-                subComponent.CurrentSlot = slot.SlotBase;
+                var positionTax = component.Factory.ProjectData.Taxonomies.GetDefaultSlot(SimDefaultSlotKeys.GeometricReference);
+                var slot = component.Components.FindAvailableSlot(positionTax, "AG{0}");
+                subComponent.CurrentSlot = new SimTaxonomyEntryReference(slot.SlotBase);
 
                 using (AccessCheckingDisabler.Disable(component.Factory))
                 {
@@ -1110,92 +1065,92 @@ namespace SIMULTAN.Data.Components
             if (factory == null)
                 throw new ArgumentNullException(nameof(factory));
 
-            if (!HasParameter(component, ReservedParameters.RP_LENGTH_MIN_TOTAL, ReservedParameterKeys.RP_LENGTH_MIN_TOTAL, "m", SimInfoFlow.Automatic))
+            if (!HasDoubleParam(component, ReservedParameters.RP_LENGTH_MIN_TOTAL, ReservedParameterKeys.RP_LENGTH_MIN_TOTAL, "m", SimInfoFlow.Automatic))
             {
                 // cumulative values over all instances
-                SimParameter p11 = new SimParameter(ReservedParameterKeys.RP_LENGTH_MIN_TOTAL, "m", 0.0, 0.0, double.MaxValue);
-                var taxEntry = ReservedParameterKeys.GetReservedTaxonomyEntry(factory.ProjectData.Taxonomies, ReservedParameterKeys.RP_LENGTH_MIN_TOTAL);
-                p11.TaxonomyEntry = new SimTaxonomyEntryOrString(new SimTaxonomyEntryReference(taxEntry));
+                SimDoubleParameter p11 = new SimDoubleParameter(ReservedParameterKeys.RP_LENGTH_MIN_TOTAL, "m", 0.0, 0.0, double.MaxValue);
+                var taxEntry = factory.ProjectData.Taxonomies.GetReservedParameter(ReservedParameterKeys.RP_LENGTH_MIN_TOTAL);
+                p11.NameTaxonomyEntry = new SimTaxonomyEntryOrString(new SimTaxonomyEntryReference(taxEntry));
                 p11.IsAutomaticallyGenerated = true;
-                p11.TextValue = "Net total length";
+                p11.Description = "Net total length";
                 p11.Category |= SimCategory.Geometry | SimCategory.Communication;
                 p11.Propagation = SimInfoFlow.Automatic;
                 p11.AllowedOperations = SimParameterOperations.None;
                 component.Parameters.Add(p11);
             }
 
-            if (!HasParameter(component, ReservedParameters.RP_AREA_MIN_TOTAL, ReservedParameterKeys.RP_AREA_MIN_TOTAL, "m²", SimInfoFlow.Automatic))
+            if (!HasDoubleParam(component, ReservedParameters.RP_AREA_MIN_TOTAL, ReservedParameterKeys.RP_AREA_MIN_TOTAL, "m²", SimInfoFlow.Automatic))
             {
-                SimParameter p12 = new SimParameter(ReservedParameterKeys.RP_AREA_MIN_TOTAL, "m²", 0.0, 0.0, double.MaxValue);
-                var taxEntry = ReservedParameterKeys.GetReservedTaxonomyEntry(factory.ProjectData.Taxonomies, ReservedParameterKeys.RP_AREA_MIN_TOTAL);
-                p12.TaxonomyEntry = new SimTaxonomyEntryOrString(new SimTaxonomyEntryReference(taxEntry));
+                SimDoubleParameter p12 = new SimDoubleParameter(ReservedParameterKeys.RP_AREA_MIN_TOTAL, "m²", 0.0, 0.0, double.MaxValue);
+                var taxEntry = factory.ProjectData.Taxonomies.GetReservedParameter(ReservedParameterKeys.RP_AREA_MIN_TOTAL);
+                p12.NameTaxonomyEntry = new SimTaxonomyEntryOrString(new SimTaxonomyEntryReference(taxEntry));
                 p12.IsAutomaticallyGenerated = true;
-                p12.TextValue = "Net total area";
+                p12.Description = "Net total area";
                 p12.Category |= SimCategory.Geometry | SimCategory.Communication;
                 p12.Propagation = SimInfoFlow.Automatic;
                 p12.AllowedOperations = SimParameterOperations.None;
                 component.Parameters.Add(p12);
             }
 
-            if (!HasParameter(component, ReservedParameters.RP_VOLUME_MIN_TOTAL, ReservedParameterKeys.RP_VOLUME_MIN_TOTAL, "m³", SimInfoFlow.Automatic))
+            if (!HasDoubleParam(component, ReservedParameters.RP_VOLUME_MIN_TOTAL, ReservedParameterKeys.RP_VOLUME_MIN_TOTAL, "m³", SimInfoFlow.Automatic))
             {
-                SimParameter p13 = new SimParameter(ReservedParameterKeys.RP_VOLUME_MIN_TOTAL, "m³", 0.0, 0.0, double.MaxValue);
-                var taxEntry = ReservedParameterKeys.GetReservedTaxonomyEntry(factory.ProjectData.Taxonomies, ReservedParameterKeys.RP_VOLUME_MIN_TOTAL);
-                p13.TaxonomyEntry = new SimTaxonomyEntryOrString(new SimTaxonomyEntryReference(taxEntry));
+                SimDoubleParameter p13 = new SimDoubleParameter(ReservedParameterKeys.RP_VOLUME_MIN_TOTAL, "m³", 0.0, 0.0, double.MaxValue);
+                var taxEntry = factory.ProjectData.Taxonomies.GetReservedParameter(ReservedParameterKeys.RP_VOLUME_MIN_TOTAL);
+                p13.NameTaxonomyEntry = new SimTaxonomyEntryOrString(new SimTaxonomyEntryReference(taxEntry));
                 p13.IsAutomaticallyGenerated = true;
-                p13.TextValue = "Net total volume";
+                p13.Description = "Net total volume";
                 p13.Category |= SimCategory.Geometry | SimCategory.Communication;
                 p13.Propagation = SimInfoFlow.Automatic;
                 p13.AllowedOperations = SimParameterOperations.None;
                 component.Parameters.Add(p13);
             }
 
-            if (!HasParameter(component, ReservedParameters.RP_LENGTH_MAX_TOTAL, ReservedParameterKeys.RP_LENGTH_MAX_TOTAL, "m", SimInfoFlow.Automatic))
+            if (!HasDoubleParam(component, ReservedParameters.RP_LENGTH_MAX_TOTAL, ReservedParameterKeys.RP_LENGTH_MAX_TOTAL, "m", SimInfoFlow.Automatic))
             {
-                SimParameter p14 = new SimParameter(ReservedParameterKeys.RP_LENGTH_MAX_TOTAL, "m", 0.0, 0.0, double.MaxValue);
-                var taxEntry = ReservedParameterKeys.GetReservedTaxonomyEntry(factory.ProjectData.Taxonomies, ReservedParameterKeys.RP_LENGTH_MAX_TOTAL);
-                p14.TaxonomyEntry = new SimTaxonomyEntryOrString(new SimTaxonomyEntryReference(taxEntry));
+                SimDoubleParameter p14 = new SimDoubleParameter(ReservedParameterKeys.RP_LENGTH_MAX_TOTAL, "m", 0.0, 0.0, double.MaxValue);
+                var taxEntry = factory.ProjectData.Taxonomies.GetReservedParameter(ReservedParameterKeys.RP_LENGTH_MAX_TOTAL);
+                p14.NameTaxonomyEntry = new SimTaxonomyEntryOrString(new SimTaxonomyEntryReference(taxEntry));
                 p14.IsAutomaticallyGenerated = true;
-                p14.TextValue = "Gross total length";
+                p14.Description = "Gross total length";
                 p14.Category |= SimCategory.Geometry | SimCategory.Communication;
                 p14.Propagation = SimInfoFlow.Automatic;
                 p14.AllowedOperations = SimParameterOperations.None;
                 component.Parameters.Add(p14);
             }
 
-            if (!HasParameter(component, ReservedParameters.RP_AREA_MAX_TOTAL, ReservedParameterKeys.RP_AREA_MAX_TOTAL, "m²", SimInfoFlow.Automatic))
+            if (!HasDoubleParam(component, ReservedParameters.RP_AREA_MAX_TOTAL, ReservedParameterKeys.RP_AREA_MAX_TOTAL, "m²", SimInfoFlow.Automatic))
             {
-                SimParameter p15 = new SimParameter(ReservedParameterKeys.RP_AREA_MAX_TOTAL, "m²", 0.0, 0.0, double.MaxValue);
-                var taxEntry = ReservedParameterKeys.GetReservedTaxonomyEntry(factory.ProjectData.Taxonomies, ReservedParameterKeys.RP_AREA_MAX_TOTAL);
-                p15.TaxonomyEntry = new SimTaxonomyEntryOrString(new SimTaxonomyEntryReference(taxEntry));
+                SimDoubleParameter p15 = new SimDoubleParameter(ReservedParameterKeys.RP_AREA_MAX_TOTAL, "m²", 0.0, 0.0, double.MaxValue);
+                var taxEntry = factory.ProjectData.Taxonomies.GetReservedParameter(ReservedParameterKeys.RP_AREA_MAX_TOTAL);
+                p15.NameTaxonomyEntry = new SimTaxonomyEntryOrString(new SimTaxonomyEntryReference(taxEntry));
                 p15.IsAutomaticallyGenerated = true;
-                p15.TextValue = "Gross total area";
+                p15.Description = "Gross total area";
                 p15.Category |= SimCategory.Geometry | SimCategory.Communication;
                 p15.Propagation = SimInfoFlow.Automatic;
                 p15.AllowedOperations = SimParameterOperations.None;
                 component.Parameters.Add(p15);
             }
 
-            if (!HasParameter(component, ReservedParameters.RP_VOLUME_MAX_TOTAL, ReservedParameterKeys.RP_VOLUME_MAX_TOTAL, "m³", SimInfoFlow.Automatic))
+            if (!HasDoubleParam(component, ReservedParameters.RP_VOLUME_MAX_TOTAL, ReservedParameterKeys.RP_VOLUME_MAX_TOTAL, "m³", SimInfoFlow.Automatic))
             {
-                SimParameter p16 = new SimParameter(ReservedParameterKeys.RP_VOLUME_MAX_TOTAL, "m³", 0.0, 0.0, double.MaxValue);
-                var taxEntry = ReservedParameterKeys.GetReservedTaxonomyEntry(factory.ProjectData.Taxonomies, ReservedParameterKeys.RP_VOLUME_MAX_TOTAL);
-                p16.TaxonomyEntry = new SimTaxonomyEntryOrString(new SimTaxonomyEntryReference(taxEntry));
+                SimDoubleParameter p16 = new SimDoubleParameter(ReservedParameterKeys.RP_VOLUME_MAX_TOTAL, "m³", 0.0, 0.0, double.MaxValue);
+                var taxEntry = factory.ProjectData.Taxonomies.GetReservedParameter(ReservedParameterKeys.RP_VOLUME_MAX_TOTAL);
+                p16.NameTaxonomyEntry = new SimTaxonomyEntryOrString(new SimTaxonomyEntryReference(taxEntry));
                 p16.IsAutomaticallyGenerated = true;
-                p16.TextValue = "Gross total volume";
+                p16.Description = "Gross total volume";
                 p16.Category |= SimCategory.Geometry | SimCategory.Communication;
                 p16.Propagation = SimInfoFlow.Automatic;
                 p16.AllowedOperations = SimParameterOperations.None;
                 component.Parameters.Add(p16);
             }
 
-            if (!HasParameter(component, ReservedParameters.RP_COUNT, ReservedParameterKeys.RP_COUNT, "-", SimInfoFlow.Automatic))
+            if (!HasDoubleParam(component, ReservedParameters.RP_COUNT, ReservedParameterKeys.RP_COUNT, "-", SimInfoFlow.Automatic))
             {
-                SimParameter p17 = new SimParameter(ReservedParameterKeys.RP_COUNT, "-", 0.0, 0.0, 10000);
-                var taxEntry = ReservedParameterKeys.GetReservedTaxonomyEntry(factory.ProjectData.Taxonomies, ReservedParameterKeys.RP_COUNT);
-                p17.TaxonomyEntry = new SimTaxonomyEntryOrString(new SimTaxonomyEntryReference(taxEntry));
+                SimDoubleParameter p17 = new SimDoubleParameter(ReservedParameterKeys.RP_COUNT, "-", 0.0, 0.0, 10000);
+                var taxEntry = factory.ProjectData.Taxonomies.GetReservedParameter(ReservedParameterKeys.RP_COUNT);
+                p17.NameTaxonomyEntry = new SimTaxonomyEntryOrString(new SimTaxonomyEntryReference(taxEntry));
                 p17.IsAutomaticallyGenerated = true;
-                p17.TextValue = "Total number";
+                p17.Description = "Total number";
                 p17.Category |= SimCategory.Geometry | SimCategory.Communication;
                 p17.Propagation = SimInfoFlow.Automatic;
                 p17.AllowedOperations = SimParameterOperations.None;
@@ -1203,10 +1158,10 @@ namespace SIMULTAN.Data.Components
             }
         }
 
-        private static bool HasParameter(SimComponent component, string name, string key, string unit, SimInfoFlow propagation)
+        private static bool HasDoubleParam(SimComponent component, string name, string key, string unit, SimInfoFlow propagation)
         {
-            // check for name or taxonomy, cause old parameters probably don't have their taxonomies replaced yet
-            return component.Parameters.Any(x => (x.TaxonomyEntry.Name == name || x.HasReservedTaxonomyEntry(key)) && x.Unit == unit && x.Propagation == propagation);
+            return component.Parameters.OfType<SimDoubleParameter>().Any(doubleParam => (doubleParam.NameTaxonomyEntry.Name == name || doubleParam.HasReservedTaxonomyEntry(key)) && doubleParam.Unit == unit && doubleParam.Propagation == propagation);
+
         }
 
         #endregion

@@ -8,6 +8,7 @@ using SIMULTAN.Data.SitePlanner;
 using SIMULTAN.Data.Taxonomy;
 using SIMULTAN.Data.Users;
 using SIMULTAN.Data.ValueMappings;
+using SIMULTAN.DataMapping;
 using SIMULTAN.Excel;
 using SIMULTAN.Exchange;
 using System.IO;
@@ -56,11 +57,6 @@ namespace SIMULTAN.Projects
         /// <see cref="SimMultiValueBigTable"/>. Parameters within or outside of components can references such values.
         /// </summary>
         public SimMultiValueCollection ValueManager { get; }
-        /// <summary>
-        /// Manages the mapping between the components and various Excel tools. Each mapping 
-        /// is in a separate <see cref="ExcelTool"/>, even if it references the same Excel sheet.
-        /// </summary>
-        public ExcelToolFactory ExcelToolMappingManager { get; }
 
         /// <summary>
         /// Manages a library of parameters, external to any component.
@@ -108,6 +104,16 @@ namespace SIMULTAN.Projects
         /// </summary>
         public SimTaxonomyCollection Taxonomies { get; }
 
+        /// <summary>
+        /// Stores the DataMapping tools in this project
+        /// </summary>
+        public SimDataMappingToolCollection DataMappingTools { get; }
+
+        /// <summary>
+        /// Stores the geometry relations in this project
+        /// </summary>
+        public SimGeometryRelationCollection GeometryRelations { get; }
+
         #endregion
 
 
@@ -134,8 +140,7 @@ namespace SIMULTAN.Projects
             this.MultiLinkManager.UserEncryptionUtiliy = this.UsersManager;
 
             this.ValueManager = new SimMultiValueCollection(this);
-
-            this.ExcelToolMappingManager = new ExcelToolFactory(this);
+            this.DataMappingTools = new SimDataMappingToolCollection(this);
 
             this.ParameterLibraryManager = new ParameterFactory();
 
@@ -143,6 +148,8 @@ namespace SIMULTAN.Projects
             this.SitePlannerManager = new SitePlannerManager(this);
 
             this.Taxonomies = new SimTaxonomyCollection(this);
+
+            this.GeometryRelations = new SimGeometryRelationCollection(this);
 
             this.ComponentGeometryExchange = new ComponentGeometryExchange(this);
         }
@@ -172,16 +179,20 @@ namespace SIMULTAN.Projects
                 this.SimNetworks.Clear();
                 this.SimNetworks.SetCallingLocation(null);
 
-                this.ExcelToolMappingManager.ClearRecord();
-                this.ParameterLibraryManager.ClearRecord();
+                this.DataMappingTools.Clear();
+                this.DataMappingTools.SetCallingLocation(null);
+                this.ParameterLibraryManager.ParameterRecord.Clear();
 
                 this.ValueMappings.Clear();
                 this.ValueMappings.SetCallingLocation(null);
 
                 this.UserComponentLists.Clear();
 
-                this.Taxonomies.Clear();
+                this.Taxonomies.ClearAllItems(true);
                 this.Taxonomies.SetCallingLocation(null);
+
+                this.GeometryRelations.Clear();
+                this.GeometryRelations.SetCallingLocation(null);
 
                 this.IdGenerator.Reset();
             }
@@ -201,7 +212,9 @@ namespace SIMULTAN.Projects
             this.SitePlannerManager.SetCallingLocation(caller);
             this.ValueMappings.SetCallingLocation(caller);
             this.Taxonomies.SetCallingLocation(caller);
+            this.GeometryRelations.SetCallingLocation(caller);
             this.SimNetworks.SetCallingLocation(caller);
+            this.DataMappingTools.SetCallingLocation(caller);
         }
 
         /// <summary>

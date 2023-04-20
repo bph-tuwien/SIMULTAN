@@ -1,7 +1,9 @@
-﻿using SIMULTAN.Utils;
+﻿using SIMULTAN.Exceptions;
+using SIMULTAN.Utils;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -11,6 +13,7 @@ namespace SIMULTAN.Data.Taxonomy
     /// <summary>
     /// Data class for a Taxonomy
     /// </summary>
+    [DebuggerDisplay("[Taxonomy] {Name}, {Key}")]
     public class SimTaxonomy : SimNamedObject<SimTaxonomyCollection>
     {
         private Dictionary<string, SimTaxonomyEntry> allEntries;
@@ -28,8 +31,8 @@ namespace SIMULTAN.Data.Taxonomy
             {
                 if (key != value)
                 {
+                    NotifyWriteAccess();
                     key = value;
-
                     NotifyPropertyChanged(nameof(Key));
                 }
             }
@@ -47,9 +50,9 @@ namespace SIMULTAN.Data.Taxonomy
         public bool IsReadonly
         {
             get => isReadonly;
-            set 
-            { 
-                if(isReadonly != value)
+            set
+            {
+                if (isReadonly != value)
                 {
                     isReadonly = value;
                     NotifyPropertyChanged(nameof(IsReadonly));
@@ -57,6 +60,23 @@ namespace SIMULTAN.Data.Taxonomy
             }
         }
         private bool isReadonly = false;
+
+        /// <summary>
+        /// If the taxonomy can be deleted
+        /// </summary>
+        public bool IsDeletable
+        {
+            get => isDeletable;
+            set
+            {
+                if (isDeletable != value)
+                {
+                    isDeletable = value;
+                    NotifyPropertyChanged(nameof(isDeletable));
+                }
+            }
+        }
+        private bool isDeletable = true;
 
 
         /// <summary>
@@ -135,7 +155,7 @@ namespace SIMULTAN.Data.Taxonomy
             }
             if (string.IsNullOrEmpty(entry.Key))
             {
-                throw new Exception("Taxonomy entry cannot be null or empty");
+                throw new Exception("Taxonomy entry key cannot be null or empty");
             }
 
             if (IsKeyInUse(entry.Key))
@@ -143,18 +163,6 @@ namespace SIMULTAN.Data.Taxonomy
                 throw new Exception("Taxonomy entry key is already in use");
             }
             allEntries.Add(entry.Key, entry);
-        }
-
-        /// <summary>
-        /// Returns a new unused key for the taxonomy.
-        /// Used to generate a default starting key for taxonomy entries.
-        /// </summary>
-        /// <returns>a new unused key for the taxonomy</returns>
-        public String GetNewKey()
-        {
-            int count = 0;
-            while (IsKeyInUse(count.ToString())) { count++; }
-            return count.ToString();
         }
 
         /// <summary>
@@ -208,7 +216,7 @@ namespace SIMULTAN.Data.Taxonomy
         /// <summary>
         /// Returns true if this taxonomy is identical to another taxonomy.
         /// A taxonomy is identical with another if their keys (or if no keys are available, their names) are identical and
-        /// if the whole hierarchy is the same in terms of taxonomy entry keys (Names can be different and or localized).
+        /// if the whole hierarchy is the same in terms of taxonomy entry keys and names.
         /// </summary>
         /// <param name="other">The other taxonomy</param>
         /// <returns>True if the other taxonomy is identical to this one.</returns>
@@ -221,12 +229,18 @@ namespace SIMULTAN.Data.Taxonomy
 
             if (allEntries.Count != other.allEntries.Count)
                 return false;
+            if (IsReadonly != other.IsReadonly)
+                return false;
+            if (IsDeletable != other.IsDeletable)
+                return false;
 
             // compare all entries to check if hierarchy is identical
             foreach (var entry in other.allEntries.Values)
             {
                 var foundEntry = GetTaxonomyEntryByKey(entry.Key);
                 if (foundEntry == null)
+                    return false;
+                if (foundEntry.Name != entry.Name)
                     return false;
                 // if one or the others parent is null but not both -> different hierarchy
                 if (foundEntry.Parent == null ^ entry.Parent == null)
@@ -246,6 +260,15 @@ namespace SIMULTAN.Data.Taxonomy
         public IEnumerable<SimTaxonomyEntry> GetAllEntriesFlat()
         {
             return allEntries.Values;
+        }
+
+        /// <inheritdoc/>
+        protected override void NotifyWriteAccess()
+        {
+            if (IsReadonly)
+                throw new AccessDeniedException("Cannot change read only taxonomy.");
+
+            base.NotifyWriteAccess();
         }
 
     }

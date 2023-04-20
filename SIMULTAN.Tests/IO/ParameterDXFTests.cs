@@ -7,13 +7,10 @@ using SIMULTAN.Serializer.DXF;
 using SIMULTAN.Serializer.PADXF;
 using SIMULTAN.Tests.Properties;
 using SIMULTAN.Tests.Util;
-using SIMULTAN.Tests.Utils;
+using SIMULTAN.Tests.TestUtils;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace SIMULTAN.Tests.IO
 {
@@ -22,13 +19,13 @@ namespace SIMULTAN.Tests.IO
     {
         private void CreateTestData(ExtendedProjectData data)
         {
-            SimParameter parameterX = new SimParameter(99, "Parameter X", "Unit",
+            SimDoubleParameter parameterX = new SimDoubleParameter(99, "Parameter X", "Unit",
                 SimCategory.Cooling | SimCategory.Communication | SimCategory.Light_Artificial,
                 SimInfoFlow.Output,
                 45.67, -12.3, double.PositiveInfinity, "text value with spaces", null,
                 SimParameterOperations.EditValue | SimParameterOperations.EditName, SimParameterInstancePropagation.PropagateAlways, true);
 
-            SimParameter parameterY = new SimParameter(100, "Parameter Y", "Unit",
+            SimDoubleParameter parameterY = new SimDoubleParameter(100, "Parameter Y", "Unit",
                 SimCategory.Cooling,
                 SimInfoFlow.Output,
                 55.67, -12.3, double.PositiveInfinity, "text value with spaces", null,
@@ -85,8 +82,8 @@ namespace SIMULTAN.Tests.IO
             }
 
             Assert.AreEqual(2, projectData.ParameterLibraryManager.ParameterRecord.Count);
-            Assert.AreEqual("Parameter X", projectData.ParameterLibraryManager.ParameterRecord[0].TaxonomyEntry.Name);
-            Assert.AreEqual("Parameter Y", projectData.ParameterLibraryManager.ParameterRecord[1].TaxonomyEntry.Name);
+            Assert.AreEqual("Parameter X", projectData.ParameterLibraryManager.ParameterRecord[0].NameTaxonomyEntry.Name);
+            Assert.AreEqual("Parameter Y", projectData.ParameterLibraryManager.ParameterRecord[1].NameTaxonomyEntry.Name);
         }
 
         [TestMethod]
@@ -99,7 +96,7 @@ namespace SIMULTAN.Tests.IO
             var location = new DummyReferenceLocation(guid);
             projectData.SetCallingLocation(location);
 
-            typeof(ComponentDxfIO).GetProperty("LastParsedFileVersion", 
+            typeof(ComponentDxfIO).GetProperty("LastParsedFileVersion",
                 System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic).SetValue(null, (ulong)11);
 
             using (DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_PADXF_ReadV11)))
@@ -109,8 +106,8 @@ namespace SIMULTAN.Tests.IO
             }
 
             Assert.AreEqual(2, projectData.ParameterLibraryManager.ParameterRecord.Count);
-            Assert.AreEqual("Parameter X", projectData.ParameterLibraryManager.ParameterRecord[0].TaxonomyEntry.Name);
-            Assert.AreEqual("Parameter Y", projectData.ParameterLibraryManager.ParameterRecord[1].TaxonomyEntry.Name);
+            Assert.AreEqual("Parameter X", projectData.ParameterLibraryManager.ParameterRecord[0].NameTaxonomyEntry.Name);
+            Assert.AreEqual("Parameter Y", projectData.ParameterLibraryManager.ParameterRecord[1].NameTaxonomyEntry.Name);
         }
     }
 }

@@ -1,9 +1,7 @@
 ﻿using SIMULTAN.Data.FlowNetworks;
-using SIMULTAN.Data.SimNetworks;
 using SIMULTAN.Data.Users;
 using SIMULTAN.Exceptions;
 using SIMULTAN.Projects;
-using SIMULTAN.Utils;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -29,7 +27,7 @@ namespace SIMULTAN.Data.Components
         /// </summary>
         /// <param name="parameter">The parameter which invokes the event</param>
         /// <param name="property">The name of the property which caused the event</param>
-        internal void NotifyParameterPropertyChanged(SimParameter parameter, [CallerMemberName] string property = null)
+        internal void NotifyParameterPropertyChanged(SimBaseParameter parameter, [CallerMemberName] string property = null)
         {
             ParameterPropertyChanged?.Invoke(parameter, new PropertyChangedEventArgs(property));
         }
@@ -42,7 +40,7 @@ namespace SIMULTAN.Data.Components
         /// Enables/Disables whether parameter values are propagated to references.
         /// Forces a reevaluation of all referencing parameters when changing from False to True
         /// </summary>
-        public bool EnableReferencePropagation 
+        public bool EnableReferencePropagation
         {
             get { return enableReferencePropagation; }
             set
@@ -63,6 +61,12 @@ namespace SIMULTAN.Data.Components
         /// </summary>
         internal bool EnableAccessChecking { get { return EnableAccessCheckingCounter == 0 && ProjectData.UsersManager.Users.Count > 0; } }
         private int EnableAccessCheckingCounter = 0;
+
+
+        /// <summary>
+        /// True while references are being restored.
+        /// </summary>
+        public bool IsRestoringReferences { get; private set; } = false;
 
         #endregion
 
@@ -284,22 +288,27 @@ namespace SIMULTAN.Data.Components
         /// <param name="networkElements">A list of all network elements ordered by id. This is necessary since network elements are not part of the new system</param>
         public void RestoreReferences(Dictionary<SimObjectId, SimFlowNetworkElement> networkElements)
         {
+            IsRestoringReferences = true;
             foreach (var comp in this)
             {
                 comp?.RestoreReferences(networkElements, this.ProjectData.AssetManager);
             }
+            IsRestoringReferences = false;
         }
 
         /// <summary>
         /// Looks up taxonomy entries for reserved parameters by their name.
         /// Do this if the default taxonomies changed, could mean that the project is migrated.
         /// </summary>
-        public void RestoreDefaultTaxonomyReferences()
+        /// <param name="taxonomyFileVersion">The file version of the loaded managed taxonomy file</param>
+        public void RestoreDefaultTaxonomyReferences(ulong taxonomyFileVersion = 0)
         {
-            ComponentWalker.ForeachComponent(this, x =>
+            IsRestoringReferences = true;
+            foreach (var component in this)
             {
-                x.Parameters.ForEach(p => p.RestoreDefaultTaxonomyReferences());
-            });
+                component.RestoreDefaultTaxonomyReferences(taxonomyFileVersion);
+            }
+            IsRestoringReferences = false;
         }
 
 

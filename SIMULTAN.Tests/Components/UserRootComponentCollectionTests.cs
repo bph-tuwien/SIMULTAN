@@ -1,6 +1,6 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SIMULTAN.Data.Components;
-using SIMULTAN.Tests.Utils;
+using SIMULTAN.Tests.TestUtils;
 using System;
 using System.Collections;
 using System.Collections.ObjectModel;
@@ -206,7 +206,17 @@ namespace SIMULTAN.Tests.Components
             complist.RootComponents.CollectionChanged -= handler;
         }
 
+        private WeakReference MemLeakRemoveTest_Action(SimUserComponentList complist)
+        {
+            var comp1 = projectData.Components[0];
 
+            complist.RootComponents.Add(comp1);
+
+            WeakReference compref = new WeakReference(complist.RootComponents.RootComponents[0]);
+
+            complist.RootComponents.Remove(comp1);
+            return compref;
+        }
         [TestMethod]
         public void MemLeakRemoveTest()
         {
@@ -215,15 +225,7 @@ namespace SIMULTAN.Tests.Components
             var complist = new SimUserComponentList("TEST");
             projectData.UserComponentLists.Add(complist);
 
-            var comp1 = projectData.Components[0];
-
-            complist.RootComponents.Add(comp1);
-
-            WeakReference compref = new WeakReference(complist.RootComponents.RootComponents[0]);
-
-            Assert.IsTrue(compref.IsAlive);
-
-            complist.RootComponents.Remove(comp1);
+            var compref = MemLeakRemoveTest_Action(complist);
 
             GC.Collect();
             GC.WaitForPendingFinalizers();
@@ -295,14 +297,8 @@ namespace SIMULTAN.Tests.Components
             Assert.IsTrue(complist.RootComponents.Count == 0);
         }
 
-        [TestMethod]
-        public void MemLeakClearTest()
+        private (WeakReference ref1, WeakReference ref2, WeakReference ref3) MemLeakClearTest_Action(SimUserComponentList complist)
         {
-            LoadProject(testProject);
-
-            var complist = new SimUserComponentList("TEST");
-            projectData.UserComponentLists.Add(complist);
-
             var comp1 = projectData.Components[0];
             var comp2 = projectData.Components[1];
             var subcomp1 = comp1.Components[0].Component;
@@ -314,6 +310,18 @@ namespace SIMULTAN.Tests.Components
             var ref1 = new WeakReference(complist.RootComponents.RootComponents[0]);
             var ref2 = new WeakReference(complist.RootComponents.RootComponents[1]);
             var ref3 = new WeakReference(complist.RootComponents.RootComponents[2]);
+
+            return (ref1, ref2, ref3);
+        }
+        [TestMethod]
+        public void MemLeakClearTest()
+        {
+            LoadProject(testProject);
+
+            var complist = new SimUserComponentList("TEST");
+            projectData.UserComponentLists.Add(complist);
+
+            (var ref1, var ref2, var ref3) = MemLeakClearTest_Action(complist);
 
             Assert.IsTrue(ref1.IsAlive);
             Assert.IsTrue(ref2.IsAlive);
@@ -427,14 +435,8 @@ namespace SIMULTAN.Tests.Components
             complist.RootComponents.CollectionChanged -= handler;
         }
 
-        [TestMethod]
-        public void MemLeakIndexTest()
+        private WeakReference MemLeakIndexTest_Action(SimUserComponentList complist)
         {
-            LoadProject(testProject);
-
-            var complist = new SimUserComponentList("TEST");
-            projectData.UserComponentLists.Add(complist);
-
             var comp1 = projectData.Components[0];
             var comp2 = projectData.Components[1];
             var comp3 = projectData.Components[2];
@@ -445,9 +447,20 @@ namespace SIMULTAN.Tests.Components
             complist.RootComponents.Add(subcomp1);
 
             var compref = new WeakReference(complist.RootComponents.RootComponents[0]);
-            Assert.IsTrue(compref.IsAlive);
 
             complist.RootComponents[0] = subcomp2;
+
+            return compref;
+        }
+        [TestMethod]
+        public void MemLeakIndexTest()
+        {
+            LoadProject(testProject);
+
+            var complist = new SimUserComponentList("TEST");
+            projectData.UserComponentLists.Add(complist);
+
+            var compref = MemLeakIndexTest_Action(complist);
 
             GC.Collect();
             GC.WaitForPendingFinalizers();
@@ -607,14 +620,8 @@ namespace SIMULTAN.Tests.Components
             Assert.IsFalse(complist.RootComponents.Contains(subcomp1));
         }
 
-        [TestMethod]
-        public void MemLeakRootComponentsRemoveTest()
+        private WeakReference MemLeakRootComponentsRemoveTest_Action(SimUserComponentList complist)
         {
-            LoadProject(testProject);
-
-            var complist = new SimUserComponentList("TEST");
-            projectData.UserComponentLists.Add(complist);
-
             var comp1 = projectData.Components[0];
             var comp2 = projectData.Components[1];
             var comp3 = projectData.Components[2];
@@ -625,13 +632,24 @@ namespace SIMULTAN.Tests.Components
             complist.RootComponents.Add(comp2);
             complist.RootComponents.Add(subcomp1);
 
-            Assert.IsTrue(complist.RootComponents.RootComponents[0].Component == comp1);
-
             var compref = new WeakReference(complist.RootComponents.RootComponents[0]);
 
+            Assert.IsTrue(complist.RootComponents.RootComponents[0].Component == comp1);
             Assert.IsTrue(compref.IsAlive);
 
             projectData.Components.Remove(comp1);
+
+            return compref;
+        }
+        [TestMethod]
+        public void MemLeakRootComponentsRemoveTest()
+        {
+            LoadProject(testProject);
+
+            var complist = new SimUserComponentList("TEST");
+            projectData.UserComponentLists.Add(complist);
+
+            var compref = MemLeakRootComponentsRemoveTest_Action(complist);
 
             GC.Collect();
             GC.WaitForPendingFinalizers();
@@ -671,14 +689,8 @@ namespace SIMULTAN.Tests.Components
         }
 
 
-        [TestMethod]
-        public void MemLeakSubComponentRemoveTest()
+        private WeakReference MemLeakSubComponentRemoveTest_Action(SimUserComponentList complist)
         {
-            LoadProject(testProject);
-
-            var complist = new SimUserComponentList("TEST");
-            projectData.UserComponentLists.Add(complist);
-
             var comp1 = projectData.Components[0];
             var comp2 = projectData.Components[1];
             var comp3 = projectData.Components[2];
@@ -694,6 +706,18 @@ namespace SIMULTAN.Tests.Components
             Assert.IsTrue(compref.IsAlive);
 
             comp1.Components.RemoveAt(0);
+
+            return compref;
+        }
+        [TestMethod]
+        public void MemLeakSubComponentRemoveTest()
+        {
+            LoadProject(testProject);
+
+            var complist = new SimUserComponentList("TEST");
+            projectData.UserComponentLists.Add(complist);
+
+            var compref = MemLeakSubComponentRemoveTest_Action(complist);
 
             GC.Collect();
             GC.WaitForPendingFinalizers();

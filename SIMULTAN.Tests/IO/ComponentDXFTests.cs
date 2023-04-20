@@ -1,22 +1,14 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SIMULTAN.Data;
-using SIMULTAN.Data.Assets;
-using SIMULTAN.Data.Components;
-using SIMULTAN.Data.FlowNetworks;
-using SIMULTAN.Data.Users;
 using SIMULTAN.Projects;
 using SIMULTAN.Serializer.CODXF;
 using SIMULTAN.Serializer.DXF;
 using SIMULTAN.Tests.Properties;
 using SIMULTAN.Tests.Util;
-using SIMULTAN.Tests.Utils;
+using SIMULTAN.Tests.TestUtils;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
-using System.Windows;
 
 namespace SIMULTAN.Tests.IO
 {
@@ -71,6 +63,9 @@ namespace SIMULTAN.Tests.IO
                 ComponentDxfIO.Read(reader, info);
             }
 
+            HierarchicalProject.LoadDefaultTaxonomies(projectData);
+            projectData.Components.RestoreDefaultTaxonomyReferences();
+
             //Resources
             ComponentDXFResourceTests.CheckAssetManager(projectData.AssetManager);
             ComponentDXFNetworkTests.CheckNetworks(projectData, guid);
@@ -98,6 +93,9 @@ namespace SIMULTAN.Tests.IO
                 var info = new DXFParserInfo(guid, projectData);
                 ComponentDxfIO.Read(reader, info);
             }
+
+            HierarchicalProject.LoadDefaultTaxonomies(projectData);
+            projectData.Components.RestoreDefaultTaxonomyReferences();
 
             //Resources
             ComponentDXFResourceTests.CheckAssetManager(projectData.AssetManager);
@@ -127,6 +125,9 @@ namespace SIMULTAN.Tests.IO
                 var info = new DXFParserInfo(guid, projectData);
                 ComponentDxfIO.Read(reader, info);
             }
+
+            HierarchicalProject.LoadDefaultTaxonomies(projectData);
+            projectData.Components.RestoreDefaultTaxonomyReferences();
 
             //Resources
             ComponentDXFResourceTests.CheckAssetManager(projectData.AssetManager);

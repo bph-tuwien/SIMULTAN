@@ -3,7 +3,7 @@ using SIMULTAN.Projects;
 using SIMULTAN.Serializer.PPATH;
 using SIMULTAN.Tests.Properties;
 using SIMULTAN.Tests.Util;
-using SIMULTAN.Tests.Utils;
+using SIMULTAN.Tests.TestUtils;
 using System;
 using System.Collections.Generic;
 using System.IO;

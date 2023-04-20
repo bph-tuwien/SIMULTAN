@@ -1,4 +1,5 @@
-﻿using SIMULTAN.Exceptions;
+﻿using SIMULTAN.Data.Taxonomy;
+using SIMULTAN.Exceptions;
 using System;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -222,14 +223,14 @@ namespace SIMULTAN.Data.Components
             /// <param name="extensionFormat">Extension format for the extension for <see cref="string.Format(string, object)"/>.
             /// The first placeholder will be filled with a integer (gets increased to find a free slot).</param>
             /// <returns>A slot containing the given slot base and an extension which hasn't been used in this collection</returns>
-            public SimSlot FindAvailableSlot(SimSlotBase slotBase, string extensionFormat = "{0}")
+            public SimSlot FindAvailableSlot(SimTaxonomyEntry slotBase, string extensionFormat = "{0}")
             {
                 var alreadyUsedSlots = this.Select(x => x.Slot).ToHashSet();
                 int i = 0;
 
                 while (true)
                 {
-                    var slotWithExtension = new SimSlot(slotBase, string.Format(extensionFormat, i));
+                    var slotWithExtension = new SimSlot(new SimTaxonomyEntryReference(slotBase), string.Format(extensionFormat, i));
 
                     if (!alreadyUsedSlots.Contains(slotWithExtension))
                         return slotWithExtension;

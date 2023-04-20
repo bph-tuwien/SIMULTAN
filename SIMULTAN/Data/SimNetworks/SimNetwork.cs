@@ -1,6 +1,9 @@
-﻿using System;
+﻿using SIMULTAN.Data.Geometry;
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Windows;
+using System.Windows.Media;
 using static SIMULTAN.Data.SimNetworks.SimNetworkConnector;
 using static SIMULTAN.Data.SimNetworks.SimNetworkPort;
 
@@ -9,18 +12,75 @@ namespace SIMULTAN.Data.SimNetworks
     /// <summary>
     /// Represents a SimNetwork
     /// </summary>
-    public partial class SimNetwork : BaseSimNetworkElement
+    public partial class SimNetwork : BaseSimNetworkElement, INetwork
     {
+
+        /// <summary>
+        /// Color of the Block
+        /// </summary>
+        public DerivedColor Color
+        {
+            get { return this.color; }
+            set
+            {
+                this.color = value;
+                this.NotifyPropertyChanged(nameof(this.Color));
+            }
+        }
+        private DerivedColor color;
+
+        /// <summary>
+        /// The index of geometric representation file 
+        /// </summary>
+        private int index_of_geometric_rep_file;
+        /// <summary>
+        /// The index of geometric representation file
+        /// </summary>
+        public int IndexOfGeometricRepFile
+        {
+            get { return this.index_of_geometric_rep_file; }
+            set
+            {
+                if (this.index_of_geometric_rep_file != value)
+                {
+                    var old_value = this.index_of_geometric_rep_file;
+                    this.index_of_geometric_rep_file = value;
+                    this.NotifyPropertyChanged(nameof(IndexOfGeometricRepFile));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Size of the network
+        /// </summary>
+        public double Size { get; set; } = 1;
+
         /// <summary>
         /// Contained Elements in the network
         /// </summary>
-        public SimNetworkElementCollection ContainedElements { get; set; }
+        public SimNetworkElementCollection ContainedElements { get; }
 
 
         /// <summary>
         /// Contained SimNetworkConnectors in the network
         /// </summary>
-        public SimNetworkConnectorCollection ContainedConnectors { get; set; }
+        public SimNetworkConnectorCollection ContainedConnectors { get; }
+
+        /// <summary>
+        /// Tells whether the network has a parent
+        /// </summary>
+        public bool HasParent
+        {
+            get
+            {
+                if (this.ParentNetwork == null)
+                {
+                    return false;
+                }
+                return true;
+            }
+        }
+
 
 
 
@@ -34,11 +94,32 @@ namespace SIMULTAN.Data.SimNetworks
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
 
+            this.RepresentationReference = GeometricReference.Empty;
             this.Name = name;
             this.Id = SimId.Empty;
             this.ContainedElements = new SimNetworkElementCollection(this);
             this.ContainedConnectors = new SimNetworkConnectorCollection(this);
             this.Ports = new SimNetworkPortCollection(this);
+            this.index_of_geometric_rep_file = -1;
+            this.Color = new DerivedColor(Colors.DarkGray);
+        }
+
+        /// <summary>
+        /// COnstructor for cloning a SimNetwork
+        /// </summary>
+        /// <param name="simNetwork">The simnetwork we base our clone one</param>
+        /// <param name="name">The designated name of the cloned SimNetwork</param>
+        private SimNetwork(SimNetwork simNetwork, string name)
+        {
+            this.Name = name;
+            this.Id = SimId.Empty;
+            this.ContainedElements = new SimNetworkElementCollection(this);
+            this.ContainedConnectors = new SimNetworkConnectorCollection(this);
+            this.Position = simNetwork.Position;
+            this.Ports = new SimNetworkPortCollection(this);
+            this.index_of_geometric_rep_file = -1;
+            this.Color = simNetwork.Color;
+
         }
 
 
@@ -50,10 +131,11 @@ namespace SIMULTAN.Data.SimNetworks
         /// <param name="position">The position of the SimNetwork (it only matters whenever it is a Subnetwork)</param>
         /// <param name="ports">The ports of the network</param>
         /// <param name="elements">The elements in the network, both <see cref="SimNetwork"/> and <see cref="SimNetworkBlock"/></param>
-        /// <param name="connectors">The connectors inside the network. May either connect ports of subelements or subelements with ports of the 
+        /// <param name="connectors">The connectors inside the network. May either connect ports of sub elements or sub elements with ports of the 
         /// root network</param>
+        /// <param name="color">Color of the network</param>
         internal SimNetwork(SimId id, string name, Point position, IEnumerable<SimNetworkPort> ports,
-            IEnumerable<BaseSimNetworkElement> elements, IEnumerable<SimNetworkConnector> connectors)
+            IEnumerable<BaseSimNetworkElement> elements, IEnumerable<SimNetworkConnector> connectors, DerivedColor color)
         {
             if (id == null)
                 throw new ArgumentNullException(nameof(id));
@@ -67,10 +149,13 @@ namespace SIMULTAN.Data.SimNetworks
                 throw new ArgumentNullException(nameof(ports));
             if (connectors == null)
                 throw new ArgumentNullException(nameof(connectors));
+            if (color == null)
+                throw new ArgumentNullException(nameof(color));
 
             this.Id = id;
             this.Name = name;
             this.Position = position;
+            this.color = color;
 
             this.ContainedElements = new SimNetworkElementCollection(this);
             foreach (var element in elements)
@@ -104,6 +189,8 @@ namespace SIMULTAN.Data.SimNetworks
             this.ContainedElements = new SimNetworkElementCollection(this);
             this.ContainedConnectors = new SimNetworkConnectorCollection(this);
             this.Ports = new SimNetworkPortCollection(this);
+            this.index_of_geometric_rep_file = -1;
+            this.Color = new DerivedColor(Colors.DarkGray);
         }
 
 
@@ -145,6 +232,7 @@ namespace SIMULTAN.Data.SimNetworks
             foreach (var oPort in ports)
             {
                 var newPort = new SimNetworkPort(oPort.PortType);
+                newPort.Name = oPort.Name;
                 subNetwork.Ports.Add(newPort);
                 foreach (var connector in connectors)
                 {
@@ -161,6 +249,18 @@ namespace SIMULTAN.Data.SimNetworks
             return subNetwork;
         }
 
+
+        /// <inheritdoc />
+        protected override void OnFactoryChanged(ISimManagedCollection newFactory, ISimManagedCollection oldFactory)
+        {
+            //Update calculation Ids
+            this.ContainedElements.NotifyFactoryChanged(this.Factory, oldFactory);
+            this.ContainedConnectors.NotifyFactoryChanged(this.Factory, oldFactory);
+            // this.Ports.NotifyFactoryChanged(this.Factory, oldFactory); --> Handled in base class
+
+            base.OnFactoryChanged(newFactory, oldFactory);
+        }
+
         /// <summary>
         /// Returns all the SimNetworkPorts
         /// </summary>
@@ -170,7 +270,7 @@ namespace SIMULTAN.Data.SimNetworks
             return this.GetPortsRecursively(this);
         }
         /// <summary>
-        /// Returns all the SimNetworkBlocks concinad in the network reuirsively
+        /// Returns all the SimNetworkBlocks contained in the network recursively
         /// </summary>
         /// <returns></returns>
         public List<SimNetworkBlock> GetAllBlocks()
@@ -226,16 +326,72 @@ namespace SIMULTAN.Data.SimNetworks
         }
 
 
-        #endregion
-
-        /// <inheritdoc />
-        protected override void OnFactoryChanged(ISimManagedCollection newFactory, ISimManagedCollection oldFactory)
+        /// <summary>
+        /// Clones this SimNetwork
+        /// </summary>
+        /// <param name="name">The designated name</param>
+        /// <param name="factory">The root level SimNetworkCollection, if it is null, then the network must be a subnetwork</param>
+        /// <param name="parentNetwork">The parent network if the item is a subnetwork</param>
+        /// <param name="portPairs">Port pairs from upper levels of the network, to clone the SimNetworkConnectors</param>
+        /// <returns>Returns the cloned SimNetworkBLock, and a Dictionary with the original and cloned port LocalId pairs</returns>
+        public (SimNetwork Cloned, Dictionary<SimId, SimId> PortPairs) Clone(string name, SimNetworkCollection factory, SimNetwork parentNetwork, Dictionary<SimId, SimId> portPairs)
         {
-            this.ContainedElements.NotifyFactoryChanged(newFactory, oldFactory);
-            this.ContainedConnectors.NotifyFactoryChanged(newFactory, oldFactory);
 
-            base.OnFactoryChanged(newFactory, oldFactory);
+            var cloned = new SimNetwork(this, name);
+            //For storing the id pairs for ports (original, cloned). This is necessary to reconstruct the SimNetworkConstructors
+            var portIdDictionary = new Dictionary<SimId, SimId>();
+
+            if (factory != null)
+                factory.Add(cloned);
+            if (parentNetwork != null)
+                parentNetwork.ContainedElements.Add(cloned);
+            if (portPairs != null)
+                portPairs.ToList().ForEach(x => portIdDictionary.Add(x.Key, x.Value));
+
+
+            foreach (var port in this.Ports)
+            {
+                var newPort = new SimNetworkPort(port);
+                cloned.Ports.Add(newPort);
+                portIdDictionary.Add(port.Id, newPort.Id);
+            }
+
+
+
+            foreach (var item in this.ContainedElements)
+            {
+                if (item is SimNetworkBlock block)
+                {
+                    var clonedBlock = block.Clone(cloned);
+                    clonedBlock.PortPairs.ToList().ForEach(x => portIdDictionary.Add(x.Key, x.Value));
+                }
+                if (item is SimNetwork subNetwork)
+                {
+                    var subNw = subNetwork.Clone(subNetwork.Name, null, cloned, portIdDictionary);
+                    subNw.PortPairs.ToList().ForEach(x => portIdDictionary.Add(x.Key, x.Value));
+                }
+            }
+
+
+
+
+            foreach (var connector in this.ContainedConnectors)
+            {
+                if (portIdDictionary.TryGetValue(connector.Source.Id, out var clonedSourceId) && portIdDictionary.TryGetValue(connector.Target.Id, out var clonedTargetid))
+                {
+                    var clonedSource = Factory.ProjectData.IdGenerator.GetById<SimNetworkPort>(clonedTargetid);
+                    var clonedTarget = Factory.ProjectData.IdGenerator.GetById<SimNetworkPort>(clonedSourceId);
+
+                    var clonedConnector = new SimNetworkConnector(clonedSource, clonedTarget);
+                    clonedConnector.Color = connector.Color;
+                    cloned.ContainedConnectors.Add(clonedConnector);
+                }
+            }
+
+            return (cloned, portIdDictionary);
         }
+
+        #endregion
 
         internal override void RestoreReferences()
         {

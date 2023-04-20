@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 
 namespace SIMULTAN.Serializer.DXF
 {
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+
     // entity names (to be placed after code ENTITY_START)
     public static class ParamStructTypes
     {
@@ -35,6 +37,15 @@ namespace SIMULTAN.Serializer.DXF
         public const string INSTANCE_PLACEMENT_GEOMETRY = "INSTANCE_PLACEMENT_GEOMETRY";
         public const string INSTANCE_PLACEMENT_SIMNETWORK = "INSTANCE_PLACEMENT_SIMNETWORK";
         public const string MAPPING_TO_COMP = "MAPPING2COMPONENT"; // custom
+
+        public const string DATAMAPPING_TOOL = "DATAMAPPING_TOOL";
+        public const string DATAMAPPING_RULE_COMPONENT = "DATAMAPPING_RULE_COMPONENT";
+        public const string DATAMAPPING_RULE_PARAMETER = "DATAMAPPING_RULE_PARAMETER";
+        public const string DATAMAPPING_RULE_INSTANCE = "DATAMAPPING_RULE_INSTANCE";
+        public const string DATAMAPPING_RULE_FACE = "DATAMAPPING_RULE_FACE";
+        public const string DATAMAPPING_RULE_VOLUME = "DATAMAPPING_RULE_VOLUME";
+        public const string DATAMAPPING_RULE_READ = "DATAMAPPING_RULE_READ";
+
         public const string EXCEL_RULE = "EXCEL_RULE";
         public const string EXCEL_TOOL = "EXCEL_TOOL";
         public const string EXCEL_MAPPING = "EXCEL_MAPPING";
@@ -75,7 +86,9 @@ namespace SIMULTAN.Serializer.DXF
         public const string SIMVALUEMAPPING_SECTION = "VALUEMAPPINGS";
         [Obsolete]
         public const string IMPORTANT_SECTION = "IMPORTANT";    // custom
+        [Obsolete]
         public const string EXCEL_SECTION = "EXCEL_TOOLS";      // custom
+        public const string DATAMAPPINGTOOL_SECTION = "DATAMAPPING_TOOLS";
         public const string COMMON_EXCEL_SECTION = "COMMON_EXCEL_MAP";// custom
         public const string COMMON_ACCESS_MARKER_SECTION = "COMMON_ACCESS_MARKERS"; // custom
         public const string ASSET_SECTION = "ASSETS";           // custom
@@ -101,10 +114,18 @@ namespace SIMULTAN.Serializer.DXF
         public const string TAXONOMY = "TAXONOMY";
         public const string TAXONOMY_ENTRY = "TAXONOMY_ENTRY";
 
+        public const string GEOMETRY_RELATION_SECTION = "GEOMETRY_RELATION_SECTION";
+        public const string GEOMETRY_RELATION = "GEOMETRY_RELATION";
+        public const string GEOMETRY_RELATION_FILE_MAPPING_SECTION = "GEOMETRY_RELATION_FILE_MAPPING_SECTION";
+        public const string GEOMETRY_RELATION_FILE_MAPPING = "GEOMETRY_RELATION_FILE_MAPPING";
+
         // public const string DOUBLE_NAN = "NaN";                 // custom
         public const int LIST_CONTINUE = 1;                   // custom
         public const int LIST_END = -1;                      // custom
         public const int END_OF_SUBLIST = -11;                  // custom
-        public const string DELIMITER_WITHIN_ENTRY = "_|_";
+        public const string DELIMITER_WITHIN_ENTRY_BEFORE_V18 = "_|_";
+        public const char DELIMITER_WITHIN_ENTRY = ';';
     }
+
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
 }

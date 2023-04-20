@@ -1,18 +1,25 @@
 ﻿using SIMULTAN.Data;
+using SIMULTAN.Data.Assets;
 using SIMULTAN.Data.Components;
 using SIMULTAN.Data.FlowNetworks;
+using SIMULTAN.Data.Geometry;
 using SIMULTAN.Data.MultiValues;
 using SIMULTAN.Data.Taxonomy;
 using SIMULTAN.Projects;
 using SIMULTAN.Serializer.CODXF;
 using SIMULTAN.Serializer.DXF;
+using SIMULTAN.Serializer.GRDXF;
 using SIMULTAN.Serializer.MVDXF;
+using SIMULTAN.Serializer.SimGeo;
 using SIMULTAN.Serializer.TXDXF;
 using SIMULTAN.Utils;
+using SIMULTAN.Utils.Files;
 using System;
+using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace SIMULTAN.Serializer.Projects
@@ -26,9 +33,9 @@ namespace SIMULTAN.Serializer.Projects
         /// Saves the given components and their respective referenced components and values.
         /// The name of the values file is derived from the given component file name.
         /// </summary>
-        /// <param name="_file">the zip file that contains both the components and the values</param>
+        /// <param name="_file">The zip file that contains both the components and the values</param>
         /// <param name="projectData">The project's data</param>
-        /// <param name="_components">the selected components for saving</param>
+        /// <param name="_components">The selected components for saving</param>
         public static void ExportComponentLibrary(FileInfo _file, ExtendedProjectData projectData, IEnumerable<SimComponent> _components)
         {
             if (_file == null)
@@ -47,13 +54,18 @@ namespace SIMULTAN.Serializer.Projects
             (var all_components, var all_networks) = GetReferencedComponentsAndNetworks(_components);
             // gather all relevant values
             var all_values = GetReferencedMultiValues(all_components);
-            // gather all relevatn taxonomies
+            // gather all relevant taxonomies
             var all_taxonomies = GetReferencedTaxonomies(all_components);
 
+            var packDir = new DirectoryInfo(Path.Combine(_file.Directory.FullName, "~ComponentExport"));
+            (_, var newName) = AdmissibilityQueries.DirectoryNameIsAdmissible(packDir, x => !Directory.Exists(x), "{0}{1}");
+            packDir = new DirectoryInfo(newName);
+            packDir.Create();
+
             // extract the file names
-            string path_to_CompFile = Path.Combine(_file.Directory.FullName, "ComponentExport_Components" + ParamStructFileExtensions.FILE_EXT_COMPONENTS);
-            string path_to_MVFile = Path.Combine(_file.Directory.FullName, "ComponentExport_Values" + ParamStructFileExtensions.FILE_EXT_MULTIVALUES);
-            string path_to_TXFile = Path.Combine(_file.Directory.FullName, "ComponentExport_Taxonomies" + ParamStructFileExtensions.FILE_EXT_TAXONOMY);
+            string path_to_CompFile = Path.Combine(packDir.FullName, "ComponentExport_Components" + ParamStructFileExtensions.FILE_EXT_COMPONENTS);
+            string path_to_MVFile = Path.Combine(packDir.FullName, "ComponentExport_Values" + ParamStructFileExtensions.FILE_EXT_MULTIVALUES);
+            string path_to_TXFile = Path.Combine(packDir.FullName, "ComponentExport_Taxonomies" + ParamStructFileExtensions.FILE_EXT_TAXONOMY);
             List<FileInfo> files_to_pack = new List<FileInfo>();
 
             // export the values
@@ -78,18 +90,40 @@ namespace SIMULTAN.Serializer.Projects
             files_to_pack.Add(compFile);
 
             // put both files in a Zip archive and delete them from the file system
-            ZipUtils.CreateArchiveFrom(_file, new List<DirectoryInfo>(), files_to_pack, _file.DirectoryName);
-            foreach (var f in files_to_pack)
+            ZipUtils.CreateArchiveFrom(_file, new List<DirectoryInfo>(), files_to_pack, packDir.FullName);
+            // clear pack dir
+            packDir.Delete(true);
+        }
+
+        /// <summary>
+        /// Gets the replacing taxonomy entry for a source entry.
+        /// </summary>
+        /// <param name="sourceEntry">The source entry of the import.</param>
+        /// <param name="existingTaxonomies">The existing taxonomies.</param>
+        /// <param name="existingEntry">The existing entry if one is found.</param>
+        /// <returns>True if an existing entry was found.</returns>
+        private static bool GetReplacingTaxonomyEntry(SimTaxonomyEntry sourceEntry, Dictionary<SimTaxonomy, SimTaxonomy> existingTaxonomies, out SimTaxonomyEntry existingEntry)
+        {
+            if (existingTaxonomies.TryGetValue(sourceEntry.Taxonomy, out var tax))
             {
-                f.Delete();
+                var replaceEntry = tax.GetTaxonomyEntryByKey(sourceEntry.Key);
+                if (replaceEntry != null)
+                {
+                    existingEntry = replaceEntry;
+                    return true;
+                }
+                existingEntry = null;
+                return false;
             }
+            existingEntry = null;
+            return false;
         }
 
         /// <summary>
         /// Merges a component file (and a related values file) with the given project.
         /// </summary>
-        /// <param name="_project">the project in which we are merging</param>
-        /// <param name="_archive_file">the zip file from a previous export</param>
+        /// <param name="_project">The project in which we are merging</param>
+        /// <param name="_archive_file">The zip file from a previous export</param>
         public static SimComponent ImportComponentLibrary(HierarchicalProject _project, FileInfo _archive_file)
         {
             if (_project == null)
@@ -98,7 +132,11 @@ namespace SIMULTAN.Serializer.Projects
                 throw new ArgumentException("The given file does not exist!");
 
             // 0. unpack the archive
-            var files_to_import = ZipUtils.UnpackArchive(_archive_file, _archive_file.Directory);
+            var unpackDir = new DirectoryInfo(Path.Combine(_archive_file.Directory.FullName, "~ComponentImport"));
+            (_, var newName) = AdmissibilityQueries.DirectoryNameIsAdmissible(unpackDir, x => !Directory.Exists(x), "{0}{1}");
+            unpackDir = new DirectoryInfo(newName);
+            unpackDir.Create();
+            var files_to_import = ZipUtils.UnpackArchive(_archive_file, unpackDir);
             FileInfo tfile = files_to_import.FirstOrDefault(x => string.Equals(x.Extension, ParamStructFileExtensions.FILE_EXT_TAXONOMY));
             FileInfo vfile = files_to_import.FirstOrDefault(x => string.Equals(x.Extension, ParamStructFileExtensions.FILE_EXT_MULTIVALUES));
             FileInfo cfile = files_to_import.FirstOrDefault(x => string.Equals(x.Extension, ParamStructFileExtensions.FILE_EXT_COMPONENTS));
@@ -106,7 +144,7 @@ namespace SIMULTAN.Serializer.Projects
             ExtendedProjectData mergeData = new ExtendedProjectData();
 
             // load the taxonomies
-            if(tfile != null)
+            if (tfile != null)
             {
                 DXFParserInfo info = new DXFParserInfo(Guid.Empty, mergeData);
                 mergeData.Taxonomies.SetCallingLocation(new DummyReferenceLocation(info.GlobalId));
@@ -132,24 +170,29 @@ namespace SIMULTAN.Serializer.Projects
             // 2a. load the components and networks
             if (cfile != null)
             {
-                //DXFDecoder dxf_decoder_C = new DXFDecoder(mergeData, DXFDecoderMode.Components);
-                //dxf_decoder_C.LoadFromFile(cfile.FullName);
                 ComponentDxfIO.ReadLibrary(cfile, new DXFParserInfo(Guid.Empty, mergeData));
 
                 // 2b. restore interdependencies
                 mergeData.Components.RemoveAllAssets();
                 mergeData.NetworkManager.RemoveReferencesToGeometryWithinRecord();
+                // if the import has no default taxonomies, load them first
+                if (!mergeData.Taxonomies.Any())
+                {
+                    HierarchicalProject.LoadDefaultTaxonomies(mergeData);
+                    mergeData.Components.RestoreDefaultTaxonomyReferences();
+                }
 
                 // 2c. put all imported components into a new parent component to make the import recognizable
                 List<SimComponent> to_transfer = new List<SimComponent>(mergeData.Components);
 
                 import_parent = new SimComponent(_project.AllProjectDataManagers.UsersManager.CurrentUser.Role);
-                import_parent.CurrentSlot = new SimSlotBase(SimDefaultSlots.Import);
+                var importTax = _project.AllProjectDataManagers.Taxonomies.GetDefaultSlot(SimDefaultSlotKeys.Import);
+                import_parent.CurrentSlot = new SimTaxonomyEntryReference(importTax);
 
                 foreach (SimComponent c in to_transfer)
                 {
                     // define the slot in the parent
-                    var new_slot = import_parent.Components.FindAvailableSlot(c.CurrentSlot);
+                    var new_slot = import_parent.Components.FindAvailableSlot(c.CurrentSlot.Target);
                     import_parent.Components.Add(new SimChildComponentEntry(new_slot, c));
                 }
 
@@ -161,7 +204,7 @@ namespace SIMULTAN.Serializer.Projects
 
                 // merge taxonomies
                 var existingTaxonomies = _project.AllProjectDataManagers.Taxonomies.Merge(mergeData.Taxonomies);
- 
+
                 // 3a. merge the values with the existing
                 _project.AllProjectDataManagers.ValueManager.Merge(mergeData.ValueManager);
 
@@ -172,18 +215,37 @@ namespace SIMULTAN.Serializer.Projects
                 // replace all taxonomy entries that already existed
                 ComponentWalker.ForeachComponent(import_parent, (component) =>
                 {
-                    foreach(var param in component.Parameters)
+                    if (component.ParentContainer == null)
                     {
-                        if(param.TaxonomyEntry.HasTaxonomyEntry())
+                        if (GetReplacingTaxonomyEntry(component.CurrentSlot.Target, existingTaxonomies, out var replaceEntry))
                         {
-                            var entry = param.TaxonomyEntry.TaxonomyEntryReference.Target;
-                            if(existingTaxonomies.TryGetValue(entry.Taxonomy, out var tax))
+                            component.CurrentSlot = new SimTaxonomyEntryReference(replaceEntry);
+                        }
+                    }
+
+                    foreach (var child in component.Components)
+                    {
+                        if (GetReplacingTaxonomyEntry(child.Slot.SlotBase.Target, existingTaxonomies, out var replaceEntry))
+                        {
+                            child.Slot = new SimSlot(new SimTaxonomyEntryReference(replaceEntry), child.Slot.SlotExtension);
+                        }
+                    }
+
+                    foreach (var reference in component.ReferencedComponents)
+                    {
+                        if (GetReplacingTaxonomyEntry(reference.Slot.SlotBase.Target, existingTaxonomies, out var replaceEntry))
+                        {
+                            reference.Slot = new SimSlot(new SimTaxonomyEntryReference(replaceEntry), reference.Slot.SlotExtension);
+                        }
+                    }
+
+                    foreach (var param in component.Parameters)
+                    {
+                        if (param.NameTaxonomyEntry.HasTaxonomyEntry())
+                        {
+                            if (GetReplacingTaxonomyEntry(param.NameTaxonomyEntry.TaxonomyEntryReference.Target, existingTaxonomies, out var replaceEntry))
                             {
-                                var replaceEntry = tax.GetTaxonomyEntryByKey(entry.Key);
-                                if(replaceEntry != null)
-                                {
-                                    param.TaxonomyEntry = new SimTaxonomyEntryOrString(replaceEntry);
-                                }
+                                param.NameTaxonomyEntry = new SimTaxonomyEntryOrString(replaceEntry);
                             }
                         }
                     }
@@ -191,21 +253,18 @@ namespace SIMULTAN.Serializer.Projects
             }
 
             // delete the unpacked files
-            if (vfile != null)
-                vfile.Delete();
-            if (cfile != null)
-                cfile.Delete();
+            unpackDir.Delete(true);
 
             return import_parent;
         }
 
 
         /// <summary>
-        /// Exports the given mltivalues to a file.
+        /// Exports the given MultiValues to a file.
         /// </summary>
-        /// <param name="_file">the file</param>
-        /// <param name="_value_factory">the value factory of the selected values</param>
-        /// <param name="_values">the values to export</param>
+        /// <param name="_file">The file</param>
+        /// <param name="_value_factory">The value factory of the selected values</param>
+        /// <param name="_values">The values to export</param>
         public static void ExportMultiValueLibrary(FileInfo _file, SimMultiValueCollection _value_factory, IEnumerable<SimMultiValue> _values)
         {
             if (string.IsNullOrEmpty(_file.Extension))
@@ -223,8 +282,8 @@ namespace SIMULTAN.Serializer.Projects
         /// <summary>
         /// Merges the values contained in the given file with the ones in the project.
         /// </summary>
-        /// <param name="_project">the project in which to merge</param>
-        /// <param name="_value_file">the file containing the values to merge</param>
+        /// <param name="_project">The project in which to merge</param>
+        /// <param name="_value_file">The file containing the values to merge</param>
         public static void ImportMultiValueLibrary(HierarchicalProject _project, FileInfo _value_file)
         {
             if (_project == null)
@@ -248,6 +307,231 @@ namespace SIMULTAN.Serializer.Projects
 
             // 3a. merge the values with the existing
             _project.AllProjectDataManagers.ValueManager.Merge(projectData.ValueManager);
+        }
+
+        /// <summary>
+        /// Saves the given geometry files (.simgeo), their <see cref="SimGeometryRelation"/>s and <see cref="SimTaxonomy"/>.
+        /// Also writes the associated <see cref="GeometryRelationsFileMapping"/> for all relevant geometry files.
+        /// </summary>
+        /// <param name="file">The zip file that contains both the components and the values</param>
+        /// <param name="projectData">The project's data</param>
+        /// <param name="geometryFiles">The selected geometry files for saving</param>
+        public static void ExportGeometryWithRelations(FileInfo file, ExtendedProjectData projectData, IEnumerable<ResourceEntry> geometryFiles)
+        {
+            if (file == null)
+                throw new ArgumentNullException(nameof(file));
+            if (projectData == null)
+                throw new ArgumentNullException(nameof(projectData));
+            if (geometryFiles == null)
+                throw new ArgumentNullException(nameof(geometryFiles));
+            if (!geometryFiles.Any())
+                throw new ArgumentException("No geometry files provided");
+            if (geometryFiles.Any(x => x.CurrentFullPath == AssetManager.PATH_NOT_FOUND))
+                throw new ArgumentException("Some of the geometry files paths are not found");
+            if (geometryFiles.Any(x => !x.CurrentFullPath.EndsWith(ParamStructFileExtensions.FILE_EXT_GEOMETRY_INTERNAL)))
+                throw new ArgumentException("Files contain non geometry files");
+
+            if (string.IsNullOrEmpty(file.Extension))
+                throw new ArgumentException("The file has no valid extension!");
+
+            var resKeys = geometryFiles.Select(x => x.Key).ToHashSet();
+            // only export relations that have source and target in the selected files
+            var relations = projectData.GeometryRelations.Where(x => resKeys.Contains(x.Source.FileId) && resKeys.Contains(x.Target.FileId));
+            // all referenced taxonomies of the relations
+            var taxonomies = relations.Where(x => x.RelationType != null).Select(x => x.RelationType.Target.Taxonomy).Distinct();
+
+            // extract the file names
+            var packDir = new DirectoryInfo(Path.Combine(file.Directory.FullName, "~GeometryExport"));
+            (_, var newName) = AdmissibilityQueries.DirectoryNameIsAdmissible(packDir, x => !Directory.Exists(x), "{0}{1}");
+            packDir = new DirectoryInfo(newName);
+            packDir.Create();
+            string path_to_GRFile = Path.Combine(packDir.FullName, "GeometryExport_Relations" + ParamStructFileExtensions.FILE_EXT_GEOMETRY_RELATIONS);
+            string path_to_TXFile = Path.Combine(packDir.FullName, "GeometryExport_Taxonomies" + ParamStructFileExtensions.FILE_EXT_TAXONOMY);
+            string path_to_GRFMFile = Path.Combine(packDir.FullName, "GeometryExport_RelationsMappings" + ParamStructFileExtensions.FILE_EXT_GEOMETRY_RELATIONS_FILE_MAPPINGS);
+            var files_to_pack = new List<FileInfo>();
+            var mappings = new List<GeometryRelationsFileMapping>();
+
+            // copy geometry files to pack them, no additional export necessary
+            foreach (var geoFile in geometryFiles)
+            {
+                var fi = new FileInfo(geoFile.CurrentFullPath);
+                mappings.Add(new GeometryRelationsFileMapping(geoFile.Key, fi.Name));
+                if (fi.Exists)
+                {
+                    var dest = Path.Combine(packDir.FullName, fi.Name);
+                    fi.CopyTo(dest);
+                    files_to_pack.Add(new FileInfo(dest));
+                }
+                else
+                {
+                    throw new Exception("Geometry file does not exist");
+                }
+            }
+
+            // export relations
+            if (relations.Any())
+            {
+                var grFile = new FileInfo(path_to_GRFile);
+                SimGeometryRelationsDxfIO.Write(grFile, relations);
+                files_to_pack.Add(grFile);
+            }
+
+            // export mappings
+            if (mappings.Any())
+            {
+                var grfmFile = new FileInfo(path_to_GRFMFile);
+                GeometryRelationsFileMappingDxfIO.Write(grfmFile, mappings);
+                files_to_pack.Add(grfmFile);
+            }
+
+            // export taxonomies
+            if (taxonomies.Any())
+            {
+                var txFile = new FileInfo(path_to_TXFile);
+                SimTaxonomyDxfIO.Write(txFile, taxonomies, projectData);
+                files_to_pack.Add(txFile);
+            }
+
+            // put both files in a Zip archive and delete them from the file system
+            ZipUtils.CreateArchiveFrom(file, new List<DirectoryInfo>(), files_to_pack, packDir.FullName);
+            // clean up files
+            packDir.Delete(true);
+        }
+
+        /// <summary>
+        /// Imports a geometry with relations archive and merges it with the existing project.
+        /// </summary>
+        /// <param name="_project">The project in which we are merging</param>
+        /// <param name="_archive_file">The zip file from a previous export</param>
+        /// <param name="_target_directory">The target directory in the project</param>
+        /// <param name="_nameCollisionFormat">The name collision format, needs to format places</param>
+        /// <returns>A list of potential errors that occurred during the import migration.</returns>
+        public static List<SimGeoIOError> ImportGeometryWithRelations(HierarchicalProject _project, FileInfo _archive_file, DirectoryInfo _target_directory,
+            string _nameCollisionFormat)
+        {
+            if (_project == null)
+                throw new ArgumentNullException(nameof(_project));
+            if (!File.Exists(_archive_file.FullName))
+                throw new ArgumentException("The given file does not exist!");
+            if (!(_project.ProjectUnpackFolder.FullName == _target_directory.FullName ||
+                FileSystemNavigation.IsSubdirectoryOf(_project.ProjectUnpackFolder.FullName, _target_directory.FullName, false)))
+                throw new ArgumentException("Target folder must be inside the project unpack folder");
+
+            // 0. unpack the archive
+            var unpackDir = new DirectoryInfo(Path.Combine(_archive_file.Directory.FullName, "~GeometryImport"));
+            (_, var newName) = AdmissibilityQueries.DirectoryNameIsAdmissible(unpackDir, x => !Directory.Exists(x), "{0}{1}");
+            unpackDir = new DirectoryInfo(newName);
+            unpackDir.Create();
+            // unpack and get files
+            var files_to_import = ZipUtils.UnpackArchive(_archive_file, unpackDir);
+            FileInfo tfile = files_to_import.FirstOrDefault(x => string.Equals(x.Extension, ParamStructFileExtensions.FILE_EXT_TAXONOMY));
+            FileInfo grfile = files_to_import.FirstOrDefault(x => string.Equals(x.Extension, ParamStructFileExtensions.FILE_EXT_GEOMETRY_RELATIONS));
+            FileInfo grfmfile = files_to_import.FirstOrDefault(x => string.Equals(x.Extension, ParamStructFileExtensions.FILE_EXT_GEOMETRY_RELATIONS_FILE_MAPPINGS));
+            var simgeoFiles = files_to_import.Where(x => string.Equals(x.Extension, ParamStructFileExtensions.FILE_EXT_GEOMETRY_INTERNAL));
+
+            ExtendedProjectData mergeData = new ExtendedProjectData();
+
+            // load the taxonomies
+            if (tfile != null)
+            {
+                DXFParserInfo info = new DXFParserInfo(Guid.Empty, mergeData);
+                mergeData.Taxonomies.SetCallingLocation(new DummyReferenceLocation(info.GlobalId));
+                SimTaxonomyDxfIO.Read(tfile, info);
+            }
+
+            // import mappings (old file Ids to filename)
+            var mappings = new List<GeometryRelationsFileMapping>();
+            if (grfmfile != null)
+            {
+                DXFParserInfo info = new DXFParserInfo(Guid.Empty, mergeData);
+                mappings = GeometryRelationsFileMappingDxfIO.Read(grfmfile, info);
+            }
+            var mappingsLookup = mappings.ToDictionary(x => x.FileId, x => x.FilePath);
+
+            // import geometry relations
+            if (grfile != null)
+            {
+                DXFParserInfo info = new DXFParserInfo(Guid.Empty, mergeData);
+                mergeData.GeometryRelations.SetCallingLocation(new DummyReferenceLocation(info.GlobalId));
+                SimGeometryRelationsDxfIO.Read(grfile, info);
+
+                mergeData.GeometryRelations.RestoreReferences();
+            }
+
+            // import geometry files as new resources
+            var resourceLookup = new Dictionary<string, ResourceEntry>();
+            foreach (var geofile in simgeoFiles)
+            {
+                var resource = _project.CopyResourceAsContainedFileEntry(geofile, _target_directory, _nameCollisionFormat);
+                resourceLookup.Add(geofile.Name, resource);
+            }
+
+            // generate lookup for changed file ids (old exported file ids -> new resource file ids)
+            var idLookup = new Dictionary<int, int>();
+            foreach (var idmap in mappingsLookup)
+            {
+                var resEntry = resourceLookup[idmap.Value];
+                idLookup.Add(idmap.Key, resEntry.Key);
+            }
+
+            // Merge the taxonomies
+            var existingTaxonomies = _project.AllProjectDataManagers.Taxonomies.Merge(mergeData.Taxonomies);
+
+            // migrate the geometry relations from the import to the existing project
+            foreach (var relation in mergeData.GeometryRelations)
+            {
+                // find filename in mappings by the id
+                var sourcePath = new FileInfo(mappingsLookup[relation.Source.FileId]);
+                var targetPath = new FileInfo(mappingsLookup[relation.Target.FileId]);
+                // find the newly created resource with the same name (name is from the import before it as put into the project)
+                var sourceResource = resourceLookup[sourcePath.Name];
+                var targetResource = resourceLookup[targetPath.Name];
+
+                // recreate source/target
+                var sourceRef = new SimBaseGeometryReference(_project.GlobalID, sourceResource.Key, relation.Source.BaseGeometryId);
+                var targetRef = new SimBaseGeometryReference(_project.GlobalID, targetResource.Key, relation.Target.BaseGeometryId);
+
+                SimTaxonomyEntryReference relationType = null;
+                // migrate relation type if needed
+                if (relation.RelationType != null)
+                {
+                    // check if already existed
+                    if (GetReplacingTaxonomyEntry(relation.RelationType.Target, existingTaxonomies, out var replaceEntry))
+                    {
+                        relationType = new SimTaxonomyEntryReference(replaceEntry);
+                    }
+                    // otherwise use it directly as the taxonomy entry was already migrated
+                    else
+                    {
+                        relationType = new SimTaxonomyEntryReference(relation.RelationType.Target);
+                    }
+                }
+
+                // create new migrated relation
+                var newRelation = new SimGeometryRelation(relationType, sourceRef, targetRef);
+                _project.AllProjectDataManagers.GeometryRelations.Add(newRelation);
+            }
+
+            // migrate all unpacked files to update their linked file ids, also upgrades older files to use ids instead of file names
+            var resourcePathLookup = resourceLookup.ToDictionary(x => x.Key, x => x.Value.Name);
+            var errors = new List<SimGeoIOError>();
+            var resourceFiles = resourceLookup.Values.OfType<ResourceFileEntry>();
+            SimGeoIO.MigrateAfterImport(resourceFiles, _project.AllProjectDataManagers, errors, idLookup, resourcePathLookup);
+
+            // unload the models again cause they get loaded on migration
+            foreach (var res in resourceLookup.Values)
+            {
+                var rfe = (ResourceFileEntry)res;
+                if (_project.AllProjectDataManagers.GeometryModels.TryGetGeometryModel(rfe, out var geoModel))
+                {
+                    _project.AllProjectDataManagers.GeometryModels.RemoveGeometryModel(geoModel);
+                }
+            }
+
+            // delete unpack dir and unpacked files
+            unpackDir.Delete(true);
+
+            return errors;
         }
 
 
@@ -332,8 +616,8 @@ namespace SIMULTAN.Serializer.Projects
         /// Merges the input components with all those referenced by them (reference of reference and circular reference included).
         /// All input components have to belong to the calling factory.
         /// </summary>
-        /// <param name="_components">the selected components</param>
-        /// <returns>all components</returns>
+        /// <param name="_components">The selected components</param>
+        /// <returns>All components</returns>
         internal static HashSet<SimComponent> GetAllReferencedComponents(IEnumerable<SimComponent> _components)
         {
             if (_components == null)
@@ -363,8 +647,8 @@ namespace SIMULTAN.Serializer.Projects
         /// Returns a list of all components the calling component references - directly or via 
         /// references of its referenced components. Robust even if circular referencing present.
         /// </summary>
-        /// <param name="component">the calling component</param>
-        /// <param name="result">the references found so far</param>
+        /// <param name="component">The calling component</param>
+        /// <param name="result">The references found so far</param>
         private static void GetAllRefCompsOfRefComps(SimComponent component, HashSet<SimComponent> result)
         {
             foreach (var entry in component.ReferencedComponents)
@@ -382,8 +666,8 @@ namespace SIMULTAN.Serializer.Projects
         /// <summary>
         /// Extracts the distinct networks relating to the given components.
         /// </summary>
-        /// <param name="components">the selected components</param>
-        /// <returns>all found networks</returns>
+        /// <param name="components">The selected components</param>
+        /// <returns>All found networks</returns>
         private static HashSet<SimFlowNetwork> GetAllRelevantNetworks(IEnumerable<SimComponent> components)
         {
             if (components == null)
@@ -448,33 +732,65 @@ namespace SIMULTAN.Serializer.Projects
         {
             foreach (var param in ComponentWalker.GetFlatParameters(_comp))
             {
-                if (param.MultiValuePointer != null && !result.Contains(param.MultiValuePointer.ValueField))
-                    result.Add(param.MultiValuePointer.ValueField);
+                if (!(param is SimEnumParameter) && param.ValueSource != null && param.ValueSource is SimMultiValueParameterSource mvP &&
+                    !result.Contains(mvP.ValueField))
+                {
+                    result.Add(mvP.ValueField);
+                }
             }
         }
 
+        /// <summary>
+        /// Gets the referenced taxonomies of the component tree.
+        /// </summary>
+        /// <param name="components">The root components.</param>
         internal static IEnumerable<SimTaxonomy> GetReferencedTaxonomies(IEnumerable<SimComponent> components)
         {
-            if(components == null)
+            if (components == null)
                 throw new ArgumentNullException(nameof(components));
 
             HashSet<SimTaxonomy> values = new HashSet<SimTaxonomy>();
-            foreach(var c in components)
+            foreach (var c in components)
             {
                 GetReferencedTaxonomies(c, values);
             }
 
             return values;
         }
-        private static void GetReferencedTaxonomies(SimComponent _comp, HashSet<SimTaxonomy> result)
+
+        /// <summary>
+        /// Gets the referenced taxonomies of the component tree.
+        /// </summary>
+        /// <param name="rootComponent">The root component.</param>
+        /// <param name="result">The referenced taxonomies.</param>
+        private static void GetReferencedTaxonomies(SimComponent rootComponent, HashSet<SimTaxonomy> result)
         {
-            ComponentWalker.ForeachComponent(_comp, comp =>
+            // Check whole component tree
+            ComponentWalker.ForeachComponent(rootComponent, component =>
             {
-                foreach (var param in ComponentWalker.GetFlatParameters(comp))
+                if (component.ParentContainer == null && !result.Contains(component.CurrentSlot.Target.Taxonomy))
+                    result.Add(component.CurrentSlot.Target.Taxonomy);
+
+                // also check the child entry slots cause they could have no Target component
+                foreach (var child in component.Components)
                 {
-                    if (param.TaxonomyEntry.HasTaxonomyEntry())
+                    if (!result.Contains(child.Slot.SlotBase.Target.Taxonomy))
+                        result.Add(child.Slot.SlotBase.Target.Taxonomy);
+                }
+
+                // check component reference slots
+                foreach (var compref in component.ReferencedComponents)
+                {
+                    if (!result.Contains(compref.Slot.SlotBase.Target.Taxonomy))
+                        result.Add(compref.Slot.SlotBase.Target.Taxonomy);
+                }
+
+                // check parameters
+                foreach (var param in component.Parameters)
+                {
+                    if (param.NameTaxonomyEntry.HasTaxonomyEntry())
                     {
-                        var tax = param.TaxonomyEntry.TaxonomyEntryReference.Target.Taxonomy;
+                        var tax = param.NameTaxonomyEntry.TaxonomyEntryReference.Target.Taxonomy;
                         if (!result.Contains(tax))
                             result.Add(tax);
                     }

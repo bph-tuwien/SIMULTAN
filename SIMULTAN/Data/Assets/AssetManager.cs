@@ -1,4 +1,5 @@
 ﻿using SIMULTAN.Data.Components;
+using SIMULTAN.Data.Taxonomy;
 using SIMULTAN.Data.Users;
 using SIMULTAN.Projects;
 using SIMULTAN.Serializer.DXF;
@@ -36,6 +37,11 @@ namespace SIMULTAN.Data.Assets
         #region CLASS MEMBERS
 
         public ProjectData ProjectData { get; }
+
+        /// <summary>
+        /// Is true while the Asset manager is restoring references.
+        /// </summary>
+        public bool IsRestoringReferences { get; private set; } = false;
 
         #endregion
 
@@ -377,6 +383,13 @@ namespace SIMULTAN.Data.Assets
             ResourcePropertyChanged?.Invoke(entry, new PropertyChangedEventArgs(propertyName));
         }
 
+        public delegate void ResourceDeletedEventHandler(object sender, ResourceEntry entry);
+        public event ResourceDeletedEventHandler ResourceDeleted;
+        internal void NotifyResourceDeleted(ResourceEntry resource)
+        {
+            this.ResourceDeleted?.Invoke(this, resource);
+        }
+
         #endregion
 
         #region .CTOR, Reset
@@ -462,13 +475,13 @@ namespace SIMULTAN.Data.Assets
             this.Resources_Internal.Add(resource);
 
             AddResourceToLookup(resource);
-            
+
             this.OnUpToDate();
 
             this.Resources_Internal.SuppressNotification = false;
         }
 
-        internal ResourceDirectoryEntry ParseResourceDirectoryEntry(SimUserRole _user, string _rel_path, int _key, 
+        internal ResourceDirectoryEntry ParseResourceDirectoryEntry(SimUserRole _user, string _rel_path, int _key,
             SimComponentVisibility visibility)
         {
             var path = this.CorrectPathInput(AssetManager.PATH_NOT_FOUND, _rel_path, true);
@@ -800,6 +813,32 @@ namespace SIMULTAN.Data.Assets
         internal void ReleaseTmpParseRecord()
         {
             this.tmp_parsed_asset_record = null;
+        }
+
+        internal void RestoreReferences()
+        {
+            IsRestoringReferences = true;
+            RestoreResourceReferences(Resources_Internal);
+            IsRestoringReferences = false;
+        }
+
+        private void RestoreResourceReferences(IEnumerable<ResourceEntry> entries)
+        {
+            foreach (var entry in entries)
+            {
+                for (int i = 0; i < entry.Tags.Count; i++)
+                {
+                    var taxEntry = ProjectData.IdGenerator.GetById<SimTaxonomyEntry>(entry.Tags[i].TaxonomyEntryId);
+                    if (taxEntry == null)
+                        throw new TaxonomyEntryNotFoundException(String.Format("Tag taxonomy entry with id {0} of resource {1} could not be found", entry.Tags[i].TaxonomyEntryId, entry.Name));
+                    entry.Tags[i] = new SimTaxonomyEntryReference(taxEntry);
+                }
+
+                if (entry is ResourceDirectoryEntry dir)
+                {
+                    RestoreResourceReferences(dir.Children);
+                }
+            }
         }
 
         #endregion
@@ -1665,7 +1704,7 @@ namespace SIMULTAN.Data.Assets
         public bool DeleteResourceEntryAny(ResourceEntry _to_delete)
         {
             bool deletion_ok = true;
-            _to_delete.OnDeleting();
+            _to_delete.NotifyDeleting();
             if (this.resource_look_up.ContainsKey(_to_delete.Key))
             {
                 // 1. remove all children
@@ -1717,7 +1756,7 @@ namespace SIMULTAN.Data.Assets
                         this.Resources_Internal.Remove(_to_delete);
                 }
             }
-            _to_delete.OnDeleted();
+            _to_delete.NotifyDeleted();
             return deletion_ok;
         }
 
@@ -1731,7 +1770,7 @@ namespace SIMULTAN.Data.Assets
         public bool ResourceEntryDeltedExternally(ResourceEntry _to_delete)
         {
             bool deletion_ok = true;
-            _to_delete.OnDeleting();
+            _to_delete.NotifyDeleting();
             if (this.resource_look_up.ContainsKey(_to_delete.Key))
             {
                 // 1. remove all children
@@ -1765,7 +1804,7 @@ namespace SIMULTAN.Data.Assets
                         this.Resources_Internal.Remove(_to_delete);
                 }
             }
-            _to_delete.OnDeleted();
+            _to_delete.NotifyDeleted();
             return deletion_ok;
         }
 

@@ -1,14 +1,9 @@
 ﻿using SIMULTAN.Exceptions;
 using SIMULTAN.Utils;
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Specialized;
-using System.ComponentModel;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows;
 
 namespace SIMULTAN.Data.Components
 {
@@ -17,7 +12,7 @@ namespace SIMULTAN.Data.Components
         /// <summary>
         /// Base class for input/return parameter collections in a calculation
         /// </summary>
-        public abstract class BaseCalculationParameterCollections : INotifyCollectionChanged, IEnumerable<KeyValuePair<string, SimParameter>>
+        public abstract class BaseCalculationParameterCollections : INotifyCollectionChanged, IEnumerable<KeyValuePair<string, SimDoubleParameter>>
         {
             /// <summary>
             /// The calculation this collection belongs to
@@ -42,14 +37,14 @@ namespace SIMULTAN.Data.Components
             /// </summary>
             /// <param name="owner">The calculation this collection belongs to</param>
             /// <param name="data">Initial data</param>
-            public BaseCalculationParameterCollections(SimCalculation owner, IEnumerable<KeyValuePair<string, SimParameter>> data)
+            public BaseCalculationParameterCollections(SimCalculation owner, IEnumerable<KeyValuePair<string, SimDoubleParameter>> data)
                 : this(owner)
             {
                 foreach (var item in data)
                 {
                     var referenceItem = new CalculationParameterReference(this, item.Value);
                     this.Data.Add(item.Key, referenceItem);
-                    referenceItem.RegisterReferences();                    
+                    referenceItem.RegisterReferences();
                 }
             }
 
@@ -69,7 +64,7 @@ namespace SIMULTAN.Data.Components
             /// </summary>
             /// <param name="parameter">The variable</param>
             /// <returns></returns>
-            public SimParameter this[string parameter]
+            public SimDoubleParameter this[string parameter]
             {
                 get { return Data[parameter].Parameter; }
                 set
@@ -92,8 +87,8 @@ namespace SIMULTAN.Data.Components
                             Owner.NotifyComponentReordering();
 
                             NotifyCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Replace,
-                                new KeyValuePair<string, SimParameter>(parameter, value),
-                                new KeyValuePair<string, SimParameter>(parameter, oldValue.Parameter)));
+                                new KeyValuePair<string, SimDoubleParameter>(parameter, value),
+                                new KeyValuePair<string, SimDoubleParameter>(parameter, oldValue.Parameter)));
 
                             if (oldValue != null)
                                 oldValue.Dispose();
@@ -115,7 +110,7 @@ namespace SIMULTAN.Data.Components
             /// Has to throw an InvalidStateException when the parameter does not satisfy the requirements.
             /// </summary>
             /// <param name="parameter">The parameter to test</param>
-            internal abstract void CheckParameter(SimParameter parameter);
+            internal abstract void CheckParameter(SimDoubleParameter parameter);
 
             /// <summary>
             /// Returns True when the variable symbol is present in the collection
@@ -131,7 +126,7 @@ namespace SIMULTAN.Data.Components
             /// </summary>
             /// <param name="parameter">The parameter</param>
             /// <returns>True when the parameter is part of the collection, otherwise False</returns>
-            public bool ContainsValue(SimParameter parameter)
+            public bool ContainsValue(SimDoubleParameter parameter)
             {
                 return Data.Values.Any(x => x.Parameter == parameter);
             }
@@ -146,7 +141,7 @@ namespace SIMULTAN.Data.Components
             /// <param name="key">The variable symbol</param>
             /// <param name="parameter">Out parameter for the resulting parameter. Undefined when the method returns False</param>
             /// <returns>True when the symbol is contained in the collection, otherwise False</returns>
-            public bool TryGetValue(string key, out SimParameter parameter)
+            public bool TryGetValue(string key, out SimDoubleParameter parameter)
             {
                 if (Data.TryGetValue(key, out var item))
                 {
@@ -164,9 +159,9 @@ namespace SIMULTAN.Data.Components
             /// Converts the collection into a dictionary.
             /// </summary>
             /// <returns>A dictionionary where key is the variable symbol and the value contains the parameter bound to this symbol (may be null)</returns>
-            public Dictionary<string, SimParameter> ToDictionary()
+            public Dictionary<string, SimDoubleParameter> ToDictionary()
             {
-                Dictionary<string, SimParameter> dict = new Dictionary<string, SimParameter>();
+                Dictionary<string, SimDoubleParameter> dict = new Dictionary<string, SimDoubleParameter>();
 
                 foreach (var entry in Data)
                     dict.Add(entry.Key, entry.Value?.Parameter);
@@ -175,7 +170,7 @@ namespace SIMULTAN.Data.Components
             }
 
 
-            internal void AddInternal(string key, SimParameter parameter)
+            internal void AddInternal(string key, SimDoubleParameter parameter)
             {
                 try
                 {
@@ -190,13 +185,13 @@ namespace SIMULTAN.Data.Components
                     Owner.NotifyComponentReordering();
 
                     NotifyCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add,
-                        new KeyValuePair<string, SimParameter>(key, parameter)));
+                        new KeyValuePair<string, SimDoubleParameter>(key, parameter)));
                     Owner.NotifyChanged();
                 }
                 catch (InvalidStateException e) { throw new InvalidStateException("Unable to add parameter", e); }
             }
 
-            internal void AddRangeInternal(IEnumerable<KeyValuePair<string, SimParameter>> values)
+            internal void AddRangeInternal(IEnumerable<KeyValuePair<string, SimDoubleParameter>> values)
             {
                 try
                 {
@@ -236,7 +231,7 @@ namespace SIMULTAN.Data.Components
                     Owner.NotifyComponentReordering();
 
                     NotifyCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove,
-                        new KeyValuePair<string, SimParameter>(key, oldValue.Parameter)));
+                        new KeyValuePair<string, SimDoubleParameter>(key, oldValue.Parameter)));
                     oldValue.Dispose();
                     Owner.NotifyChanged();
                 }
@@ -305,15 +300,15 @@ namespace SIMULTAN.Data.Components
             /// <summary>
             /// Enumerator for a parameter collection
             /// </summary>
-            public sealed class Enumerator : IEnumerator<KeyValuePair<string, SimParameter>>
+            public sealed class Enumerator : IEnumerator<KeyValuePair<string, SimDoubleParameter>>
             {
                 private IEnumerator<KeyValuePair<string, CalculationParameterReference>> enumerator;
-                private KeyValuePair<string, SimParameter> current;
+                private KeyValuePair<string, SimDoubleParameter> current;
 
                 /// <summary>
                 /// The element this iterator currently points to
                 /// </summary>
-                public KeyValuePair<string, SimParameter> Current => current;
+                public KeyValuePair<string, SimDoubleParameter> Current => current;
                 /// <inheritdoc />
                 object IEnumerator.Current => Current;
 
@@ -331,7 +326,7 @@ namespace SIMULTAN.Data.Components
                 public void Dispose()
                 {
                     enumerator.Dispose();
-                    current = new KeyValuePair<string, SimParameter>();
+                    current = new KeyValuePair<string, SimDoubleParameter>();
                 }
                 /// <inheritdoc />
                 public bool MoveNext()
@@ -340,7 +335,7 @@ namespace SIMULTAN.Data.Components
                     if (next)
                         UpdateCurrent();
                     else
-                        current = new KeyValuePair<string, SimParameter>();
+                        current = new KeyValuePair<string, SimDoubleParameter>();
 
                     return next;
                 }
@@ -353,12 +348,12 @@ namespace SIMULTAN.Data.Components
 
                 private void UpdateCurrent()
                 {
-                    current = new KeyValuePair<string, SimParameter>(enumerator.Current.Key, enumerator.Current.Value?.Parameter);
+                    current = new KeyValuePair<string, SimDoubleParameter>(enumerator.Current.Key, enumerator.Current.Value?.Parameter);
                 }
             }
 
             /// <inheritdoc />
-            public IEnumerator<KeyValuePair<string, SimParameter>> GetEnumerator()
+            public IEnumerator<KeyValuePair<string, SimDoubleParameter>> GetEnumerator()
             {
                 return new Enumerator(Data.GetEnumerator());
             }
@@ -371,7 +366,7 @@ namespace SIMULTAN.Data.Components
             #endregion
 
             /// <summary>
-            /// Registers the calculation in the affected parameter's <see cref="SimParameter.ReferencingCalculations"/> collection
+            /// Registers the calculation in the affected parameter's <see cref="SimBaseNumericParameter{T}.ReferencingCalculations"/> collection
             /// </summary>
             internal void RegisterReferences()
             {
@@ -379,7 +374,7 @@ namespace SIMULTAN.Data.Components
                     item.RegisterReferences();
             }
             /// <summary>
-            /// Removes the calculation from the affected parameter's <see cref="SimParameter.ReferencingCalculations"/> collection
+            /// Removes the calculation from the affected parameter's <see cref="SimBaseNumericParameter{T}.ReferencingCalculations"/> collection
             /// </summary>
             internal void UnregisterReferences()
             {
@@ -403,9 +398,9 @@ namespace SIMULTAN.Data.Components
             /// </summary>
             /// <param name="calculation">The calculation this collection belongs to</param>
             /// <param name="data">The initial entries for the collection</param>
-            public SimCalculationInputParameterCollection(SimCalculation calculation, IEnumerable<KeyValuePair<string, SimParameter>> data) : base(calculation, data) { }
+            public SimCalculationInputParameterCollection(SimCalculation calculation, IEnumerable<KeyValuePair<string, SimDoubleParameter>> data) : base(calculation, data) { }
 
-            internal override void CheckParameter(SimParameter parameter)
+            internal override void CheckParameter(SimDoubleParameter parameter)
             {
                 if (parameter != null && parameter.Propagation == SimInfoFlow.Output)
                     throw new InvalidStateException("Parameter Propagation conflicts with use in Calculation");
@@ -427,9 +422,9 @@ namespace SIMULTAN.Data.Components
             /// </summary>
             /// <param name="calculation">The calculation this collection belongs to</param>
             /// <param name="data">The initial entries for the collection</param>
-            public SimCalculationOutputParameterCollection(SimCalculation calculation, IEnumerable<KeyValuePair<string, SimParameter>> data) : base(calculation, data) { }
+            public SimCalculationOutputParameterCollection(SimCalculation calculation, IEnumerable<KeyValuePair<string, SimDoubleParameter>> data) : base(calculation, data) { }
 
-            internal override void CheckParameter(SimParameter parameter)
+            internal override void CheckParameter(SimDoubleParameter parameter)
             {
                 if (parameter != null && parameter.Propagation != SimInfoFlow.Output && parameter.Propagation != SimInfoFlow.Mixed)
                     throw new InvalidStateException("Parameter Propagation conflicts with use in Calculation");
@@ -442,7 +437,7 @@ namespace SIMULTAN.Data.Components
             /// </summary>
             /// <param name="key">Variable symbol</param>
             /// <param name="parameter">The parameter which is bound to the symbol. May be null when no parameter is bound</param>
-            public void Add(string key, SimParameter parameter)
+            public void Add(string key, SimDoubleParameter parameter)
             {
                 this.AddInternal(key, parameter);
             }
@@ -452,7 +447,7 @@ namespace SIMULTAN.Data.Components
             /// <param name="values">The values to add. 
             /// Key: Variable symbol
             /// Value: The parameter which is bound to the symbol. May be null when no parameter is bound</param>
-            public void AddRange(IEnumerable<KeyValuePair<string, SimParameter>> values)
+            public void AddRange(IEnumerable<KeyValuePair<string, SimDoubleParameter>> values)
             {
                 this.AddRangeInternal(values);
             }

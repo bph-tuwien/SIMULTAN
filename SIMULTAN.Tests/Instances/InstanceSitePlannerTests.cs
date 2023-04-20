@@ -1,13 +1,11 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SIMULTAN.Data.Components;
 using SIMULTAN.Data.SitePlanner;
-using SIMULTAN.Tests.Utils;
+using SIMULTAN.Tests.TestUtils;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SIMULTAN.Tests.Instances
 {
@@ -55,9 +53,9 @@ namespace SIMULTAN.Tests.Instances
             projectData.ComponentGeometryExchange.Associate(comp, building);
 
             Assert.IsTrue(comp.Parameters.Any(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_PARAM_TO_GEOMETRY)));
-            var p = comp.Parameters.First(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_PARAM_TO_GEOMETRY));
+            var p = comp.Parameters.OfType<SimDoubleParameter>().First(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_PARAM_TO_GEOMETRY));
             Assert.AreEqual(SimParameterInstancePropagation.PropagateIfInstance, p.InstancePropagationMode);
-            Assert.AreEqual(1.0, p.ValueCurrent);
+            Assert.AreEqual(1.0, p.Value);
         }
 
         [TestMethod]
@@ -113,11 +111,8 @@ namespace SIMULTAN.Tests.Instances
             Assert.AreEqual(0, comp.Instances.Count);
         }
 
-        [TestMethod]
-        public void RemoveSitePlannerInstanceMemoryLeak()
+        private WeakReference RemoveSitePlannerInstanceMemoryLeak_Action()
         {
-            LoadProject(testProject);
-
             var spProject = projectData.SitePlannerManager.SitePlannerProjects.First();
             var building = spProject.Buildings.First(x => x.GeometryModelRes.ResourceFile.Name == "test2.simgeo");
             var comp = projectData.Components.First(x => x.Name == "Building");
@@ -126,6 +121,15 @@ namespace SIMULTAN.Tests.Instances
 
             WeakReference instanceRef = new WeakReference(projectData.ComponentGeometryExchange.GetPlacements(building).First());
             projectData.ComponentGeometryExchange.Disassociate(comp, building);
+
+            return instanceRef;
+        }
+        [TestMethod]
+        public void RemoveSitePlannerInstanceMemoryLeak()
+        {
+            LoadProject(testProject);
+
+            var instanceRef = RemoveSitePlannerInstanceMemoryLeak_Action();
 
             GC.Collect();
             GC.WaitForPendingFinalizers();
@@ -215,18 +219,18 @@ namespace SIMULTAN.Tests.Instances
             projectData.ComponentGeometryExchange.BuildingComponentParamaterChanged += (s, e) => eventData.Add(e);
 
             var comp = projectData.Components.First(x => x.Name == "Building");
-            var param = comp.Parameters.First(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_PARAM_TO_GEOMETRY));
+            var param = comp.Parameters.OfType<SimDoubleParameter>().First(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_PARAM_TO_GEOMETRY));
 
             Assert.AreEqual(0, eventData.Count);
 
             //Test if event is sent
-            param.ValueCurrent = 1.0;
+            param.Value = 1.0;
 
             Assert.AreEqual(1, eventData.Count);
             Assert.AreEqual(building, eventData[0]);
 
             //Make sure that event is only sent when the value has actually changed
-            param.ValueCurrent = 1.0;
+            param.Value = 1.0;
 
             Assert.AreEqual(1, eventData.Count);
             Assert.AreEqual(building, eventData[0]);

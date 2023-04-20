@@ -1,7 +1,7 @@
 ﻿0
 PARAMETER
-100
-SIMULTAN.Data.Components.SimParameter
+1034
+0
 900
 99
 1001
@@ -19,7 +19,7 @@ Unit
 1006
 +∞
 1007
-6.00000000
+4.00000000
 1010
 text value with spaces
 1012
@@ -31,9 +31,9 @@ text value with spaces
 1218
 2255
 1215
-1.00000000
+3.00000000
 1216
-2.00000000
+1.00000000
 1217
 0.00000000
 1214

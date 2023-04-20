@@ -53,7 +53,14 @@ namespace SIMULTAN.Data.Taxonomy
         /// <inheritdoc />
         protected override void RemoveItem(int index)
         {
+            RemoveItem(index, false);
+        }
+
+        internal void RemoveItem(int index, bool ignoreIsDeletable)
+        {
             var oldItem = this[index];
+            if (!ignoreIsDeletable && !oldItem.IsDeletable)
+                throw new InvalidOperationException(String.Format("Cannot delete taxonomy \"{0}\" because it is not deletable.", oldItem.Name));
 
             UnsetValues(oldItem);
             base.RemoveItem(index);
@@ -62,8 +69,20 @@ namespace SIMULTAN.Data.Taxonomy
         /// <inheritdoc />
         protected override void ClearItems()
         {
+            ClearAllItems();
+        }
+
+        /// <summary>
+        /// Clears the collection.
+        /// </summary>
+        /// <param name="ignoreIsDeletable">If set to true, ignores if it contains taxonomies that are marked as non deletable</param>
+        /// <exception cref="InvalidOperationException">If ignoreIsDeletable is set to false and it contains a taxonomy that is non deletable</exception>
+        internal void ClearAllItems(bool ignoreIsDeletable = false)
+        {
             foreach (var item in this)
             {
+                if (!ignoreIsDeletable && !item.IsDeletable)
+                    throw new InvalidOperationException("Cannot clear taxonomies as they contain non deletable taxonomies");
                 UnsetValues(item);
             }
 
@@ -108,8 +127,11 @@ namespace SIMULTAN.Data.Taxonomy
                 }
                 else
                 {
-                    if(!IsLoading)
+                    if (!IsLoading)
                         throw new NotSupportedException("Existing Ids may only be used during a loading operation");
+                    // register the taxonomies
+                    item.Id = new SimId(CalledFromLocation, item.Id.LocalId);
+                    ProjectData.IdGenerator.Reserve(item, item.Id);
                 }
 
                 item.Factory = this;
@@ -125,7 +147,7 @@ namespace SIMULTAN.Data.Taxonomy
 
         private void ResetIDs(IEnumerable<SimTaxonomy> taxonomies)
         {
-            foreach(var tax in taxonomies)
+            foreach (var tax in taxonomies)
             {
                 tax.Id = SimId.Empty;
 
@@ -134,7 +156,7 @@ namespace SIMULTAN.Data.Taxonomy
         }
         private void ResetIDs(IEnumerable<SimTaxonomyEntry> entries)
         {
-            foreach(var entry in entries)
+            foreach (var entry in entries)
             {
                 entry.Id = SimId.Empty;
 
@@ -152,7 +174,7 @@ namespace SIMULTAN.Data.Taxonomy
         /// <returns>The entry if found by the provided keys, null if not.</returns>
         public SimTaxonomyEntry FindEntry(String taxonomyKey, String entryKey, bool isReadonly = false)
         {
-            foreach(var tax in this.Where(x => (isReadonly ? x.IsReadonly : true) && x.Key == taxonomyKey))
+            foreach (var tax in this.Where(x => (isReadonly ? x.IsReadonly : true) && x.Key == taxonomyKey))
             {
                 var entry = tax.GetTaxonomyEntryByKey(entryKey);
                 if (entry != null)
@@ -165,11 +187,12 @@ namespace SIMULTAN.Data.Taxonomy
         /// <summary>
         /// Tries to find a taxonomy either by key or name.
         /// If none is found matching the key, it tries to find one with the same name.
+        /// Return null if none is found.
         /// </summary>
         /// <param name="taxonomies">lookup taxonomies</param>
         /// <param name="key">Key to look for</param>
         /// <param name="name">Name to look for</param>
-        /// <returns>A taxonomy matching either the key or the name. Key takes precedence.</returns>
+        /// <returns>A taxonomy matching either the key or the name. Key takes precedence. Null if not found.</returns>
         public static SimTaxonomy GetTaxonomyByKeyOrName(IEnumerable<SimTaxonomy> taxonomies, String key, String name = null)
         {
             SimTaxonomy tax = null;
@@ -178,7 +201,7 @@ namespace SIMULTAN.Data.Taxonomy
                 tax = taxonomies.FirstOrDefault(x => x.Key == key);
             }
 
-            if(tax == null && !String.IsNullOrEmpty(name))
+            if (tax == null && !String.IsNullOrEmpty(name))
             {
                 tax = taxonomies.FirstOrDefault(x => x.Name == name);
             }
@@ -189,10 +212,11 @@ namespace SIMULTAN.Data.Taxonomy
         /// <summary>
         /// Tries to find a taxonomy either by key or name.
         /// If none is found matching the key, it tries to find one with the same name.
+        /// Return null if none is found.
         /// </summary>
         /// <param name="key">Key to look for</param>
         /// <param name="name">Name to look for</param>
-        /// <returns>A taxonomy matching either the key or the name. Key takes precedence.</returns>
+        /// <returns>A taxonomy matching either the key or the name. Key takes precedence. Null if not found.</returns>
         public SimTaxonomy GetTaxonomyByKeyOrName(String key, String name = null)
         {
             return GetTaxonomyByKeyOrName(this, key, name);
@@ -216,7 +240,7 @@ namespace SIMULTAN.Data.Taxonomy
             var existingTaxonomies = new Dictionary<SimTaxonomy, SimTaxonomy>();
             var newTaxonomies = new List<SimTaxonomy>();
             bool hasChanges = false;
-            foreach(var tax in defaults)
+            foreach (var tax in defaults)
             {
                 var mergeTax = this.FirstOrDefault(x => x.Key == tax.Key && x.IsReadonly);
                 if (mergeTax != null)
@@ -237,54 +261,61 @@ namespace SIMULTAN.Data.Taxonomy
 
             // gather all entry ids
             Stack<SimTaxonomyEntry> entryStack = new Stack<SimTaxonomyEntry>();
-            foreach(var tax in newTaxonomies)
+            foreach (var tax in newTaxonomies)
             {
                 foreach (var entry in tax.Entries)
                     entryStack.Push(entry);
             }
 
-            while(entryStack.Count > 0)
+            while (entryStack.Count > 0)
             {
                 var e = entryStack.Pop();
                 oldEntryIds.Add(e, e.LocalID);
-                foreach(var entry in e.Children)
+                foreach (var entry in e.Children)
                 {
                     entryStack.Push(entry);
                 }
             }
 
             ResetIDs(defaults);
-            defaults.Clear();
+            defaults.ClearAllItems(true);
 
             // add new taxonomies
-            foreach(var tax in newTaxonomies)
+            foreach (var tax in newTaxonomies)
             {
                 this.Add(tax);
             }
 
             // merge existing ones
-            foreach(var exEntry in existingTaxonomies)
+            foreach (var exEntry in existingTaxonomies)
             {
                 var newTax = exEntry.Key;
                 var existingTax = exEntry.Value;
 
                 // only need to merge if there was a change
-                if(!existingTax.IsIdentical(newTax))
+                if (!existingTax.IsIdentical(newTax))
                 {
                     hasChanges = true;
-                    foreach(var existingEntry in existingTax.GetAllEntriesFlat())
+                    foreach (var existingEntry in existingTax.GetAllEntriesFlat())
                     {
                         var newEntry = newTax.GetTaxonomyEntryByKey(existingEntry.Key);
-                        // just ignore if it is not in the new taxonomy
-                        if(newEntry != null)
+
+                        // entry still exists
+                        if (newEntry != null)
                         {
                             // copy the id, so it is found again when restoring references
                             newEntry.Id = new SimId(existingEntry.LocalID);
                         }
+                        // entry was removed from the new default taxonomies
+                        else
+                        {
+                            // call delete event to remove dangling TaxonomyEntryReferences
+                            existingEntry.OnIsBeingDeleted();
+                        }
                     }
                     newTax.Id = new SimId(existingTax.LocalID);
                     // remove the existing taxonomy
-                    this.Remove(existingTax);
+                    this.RemoveItem(this.IndexOf(existingTax), true);
                     // add the new one with the updated ids
                     this.Add(newTax);
                 }
@@ -313,7 +344,7 @@ namespace SIMULTAN.Data.Taxonomy
             other.IsMergeInProgress = true;
             var existingTaxonomies = new Dictionary<SimTaxonomy, SimTaxonomy>();
             var newTaxonomies = new List<SimTaxonomy>();
-            foreach(var tax in other)
+            foreach (var tax in other)
             {
                 var mergeTax = GetTaxonomyByKeyOrName(tax.Key, tax.Name);
                 if (mergeTax != null && mergeTax.IsIdentical(tax))
@@ -331,29 +362,29 @@ namespace SIMULTAN.Data.Taxonomy
 
             // gather all entry ids
             Stack<SimTaxonomyEntry> entryStack = new Stack<SimTaxonomyEntry>();
-            foreach(var tax in newTaxonomies)
+            foreach (var tax in newTaxonomies)
             {
                 foreach (var entry in tax.Entries)
                     entryStack.Push(entry);
             }
 
-            while(entryStack.Count > 0)
+            while (entryStack.Count > 0)
             {
                 var e = entryStack.Pop();
                 oldEntryIds.Add(e, e.LocalID);
-                foreach(var entry in e.Children)
+                foreach (var entry in e.Children)
                 {
                     entryStack.Push(entry);
                 }
             }
 
             ResetIDs(other);
-            other.Clear();
+            other.ClearAllItems(true);
 
             Dictionary<long, long> id_change_record = new Dictionary<long, long>();
 
             // get changed taxonomy ids
-            foreach((var tax, var oldId) in oldIds)
+            foreach ((var tax, var oldId) in oldIds)
             {
                 this.Add(tax);
                 id_change_record.Add(oldId, tax.LocalID);
@@ -362,13 +393,13 @@ namespace SIMULTAN.Data.Taxonomy
             }
 
             // get changed taxonomy entry ids
-            while(entryStack.Count > 0)
+            while (entryStack.Count > 0)
             {
                 var e = entryStack.Pop();
                 var oldId = oldEntryIds[e];
-                id_change_record.Add(oldId,e.LocalID);
+                id_change_record.Add(oldId, e.LocalID);
 
-                foreach(var entry in e.Children)
+                foreach (var entry in e.Children)
                 {
                     entryStack.Push(entry);
                 }

@@ -91,6 +91,7 @@ namespace SIMULTAN.Data.Components
             {
                 var element = this.Instance.Component.Factory.ProjectData.IdGenerator.GetById<SimObjectNew>(this.loadingElementId)
                     as IElementWithComponent;
+
                 this.loadingElementId = SimId.Empty;
 
                 if (element != null)

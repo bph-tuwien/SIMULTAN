@@ -1,7 +1,7 @@
 ﻿0
 PARAMETER
-100
-SIMULTAN.Data.Components.SimParameter
+1034
+0
 900
 99
 1001

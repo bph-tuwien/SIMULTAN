@@ -38,6 +38,7 @@ namespace SIMULTAN.Utils.BackgroundWork
         private string userText;
         private BackgroundWorker worker;
         private DoWorkEventArgs args;
+        private int lastReportedProgress = int.MinValue;
 
         /// <inheritdoc/>
         public bool CancellationPending { get { return worker.CancellationPending; } }
@@ -66,7 +67,11 @@ namespace SIMULTAN.Utils.BackgroundWork
         /// <inheritdoc/>
         public void ReportProgress(int percent)
         {
-            worker.ReportProgress((int)(percentStart + (double)percent / 100.0 * percentLength), new BackgroundUserState(userText));
+            if (percent != lastReportedProgress)
+            {
+                worker.ReportProgress((int)(percentStart + (double)percent / 100.0 * percentLength), new BackgroundUserState(userText));
+                lastReportedProgress = percent;
+            }
         }
     }
 

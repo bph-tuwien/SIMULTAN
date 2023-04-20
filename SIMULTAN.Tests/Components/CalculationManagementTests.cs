@@ -1,14 +1,12 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SIMULTAN.Data.Components;
 using SIMULTAN.Exceptions;
-using SIMULTAN.Tests.Utils;
+using SIMULTAN.Tests.TestUtils;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace SIMULTAN.Tests.Components
 {
@@ -24,7 +22,7 @@ namespace SIMULTAN.Tests.Components
             LoadProject(calculationProject);
             var comp = projectData.Components.First(x => x.Name == "NoCalculation");
 
-            var calc = new SimCalculation("a+b", "New Calculation", null, new Dictionary<string, SimParameter> { { "out1", null } });
+            var calc = new SimCalculation("a+b", "New Calculation", null, new Dictionary<string, SimDoubleParameter> { { "out1", null } });
             var lastWrite = comp.AccessLocal.LastAccess(SimComponentAccessPrivilege.Write);
 
             Thread.Sleep(5);
@@ -51,7 +49,7 @@ namespace SIMULTAN.Tests.Components
             Assert.ThrowsException<ArgumentNullException>(() => { comp.Calculations.Add(null); });
 
             //Add twice
-            var calc = new SimCalculation("a+b", "New Calculation", null, new Dictionary<string, SimParameter> { { "out1", null } });
+            var calc = new SimCalculation("a+b", "New Calculation", null, new Dictionary<string, SimDoubleParameter> { { "out1", null } });
             comp.Calculations.Add(calc);
 
             Assert.ThrowsException<ArgumentException>(() => { comp.Calculations.Add(calc); });
@@ -115,7 +113,7 @@ namespace SIMULTAN.Tests.Components
             var calc = comp.Calculations.First();
             var lastWrite = comp.AccessLocal.LastAccess(SimComponentAccessPrivilege.Write);
 
-            var newCalc = new SimCalculation("a+b", "New Calculation", null, new Dictionary<string, SimParameter> { { "out1", null } });
+            var newCalc = new SimCalculation("a+b", "New Calculation", null, new Dictionary<string, SimDoubleParameter> { { "out1", null } });
 
             Thread.Sleep(5);
             comp.Calculations[0] = newCalc;
@@ -142,9 +140,9 @@ namespace SIMULTAN.Tests.Components
         {
             LoadProject(calculationProject);
             var comp = projectData.Components.First(x => x.Name == "NoCalculation");
-            var demoParams = projectData.GetParameters("NoCalculation");
+            var demoParams = projectData.GetParameters<SimDoubleParameter>("NoCalculation");
 
-            var calc = new SimCalculation("a+b", "New Calc", null, new Dictionary<string, SimParameter> { { "out1", null } });
+            var calc = new SimCalculation("a+b", "New Calc", null, new Dictionary<string, SimDoubleParameter> { { "out1", null } });
             comp.Calculations.Add(calc);
 
             var lastWrite = comp.AccessLocal.LastAccess(SimComponentAccessPrivilege.Write);
@@ -204,17 +202,23 @@ namespace SIMULTAN.Tests.Components
             lastWrite = write;
         }
 
-        [TestMethod]
-        public void MemoryLeak()
+        private WeakReference MemoryLeak_Action()
         {
-            LoadProject(new FileInfo(".\\UnitTestProject.simultan"));
-
             var sourceComponent = projectData.Components.FirstOrDefault(x => x.Name == "Vector Calculation");
             WeakReference calcRef = new WeakReference(sourceComponent.Calculations.First());
 
             Assert.IsTrue(calcRef.IsAlive);
 
             sourceComponent.Calculations.Remove((SimCalculation)calcRef.Target);
+            return calcRef;
+        }
+
+        [TestMethod]
+        public void MemoryLeak()
+        {
+            LoadProject(new FileInfo(".\\UnitTestProject.simultan"));
+
+            var calcRef = MemoryLeak_Action();
 
             GC.Collect();
             GC.WaitForPendingFinalizers();
@@ -232,7 +236,7 @@ namespace SIMULTAN.Tests.Components
             var archComp = projectData.Components.First(x => x.Name == "ArchComp");
             var bphComp = projectData.Components.First(x => x.Name == "BPHComp");
 
-            var calc = new SimCalculation("a+b", "New Calc", null, new Dictionary<string, SimParameter> { { "out1", null } });
+            var calc = new SimCalculation("a+b", "New Calc", null, new Dictionary<string, SimDoubleParameter> { { "out1", null } });
 
             //Add
             Assert.ThrowsException<AccessDeniedException>(() => { archComp.Calculations.Add(calc); });
@@ -250,7 +254,7 @@ namespace SIMULTAN.Tests.Components
             var archComp = projectData.Components.First(x => x.Name == "ArchComp");
             var bphComp = projectData.Components.First(x => x.Name == "BPHComp");
 
-            var calc = new SimCalculation("a+b", "New Calc", null, new Dictionary<string, SimParameter> { { "out1", null } });
+            var calc = new SimCalculation("a+b", "New Calc", null, new Dictionary<string, SimDoubleParameter> { { "out1", null } });
             bphComp.Calculations.Add(calc);
 
             //Remove
@@ -269,8 +273,8 @@ namespace SIMULTAN.Tests.Components
             var childComp = parentComp.Components.First(x => x.Component.Name == "Sub").Component;
             var calc = parentComp.Calculations.First(x => x.Name == "calculation");
 
-            var aParam = parentComp.Parameters.First(x => x.TaxonomyEntry.Name == "a");
-            var bParam = childComp.Parameters.First(x => x.TaxonomyEntry.Name == "b");
+            var aParam = parentComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "a");
+            var bParam = childComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "b");
 
             //Input
             parentComp.Parameters.Remove(aParam);
@@ -291,8 +295,8 @@ namespace SIMULTAN.Tests.Components
             var childComp = parentComp.Components.First(x => x.Component.Name == "Sub").Component;
             var calc = parentComp.Calculations.First(x => x.Name == "calculation");
 
-            var outParam = parentComp.Parameters.First(x => x.TaxonomyEntry.Name == "out");
-            var out2Param = childComp.Parameters.First(x => x.TaxonomyEntry.Name == "out2");
+            var outParam = parentComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "out");
+            var out2Param = childComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "out2");
 
             //Output
             parentComp.Parameters.Remove(outParam);
@@ -313,8 +317,8 @@ namespace SIMULTAN.Tests.Components
             var childComp = parentComp.Components.First(x => x.Component.Name == "Sub");
             var calc = parentComp.Calculations.First(x => x.Name == "calculation");
 
-            var aParam = parentComp.Parameters.First(x => x.TaxonomyEntry.Name == "a");
-            var bParam = childComp.Component.Parameters.First(x => x.TaxonomyEntry.Name == "b");
+            var aParam = parentComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "a");
+            var bParam = childComp.Component.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "b");
 
             //Input
             parentComp.Components.Remove(childComp);
@@ -336,8 +340,8 @@ namespace SIMULTAN.Tests.Components
             var childComp = parentComp.Components.First(x => x.Component.Name == "Sub");
             var calc = parentComp.Calculations.First(x => x.Name == "calculation");
 
-            var outParam = parentComp.Parameters.First(x => x.TaxonomyEntry.Name == "out");
-            var out2Param = childComp.Component.Parameters.First(x => x.TaxonomyEntry.Name == "out2");
+            var outParam = parentComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "out");
+            var out2Param = childComp.Component.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "out2");
 
             //Output
             parentComp.Components.Remove(childComp);

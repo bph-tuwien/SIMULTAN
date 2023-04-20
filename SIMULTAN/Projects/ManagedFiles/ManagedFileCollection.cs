@@ -180,6 +180,9 @@ namespace SIMULTAN.Projects.ManagedFiles
 
             this.GeometryEntry = this.files.FirstOrDefault(x => x is ManagedGeometryFile) as ManagedGeometryFile;
             this.GeometryEntries = this.files.Where(x => x is ManagedGeometryFile).Select(x => x as ManagedGeometryFile).ToList();
+            
+            this.GeometryRelationsEntry = this.files.FirstOrDefault(x => x is ManagedGeometryRelationsFile) as ManagedGeometryRelationsFile;
+            this.GeometryRelationsEntries = this.files.Where(x => x is ManagedGeometryRelationsFile).Select(x => x as ManagedGeometryRelationsFile).ToList();
 
             this.ExcelToolEntry = this.files.FirstOrDefault(x => x is ManagedExcelToolFile) as ManagedExcelToolFile;
             this.ExcelToolEntries = this.files.Where(x => x is ManagedExcelToolFile).Select(x => x as ManagedExcelToolFile).ToList();
@@ -364,11 +367,6 @@ namespace SIMULTAN.Projects.ManagedFiles
                 this.TaxonomyEntry.Open(_clear_before_open);
 
             // 3a. load the links for the external resources
-            if (_data_manager.UsersManager.Users.Count == 0)
-            {
-                _data_manager.UsersManager.Users.Add(SimUser.DefaultUser);
-                _data_manager.UsersManager.CurrentUser = _data_manager.UsersManager.Users[0];
-            }
             if (this.LinksFileEntry == null)
                 ProjectIO.CreateMissingLinkFile(this.Project);
             if (this.LinksFileEntry != null)
@@ -397,6 +395,9 @@ namespace SIMULTAN.Projects.ManagedFiles
                 foreach (var sp in SitePlannerEntries)
                     sp.Open(_clear_before_open);
 
+            if (GeometryRelationsEntry != null) 
+                GeometryRelationsEntry.Open(_clear_before_open);
+
             // 9. check for linked resources of type geometry, site planner or geomaps
             // possible only after loading the component file
             List<FileInfo> additional_files_for_managing = this.Project.AllProjectDataManagers.AssetManager.GetAllResourceFiles(extensionsToIncludeInManagement, false);
@@ -419,10 +420,7 @@ namespace SIMULTAN.Projects.ManagedFiles
                 Project.AllProjectDataManagers.SitePlannerManager.ClearRecord();
 
                 // 7. unload the parameter library
-                Project.AllProjectDataManagers.ParameterLibraryManager.ClearRecord();
-
-                // 5. unload the mapping rules to excel tools
-                Project.AllProjectDataManagers.ExcelToolMappingManager.ClearRecord();
+                Project.AllProjectDataManagers.ParameterLibraryManager.ParameterRecord.Clear();
 
                 // pre 3. unload the links for linked resources (happens in 3 anyway...)
                 Project.AllProjectDataManagers.AssetManager.ResetLinks();
@@ -528,7 +526,6 @@ namespace SIMULTAN.Projects.ManagedFiles
         /// <summary>
         /// Returns all taxonomy file entries or an empty collection.
         /// </summary>
-
         public IEnumerable<ManagedTaxonomyFile> TaxonomyEntries { get; private set; }
 
         /// <summary>
@@ -539,6 +536,15 @@ namespace SIMULTAN.Projects.ManagedFiles
         /// Returns all geometry file entries or an empty collection.
         /// </summary>
         public IEnumerable<ManagedGeometryFile> GeometryEntries { get; private set; }
+
+        /// <summary>
+        /// Returns the first geometry file entry or Null.
+        /// </summary>
+        public ManagedGeometryRelationsFile GeometryRelationsEntry { get; private set; }
+        /// <summary>
+        /// Returns all geometry file entries or an empty collection.
+        /// </summary>
+        public IEnumerable<ManagedGeometryRelationsFile> GeometryRelationsEntries { get; private set; }
 
         /// <summary>
         /// Returns the first excel tool file entry or Null.
@@ -681,6 +687,11 @@ namespace SIMULTAN.Projects.ManagedFiles
             {
                 // TXDXF               
                 created = new ManagedTaxonomyFile(projectDataManager, _owner, _file);
+            }
+            else if (string.Equals(_file.Extension, ParamStructFileExtensions.FILE_EXT_GEOMETRY_RELATIONS, StringComparison.InvariantCultureIgnoreCase))
+            {
+                // GRDXF               
+                created = new ManagedGeometryRelationsFile(projectDataManager, _owner, _file);
             }
             return created;
         }

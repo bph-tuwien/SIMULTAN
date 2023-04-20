@@ -1,11 +1,11 @@
-﻿using SIMULTAN.Data.Users;
+﻿using SIMULTAN.Data.Assets;
+using SIMULTAN.Data.FlowNetworks;
+using SIMULTAN.Data.Taxonomy;
+using SIMULTAN.Data.Users;
 using SIMULTAN.Exceptions;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SIMULTAN.Data.Components
 {
@@ -28,7 +28,7 @@ namespace SIMULTAN.Data.Components
             {
                 if (component != value)
                 {
-                    if (value != null && slot.SlotBase != value.CurrentSlot)
+                    if (value != null && (slot.SlotBase.Target != value.CurrentSlot.Target || slot.SlotBase.TaxonomyEntryId != value.CurrentSlot.TaxonomyEntryId))
                         throw new ArgumentException("Slot does not match component.CurrentSlot");
 
                     //Check access
@@ -83,10 +83,16 @@ namespace SIMULTAN.Data.Components
             {
                 if (slot != value)
                 {
+                    if (slot.SlotBase != null)
+                        slot.SlotBase.RemoveDeleteAction();
+
                     this.slot = value;
 
+                    if (slot.SlotBase != null)
+                        slot.SlotBase.SetDeleteAction(SlotBaseTaxonomyEntryDeleted);
+
                     if (this.Component != null)
-                        this.Component.CurrentSlot = this.slot.SlotBase;
+                        this.Component.CurrentSlot = new Taxonomy.SimTaxonomyEntryReference(this.slot.SlotBase);
 
                     NotifyPropertyChanged(nameof(Slot));
                 }
@@ -154,10 +160,11 @@ namespace SIMULTAN.Data.Components
         /// base</param>
         public SimChildComponentEntry(SimSlot slot, SimComponent component)
         {
-            if (component != null && slot.SlotBase != component.CurrentSlot)
+            if (component != null && (slot.SlotBase.Target != component.CurrentSlot.Target || slot.SlotBase.TaxonomyEntryId != component.CurrentSlot.TaxonomyEntryId))
                 throw new ArgumentException("Slot does not match component.CurrentSlot");
 
             this.Slot = slot;
+
             this.Component = component;
         }
         /// <summary>
@@ -165,6 +172,31 @@ namespace SIMULTAN.Data.Components
         /// </summary>
         /// <param name="slot">The slot for this entry</param>
         public SimChildComponentEntry(SimSlot slot) : this(slot, null) { }
+
+        /// <summary>
+        /// Restores the references to other objects in the project after loading. This method needs to be called when all objects have been create and registered
+        /// in their appropriate factories. Especially, this method may only be called when ALL components have been created.
+        /// Restores referenced components, asset references, objects referenced by instances and calculator mappings.
+        /// The method calls itself recursively for all child components.
+        /// </summary>
+        /// <param name="networkElements">A list of all network elements. This parameter will be obsolete when network elements are registered in the IdGenerator</param>
+        /// <param name="assetManager">The asset manager in this project</param>
+        public void RestoreReferences(Dictionary<SimObjectId, SimFlowNetworkElement> networkElements, AssetManager assetManager)
+        {
+            if (this.Parent == null)
+                throw new InvalidOperationException("May only be called on child component entries that do not have a parent");
+
+            if (!(Slot.SlotBase is SimPlaceholderTaxonomyEntryReference))
+            {
+                var entry = Parent.Factory.ProjectData.IdGenerator.GetById<SimTaxonomyEntry>(Slot.SlotBase.TaxonomyEntryId);
+                if (entry == null)
+                    throw new TaxonomyEntryNotFoundException(String.Format("Slot taxonomy entry with id {0} of component {1} could not be found", Slot.SlotBase.TaxonomyEntryId, component.ToString()));
+                Slot = new SimSlot(new SimTaxonomyEntryReference(entry), Slot.SlotExtension);
+            }
+
+            Component?.RestoreReferences(networkElements, assetManager);
+        }
+
 
         internal void NotifyFactoryChanged(SimComponentCollection newValue, SimComponentCollection oldValue)
         {
@@ -260,6 +292,15 @@ namespace SIMULTAN.Data.Components
             var cu = factory.ProjectData.UsersManager.CurrentUser;
             if (cu != null)
                 component.ForceRecordWriteAccess(cu);
+        }
+
+        private void SlotBaseTaxonomyEntryDeleted(SimTaxonomyEntry caller)
+        {
+            if (Parent != null && parent.Factory != null)
+            {
+                var undefinedTax = Parent.GetDefaultSlotTaxonomyEntry(SimDefaultSlotKeys.Undefined);
+                Slot = new SimSlot(new SimTaxonomyEntryReference(undefinedTax), Slot.SlotExtension);
+            }
         }
     }
 }

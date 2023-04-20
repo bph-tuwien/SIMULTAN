@@ -1,13 +1,12 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using SIMULTAN;
 using SIMULTAN.Data;
+using SIMULTAN.Data.Components;
 using SIMULTAN.Data.MultiValues;
-using SIMULTAN.Tests.Utils;
+using SIMULTAN.Projects;
+using SIMULTAN.Tests.TestUtils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Media.Media3D;
 
 namespace SIMULTAN.Tests.Values
@@ -40,8 +39,8 @@ namespace SIMULTAN.Tests.Values
         }
 
         internal static (string name, string unitRow, string unitColumn,
-            List<SimMultiValueBigTableHeader> rowHeaders, List<SimMultiValueBigTableHeader> columnHeaders, List<List<double>> values)
-            TestData(int rows, int columns)
+            List<SimMultiValueBigTableHeader> rowHeaders, List<SimMultiValueBigTableHeader> columnHeaders, List<List<object>> values)
+            DoubleTestData(int rows, int columns)
         {
             List<SimMultiValueBigTableHeader> rowHeaders = new List<SimMultiValueBigTableHeader>(rows);
             for (int i = 0; i < rows; ++i)
@@ -51,13 +50,13 @@ namespace SIMULTAN.Tests.Values
             for (int i = 0; i < columns; ++i)
                 columnHeaders.Add(new SimMultiValueBigTableHeader(string.Format("Column {0}", i), string.Format("ColUnit {0}", i)));
 
-            List<List<double>> values = new List<List<double>>(rows);
+            List<List<object>> values = new List<List<object>>(rows);
             for (int r = 0; r < rows; ++r)
             {
-                List<double> rowValues = new List<double>(columns);
+                List<object> rowValues = new List<object>(columns);
                 for (int c = 0; c < columns; ++c)
                 {
-                    rowValues.Add(r * 5000 + c);
+                    rowValues.Add((double)(r * 5000 + c));
                 }
                 values.Add(rowValues);
             }
@@ -65,15 +64,158 @@ namespace SIMULTAN.Tests.Values
             return ("BigTable", "UnitRows", "UnitColumns", rowHeaders, columnHeaders, values);
         }
 
-        internal static ((string name, string unitRow, string unitColumn,
-            List<SimMultiValueBigTableHeader> rowHeaders, List<SimMultiValueBigTableHeader> columnHeaders, List<List<double>> values) data,
-            SimMultiValueBigTable table)
-            TestDataTable(int rows, int columns)
+
+
+        internal static (string name, string unitRow, string unitColumn,
+            List<SimMultiValueBigTableHeader> rowHeaders, List<SimMultiValueBigTableHeader> columnHeaders, List<List<object>> values)
+            BoolTestData(int rows, int columns)
         {
-            var data = TestData(rows, columns);
-            return (data, new SimMultiValueBigTable(
+            List<SimMultiValueBigTableHeader> rowHeaders = new List<SimMultiValueBigTableHeader>(rows);
+            for (int i = 0; i < rows; ++i)
+                rowHeaders.Add(new SimMultiValueBigTableHeader(string.Format("Row {0}", i), string.Format("RowUnit {0}", i)));
+
+            List<SimMultiValueBigTableHeader> columnHeaders = new List<SimMultiValueBigTableHeader>(columns);
+            for (int i = 0; i < columns; ++i)
+                columnHeaders.Add(new SimMultiValueBigTableHeader(string.Format("Column {0}", i), string.Format("ColUnit {0}", i)));
+
+            List<List<object>> values = new List<List<object>>(rows);
+            for (int r = 0; r < rows; ++r)
+            {
+                List<object> rowValues = new List<object>(columns);
+                for (int c = 0; c < columns; ++c)
+                {
+                    rowValues.Add(true);
+                }
+                values.Add(rowValues);
+            }
+
+            return ("BigTable", "UnitRows", "UnitColumns", rowHeaders, columnHeaders, values);
+        }
+
+
+        internal static (string name, string unitRow, string unitColumn,
+    List<SimMultiValueBigTableHeader> rowHeaders, List<SimMultiValueBigTableHeader> columnHeaders, List<List<object>> values)
+    IntTestData(int rows, int columns)
+        {
+            List<SimMultiValueBigTableHeader> rowHeaders = new List<SimMultiValueBigTableHeader>(rows);
+            for (int i = 0; i < rows; ++i)
+                rowHeaders.Add(new SimMultiValueBigTableHeader(string.Format("Row {0}", i), string.Format("RowUnit {0}", i)));
+
+            List<SimMultiValueBigTableHeader> columnHeaders = new List<SimMultiValueBigTableHeader>(columns);
+            for (int i = 0; i < columns; ++i)
+                columnHeaders.Add(new SimMultiValueBigTableHeader(string.Format("Column {0}", i), string.Format("ColUnit {0}", i)));
+
+            List<List<object>> values = new List<List<object>>(rows);
+            for (int r = 0; r < rows; ++r)
+            {
+                List<object> rowValues = new List<object>(columns);
+                for (int c = 0; c < columns; ++c)
+                {
+                    int val = r * 5000 + c;
+                    rowValues.Add(val);
+                }
+                values.Add(rowValues);
+            }
+
+            return ("BigTable", "UnitRows", "UnitColumns", rowHeaders, columnHeaders, values);
+        }
+
+
+        internal static (string name, string unitRow, string unitColumn,
+        List<SimMultiValueBigTableHeader> rowHeaders, List<SimMultiValueBigTableHeader> columnHeaders, List<List<object>> values)
+        StringTestData(int rows, int columns)
+        {
+            List<SimMultiValueBigTableHeader> rowHeaders = new List<SimMultiValueBigTableHeader>(rows);
+            for (int i = 0; i < rows; ++i)
+                rowHeaders.Add(new SimMultiValueBigTableHeader(string.Format("Row {0}", i), string.Format("RowUnit {0}", i)));
+
+            List<SimMultiValueBigTableHeader> columnHeaders = new List<SimMultiValueBigTableHeader>(columns);
+            for (int i = 0; i < columns; ++i)
+                columnHeaders.Add(new SimMultiValueBigTableHeader(string.Format("Column {0}", i), string.Format("ColUnit {0}", i)));
+
+            List<List<object>> values = new List<List<object>>(rows);
+            for (int r = 0; r < rows; ++r)
+            {
+                List<object> rowValues = new List<object>(columns);
+                for (int c = 0; c < columns; ++c)
+                {
+                    rowValues.Add("ASD" + c.ToString());
+                }
+                values.Add(rowValues);
+            }
+
+            return ("BigTable", "UnitRows", "UnitColumns", rowHeaders, columnHeaders, values);
+        }
+
+
+
+        internal static ((string name, string unitRow, string unitColumn,
+                    List<SimMultiValueBigTableHeader> rowHeaders, List<SimMultiValueBigTableHeader> columnHeaders, List<List<object>> values) data,
+                    SimMultiValueBigTable table, ExtendedProjectData projectData)
+                    DoubleTestDataTable(int rows, int columns)
+        {
+            ExtendedProjectData projectData = new ExtendedProjectData();
+
+            var data = DoubleTestData(rows, columns);
+            var table = new SimMultiValueBigTable(
                 data.name, data.unitColumn, data.unitRow, data.columnHeaders, data.rowHeaders, data.values
-                ));
+                );
+            projectData.ValueManager.Add(table);
+
+            return (data, table, projectData);
+        }
+
+
+
+        internal static ((string name, string unitRow, string unitColumn,
+                    List<SimMultiValueBigTableHeader> rowHeaders, List<SimMultiValueBigTableHeader> columnHeaders, List<List<object>> values) data,
+                    SimMultiValueBigTable table, ExtendedProjectData projectData)
+                  IntTestDataTable(int rows, int columns)
+        {
+            ExtendedProjectData projectData = new ExtendedProjectData();
+
+            var data = IntTestData(rows, columns);
+            var table = new SimMultiValueBigTable(
+                data.name, data.unitColumn, data.unitRow, data.columnHeaders, data.rowHeaders, data.values
+                );
+            projectData.ValueManager.Add(table);
+
+            return (data, table, projectData);
+        }
+
+
+        internal static ((string name, string unitRow, string unitColumn,
+               List<SimMultiValueBigTableHeader> rowHeaders, List<SimMultiValueBigTableHeader> columnHeaders, List<List<object>> values) data,
+               SimMultiValueBigTable table, ExtendedProjectData projectData)
+            StringTestDataTable(int rows, int columns)
+        {
+            ExtendedProjectData projectData = new ExtendedProjectData();
+
+            var data = StringTestData(rows, columns);
+            var table = new SimMultiValueBigTable(
+                data.name, data.unitColumn, data.unitRow, data.columnHeaders, data.rowHeaders, data.values
+                );
+            projectData.ValueManager.Add(table);
+
+            return (data, table, projectData);
+        }
+
+
+
+        internal static ((string name, string unitRow, string unitColumn,
+               List<SimMultiValueBigTableHeader> rowHeaders, List<SimMultiValueBigTableHeader> columnHeaders, List<List<object>> values) data,
+               SimMultiValueBigTable table, ExtendedProjectData projectData)
+               BoolTestDataTable(int rows, int columns)
+        {
+            ExtendedProjectData projectData = new ExtendedProjectData();
+
+            var data = BoolTestData(rows, columns);
+            var table = new SimMultiValueBigTable(
+                data.name, data.unitColumn, data.unitRow, data.columnHeaders, data.rowHeaders, data.values
+                );
+            projectData.ValueManager.Add(table);
+
+            return (data, table, projectData);
         }
 
         internal static SimMultiValueBigTable TestDataTableAggregate()
@@ -113,7 +255,7 @@ namespace SIMULTAN.Tests.Values
         }
 
         internal static void CheckTestData(SimMultiValueBigTable table, (string name, string unitRow, string unitColumn,
-            List<SimMultiValueBigTableHeader> rowHeaders, List<SimMultiValueBigTableHeader> columnHeaders, List<List<double>> values) testData)
+            List<SimMultiValueBigTableHeader> rowHeaders, List<SimMultiValueBigTableHeader> columnHeaders, List<List<object>> values) testData)
         {
             if (testData.name != null)
                 Assert.AreEqual(testData.name, table.Name);
@@ -144,23 +286,14 @@ namespace SIMULTAN.Tests.Values
                 Assert.AreEqual(table, table.ColumnHeaders[i].Table);
             }
 
-            Assert.AreEqual(testData.values.Count, table.Count(0));
-            for (int i = 0; i < testData.values.Count; ++i)
-            {
-                Assert.AreEqual(testData.values[i].Count, table.Count(1));
-
-                for (int j = 0; j < testData.values[i].Count; ++j)
-                {
-                    Assert.AreEqual(testData.values[i][j], table[i, j]);
-                }
-            }
+            AssertUtil.ContainEqualValues(testData.values, table);
         }
 
 
         [TestMethod]
         public void Ctor()
         {
-            var data = TestData(3, 4);
+            var data = DoubleTestData(3, 4);
 
             //Argument Null
             Assert.ThrowsException<ArgumentNullException>(() =>
@@ -193,7 +326,7 @@ namespace SIMULTAN.Tests.Values
         [TestMethod]
         public void PropertyChanged()
         {
-            var data = TestDataTable(2, 3);
+            var data = DoubleTestDataTable(2, 3);
             var events = new BigTableEventCounter(data.table);
 
             data.table.UnitX = "asdf";
@@ -224,7 +357,7 @@ namespace SIMULTAN.Tests.Values
         [TestMethod]
         public void CtorParsing()
         {
-            var data = TestData(3, 4);
+            var data = DoubleTestData(3, 4);
             long id = 99;
             string additionalText = "hello world";
 
@@ -282,7 +415,7 @@ namespace SIMULTAN.Tests.Values
         [TestMethod]
         public void Clone()
         {
-            var data = TestData(3, 4);
+            var data = DoubleTestData(3, 4);
             long id = 99;
             string additionalText = "hello world";
             Guid guid = Guid.NewGuid();
@@ -300,7 +433,7 @@ namespace SIMULTAN.Tests.Values
         [TestMethod]
         public void RemoveRow()
         {
-            var data = TestDataTable(3, 4);
+            var data = DoubleTestDataTable(3, 4);
             var events = new BigTableEventCounter(data.table);
 
             CheckTestData(data.table, data.data);
@@ -320,7 +453,7 @@ namespace SIMULTAN.Tests.Values
         [TestMethod]
         public void AddRow()
         {
-            var data = TestDataTable(3, 4);
+            var data = DoubleTestDataTable(3, 4);
             var events = new BigTableEventCounter(data.table);
 
             CheckTestData(data.table, data.data);
@@ -329,7 +462,7 @@ namespace SIMULTAN.Tests.Values
 
             data.table.RowHeaders.Insert(1, newRowHeader);
             data.data.rowHeaders.Insert(1, newRowHeader);
-            data.data.values.Insert(1, Enumerable.Repeat(0.0, data.data.values[0].Count).ToList());
+            data.data.values.Insert(1, Enumerable.Repeat<object>(null, data.data.values[0].Count).ToList());
 
             events.AssertEventCount(0, 1, 0, 0);
             Assert.AreEqual(-1, events.ResizedArgs[0].ColumnStartIndex);
@@ -342,7 +475,7 @@ namespace SIMULTAN.Tests.Values
         [TestMethod]
         public void ClearRows()
         {
-            var data = TestDataTable(3, 4);
+            var data = DoubleTestDataTable(3, 4);
             var events = new BigTableEventCounter(data.table);
 
             CheckTestData(data.table, data.data);
@@ -362,7 +495,7 @@ namespace SIMULTAN.Tests.Values
         [TestMethod]
         public void RemoveColumn()
         {
-            var data = TestDataTable(3, 4);
+            var data = DoubleTestDataTable(3, 4);
             var events = new BigTableEventCounter(data.table);
 
             CheckTestData(data.table, data.data);
@@ -382,7 +515,7 @@ namespace SIMULTAN.Tests.Values
         [TestMethod]
         public void AddColumn()
         {
-            var data = TestDataTable(3, 4);
+            var data = DoubleTestDataTable(3, 4);
             var events = new BigTableEventCounter(data.table);
 
             CheckTestData(data.table, data.data);
@@ -392,7 +525,7 @@ namespace SIMULTAN.Tests.Values
             data.table.ColumnHeaders.Insert(1, newColumnHeader);
             data.data.columnHeaders.Insert(1, newColumnHeader);
 
-            data.data.values.ForEach(x => x.Insert(1, 0.0));
+            data.data.values.ForEach(x => x.Insert(1, null));
 
             events.AssertEventCount(0, 1, 0, 0);
             Assert.AreEqual(1, events.ResizedArgs[0].ColumnStartIndex);
@@ -405,7 +538,7 @@ namespace SIMULTAN.Tests.Values
         [TestMethod]
         public void ClearColumns()
         {
-            var data = TestDataTable(3, 4);
+            var data = DoubleTestDataTable(3, 4);
             var events = new BigTableEventCounter(data.table);
 
             CheckTestData(data.table, data.data);
@@ -425,7 +558,7 @@ namespace SIMULTAN.Tests.Values
         [TestMethod]
         public void ReplaceColumnHeader()
         {
-            var data = TestDataTable(3, 4);
+            var data = DoubleTestDataTable(3, 4);
             var events = new BigTableEventCounter(data.table);
 
             var oldHeader = data.table.ColumnHeaders[1];
@@ -440,7 +573,7 @@ namespace SIMULTAN.Tests.Values
         [TestMethod]
         public void ReplaceRowHeader()
         {
-            var data = TestDataTable(3, 4);
+            var data = DoubleTestDataTable(3, 4);
             var events = new BigTableEventCounter(data.table);
 
             var oldHeader = data.table.RowHeaders[1];
@@ -455,7 +588,7 @@ namespace SIMULTAN.Tests.Values
         [TestMethod]
         public void ReplaceData()
         {
-            var data = TestDataTable(3, 4);
+            var data = DoubleTestDataTable(3, 4);
             var events = new BigTableEventCounter(data.table);
             CheckTestData(data.table, data.data);
 
@@ -468,7 +601,7 @@ namespace SIMULTAN.Tests.Values
             Assert.ThrowsException<ArgumentException>(() => { data.table.ReplaceData(data.data.columnHeaders, new List<SimMultiValueBigTableHeader> { }, data.data.values); });
 
             //Working example
-            var data2 = TestData(4, 5);
+            var data2 = DoubleTestData(4, 5);
             data.table.ReplaceData(data2.columnHeaders, data2.rowHeaders, data2.values);
 
             events.AssertEventCount(2, 1, 0, 0);
@@ -484,11 +617,11 @@ namespace SIMULTAN.Tests.Values
         [TestMethod]
         public void ReplaceDataWithTable()
         {
-            var data = TestDataTable(3, 4);
+            var data = DoubleTestDataTable(3, 4);
             var events = new BigTableEventCounter(data.table);
             CheckTestData(data.table, data.data);
 
-            var replaceData = TestDataTable(5, 1);
+            var replaceData = DoubleTestDataTable(5, 1);
             data.table.ReplaceData(replaceData.table);
 
             events.AssertEventCount(2, 1, 0, 0);
@@ -504,7 +637,7 @@ namespace SIMULTAN.Tests.Values
         [TestMethod]
         public void Resize()
         {
-            var data = TestDataTable(3, 4);
+            var data = DoubleTestDataTable(3, 4);
             var events = new BigTableEventCounter(data.table);
             CheckTestData(data.table, data.data);
 
@@ -512,7 +645,7 @@ namespace SIMULTAN.Tests.Values
             Assert.ThrowsException<ArgumentOutOfRangeException>(() => { data.table.Resize(3, -1); });
 
 
-            var compareData1 = TestData(1, 2);
+            var compareData1 = DoubleTestData(1, 2);
             data.table.Resize(1, 2);
 
             events.AssertEventCount(0, 1, 0, 0);
@@ -522,7 +655,7 @@ namespace SIMULTAN.Tests.Values
             CheckTestData(data.table, compareData1);
 
 
-            var compareData2 = TestData(3, 4);
+            var compareData2 = DoubleTestData(3, 4);
             for (int i = 1; i < 3; ++i)
             {
                 compareData2.rowHeaders[i].Name = "";
@@ -535,12 +668,12 @@ namespace SIMULTAN.Tests.Values
             }
             for (int r = 0; r < 3; ++r)
                 for (int c = 2; c < 4; ++c)
-                    compareData2.values[r][c] = 17.3;
+                    compareData2.values[r][c] = null;
             for (int r = 1; r < 3; ++r)
                 for (int c = 0; c < 4; ++c)
-                    compareData2.values[r][c] = 17.3;
+                    compareData2.values[r][c] = null;
 
-            data.table.Resize(3, 4, 17.3);
+            data.table.Resize(3, 4);
 
             events.AssertEventCount(0, 2, 0, 0);
             Assert.AreEqual(2, events.ResizedArgs[1].ColumnStartIndex);
@@ -552,7 +685,7 @@ namespace SIMULTAN.Tests.Values
         [TestMethod]
         public void Count()
         {
-            var data = TestDataTable(3, 4);
+            var data = DoubleTestDataTable(3, 4);
 
             Assert.ThrowsException<ArgumentOutOfRangeException>(() => { data.table.Count(-1); });
             Assert.ThrowsException<ArgumentOutOfRangeException>(() => { data.table.Count(2); });
@@ -564,9 +697,9 @@ namespace SIMULTAN.Tests.Values
         [TestMethod]
         public void GetRange()
         {
-            var data = TestDataTable(3, 4);
+            var data = DoubleTestDataTable(3, 4);
 
-            var emptyData = TestDataTable(0, 0);
+            var emptyData = DoubleTestDataTable(0, 0);
 
             //Out-of-range cases
             Assert.AreEqual(0, emptyData.table.GetRange(new Point4D(-1, 3, 1, 3)).Count);
@@ -602,7 +735,7 @@ namespace SIMULTAN.Tests.Values
         [TestMethod]
         public void GetRow()
         {
-            var data = TestDataTable(3, 4);
+            var data = DoubleTestDataTable(3, 4);
 
             Assert.ThrowsException<IndexOutOfRangeException>(() => { data.table.GetRow(-1); });
             Assert.ThrowsException<IndexOutOfRangeException>(() => { data.table.GetRow(100); });
@@ -618,7 +751,7 @@ namespace SIMULTAN.Tests.Values
         [TestMethod]
         public void GetColumn()
         {
-            var data = TestDataTable(3, 4);
+            var data = DoubleTestDataTable(3, 4);
 
             Assert.ThrowsException<IndexOutOfRangeException>(() => { data.table.GetColumn(-1).Count(); });
             Assert.ThrowsException<IndexOutOfRangeException>(() => { data.table.GetColumn(100).Count(); });
@@ -634,7 +767,7 @@ namespace SIMULTAN.Tests.Values
         [TestMethod]
         public void Index()
         {
-            var data = TestDataTable(3, 4);
+            var data = DoubleTestDataTable(3, 4);
             var events = new BigTableEventCounter(data.table);
 
             Assert.ThrowsException<IndexOutOfRangeException>(() => data.table[-1, 1]);
@@ -662,7 +795,7 @@ namespace SIMULTAN.Tests.Values
             var events = new BigTableEventCounter(data);
 
             //Apply
-            data.ApplyAggregationFunction(SimAggregationFunction.Sum, true);
+            ComponentParameters.ApplyAggregationFunction(data, SimAggregationFunction.Sum, true);
 
             //verify
             Assert.AreEqual(6, data.RowHeaders.Count);
@@ -688,14 +821,14 @@ namespace SIMULTAN.Tests.Values
             Assert.AreEqual("u1", data.ColumnHeaders[0].Unit);
             Assert.AreEqual("u2", data.ColumnHeaders[1].Unit);
 
-            double[,] expected = new double[6, 2]
+            object[,] expected = new object[6, 2]
             {
-                { 7, 8 },
-                { 17, 23 },
-                { 27, 38 },
-                { 37, 53 },
-                { 47, 68 },
-                { 57, 83 },
+                { 7.0, 8.0 },
+                { 17.0, 23.0 },
+                { 27.0, 38.0 },
+                { 37.0, 53.0 },
+                { 47.0, 68.0 },
+                { 57.0, 83.0 },
             };
 
             AssertUtil.ContainEqualValues(expected, data);
@@ -715,7 +848,7 @@ namespace SIMULTAN.Tests.Values
             var events = new BigTableEventCounter(data);
 
             //Apply
-            data.ApplyAggregationFunction(SimAggregationFunction.Sum, false);
+            ComponentParameters.ApplyAggregationFunction(data, SimAggregationFunction.Sum, false);
 
             //verify
             Assert.AreEqual(3, data.RowHeaders.Count);
@@ -741,11 +874,11 @@ namespace SIMULTAN.Tests.Values
             Assert.AreEqual("u2", data.ColumnHeaders[3].Unit);
             Assert.AreEqual("u1", data.ColumnHeaders[4].Unit);
 
-            double[,] expected = new double[3, 5]
+            object[,] expected = new object[3, 5]
             {
-                { 53, 56, 59, 62, 65 },
-                { 16, 17, 18, 19, 20 },
-                { 12, 14, 16, 18, 20 },
+                { 53.0, 56.0, 59.0, 62.0, 65.0 },
+                { 16.0, 17.0, 18.0, 19.0, 20.0 },
+                { 12.0, 14.0, 16.0, 18.0, 20.0 },
             };
 
             AssertUtil.ContainEqualValues(expected, data);
@@ -764,7 +897,7 @@ namespace SIMULTAN.Tests.Values
             var events = new BigTableEventCounter(data);
 
             //Apply
-            data.ApplyAggregationFunction(SimAggregationFunction.Average, true);
+            ComponentParameters.ApplyAggregationFunction(data, SimAggregationFunction.Average, true);
 
             //verify
             Assert.AreEqual(6, data.RowHeaders.Count);
@@ -790,7 +923,7 @@ namespace SIMULTAN.Tests.Values
             Assert.AreEqual("u1", data.ColumnHeaders[0].Unit);
             Assert.AreEqual("u2", data.ColumnHeaders[1].Unit);
 
-            double[,] expected = new double[6, 2]
+            object[,] expected = new object[6, 2]
             {
                 { 3.5, 8.0/3.0 },
                 { 8.5, 23/3.0 },
@@ -817,7 +950,7 @@ namespace SIMULTAN.Tests.Values
             var events = new BigTableEventCounter(data);
 
             //Apply
-            data.ApplyAggregationFunction(SimAggregationFunction.Average, false);
+            ComponentParameters.ApplyAggregationFunction(data, SimAggregationFunction.Average, false);
 
             //verify
             Assert.AreEqual(3, data.RowHeaders.Count);
@@ -843,10 +976,10 @@ namespace SIMULTAN.Tests.Values
             Assert.AreEqual("u2", data.ColumnHeaders[3].Unit);
             Assert.AreEqual("u1", data.ColumnHeaders[4].Unit);
 
-            double[,] expected = new double[3, 5]
+            object[,] expected = new object[3, 5]
             {
                 { 53/3.0, 56/3.0, 59/3.0, 62/3.0, 65/3.0 },
-                { 16, 17, 18, 19, 20 },
+                { 16.0, 17.0, 18.0, 19.0, 20.0 },
                 { 6.0, 7.0, 8.0, 9.0, 10.0 },
             };
 
@@ -866,7 +999,7 @@ namespace SIMULTAN.Tests.Values
             var events = new BigTableEventCounter(data);
 
             //Apply
-            data.ApplyAggregationFunction(SimAggregationFunction.Count, true);
+            ComponentParameters.ApplyAggregationFunction(data, SimAggregationFunction.Count, true);
 
             //verify
             Assert.AreEqual(6, data.RowHeaders.Count);
@@ -892,14 +1025,14 @@ namespace SIMULTAN.Tests.Values
             Assert.AreEqual("u1", data.ColumnHeaders[0].Unit);
             Assert.AreEqual("u2", data.ColumnHeaders[1].Unit);
 
-            double[,] expected = new double[6, 2]
+            object[,] expected = new object[6, 2]
             {
-                { 2, 3 },
-                { 2, 3 },
-                { 2, 3 },
-                { 2, 3 },
-                { 2, 3 },
-                { 2, 3 },
+                { 2.0, 3.0 },
+                { 2.0, 3.0 },
+                { 2.0, 3.0 },
+                { 2.0, 3.0 },
+                { 2.0, 3.0 },
+                { 2.0, 3.0 },
             };
 
             AssertUtil.ContainEqualValues(expected, data);
@@ -919,7 +1052,7 @@ namespace SIMULTAN.Tests.Values
             var events = new BigTableEventCounter(data);
 
             //Apply
-            data.ApplyAggregationFunction(SimAggregationFunction.Count, false);
+            ComponentParameters.ApplyAggregationFunction(data, SimAggregationFunction.Count, false);
 
             //verify
             Assert.AreEqual(3, data.RowHeaders.Count);
@@ -945,11 +1078,11 @@ namespace SIMULTAN.Tests.Values
             Assert.AreEqual("u2", data.ColumnHeaders[3].Unit);
             Assert.AreEqual("u1", data.ColumnHeaders[4].Unit);
 
-            double[,] expected = new double[3, 5]
+            object[,] expected = new object[3, 5]
             {
-                { 3, 3, 3, 3, 3 },
-                { 1, 1, 1, 1, 1 },
-                { 2, 2, 2, 2, 2 },
+                { 3.0, 3.0, 3.0, 3.0, 3.0 },
+                { 1.0, 1.0, 1.0, 1.0, 1.0 },
+                { 2.0, 2.0, 2.0, 2.0, 2.0 },
             };
 
             AssertUtil.ContainEqualValues(expected, data);
@@ -968,7 +1101,7 @@ namespace SIMULTAN.Tests.Values
             var events = new BigTableEventCounter(data);
 
             //Apply
-            data.ApplyAggregationFunction(SimAggregationFunction.Min, true);
+            ComponentParameters.ApplyAggregationFunction(data, SimAggregationFunction.Min, true);
 
             //verify
             Assert.AreEqual(6, data.RowHeaders.Count);
@@ -994,14 +1127,14 @@ namespace SIMULTAN.Tests.Values
             Assert.AreEqual("u1", data.ColumnHeaders[0].Unit);
             Assert.AreEqual("u2", data.ColumnHeaders[1].Unit);
 
-            double[,] expected = new double[6, 2]
+            object[,] expected = new object[6, 2]
             {
-                { 2, 1 },
-                { 7, 6 },
-                { 12, 11 },
-                { 17, 16 },
-                { 22, 21 },
-                { 27, 26 },
+                { 2.0, 1.0 },
+                { 7.0, 6.0 },
+                { 12.0, 11.0 },
+                { 17.0, 16.0 },
+                { 22.0, 21.0 },
+                { 27.0, 26.0 },
             };
 
             AssertUtil.ContainEqualValues(expected, data);
@@ -1021,7 +1154,7 @@ namespace SIMULTAN.Tests.Values
             var events = new BigTableEventCounter(data);
 
             //Apply
-            data.ApplyAggregationFunction(SimAggregationFunction.Min, false);
+            ComponentParameters.ApplyAggregationFunction(data, SimAggregationFunction.Min, false);
 
             //verify
             Assert.AreEqual(3, data.RowHeaders.Count);
@@ -1047,11 +1180,11 @@ namespace SIMULTAN.Tests.Values
             Assert.AreEqual("u2", data.ColumnHeaders[3].Unit);
             Assert.AreEqual("u1", data.ColumnHeaders[4].Unit);
 
-            double[,] expected = new double[3, 5]
+            object[,] expected = new object[3, 5]
             {
-                { 6, 7, 8, 9, 10 },
-                { 16, 17, 18, 19, 20 },
-                { 1, 2, 3, 4, 5 },
+                { 6.0, 7.0, 8.0, 9.0, 10.0 },
+                { 16.0, 17.0, 18.0, 19.0, 20.0 },
+                { 1.0, 2.0, 3.0, 4.0, 5.0 },
             };
 
             AssertUtil.ContainEqualValues(expected, data);
@@ -1070,7 +1203,7 @@ namespace SIMULTAN.Tests.Values
             var events = new BigTableEventCounter(data);
 
             //Apply
-            data.ApplyAggregationFunction(SimAggregationFunction.Max, true);
+            ComponentParameters.ApplyAggregationFunction(data, SimAggregationFunction.Max, true);
 
             //verify
             Assert.AreEqual(6, data.RowHeaders.Count);
@@ -1096,14 +1229,14 @@ namespace SIMULTAN.Tests.Values
             Assert.AreEqual("u1", data.ColumnHeaders[0].Unit);
             Assert.AreEqual("u2", data.ColumnHeaders[1].Unit);
 
-            double[,] expected = new double[6, 2]
+            object[,] expected = new object[6, 2]
             {
-                { 5, 4 },
-                { 10, 9 },
-                { 15, 14 },
-                { 20, 19 },
-                { 25, 24 },
-                { 30, 29 },
+                { 5.0, 4.0 },
+                { 10.0, 9.0 },
+                { 15.0, 14.0 },
+                { 20.0, 19.0 },
+                { 25.0, 24.0 },
+                { 30.0, 29.0 },
             };
 
             AssertUtil.ContainEqualValues(expected, data);
@@ -1123,7 +1256,7 @@ namespace SIMULTAN.Tests.Values
             var events = new BigTableEventCounter(data);
 
             //Apply
-            data.ApplyAggregationFunction(SimAggregationFunction.Max, false);
+            ComponentParameters.ApplyAggregationFunction(data, SimAggregationFunction.Max, false);
 
             //verify
             Assert.AreEqual(3, data.RowHeaders.Count);
@@ -1149,11 +1282,11 @@ namespace SIMULTAN.Tests.Values
             Assert.AreEqual("u2", data.ColumnHeaders[3].Unit);
             Assert.AreEqual("u1", data.ColumnHeaders[4].Unit);
 
-            double[,] expected = new double[3, 5]
+            object[,] expected = new object[3, 5]
             {
-                { 26, 27, 28, 29, 30 },
-                { 16, 17, 18, 19, 20 },
-                { 11, 12, 13, 14, 15 },
+                { 26.0, 27.0, 28.0, 29.0, 30.0 },
+                { 16.0, 17.0, 18.0, 19.0, 20.0 },
+                { 11.0, 12.0, 13.0, 14.0, 15.0 },
             };
 
             AssertUtil.ContainEqualValues(expected, data);
@@ -1168,7 +1301,7 @@ namespace SIMULTAN.Tests.Values
         [TestMethod]
         public void ModifyHeader()
         {
-            var data = TestDataTable(3, 4);
+            var data = DoubleTestDataTable(3, 4);
             var events = new BigTableEventCounter(data.table);
 
             data.table.RowHeaders[1].Name = "NewName";

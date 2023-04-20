@@ -127,9 +127,6 @@
   <data name="DXFSerializer_GMDXF_EmptyV11" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\io\geomapdxfresults\dxfserializer_gmdxf_emptyv11.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
-  <data name="DXFSerializer_MVDXF_Empty" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\io\multivaluedxfresults\dxfserializer_mvdxf_empty.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
-  </data>
   <data name="DXFSerializer_ReadCODXF_AccessEntryV11" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\io\componentdxfaccessprofileentryresults\dxfserializer_readcodxf_accessentryv11.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
   </data>
@@ -355,15 +352,6 @@
   <data name="DXFSerializer_WriteVectorCalculation" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\io\componentdxfcalculationresults\dxfserializer_writevectorcalculation.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
   </data>
-  <data name="DXFSerializer_WriteExcelMapping" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\io\componentdxfexcelmappingresults\dxfserializer_writeexcelmapping.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
-  </data>
-  <data name="DXFSerializer_ReadCODXF_ExcelMappingV12" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\io\componentdxfexcelmappingresults\dxfserializer_readcodxf_excelmappingv12.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
-  </data>
-  <data name="DXFSerializer_ReadCODXF_ExcelMappingV11" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\io\componentdxfexcelmappingresults\dxfserializer_readcodxf_excelmappingv11.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
-  </data>
   <data name="DXFSerializer_WriteChatItem" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\io\componentdxfchatitemresults\dxfserializer_writechatitem.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
   </data>
@@ -390,9 +378,6 @@
   </data>
   <data name="DXFSerializer_ReadCODXF_MultipleV8" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\io\componentdxfcomponentresults\dxfserializer_readcodxf_multiplev8.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
-  </data>
-  <data name="DXFSerializer_ReadCODXF_ExcelMappingV8" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\io\componentdxfexcelmappingresults\dxfserializer_readcodxf_excelmappingv8.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
   </data>
   <data name="DXFSerializer_ReadCODXF_MultipleV6" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\io\componentdxfcomponentresults\dxfserializer_readcodxf_multiplev6.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
@@ -480,9 +465,6 @@
   </data>
   <data name="DXFSerializer_ReadCODXF_UserComponentListsV11" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\io\componentdxfusercomponentlistresults\dxfserializer_readcodxf_usercomponentlistsv11.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
-  </data>
-  <data name="DXFSerializer_SIMUSER_Empty" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\io\simuserdxfresults\dxfserializer_simuser_empty.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
   <data name="DXFSerializer_WriteFlowNetworkNode" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\io\componentdxfflownetworkresults\dxfserializer_writeflownetworknode.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
@@ -697,12 +679,6 @@
   <data name="DXFSerializer_METADXF_ReadV12" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\io\metadxfresults\dxfserializer_metadxf_readv12.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
   </data>
-  <data name="DXFSerializer_TXDXF_Empty" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\io\simtaxonomydxfresults\dxfserializer_txdxf_empty.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
-  </data>
-  <data name="DXFSerializer_TXDXF_Entries" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\io\simtaxonomydxfresults\dxfserializer_txdxf_entries.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
-  </data>
   <data name="DXFSerializer_GMDXF_Empty" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\io\geomapdxfresults\dxfserializer_gmdxf_empty.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
@@ -717,21 +693,6 @@
   </data>
   <data name="DXFSerializer_ReadGMDXF_MapResourceV12" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\io\geomapdxfresults\dxfserializer_readgmdxf_mapresourcev12.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
-  </data>
-  <data name="DXFSerializer_SIMUSER_Users" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\io\simuserdxfresults\dxfserializer_simuser_users.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
-  </data>
-  <data name="DXFSerializer_SPDXF_Associations" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\io\siteplannerdxfresults\dxfserializer_spdxf_associations.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
-  </data>
-  <data name="DXFSerializer_SPDXF_Buildings" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\io\siteplannerdxfresults\dxfserializer_spdxf_buildings.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
-  </data>
-  <data name="DXFSerializer_SPDXF_Empty" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\io\siteplannerdxfresults\dxfserializer_spdxf_empty.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
-  </data>
-  <data name="DXFSerializer_SPDXF_GeoMaps" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\io\siteplannerdxfresults\dxfserializer_spdxf_geomaps.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
   <data name="DXFSerializer_SPDXF_AssociationsV13" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\io\siteplannerdxfresults\dxfserializer_spdxf_associationsv13.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
@@ -822,5 +783,227 @@
   </data>
   <data name="DXFSerializer_WriteParameterWithTaxonomyEntry" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\io\componentdxfparameterresults\dxfserializer_writeparameterwithtaxonomyentry.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  </data>
+  <data name="DXFSerializer_ReadCODXF_ParameterWithPointerV17" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\io\componentdxfparameterresults\dxfserializer_readcodxf_parameterwithpointerv17.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  </data>
+  <data name="DXFSerializer_WriteParameterWithGeometrySource" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\io\componentdxfparameterresults\dxfserializer_writeparameterwithgeometrysource.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  </data>
+  <data name="DXFSerializer_ReadCODXF_ParameterWithGeometrySourceV17" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\io\componentdxfparameterresults\dxfserializer_readcodxf_parameterwithgeometrysourcev17.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  </data>
+  <data name="DXFSerializer_ReadCODXF_ContainedFileV16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\io\componentdxfresourceresults\dxfserializer_readcodxf_containedfilev16.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+  </data>
+  <data name="DXFSerializer_ReadCODXF_LinkedFileV16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\io\componentdxfresourceresults\dxfserializer_readcodxf_linkedfilev16.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+  </data>
+  <data name="DXFSerializer_ReadCODXF_ResourceDirectoryV16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\io\componentdxfresourceresults\dxfserializer_readcodxf_resourcedirectoryv16.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+  </data>
+  <data name="DXFSerializer_ReadMVDXF_BigTableV18" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\io\multivaluedxfresults\dxfserializer_readmvdxf_bigtablev18.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+  </data>
+  <data name="DXFSerializer_ETDXF_WriteDataMappingTool" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\io\exceltoolsresults\dxfserializer_etdxf_writedatamappingtool.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  </data>
+  <data name="DXFSerializer_ETDXF_WriteDMRuleComponent" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\io\exceltoolsresults\dxfserializer_etdxf_writedmrulecomponent.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  </data>
+  <data name="DXFSerializer_ETDXF_WriteDMRuleComponentChildren" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\io\exceltoolsresults\dxfserializer_etdxf_writedmrulecomponentchildren.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  </data>
+  <data name="DXFSerializer_ETDXF_WriteDMRuleParameter" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\io\exceltoolsresults\dxfserializer_etdxf_writedmruleparameter.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  </data>
+  <data name="DXFSerializer_ETDXF_WriteDMRuleInstance" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\io\exceltoolsresults\dxfserializer_etdxf_writedmruleinstance.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  </data>
+  <data name="DXFSerializer_ETDXF_WriteDMRuleInstanceChildren" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\io\exceltoolsresults\dxfserializer_etdxf_writedmruleinstancechildren.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  </data>
+  <data name="DXFSerializer_ETDXF_WriteDMRuleFace" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\io\exceltoolsresults\dxfserializer_etdxf_writedmruleface.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  </data>
+  <data name="DXFSerializer_ETDXF_WriteDMRuleFaceChildren" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\io\exceltoolsresults\dxfserializer_etdxf_writedmrulefacechildren.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  </data>
+  <data name="DXFSerializer_ETDXF_WriteDMRuleVolume" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\io\exceltoolsresults\dxfserializer_etdxf_writedmrulevolume.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  </data>
+  <data name="DXFSerializer_ETDXF_WriteDMRuleVolumeChildren" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\io\exceltoolsresults\dxfserializer_etdxf_writedmrulevolumechildren.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  </data>
+  <data name="DXFSerializer_ETDXF_WriteDataMappingToolMappings" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\io\exceltoolsresults\dxfserializer_etdxf_writedatamappingtoolmappings.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  </data>
+  <data name="DXFSerializer_ETDXF_ReadDMRuleChildrenV21" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\io\exceltoolsresults\dxfserializer_etdxf_readdmrulechildrenv21.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  </data>
+  <data name="DXFSerializer_ETDXF_ReadDMRuleComponentV21" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\io\exceltoolsresults\dxfserializer_etdxf_readdmrulecomponentv21.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  </data>
+  <data name="DXFSerializer_ETDXF_ReadDMRuleFaceChildrenV21" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\io\exceltoolsresults\dxfserializer_etdxf_readdmrulefacechildrenv21.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  </data>
+  <data name="DXFSerializer_ETDXF_ReadDMRuleFaceV21" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\io\exceltoolsresults\dxfserializer_etdxf_readdmrulefacev21.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  </data>
+  <data name="DXFSerializer_ETDXF_ReadDMRuleInstanceChildrenV21" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\io\exceltoolsresults\dxfserializer_etdxf_readdmruleinstancechildrenv21.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  </data>
+  <data name="DXFSerializer_ETDXF_ReadDMRuleInstanceV21" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\io\exceltoolsresults\dxfserializer_etdxf_readdmruleinstancev21.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  </data>
+  <data name="DXFSerializer_ETDXF_ReadDMRuleParameterV21" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\io\exceltoolsresults\dxfserializer_etdxf_readdmruleparameterv21.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  </data>
+  <data name="DXFSerializer_ETDXF_ReadDMRuleVolumeChildrenV21" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\io\exceltoolsresults\dxfserializer_etdxf_readdmrulevolumechildrenv21.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  </data>
+  <data name="DXFSerializer_ETDXF_ReadDMRuleVolumeV21" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\io\exceltoolsresults\dxfserializer_etdxf_readdmrulevolumev21.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  </data>
+  <data name="DXFSerializer_ETDXF_ReadDMToolV21" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\io\exceltoolsresults\dxfserializer_etdxf_readdmtoolv21.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  </data>
+  <data name="DXFSerializer_ETDXF_ReadV21" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\io\exceltoolsresults\dxfserializer_etdxf_readv21.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  </data>
+  <data name="DXFSerializer_ETDXF_ReadDMToolMappingsV21" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\io\exceltoolsresults\dxfserializer_etdxf_readdmtoolmappingsv21.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  </data>
+  <data name="DXFSerializer_ETDXF_WriteDMReadRule" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\io\exceltoolsresults\dxfserializer_etdxf_writedmreadrule.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  </data>
+  <data name="DXFSerializer_ETDXF_ReadDMReadRuleV21" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\io\exceltoolsresults\dxfserializer_etdxf_readdmreadrulev21.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  </data>
+  <data name="DXFSerializer_MVDXF_WriteEmpty" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\io\multivaluedxfresults\dxfserializer_mvdxf_writeempty.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+  </data>
+  <data name="DXFSerializer_SIMUSER_WriteEmpty" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\io\simuserdxfresults\dxfserializer_simuser_writeempty.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+  </data>
+  <data name="DXFSerializer_SIMUSER_WriteUsers" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\io\simuserdxfresults\dxfserializer_simuser_writeusers.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+  </data>
+  <data name="DXFSerializer_SPDXF_WriteAssociations" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\io\siteplannerdxfresults\dxfserializer_spdxf_writeassociations.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+  </data>
+  <data name="DXFSerializer_SPDXF_WriteBuildings" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\io\siteplannerdxfresults\dxfserializer_spdxf_writebuildings.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+  </data>
+  <data name="DXFSerializer_SPDXF_WriteEmpty" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\io\siteplannerdxfresults\dxfserializer_spdxf_writeempty.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+  </data>
+  <data name="DXFSerializer_SPDXF_WriteGeoMaps" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\io\siteplannerdxfresults\dxfserializer_spdxf_writegeomaps.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+  </data>
+  <data name="DXFSerializer_TXDXF_WriteEmpty" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\io\simtaxonomydxfresults\dxfserializer_txdxf_writeempty.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  </data>
+  <data name="DXFSerializer_TXDXF_WriteEntries" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\io\simtaxonomydxfresults\dxfserializer_txdxf_writeentries.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  </data>
+  <data name="DXFSerializer_GRDXF_ReadEmptyV20" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\io\simgeometryrelationsdxfresults\dxfserializer_grdxf_reademptyv20.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  </data>
+  <data name="DXFSerializer_GRDXF_ReadRelationsV20" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\io\simgeometryrelationsdxfresults\dxfserializer_grdxf_readrelationsv20.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  </data>
+  <data name="DXFSerializer_GRDXF_WriteEmpty" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\io\simgeometryrelationsdxfresults\dxfserializer_grdxf_writeempty.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  </data>
+  <data name="DXFSerializer_GRDXF_WriteRelations" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\io\simgeometryrelationsdxfresults\dxfserializer_grdxf_writerelations.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  </data>
+  <data name="DXFSerializer_GRFMDXF_ReadEmptyV20" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\io\geometryrelationsfilemappingresults\dxfserializer_grfmdxf_reademptyv20.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  </data>
+  <data name="DXFSerializer_GRFMDXF_ReadMappingsV20" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\io\geometryrelationsfilemappingresults\dxfserializer_grfmdxf_readmappingsv20.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  </data>
+  <data name="DXFSerializer_GRFMDXF_WriteEmpty" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\io\geometryrelationsfilemappingresults\dxfserializer_grfmdxf_writeempty.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  </data>
+  <data name="DXFSerializer_GRFMDXF_WriteMappings" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\io\geometryrelationsfilemappingresults\dxfserializer_grfmdxf_writemappings.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  </data>
+  <data name="DXFSerializer_WriteParameterBool" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\IO\ComponentDXFParameterResults\DXFSerializer_WriteParameterBool.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+  </data>
+  <data name="DXFSerializer_WriteParameterWithGeometrySourceBool" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\IO\ComponentDXFParameterResults\DXFSerializer_WriteParameterWithGeometrySourceBool.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+  </data>
+  <data name="DXFSerializer_ReadMVPointer_Field3DV19_Bool" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\IO\ComponentDXFParameterResults\DXFSerializer_ReadMVPointer_Field3DV19_Bool.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  </data>
+  <data name="DXFSerializer_ReadMVPointer_Field3DV19_Int" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\IO\ComponentDXFParameterResults\DXFSerializer_ReadMVPointer_Field3DV19_Int.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  </data>
+  <data name="DXFSerializer_ReadMVPointer_Field3DV19_String" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\IO\ComponentDXFParameterResults\DXFSerializer_ReadMVPointer_Field3DV19_String.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  </data>
+  <data name="DXFSerializer_ReadMVPointer_FunctionV12_Bool" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\IO\ComponentDXFParameterResults\DXFSerializer_ReadMVPointer_FunctionV12_Bool.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  </data>
+  <data name="DXFSerializer_ReadMVPointer_FunctionV12_Int" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\IO\ComponentDXFParameterResults\DXFSerializer_ReadMVPointer_FunctionV12_Int.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  </data>
+  <data name="DXFSerializer_ReadMVPointer_FunctionV12_String" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\IO\ComponentDXFParameterResults\DXFSerializer_ReadMVPointer_FunctionV19_String.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  </data>
+  <data name="DXFSerializer_WriteMVPointer_Field3D_Bool" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\IO\ComponentDXFParameterResults\DXFSerializer_WriteMVPointer_Field3D_Bool.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  </data>
+  <data name="DXFSerializer_WriteParameterWithGeometrySource_Int" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\IO\ComponentDXFParameterResults\DXFSerializer_WriteParameterWithGeometrySource_Int.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  </data>
+  <data name="DXFSerializer_WriteParameterWithGeometrySource_String" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\IO\ComponentDXFParameterResults\DXFSerializer_WriteParameterWithGeometrySource_String.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  </data>
+  <data name="DXFSerializer_WriteParameterWithPointer_Bool" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\IO\ComponentDXFParameterResults\DXFSerializer_WriteParameterWithPointer_Bool.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  </data>
+  <data name="DXFSerializer_WriteParameterWithPointer_Int" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\IO\ComponentDXFParameterResults\DXFSerializer_WriteParameterWithPointer_Int.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  </data>
+  <data name="DXFSerializer_WriteParameterWithPointer_String" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\IO\ComponentDXFParameterResults\DXFSerializer_WriteParameterWithPointer_String.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  </data>
+  <data name="DXFSerializer_WriteParameterWithTaxonomyEntry_Bool" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\IO\ComponentDXFParameterResults\DXFSerializer_WriteParameterWithTaxonomyEntry_Bool.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  </data>
+  <data name="DXFSerializer_WriteParameterWithTaxonomyEntry_Enum" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\IO\ComponentDXFParameterResults\DXFSerializer_WriteParameterWithTaxonomyEntry_Enum.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  </data>
+  <data name="DXFSerializer_WriteParameterWithTaxonomyEntry_Int" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\IO\ComponentDXFParameterResults\DXFSerializer_WriteParameterWithTaxonomyEntry_Int.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  </data>
+  <data name="DXFSerializer_WriteParameterWithTaxonomyEntry_String" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\IO\ComponentDXFParameterResults\DXFSerializer_WriteParameterWithTaxonomyEntry_String.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  </data>
+  <data name="DXFSerializer_WriteParameter_Enum" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\IO\ComponentDXFParameterResults\DXFSerializer_WriteParameter_Enum.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  </data>
+  <data name="DXFSerializer_WriteParameter_Int" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\IO\ComponentDXFParameterResults\DXFSerializer_WriteParameter_Int.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  </data>
+  <data name="DXFSerializer_WriteParameter_String" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\IO\ComponentDXFParameterResults\DXFSerializer_WriteParameter_String.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+  </data>
+  <data name="DXFSerializer_WriteMVPointer_BigTable_Int" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\IO\ComponentDXFParameterResults\DXFSerializer_WriteMVPointer_BigTable_Int.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  </data>
+  <data name="DXFSerializer_ReadMVPointer_Field3DV19_Int" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\IO\ComponentDXFParameterResults\DXFSerializer_ReadMVPointer_Field3DV19_Int.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  </data>
+  <data name="DXFSerializer_ReadMVPointer_Field3DV19_String" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\IO\ComponentDXFParameterResults\DXFSerializer_ReadMVPointer_Field3DV19_String.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  </data>
+  <data name="DXFSerializer_ReadMVPointer_FunctionV19_String" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\IO\ComponentDXFParameterResults\DXFSerializer_ReadMVPointer_FunctionV19_String.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
   </data>
 </root>

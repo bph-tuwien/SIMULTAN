@@ -10,5 +10,9 @@ SIMULTAN.Data.Assets.ContainedResourceFileEntry
 MyContainedFile.txt
 7212
 0
+7213
+1
+7215
+57
 0
 SEQEND

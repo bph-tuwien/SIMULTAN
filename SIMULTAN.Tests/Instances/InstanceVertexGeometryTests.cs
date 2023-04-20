@@ -1,7 +1,7 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SIMULTAN.Data.Components;
 using SIMULTAN.Data.Geometry;
-using SIMULTAN.Tests.Utils;
+using SIMULTAN.Tests.TestUtils;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -121,53 +121,6 @@ namespace SIMULTAN.Tests.Instances
             Assert.AreEqual(vertexB.Id, geomPlacement.GeometryId);
             Assert.AreEqual(resource.Key, geomPlacement.FileId);
             Assert.AreEqual(SimInstancePlacementState.Valid, geomPlacement.State);
-        }
-
-        [TestMethod]
-        public void AddVertexInstanceParameters()
-        {
-            LoadProject(testProject);
-            (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
-
-            var comp = projectData.Components.First(x => x.Name == "Vertex 1");
-            var vertexA = gm.Geometry.Vertices.First(f => f.Name == "Vertex A");
-            var vertexB = gm.Geometry.Vertices.First(f => f.Name == "Vertex B");
-
-            Assert.AreEqual(0, comp.Parameters.Count);
-
-            //Add new association
-            projectData.ComponentGeometryExchange.Associate(comp, vertexA);
-
-            Assert.AreEqual(1, comp.Parameters.Count);
-
-            var nrtotalParam = comp.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_COUNT));
-
-            Assert.AreNotEqual(null, nrtotalParam);
-
-            Assert.AreEqual(1, nrtotalParam.ValueCurrent);
-
-            //Add second association
-            projectData.ComponentGeometryExchange.Associate(comp, vertexB);
-            Assert.AreEqual(2, nrtotalParam.ValueCurrent);
-        }
-
-        [TestMethod]
-        public void AddVertexInstancePath()
-        {
-            LoadProject(testProject);
-            (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
-
-            var comp = projectData.Components.First(x => x.Name == "Vertex 1");
-            var vertexA = gm.Geometry.Vertices.First(f => f.Name == "Vertex A");
-
-            //Add new association
-            projectData.ComponentGeometryExchange.Associate(comp, vertexA);
-
-            //No path for this type of instance
-            var instance = comp.Instances[0];
-            Assert.AreEqual(1, instance.InstancePath.Count);
-            AssertUtil.AssertDoubleEqual(0.0, instance.InstancePathLength);
-            Assert.AreEqual(vertexA.Position, instance.InstancePath[0]);
         }
 
         [TestMethod]
@@ -294,26 +247,6 @@ namespace SIMULTAN.Tests.Instances
             Assert.AreEqual(SimInstancePlacementState.Valid, geomPlacement.State);
         }
 
-        [TestMethod]
-        public void InstancePathGeometryChanged()
-        {
-            LoadProject(testProject);
-
-            (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
-
-            var comp = projectData.Components.First(x => x.Name == "Vertex 2");
-            var vertexB = gm.Geometry.Vertices.First(f => f.Name == "Vertex B");
-            var inst = comp.Instances.First(i =>
-                i.Placements.Any(p => p is SimInstancePlacementGeometry pg && pg.GeometryId == vertexB.Id && pg.FileId == resource.Key));
-
-            var instPath = inst.InstancePath[0];
-
-            vertexB.Position = new Point3D(1.0, 1.0, 1.0);
-
-            Assert.AreNotEqual(instPath, inst.InstancePath[0]);
-            Assert.AreEqual(new Point3D(1.0, 1.0, 1.0), inst.InstancePath[0]);
-        }
-
         #endregion
 
         #region Remove
@@ -348,13 +281,10 @@ namespace SIMULTAN.Tests.Instances
             Assert.AreEqual(1, comp.Instances.Count);
             Assert.IsTrue(comp.Instances.Any(i => i.Placements.Any(pl => pl is SimInstancePlacementGeometry gp && gp.GeometryId == vertexB.Id)));
 
-            var nrtotalParam = comp.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_COUNT));
-
             projectData.ComponentGeometryExchange.Disassociate(comp, vertexB);
 
             Assert.AreEqual(0, comp.Instances.Count);
             Assert.IsFalse(comp.Instances.Any(i => i.Placements.Any(pl => pl is SimInstancePlacementGeometry gp && gp.GeometryId == vertexB.Id)));
-            AssertUtil.AssertDoubleEqual(0.0, nrtotalParam.ValueCurrent);
         }
 
         [TestMethod]
@@ -383,37 +313,6 @@ namespace SIMULTAN.Tests.Instances
             var pl = (SimInstancePlacementGeometry)inst.Placements[0];
             Assert.AreEqual(SimInstancePlacementState.InstanceTargetMissing, pl.State);
             Assert.AreEqual(true, pl.IsValid);
-        }
-
-        [TestMethod]
-        public void RemoveVertexParameters()
-        {
-            LoadProject(testProject);
-            (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
-
-            var comp = projectData.Components.First(x => x.Name == "Vertex 2");
-            var vertexA = gm.Geometry.Vertices.First(f => f.Name == "Vertex A");
-            var vertexB = gm.Geometry.Vertices.First(f => f.Name == "Vertex B");
-            projectData.ComponentGeometryExchange.Associate(comp, vertexA);
-
-            vertexB.RemoveFromModel();
-
-            var nrtotalParam = comp.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_COUNT));
-            AssertUtil.AssertDoubleEqual(2.0, nrtotalParam.ValueCurrent);
-        }
-
-        [TestMethod]
-        public void RemoveVertexInstancePath()
-        {
-            LoadProject(testProject);
-            (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
-
-            var comp = projectData.Components.First(x => x.Name == "Vertex 2");
-            var vertexB = gm.Geometry.Vertices.First(f => f.Name == "Vertex B");
-
-            vertexB.RemoveFromModel();
-
-            Assert.AreEqual(0, comp.Instances[0].InstancePath.Count);
         }
 
         #endregion

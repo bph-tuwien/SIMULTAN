@@ -55,11 +55,6 @@ namespace SIMULTAN.Data.Components
         }
         private SimFlowNetworkElement networkElement = null;
 
-        /// <summary>
-        /// Scaling factor to convert network element coordinates into meters for the <see cref="SimComponentInstance.InstancePath"/>
-        /// </summary>
-        public double PathScale { get; } = SimInstancePlacementNetwork.SCALE_PIXEL_TO_M;
-
         #endregion
 
         /// <summary>

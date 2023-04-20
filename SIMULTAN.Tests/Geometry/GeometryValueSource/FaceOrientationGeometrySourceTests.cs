@@ -1,0 +1,501 @@
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using SIMULTAN.Data.Components;
+using SIMULTAN.Data.Geometry;
+using SIMULTAN.Data.Taxonomy;
+using SIMULTAN.Tests.TestUtils;
+using System;
+using System.IO;
+using System.Linq;
+using System.Windows.Media.Media3D;
+
+namespace SIMULTAN.Tests.Geometry.GeometryValueSource
+{
+    [TestClass]
+    public class FaceOrientationGeometrySourceTests : BaseProjectTest
+    {
+        private static readonly FileInfo geometrySourceProject = new FileInfo(@".\GeometryValueSourceTests.simultan");
+
+        #region Attach/Open
+
+        [TestMethod]
+        public void AddSource()
+        {
+            LoadProject(geometrySourceProject);
+
+            var faceComp = this.projectData.Components.First(x => x.Name == "Face 3");
+            var param = faceComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "GeometryParam");
+
+            Assert.IsTrue(double.IsNegativeInfinity(param.Value));
+
+            //Add parameter source
+            param.ValueSource = new SimGeometryParameterSource(SimGeometrySourceProperty.FaceOrientation);
+
+            Assert.IsTrue(double.IsNegativeInfinity(param.Value));
+            Assert.IsTrue(double.IsNegativeInfinity((double)faceComp.Instances[0].InstanceParameterValuesPersistent[param]));
+            Assert.IsTrue(double.IsNegativeInfinity((double)faceComp.Instances[1].InstanceParameterValuesPersistent[param]));
+
+            Assert.AreEqual(SimParameterInstancePropagation.PropagateNever, param.InstancePropagationMode);
+        }
+        [TestMethod]
+        public void OpenGeometry()
+        {
+            LoadProject(geometrySourceProject);
+
+            var faceComp = this.projectData.Components.First(x => x.Name == "Face 3");
+            var param = faceComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "GeometryParam");
+
+            //Add parameter source
+            param.ValueSource = new SimGeometryParameterSource(SimGeometrySourceProperty.FaceOrientation);
+
+            (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
+
+            AssertUtil.AssertDoubleEqual(135.0, param.Value);
+            AssertUtil.AssertDoubleEqual(90.0, (double)faceComp.Instances[0].InstanceParameterValuesPersistent[param]);
+            AssertUtil.AssertDoubleEqual(180.0, (double)faceComp.Instances[1].InstanceParameterValuesPersistent[param]);
+        }
+        [TestMethod]
+        public void OpenedGeometry()
+        {
+            LoadProject(geometrySourceProject);
+
+            var faceComp = this.projectData.Components.First(x => x.Name == "Face 3");
+            var param = faceComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "GeometryParam");
+
+            (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
+
+            //Add parameter source
+            param.ValueSource = new SimGeometryParameterSource(SimGeometrySourceProperty.FaceOrientation);
+
+            AssertUtil.AssertDoubleEqual(135.0, param.Value);
+            AssertUtil.AssertDoubleEqual(90.0, (double)faceComp.Instances[0].InstanceParameterValuesPersistent[param]);
+            AssertUtil.AssertDoubleEqual(180.0, (double)faceComp.Instances[1].InstanceParameterValuesPersistent[param]);
+        }
+
+        #endregion
+
+        #region Change geometry
+
+        [TestMethod]
+        public void GeometryChanged()
+        {
+            LoadProject(geometrySourceProject);
+
+            var faceComp = this.projectData.Components.First(x => x.Name == "Face 3");
+            var param = faceComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "GeometryParam");
+
+            //Add parameter source
+            param.ValueSource = new SimGeometryParameterSource(SimGeometrySourceProperty.FaceOrientation);
+
+            (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
+
+            gm.Geometry.Vertices.First(x => x.Name == "Vertex - FrontRightTop").Position += new Vector3D(20, 0, 0);
+            gm.Geometry.Vertices.First(x => x.Name == "Vertex - FrontRightBottom").Position += new Vector3D(20, 0, 0);
+
+            AssertUtil.AssertDoubleEqual(157.5, param.Value);
+            AssertUtil.AssertDoubleEqual(135.0, (double)faceComp.Instances[0].InstanceParameterValuesPersistent[param]);
+            AssertUtil.AssertDoubleEqual(180.0, (double)faceComp.Instances[1].InstanceParameterValuesPersistent[param]);
+        }
+        [TestMethod]
+        public void BatchGeometryChanged()
+        {
+            LoadProject(geometrySourceProject);
+
+            var faceComp = this.projectData.Components.First(x => x.Name == "Face 3");
+            var param = faceComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "GeometryParam");
+
+            //Add parameter source
+            param.ValueSource = new SimGeometryParameterSource(SimGeometrySourceProperty.FaceOrientation);
+
+            (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
+
+            gm.Geometry.StartBatchOperation();
+            gm.Geometry.Vertices.First(x => x.Name == "Vertex - FrontRightTop").Position += new Vector3D(20, 0, 0);
+            gm.Geometry.Vertices.First(x => x.Name == "Vertex - FrontRightBottom").Position += new Vector3D(20, 0, 0);
+            gm.Geometry.EndBatchOperation();
+
+            AssertUtil.AssertDoubleEqual(157.5, param.Value);
+            AssertUtil.AssertDoubleEqual(135.0, (double)faceComp.Instances[0].InstanceParameterValuesPersistent[param]);
+            AssertUtil.AssertDoubleEqual(180.0, (double)faceComp.Instances[1].InstanceParameterValuesPersistent[param]);
+        }
+
+        [TestMethod]
+        public void FaceRemoved()
+        {
+            LoadProject(geometrySourceProject);
+
+            var faceComp = this.projectData.Components.First(x => x.Name == "Face 3");
+            var param = faceComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "GeometryParam");
+
+            //Add parameter source
+            param.ValueSource = new SimGeometryParameterSource(SimGeometrySourceProperty.FaceOrientation);
+
+            (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
+
+            var face = gm.Geometry.Faces.FirstOrDefault(x => x.Name == "Right Face");
+
+            face.PFaces.ToList().ForEach(x => x.Volume.RemoveFromModel());
+            face.RemoveFromModel();
+
+            //Check
+            AssertUtil.AssertDoubleEqual(double.NaN, param.Value);
+            AssertUtil.AssertDoubleEqual(double.NaN, (double)faceComp.Instances[0].InstanceParameterValuesPersistent[param]);
+            AssertUtil.AssertDoubleEqual(180.0, (double)faceComp.Instances[1].InstanceParameterValuesPersistent[param]);
+        }
+        [TestMethod]
+        public void FaceMissingAdded()
+        {
+            LoadProject(geometrySourceProject);
+
+            var faceComp = this.projectData.Components.First(x => x.Name == "Face 3");
+            var param = faceComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "GeometryParam");
+
+            //Add parameter source
+            param.ValueSource = new SimGeometryParameterSource(SimGeometrySourceProperty.FaceOrientation);
+
+            var newInstance = new SimComponentInstance(SimInstanceType.AttributesFace, 0, 9999, null);
+            faceComp.Instances.Add(newInstance);
+            newInstance.InstanceParameterValuesPersistent[param] = 90.0;
+
+            (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
+            AssertUtil.AssertDoubleEqual(double.NaN, param.Value);
+
+            //Add face
+            var faceBoundary = new EdgeLoop(gm.Geometry.Layers.First(), "NewFace Boundary",
+                gm.Geometry.Edges.Where(x => x.Name.StartsWith("NewFaceEdge")));
+            var face = new Face(9999, faceBoundary.Layer, "NewFace", faceBoundary);
+
+            AssertUtil.AssertDoubleEqual(150.0, param.Value);
+            AssertUtil.AssertDoubleEqual(90.0, (double)faceComp.Instances[0].InstanceParameterValuesPersistent[param]);
+            AssertUtil.AssertDoubleEqual(180.0, (double)faceComp.Instances[1].InstanceParameterValuesPersistent[param]);
+            AssertUtil.AssertDoubleEqual(180.0, (double)faceComp.Instances[2].InstanceParameterValuesPersistent[param]);
+
+        }
+        [TestMethod]
+        public void FaceReadd()
+        {
+            LoadProject(geometrySourceProject);
+
+            var faceComp = this.projectData.Components.First(x => x.Name == "Face 3");
+            var param = faceComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "GeometryParam");
+
+            //Add parameter source
+            param.ValueSource = new SimGeometryParameterSource(SimGeometrySourceProperty.FaceOrientation);
+
+            (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
+
+            var face = gm.Geometry.Faces.FirstOrDefault(x => x.Name == "Right Face");
+
+            face.PFaces.ToList().ForEach(x => x.Volume.RemoveFromModel());
+            face.RemoveFromModel();
+
+            AssertUtil.AssertDoubleEqual(double.NaN, param.Value);
+
+            face.AddToModel();
+
+            //Check
+            AssertUtil.AssertDoubleEqual(135.0, param.Value);
+            AssertUtil.AssertDoubleEqual(90.0, (double)faceComp.Instances[0].InstanceParameterValuesPersistent[param]);
+            AssertUtil.AssertDoubleEqual(180.0, (double)faceComp.Instances[1].InstanceParameterValuesPersistent[param]);
+        }
+
+        [TestMethod]
+        public void GeometryReplaced()
+        {
+            LoadProject(geometrySourceProject);
+
+            var faceComp = this.projectData.Components.First(x => x.Name == "Face 3");
+            var param = faceComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "GeometryParam");
+
+            //Add parameter source
+            param.ValueSource = new SimGeometryParameterSource(SimGeometrySourceProperty.FaceOrientation);
+
+            (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
+
+            var copyGeometry = gm.Geometry.Clone();
+            copyGeometry.Vertices.First(x => x.Name == "Vertex - FrontRightTop").Position += new Vector3D(20, 0, 0);
+            copyGeometry.Vertices.First(x => x.Name == "Vertex - FrontRightBottom").Position += new Vector3D(20, 0, 0);
+
+            AssertUtil.AssertDoubleEqual(135.0, param.Value);
+            AssertUtil.AssertDoubleEqual(90.0, (double)faceComp.Instances[0].InstanceParameterValuesPersistent[param]);
+            AssertUtil.AssertDoubleEqual(180.0, (double)faceComp.Instances[1].InstanceParameterValuesPersistent[param]);
+
+            gm.Geometry = copyGeometry;
+
+            AssertUtil.AssertDoubleEqual(157.5, param.Value);
+            AssertUtil.AssertDoubleEqual(135.0, (double)faceComp.Instances[0].InstanceParameterValuesPersistent[param]);
+            AssertUtil.AssertDoubleEqual(180.0, (double)faceComp.Instances[1].InstanceParameterValuesPersistent[param]);
+        }
+        [TestMethod]
+        public void GeometryReplacedFaceRemoved()
+        {
+            LoadProject(geometrySourceProject);
+
+            var faceComp = this.projectData.Components.First(x => x.Name == "Face 3");
+            var param = faceComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "GeometryParam");
+
+            //Add parameter source
+            param.ValueSource = new SimGeometryParameterSource(SimGeometrySourceProperty.FaceOrientation);
+
+            (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
+
+            var copyGeometry = gm.Geometry.Clone();
+            var face = copyGeometry.Faces.FirstOrDefault(x => x.Name == "Right Face");
+
+            face.PFaces.ToList().ForEach(x => x.Volume.RemoveFromModel());
+            face.RemoveFromModel();
+
+            AssertUtil.AssertDoubleEqual(135.0, param.Value);
+            AssertUtil.AssertDoubleEqual(90.0, (double)faceComp.Instances[0].InstanceParameterValuesPersistent[param]);
+            AssertUtil.AssertDoubleEqual(180.0, (double)faceComp.Instances[1].InstanceParameterValuesPersistent[param]);
+
+            gm.Geometry = copyGeometry;
+
+            AssertUtil.AssertDoubleEqual(double.NaN, param.Value);
+            AssertUtil.AssertDoubleEqual(double.NaN, (double)faceComp.Instances[0].InstanceParameterValuesPersistent[param]);
+            AssertUtil.AssertDoubleEqual(180.0, (double)faceComp.Instances[1].InstanceParameterValuesPersistent[param]);
+        }
+        [TestMethod]
+        public void GeometryReplacedMissingFaceAdded()
+        {
+            LoadProject(geometrySourceProject);
+
+            var faceComp = this.projectData.Components.First(x => x.Name == "Face 3");
+            var param = faceComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "GeometryParam");
+
+            //Add parameter source
+            param.ValueSource = new SimGeometryParameterSource(SimGeometrySourceProperty.FaceOrientation);
+
+            var newInstance = new SimComponentInstance(SimInstanceType.AttributesFace, 0, 9999, null);
+            faceComp.Instances.Add(newInstance);
+            newInstance.InstanceParameterValuesPersistent[param] = 0.0;
+
+            (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
+
+            var copyGeometry = gm.Geometry.Clone();
+
+            //Add face
+            var faceBoundary = new EdgeLoop(copyGeometry.Layers.First(), "NewFace Boundary",
+                gm.Geometry.Edges.Where(x => x.Name.StartsWith("NewFaceEdge")));
+            var face = new Face(9999, faceBoundary.Layer, "NewFace", faceBoundary);
+
+            AssertUtil.AssertDoubleEqual(double.NaN, param.Value);
+
+            gm.Geometry = copyGeometry;
+
+            AssertUtil.AssertDoubleEqual(150.0, param.Value);
+            AssertUtil.AssertDoubleEqual(90.0, (double)faceComp.Instances[0].InstanceParameterValuesPersistent[param]);
+            AssertUtil.AssertDoubleEqual(180.0, (double)faceComp.Instances[1].InstanceParameterValuesPersistent[param]);
+            AssertUtil.AssertDoubleEqual(180.0, (double)faceComp.Instances[2].InstanceParameterValuesPersistent[param]);
+        }
+        [TestMethod]
+        public void GeometryReplacedFaceReAdded()
+        {
+            LoadProject(geometrySourceProject);
+
+            var faceComp = this.projectData.Components.First(x => x.Name == "Face 3");
+            var param = faceComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "GeometryParam");
+
+            //Add parameter source
+            param.ValueSource = new SimGeometryParameterSource(SimGeometrySourceProperty.FaceOrientation);
+
+            (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
+
+            var copyGeometry = gm.Geometry.Clone();
+            var face = copyGeometry.Faces.FirstOrDefault(x => x.Name == "Right Face");
+
+            face.PFaces.ToList().ForEach(x => x.Volume.RemoveFromModel());
+            face.RemoveFromModel();
+            gm.Geometry = copyGeometry;
+
+            AssertUtil.AssertDoubleEqual(double.NaN, param.Value);
+            AssertUtil.AssertDoubleEqual(double.NaN, (double)faceComp.Instances[0].InstanceParameterValuesPersistent[param]);
+            AssertUtil.AssertDoubleEqual(180.0, (double)faceComp.Instances[1].InstanceParameterValuesPersistent[param]);
+
+            face.AddToModel();
+
+            AssertUtil.AssertDoubleEqual(135.0, param.Value);
+            AssertUtil.AssertDoubleEqual(90.0, (double)faceComp.Instances[0].InstanceParameterValuesPersistent[param]);
+            AssertUtil.AssertDoubleEqual(180.0, (double)faceComp.Instances[1].InstanceParameterValuesPersistent[param]);
+        }
+
+        #endregion
+
+        #region Change instances/placements
+
+        [TestMethod]
+        public void AddInstance()
+        {
+            LoadProject(geometrySourceProject);
+
+            var faceComp = this.projectData.Components.First(x => x.Name == "Face 3");
+            var param = faceComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "GeometryParam");
+
+            //Add parameter source
+            param.ValueSource = new SimGeometryParameterSource(SimGeometrySourceProperty.FaceOrientation);
+
+            (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
+
+            //Add instance
+            var rightFace = gm.Geometry.Faces.First(x => x.Name == "Left Face");
+            faceComp.Instances.Add(new SimComponentInstance(SimInstanceType.AttributesFace, gm.File.Key, rightFace.Id, null));
+
+            //Check
+            AssertUtil.AssertDoubleEqual(180.0, param.Value);
+            AssertUtil.AssertDoubleEqual(90.0, (double)faceComp.Instances[0].InstanceParameterValuesPersistent[param]);
+            AssertUtil.AssertDoubleEqual(180.0, (double)faceComp.Instances[1].InstanceParameterValuesPersistent[param]);
+            AssertUtil.AssertDoubleEqual(270.0, (double)faceComp.Instances[2].InstanceParameterValuesPersistent[param]);
+        }
+        [TestMethod]
+        public void RemoveInstance()
+        {
+            LoadProject(geometrySourceProject);
+
+            var faceComp = this.projectData.Components.First(x => x.Name == "Face 3");
+            var param = faceComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "GeometryParam");
+
+            //Add parameter source
+            param.ValueSource = new SimGeometryParameterSource(SimGeometrySourceProperty.FaceOrientation);
+
+            (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
+
+            //Remove instance
+            faceComp.Instances.RemoveAt(1);
+
+            //Check
+            AssertUtil.AssertDoubleEqual(90.0, param.Value);
+            AssertUtil.AssertDoubleEqual(90.0, (double)faceComp.Instances[0].InstanceParameterValuesPersistent[param]);
+        }
+        [TestMethod]
+        public void RemovePlacement()
+        {
+            LoadProject(geometrySourceProject);
+
+            var faceComp = this.projectData.Components.First(x => x.Name == "Face 3");
+            var param = faceComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "GeometryParam");
+
+            //Add parameter source
+            param.ValueSource = new SimGeometryParameterSource(SimGeometrySourceProperty.FaceOrientation);
+
+            (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
+
+            //Remove instance
+            faceComp.Instances[1].Placements.RemoveAt(0);
+
+            //Check
+            AssertUtil.AssertDoubleEqual(90.0, param.Value);
+            AssertUtil.AssertDoubleEqual(90, (double)faceComp.Instances[0].InstanceParameterValuesPersistent[param]);
+            AssertUtil.AssertDoubleEqual(double.NaN, (double)faceComp.Instances[1].InstanceParameterValuesPersistent[param]);
+        }
+
+        #endregion
+
+        #region Change parameter/component
+
+        [TestMethod]
+        public void ParameterAdded()
+        {
+            LoadProject(geometrySourceProject);
+
+            var faceComp = this.projectData.Components.First(x => x.Name == "Face 3");
+
+            (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
+
+            var param = new SimDoubleParameter("New Param", "", -1.0);
+            param.ValueSource = new SimGeometryParameterSource(SimGeometrySourceProperty.FaceOrientation);
+
+            faceComp.Parameters.Add(param);
+
+            AssertUtil.AssertDoubleEqual(135.0, param.Value);
+            AssertUtil.AssertDoubleEqual(90.0, (double)faceComp.Instances[0].InstanceParameterValuesPersistent[param]);
+            AssertUtil.AssertDoubleEqual(180.0, (double)faceComp.Instances[1].InstanceParameterValuesPersistent[param]);
+        }
+        [TestMethod]
+        public void ComponentAdded()
+        {
+            LoadProject(geometrySourceProject);
+
+            var faceComp = this.projectData.Components.First(x => x.Name == "Face 3");
+
+            (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
+
+            var newComp = new SimComponent()
+            {
+                InstanceType = SimInstanceType.AttributesFace,
+                CurrentSlot = new SimTaxonomyEntryReference(projectData.Taxonomies.GetDefaultSlot(SimDefaultSlotKeys.Undefined))
+            };
+
+            var param = new SimDoubleParameter("New Param", "", -1.0);
+            param.ValueSource = new SimGeometryParameterSource(SimGeometrySourceProperty.FaceOrientation);
+
+            newComp.Parameters.Add(param);
+
+            var leftFace = gm.Geometry.Faces.First(x => x.Name == "Right Face");
+            newComp.Instances.Add(new SimComponentInstance(SimInstanceType.AttributesFace, gm.File.Key, leftFace.Id, null));
+
+            faceComp.Components.Add(new SimChildComponentEntry(new SimSlot(new SimTaxonomyEntryReference(newComp.CurrentSlot), ""), newComp));
+
+            AssertUtil.AssertDoubleEqual(90.0, param.Value);
+            AssertUtil.AssertDoubleEqual(90.0, (double)newComp.Instances[0].InstanceParameterValuesPersistent[param]);
+        }
+
+        #endregion
+
+        #region Memory Leaks
+
+        private WeakReference MemoryLeakTestSourceRemoved_Action()
+        {
+            var comp = projectData.Components.First(x => x.Name == "Face 3");
+            var param = comp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "GeometryParam");
+
+            //Add parameter source
+            param.ValueSource = new SimGeometryParameterSource(SimGeometrySourceProperty.FaceOrientation);
+
+            WeakReference ptrRef = new WeakReference(param.ValueSource);
+            param.ValueSource = null;
+
+            return ptrRef;
+        }
+        [TestMethod]
+        public void MemoryLeakTestSourceRemoved()
+        {
+            LoadProject(geometrySourceProject);
+
+            var ptrRef = MemoryLeakTestSourceRemoved_Action();
+
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+
+            Assert.IsFalse(ptrRef.IsAlive);
+        }
+
+        private WeakReference MemoryLeakTestParameterRemoved_Action()
+        {
+            var comp = projectData.Components.First(x => x.Name == "Face 3");
+            var param = comp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "GeometryParam");
+
+            //Add parameter source
+            param.ValueSource = new SimGeometryParameterSource(SimGeometrySourceProperty.FaceOrientation);
+
+            WeakReference ptrRef = new WeakReference(param.ValueSource);
+            comp.Parameters.Remove(param);
+
+            return ptrRef;
+        }
+        [TestMethod]
+        public void MemoryLeakTestParameterRemoved()
+        {
+            LoadProject(geometrySourceProject);
+
+            var ptrRef = MemoryLeakTestParameterRemoved_Action();
+
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+
+            Assert.IsFalse(ptrRef.IsAlive);
+        }
+
+        #endregion
+    }
+}

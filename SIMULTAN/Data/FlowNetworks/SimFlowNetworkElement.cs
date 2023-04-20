@@ -1,11 +1,8 @@
 ﻿using SIMULTAN.Data.Components;
-using SIMULTAN.Serializer.DXF;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 
 namespace SIMULTAN.Data.FlowNetworks
@@ -50,7 +47,6 @@ namespace SIMULTAN.Data.FlowNetworks
                         this.content.Component.PropertyChanged -= Content_Component_PropertyChanged;
 
                     this.content = value;
-                    CommunicatePositionUpdateToContent();
 
                     if (this.content != null)
                         this.content.Component.PropertyChanged += Content_Component_PropertyChanged;
@@ -225,7 +221,7 @@ namespace SIMULTAN.Data.FlowNetworks
             if (_comp.Calculations.Count > 0)
             {
                 //TEMPORARY TRANSFER OF NAME->Parameter. Should be dropped when InstanceParamValues gets refactored
-                Dictionary<SimParameter, double> instanceParameterValues = _instance.InstanceParameterValuesTemporary.ToDictionary(x => x.Key, x => x.Value);
+                Dictionary<SimDoubleParameter, double> instanceParameterValues = _instance.InstanceParameterValuesTemporary.GetRecords<SimDoubleParameter, double>().ToDictionary(x => x.Key, y => y.Value);
                 foreach (SimCalculation c in _comp.Calculations)
                 {
                     c.Calculate(instanceParameterValues);
@@ -240,12 +236,11 @@ namespace SIMULTAN.Data.FlowNetworks
 
         #region METHODS: Info
 
-        internal virtual SimParameter GetFirstParamBySuffix(string _suffix, bool _in_flow_dir)
+        internal virtual SimDoubleParameter GetFirstParamBySuffix(string _suffix, bool _in_flow_dir)
         {
             if (this.Content == null)
                 return null;
-
-            return ComponentWalker.GetFlatParameters(this.Content.Component).FirstOrDefault(x => x.TaxonomyEntry.Name.EndsWith(_suffix));
+            return ComponentWalker.GetFlatParameters<SimDoubleParameter>(this.Content.Component).FirstOrDefault(x => x.NameTaxonomyEntry.Name.EndsWith(_suffix));
         }
 
         public virtual bool GetBoundInstanceRealizedStatus()
@@ -304,29 +299,6 @@ namespace SIMULTAN.Data.FlowNetworks
         }
 
         #endregion
-
-        internal abstract void CommunicatePositionUpdateToContent();
-
-        protected Point GetOffset()
-        {
-            if (this.Network == null || this.Network.NodeStart_ID == -1)
-                return new Point(0, 0);
-
-            var pos = this.Network.Position;
-            var nw = this.Network;
-
-            while (nw.ParentNetwork != null)
-            {
-                nw = nw.ParentNetwork;
-                pos += (Vector)nw.Position;
-            }
-
-            //Subtract offset of first node
-            var firstNode = this.Network.ContainedNodes[this.Network.NodeStart_ID];
-            pos -= (Vector)firstNode.Position;
-
-            return pos;
-        }
 
         public SimFlowNetwork Network { get; internal set; }
     }

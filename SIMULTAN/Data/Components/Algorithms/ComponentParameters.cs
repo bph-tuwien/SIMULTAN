@@ -3,6 +3,7 @@ using SIMULTAN.Data.Taxonomy;
 using SIMULTAN.Utils;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 
 namespace SIMULTAN.Data.Components
@@ -28,8 +29,6 @@ namespace SIMULTAN.Data.Components
             public int MaxNrColsPerParameter { get; set; }
         }
 
-
-
         /// <summary>
         /// Aggregate parameter values in tables.
         /// If the alignment is set to horizontal: parameters are gathered column-wise and aligned horizontally. The aggregation function is performed horizontally.
@@ -43,101 +42,104 @@ namespace SIMULTAN.Data.Components
                 _comp.Factory == null || _value_factory == null)
                 return;
 
-            SimParameter p_orientation = _comp.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_ORIENTATION_HRZ));
+            SimDoubleParameter p_orientation = _comp.Parameters.FirstOrDefault(x => x is SimDoubleParameter && x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_ORIENTATION_HRZ)) as SimDoubleParameter;
             if (p_orientation == null)
             {
-                var taxEntry = ReservedParameterKeys.GetReservedTaxonomyEntry(_comp.Factory.ProjectData.Taxonomies, ReservedParameterKeys.RP_ORIENTATION_HRZ);
-                p_orientation = new SimParameter(ReservedParameterKeys.RP_ORIENTATION_HRZ, "-", 1.0)
+                var taxEntry = _comp.Factory.ProjectData.Taxonomies.GetReservedParameter(ReservedParameterKeys.RP_ORIENTATION_HRZ);
+                p_orientation = new SimDoubleParameter(ReservedParameterKeys.RP_ORIENTATION_HRZ, "-", 1.0)
                 {
-                    TaxonomyEntry = new SimTaxonomyEntryOrString(new SimTaxonomyEntryReference(taxEntry))
+                    NameTaxonomyEntry = new SimTaxonomyEntryOrString(new SimTaxonomyEntryReference(taxEntry))
                 };
                 p_orientation.IsAutomaticallyGenerated = true;
                 p_orientation.ValueMin = 0.0;
                 p_orientation.ValueMax = 1.0;
-                p_orientation.TextValue = "Alignment is horizontal";
+                p_orientation.Description = "Alignment is horizontal";
                 p_orientation.Propagation = SimInfoFlow.Automatic;
                 p_orientation.AllowedOperations = SimParameterOperations.EditValue;
                 _comp.Parameters.Add(p_orientation);
             }
 
-            SimParameter p_table = _comp.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_TABLE_POINTER));
+            SimDoubleParameter p_table = _comp.Parameters.FirstOrDefault(x => x is SimDoubleParameter && x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_TABLE_POINTER)) as SimDoubleParameter;
             if (p_table == null)
             {
-                var taxEntry = ReservedParameterKeys.GetReservedTaxonomyEntry(_comp.Factory.ProjectData.Taxonomies, ReservedParameterKeys.RP_TABLE_POINTER);
-                p_table = new SimParameter(ReservedParameterKeys.RP_TABLE_POINTER, "-", 0.0)
+                var taxEntry = _comp.Factory.ProjectData.Taxonomies.GetReservedParameter(ReservedParameterKeys.RP_TABLE_POINTER);
+                p_table = new SimDoubleParameter(ReservedParameterKeys.RP_TABLE_POINTER, "-", 0.0)
                 {
-                    TaxonomyEntry = new SimTaxonomyEntryOrString(new SimTaxonomyEntryReference(taxEntry))
+                    NameTaxonomyEntry = new SimTaxonomyEntryOrString(new SimTaxonomyEntryReference(taxEntry))
                 };
                 p_table.IsAutomaticallyGenerated = true;
                 p_table.ValueMin = double.MinValue;
                 p_table.ValueMax = double.MaxValue;
-                p_table.TextValue = "Tabellenverweis";
+                p_table.Description = "Tabellenverweis";
                 p_table.Propagation = SimInfoFlow.Automatic;
                 p_table.AllowedOperations = SimParameterOperations.None;
                 _comp.Parameters.Add(p_table);
             }
 
-            SimParameter p_aggreg_fct = _comp.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_AGGREGATION_OPERATION));
+            SimDoubleParameter p_aggreg_fct = _comp.Parameters.FirstOrDefault(x => x is SimDoubleParameter && x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_AGGREGATION_OPERATION)) as SimDoubleParameter;
             if (p_aggreg_fct == null)
             {
-                var taxEntry = ReservedParameterKeys.GetReservedTaxonomyEntry(_comp.Factory.ProjectData.Taxonomies, ReservedParameterKeys.RP_AGGREGATION_OPERATION);
-                p_aggreg_fct = new SimParameter(ReservedParameterKeys.RP_AGGREGATION_OPERATION, "-", 0.0)
+                var taxEntry = _comp.Factory.ProjectData.Taxonomies.GetReservedParameter(ReservedParameterKeys.RP_AGGREGATION_OPERATION);
+                p_aggreg_fct = new SimDoubleParameter(ReservedParameterKeys.RP_AGGREGATION_OPERATION, "-", 0.0)
                 {
-                    TaxonomyEntry = new SimTaxonomyEntryOrString(new SimTaxonomyEntryReference(taxEntry))
+                    NameTaxonomyEntry = new SimTaxonomyEntryOrString(new SimTaxonomyEntryReference(taxEntry))
                 };
                 p_aggreg_fct.IsAutomaticallyGenerated = true;
                 p_aggreg_fct.ValueMin = double.MinValue;
                 p_aggreg_fct.ValueMax = double.MaxValue;
-                p_aggreg_fct.TextValue = SimAggregationFunction.Sum.ToStringRepresentation();
+                p_aggreg_fct.Description = SimAggregationFunction.Sum.ToStringRepresentation();
                 p_aggreg_fct.Propagation = SimInfoFlow.Automatic;
                 p_aggreg_fct.AllowedOperations = SimParameterOperations.EditValue;
                 _comp.Parameters.Add(p_aggreg_fct);
             }
 
-            SimParameter p_label = _comp.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_LABEL_SOURCE));
+            SimDoubleParameter p_label = _comp.Parameters.FirstOrDefault(x => x is SimDoubleParameter && x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_LABEL_SOURCE)) as SimDoubleParameter;
             if (p_label == null)
             {
-                var taxEntry = ReservedParameterKeys.GetReservedTaxonomyEntry(_comp.Factory.ProjectData.Taxonomies, ReservedParameterKeys.RP_LABEL_SOURCE);
-                p_label = new SimParameter(ReservedParameterKeys.RP_LABEL_SOURCE, "-", 0.0)
+                var taxEntry = _comp.Factory.ProjectData.Taxonomies.GetReservedParameter(ReservedParameterKeys.RP_LABEL_SOURCE);
+                p_label = new SimDoubleParameter(ReservedParameterKeys.RP_LABEL_SOURCE, "-", 0.0)
                 {
-                    TaxonomyEntry = new SimTaxonomyEntryOrString(new SimTaxonomyEntryReference(taxEntry))
+                    NameTaxonomyEntry = new SimTaxonomyEntryOrString(new SimTaxonomyEntryReference(taxEntry))
                 };
                 p_label.IsAutomaticallyGenerated = true;
                 p_label.ValueMin = double.MinValue;
                 p_label.ValueMax = double.MaxValue;
-                p_label.TextValue = "Label";
+                p_label.Description = "Label";
                 p_label.Propagation = SimInfoFlow.Automatic;
                 p_label.AllowedOperations = SimParameterOperations.EditValue;
                 _comp.Parameters.Add(p_label);
             }
 
-            List<KeyValuePair<string, List<SimParameter>>> to_aggregate = new List<KeyValuePair<string, List<SimParameter>>>();
-            List<SimParameter> filter = _comp.Parameters.Where(x => x != null && 
-                x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_ORIENTATION_HRZ) &&
-                x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_TABLE_POINTER) &&
-                x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_AGGREGATION_OPERATION) &&
-                x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_LABEL_SOURCE)).ToList();
+            List<KeyValuePair<string, List<SimDoubleParameter>>> to_aggregate = new List<KeyValuePair<string, List<SimDoubleParameter>>>();
+            List<SimDoubleParameter> filter = _comp.Parameters.OfType<SimDoubleParameter>().Where(x => x is SimDoubleParameter &&
+                 x != null &&
+                !x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_ORIENTATION_HRZ) &&
+                !x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_TABLE_POINTER) &&
+                !x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_AGGREGATION_OPERATION) &&
+                !x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_LABEL_SOURCE)).ToList();
 
             if (filter.Count > 0)
             {
+
                 if (_comp.Parent == null)
-                    to_aggregate = _comp.Factory.GetAllCorrespondingParameters(filter, p_label.TextValue, _comp.Id.LocalId);
+                    to_aggregate = _comp.Factory.GetAllCorrespondingParameters(filter, p_label.Description, _comp.Id.LocalId);
                 else
-                    to_aggregate = _comp.Parent.GetAllCorrespondingParameters(filter, p_label.TextValue, _comp.Id.LocalId);
+                    to_aggregate = _comp.Parent.Factory.GetAllCorrespondingParameters<SimDoubleParameter>(filter, p_label.Description, _comp.Id.LocalId);
+
             }
             if (to_aggregate.Count == 0)
                 return;
 
             // aggregate
-            bool orientation_hrz = p_orientation.ValueCurrent == 1;
+            bool orientation_hrz = p_orientation.Value == 1;
             string table_name = _comp.Name + " " + _comp.Description + " Aggregation";
             List<SimMultiValueBigTable> tables = Aggregate(table_name, to_aggregate, _value_factory, orientation_hrz);
 
             // apply aggregation function
             foreach (SimMultiValueBigTable bt in tables)
             {
-                bt.ApplyAggregationFunction(
-                    SimAggregationFunctionExtensions.FromStringRepresentation(p_aggreg_fct.TextValue), !orientation_hrz);
+                ApplyAggregationFunction(bt,
+                    SimAggregationFunctionExtensions.FromStringRepresentation(p_aggreg_fct.Description), !orientation_hrz);
             }
 
             if (tables != null && tables.Count > 0)
@@ -146,17 +148,17 @@ namespace SIMULTAN.Data.Components
                 if (tables.Count == 1)
                 {
                     OverrideValueField(p_table, tables[0], _value_factory);
-                    filter.ForEach(x => x.MultiValuePointer = null);
+                    filter.ForEach(x => x.ValueSource = null);
                 }
                 else
                 {
                     foreach (var fp in filter)
                     {
-                        SimMultiValueBigTable corresponding = tables.FirstOrDefault(x => x.Name.Contains("[" + fp.TaxonomyEntry.Name + "]"));
+                        SimMultiValueBigTable corresponding = tables.FirstOrDefault(x => x.Name.Contains("[" + fp.NameTaxonomyEntry.Name + "]"));
                         if (corresponding != null)
                             OverrideValueField(fp, corresponding, _value_factory);
                         else
-                            fp.MultiValuePointer = null;
+                            fp.ValueSource = null;
                     }
                 }
 
@@ -171,17 +173,18 @@ namespace SIMULTAN.Data.Components
         /// <param name="_label_paramter_name">the name of the parameter supplying a label to the resulting collection</param>
         /// <param name="_excluded_id">id of a component to be excluded</param>
         /// <returns>key = component or parameter name, value = parameters of the same name that passed the filter</returns>
-        private static List<KeyValuePair<string, List<SimParameter>>> GetAllCorrespondingParameters(
-            this SimComponentCollection _factory, List<SimParameter> _filter, string _label_paramter_name = null, long _excluded_id = -1L)
+        private static List<KeyValuePair<string, List<T>>> GetAllCorrespondingParameters<T>(
+            this SimComponentCollection _factory, List<T> _filter, string _label_paramter_name = null, long _excluded_id = -1L) where T : SimBaseParameter
         {
-            List<KeyValuePair<string, List<SimParameter>>> found = new List<KeyValuePair<string, List<SimParameter>>>();
+            List<KeyValuePair<string, List<T>>> found = new List<KeyValuePair<string, List<T>>>();
             foreach (SimComponent c in _factory)
             {
                 if (c.Id.LocalId == _excluded_id) continue;
-                found.AddRange(c.GetAllCorrespondingParameters(_filter, _label_paramter_name, _excluded_id));
+                found.AddRange(c.Factory.GetAllCorrespondingParameters<T>(_filter, _label_paramter_name, _excluded_id));
             }
             return found;
         }
+
 
         /// <summary>
         /// Replaces the value field (of type MultiValueBigTable) of the parameter's value pointer with a new one.
@@ -189,17 +192,37 @@ namespace SIMULTAN.Data.Components
         /// <param name="parameter">The parameter for which the MultiValuePointer should be modified</param>
         /// <param name="table">the new value field of type MultiValueBigTable</param>
         /// <param name="multiValueFactory">the value manager</param>
-        private static void OverrideValueField(SimParameter parameter, SimMultiValueBigTable table, SimMultiValueCollection multiValueFactory)
+        private static void OverrideValueField(SimBaseParameter parameter, SimMultiValueBigTable table, SimMultiValueCollection multiValueFactory)
         {
-            if (parameter.MultiValuePointer != null && parameter.MultiValuePointer.ValueField is SimMultiValueBigTable table_old)
+            if (parameter is SimDoubleParameter dParam)
             {
-                table_old.ReplaceData(table);
-                table_old.Name = table.Name;
-                multiValueFactory.Remove(table);
+                if (dParam.ValueSource != null && dParam.ValueSource is SimMultiValueBigTableParameterSource ptr)
+                {
+                    var table_old = ptr.Table;
+                    table_old.ReplaceData(table);
+                    table_old.Name = table.Name;
+                    multiValueFactory.Remove(table);
+                }
+                else
+                {
+                    dParam.ValueSource = table.CreateNewPointer();
+                }
             }
-            else
+            if (parameter is SimIntegerParameter intParam)
             {
-                parameter.MultiValuePointer = table.CreateNewPointer();
+                throw new NotImplementedException();
+            }
+            if (parameter is SimStringParameter strParam)
+            {
+                throw new NotImplementedException();
+            }
+            if (parameter is SimBoolParameter boolParam)
+            {
+                throw new NotImplementedException();
+            }
+            if (parameter is SimEnumParameter eParam)
+            {
+                throw new NotImplementedException();
             }
         }
 
@@ -211,24 +234,27 @@ namespace SIMULTAN.Data.Components
         /// <param name="_label_paramter_name">the name of the parameter supplying a label to the resulting collection</param>
         /// <param name="_excluded_id">the id of a component to be excluded from the collection</param>
         /// <returns>key = component or parameter name, value = parameters of the same name</returns>
-        private static List<KeyValuePair<string, List<SimParameter>>> GetAllCorrespondingParameters(this SimComponent _comp, List<SimParameter> _filter, string _label_paramter_name = null, long _excluded_id = -1L)
+        private static List<KeyValuePair<string, List<SimBaseParameter>>> GetAllCorrespondingParameters(this SimComponent _comp, List<SimBaseParameter> _filter, string _label_paramter_name = null, long _excluded_id = -1L)
         {
-            List<KeyValuePair<string, List<SimParameter>>> found = new List<KeyValuePair<string, List<SimParameter>>>();
+            List<KeyValuePair<string, List<SimBaseParameter>>> found = new List<KeyValuePair<string, List<SimBaseParameter>>>();
             if (_comp.Id.LocalId != _excluded_id && _comp.InstanceType != SimInstanceType.Group)
             {
-                var locally_found = _comp.Parameters.Where(x => _filter.FirstOrDefault(y => y.TaxonomyEntry.Equals(x.TaxonomyEntry) && y.Unit == x.Unit) != null);
-                List<SimParameter> locally_found_sorted = locally_found.OrderBy(x => x.TaxonomyEntry.Name).ToList();
+                var locally_found = _comp.Parameters.Where(x => _filter
+                .FirstOrDefault(y => y.NameTaxonomyEntry.Equals(x.NameTaxonomyEntry)
+                && ((y is SimBaseNumericParameter<ValueType> yNumeric && x is SimBaseNumericParameter<ValueType> xNumeric) && (yNumeric.Unit == xNumeric.Unit))) != null);
+
+                List<SimBaseParameter> locally_found_sorted = locally_found.OrderBy(x => x.NameTaxonomyEntry.Name).ToList();
                 if (locally_found_sorted.Count > 0)
                 {
                     string key = _comp.Name + " " + _comp.Description;
                     if (!(string.IsNullOrEmpty(_label_paramter_name)))
                     {
-                        SimParameter label_p = _comp.Parameters.FirstOrDefault(x => x != null && x.TaxonomyEntry.Name == _label_paramter_name);
+                        SimBaseParameter label_p = _comp.Parameters.FirstOrDefault(x => x != null && x.NameTaxonomyEntry.Name == _label_paramter_name);
                         if (label_p != null)
-                            key = label_p.TextValue;
+                            key = label_p.Description;
                     }
 
-                    found.Add(new KeyValuePair<string, List<SimParameter>>(key, locally_found_sorted));
+                    found.Add(new KeyValuePair<string, List<SimBaseParameter>>(key, locally_found_sorted));
                 }
             }
             foreach (var entry in _comp.Components)
@@ -240,7 +266,7 @@ namespace SIMULTAN.Data.Components
             return found;
         }
 
-        private static List<SimMultiValueBigTable> Aggregate(string _table_name, List<KeyValuePair<string, List<SimParameter>>> _to_aggregate,
+        private static List<SimMultiValueBigTable> Aggregate(string _table_name, List<KeyValuePair<string, List<SimDoubleParameter>>> _to_aggregate,
                                                     SimMultiValueCollection _factory, bool _orientation_hrz)
         {
             // check dimensions and consistency
@@ -250,7 +276,7 @@ namespace SIMULTAN.Data.Components
             foreach (var entry in _to_aggregate)
             {
                 var ps = entry.Value;
-                var ps_non_skalar = ps.Where(x => x.MultiValuePointer != null && x.MultiValuePointer.ValueField is SimMultiValueBigTable);
+                var ps_non_skalar = ps.Where(x => x.ValueSource != null && x.ValueSource is SimMultiValueBigTableParameterSource ptr);
 
                 AggregationPreprocessingState p_ppstate = AggregationPreprocessingState.OK;
                 if (ps.Count() != ps_non_skalar.Count() && ps_non_skalar.Count() > 0)
@@ -261,8 +287,9 @@ namespace SIMULTAN.Data.Components
 
                 foreach (var p in ps)
                 {
-                    if (p.MultiValuePointer != null && p.MultiValuePointer.ValueField is SimMultiValueBigTable vpTable)
+                    if (p.ValueSource != null && p.ValueSource is SimMultiValueBigTableParameterSource vpTablePtr)
                     {
+                        var vpTable = vpTablePtr.Table;
                         ps_dim_rows.Add(vpTable.Count(0));
                         ps_dim_cols.Add(vpTable.Count(1));
                     }
@@ -297,12 +324,12 @@ namespace SIMULTAN.Data.Components
             // aggregate
             List<string> names = new List<string>();
             List<string> units = new List<string>();
-            List<List<double>> values = new List<List<double>>();
+            List<List<object>> values = new List<List<object>>();
             List<string> row_names = new List<string>();
 
             ppstate = dimensions.Select(x => x.Value.State).Aggregate((x, y) => x | y);
             var parameter_lists = _to_aggregate.Select(x => x.Value).ToList();
-            var aligned_parameter_lists = AlignLists(parameter_lists);
+            var aligned_parameter_lists = AlignLists<SimDoubleParameter>(parameter_lists);
 
             if (ppstate == AggregationPreprocessingState.OK)
             {
@@ -315,10 +342,10 @@ namespace SIMULTAN.Data.Components
                     for (int i = 0; i < _to_aggregate.Count; i++)
                     {
                         row_names.Add(_to_aggregate[i].Key);
-                        List<double> row_values = aligned_parameter_lists[i].Select(x => (x == null) ? double.NaN : x.ValueCurrent).ToList();
+                        List<object> row_values = aligned_parameter_lists[i].Select(x => (x == null) ? double.NaN : x.Value).OfType<object>().ToList();
                         values.Add(row_values);
 
-                        List<string> col_names = aligned_parameter_lists[i].Select(x => (x == null) ? string.Empty : x.TaxonomyEntry.Name).ToList();
+                        List<string> col_names = aligned_parameter_lists[i].Select(x => (x == null) ? string.Empty : x.NameTaxonomyEntry.Name).ToList();
                         List<string> col_units = aligned_parameter_lists[i].Select(x => (x == null) ? string.Empty : x.Unit).ToList();
                         for (int col = 0; col < col_names.Count; col++)
                         {
@@ -344,10 +371,10 @@ namespace SIMULTAN.Data.Components
                     row_names.AddRange(Enumerable.Repeat(string.Empty, aligned_parameter_lists[0].Count));
                     for (int i = 0; i < _to_aggregate.Count; i++)
                     {
-                        List<double> row_values = aligned_parameter_lists[i].Select(x => (x == null) ? double.NaN : x.ValueCurrent).ToList();
+                        List<object> row_values = aligned_parameter_lists[i].Select(x => (x == null) ? double.NaN : x.Value).OfType<object>().ToList();
                         values.Add(row_values);
 
-                        List<string> row_names_i = aligned_parameter_lists[i].Select(x => (x == null) ? string.Empty : x.TaxonomyEntry.Name).ToList();
+                        List<string> row_names_i = aligned_parameter_lists[i].Select(x => (x == null) ? string.Empty : x.NameTaxonomyEntry.Name).ToList();
                         for (int col = 0; col < row_names_i.Count; col++)
                         {
                             if (string.IsNullOrEmpty(row_names[col]) && !string.IsNullOrEmpty(row_names_i[col]))
@@ -371,8 +398,8 @@ namespace SIMULTAN.Data.Components
                 List<SimMultiValueBigTable> tables = new List<SimMultiValueBigTable>();
                 for (int p = 0; p < aligned_parameter_lists[0].Count; p++)
                 {
-                    List<SimParameter> params_of_same_name = aligned_parameter_lists.Select(x => x[p]).ToList();
-                    string params_name = params_of_same_name.SkipWhile(x => x == null).Take(1).First().TaxonomyEntry.Name;
+                    List<SimDoubleParameter> params_of_same_name = aligned_parameter_lists.Select(x => x[p]).ToList();
+                    string params_name = params_of_same_name.SkipWhile(x => x == null).Take(1).First().NameTaxonomyEntry.Name;
                     string params_unit = params_of_same_name.SkipWhile(x => x == null).Take(1).First().Unit;
                     List<string> labels = _to_aggregate.Select(x => x.Key + ": " + params_name).ToList();
 
@@ -414,27 +441,33 @@ namespace SIMULTAN.Data.Components
             }
         }
 
-        private static IList<List<SimParameter>> AlignLists(IList<List<SimParameter>> _lists)
+        /// <summary>
+        /// Align parameters only with a specific type <see cref="SimBaseParameter"/>
+        /// </summary>
+        /// <typeparam name="T">The type of the parameter <see cref="SimBaseParameter"/></typeparam>
+        /// <param name="_lists"></param>
+        /// <returns>List of the parameters aligned</returns>
+        private static IList<List<T>> AlignLists<T>(IList<List<T>> _lists) where T : SimBaseParameter
         {
-            IList<List<SimParameter>> aligned = new List<List<SimParameter>>();
+            IList<List<T>> aligned = new List<List<T>>();
 
             List<string> all_names = new List<string>();
             foreach (var entry in _lists)
             {
-                aligned.Add(new List<SimParameter>());
-                all_names.AddRange(entry.Select(x => x.TaxonomyEntry.Name));
+                aligned.Add(new List<T>());
+                all_names.AddRange(entry.Select(x => x.NameTaxonomyEntry.Name));
             }
             List<string> unique_names = all_names.GroupBy(x => x).Select(gr => gr.First()).ToList();
 
             foreach (string n in unique_names)
             {
-                var n_lists = _lists.Select(x => x.SkipWhile(y => y.TaxonomyEntry.Name != n).TakeWhile(y => y.TaxonomyEntry.Name == n)).ToList();
+                var n_lists = _lists.Select(x => x.SkipWhile(y => y.NameTaxonomyEntry.Name != n).TakeWhile(y => y.NameTaxonomyEntry.Name == n)).ToList();
                 int max_list_length_for_n = n_lists.Select(x => x.Count()).Max();
                 for (int k = 0; k < _lists.Count; k++)
                 {
                     aligned[k].AddRange(n_lists[k]);
                     int padding_length = max_list_length_for_n - n_lists[k].Count();
-                    var padding = Enumerable.Repeat<SimParameter>(null, padding_length);
+                    var padding = Enumerable.Repeat<T>(null, padding_length);
                     aligned[k].AddRange(padding);
                 }
             }
@@ -442,31 +475,33 @@ namespace SIMULTAN.Data.Components
             return aligned;
         }
 
-        private static List<List<double>> ExtractValueVectors(List<SimParameter> _params_aligned, bool _take_rows)
+
+        private static List<List<object>> ExtractValueVectors(List<SimDoubleParameter> _params_aligned, bool _take_rows)
         {
-            List<List<double>> params_values = new List<List<double>>();
+            List<List<object>> params_values = new List<List<object>>();
 
             // get the values
-            foreach (SimParameter p in _params_aligned)
+            foreach (SimDoubleParameter p in _params_aligned)
             {
                 if (p == null)
-                    params_values.Add(new List<double> { double.NaN });
+                {
+                    params_values.Add(new List<object> { double.NaN });
+                }
                 else
                 {
-                    if (p.MultiValuePointer == null)
-                        params_values.Add(new List<double> { p.ValueCurrent });
+                    if (p.ValueSource == null)
+                        params_values.Add(new List<object> { p.Value });
                     else
                     {
-                        if (p.MultiValuePointer is SimMultiValueBigTable.SimMultiValueBigTablePointer)
+
+                        if (p.ValueSource is SimMultiValueBigTableParameterSource ptr)
                         {
-                            var mvp = (SimMultiValueBigTable.SimMultiValueBigTablePointer)p.MultiValuePointer;
+                            SimMultiValueBigTable param_table = ptr.Table;
+                            int col_index = ptr.Column;
+                            int row_index = ptr.Row;
 
-                            SimMultiValueBigTable param_table = p.MultiValuePointer.ValueField as SimMultiValueBigTable;
-                            int col_index = mvp.Column;
-                            int row_index = mvp.Row;
-
-                            List<List<double>> p_values = new List<List<double>>();
-                            List<double> p_values_vector = new List<double>();
+                            List<List<object>> p_values = new List<List<object>>();
+                            List<object> p_values_vector = new List<object>();
                             if (_take_rows)
                             {
                                 p_values = param_table.GetRange(new System.Windows.Media.Media3D.Point4D(row_index + 1, row_index + 1, 1, param_table.Count(1)));
@@ -492,7 +527,7 @@ namespace SIMULTAN.Data.Components
                             params_values.Add(p_values_vector);
                         }
                         else
-                            params_values.Add(new List<double> { p.ValueCurrent });
+                            params_values.Add(new List<object> { p.Value });
                     }
                 }
             }
@@ -502,7 +537,7 @@ namespace SIMULTAN.Data.Components
             for (int i = 0; i < params_values.Count; i++)
             {
                 int padding_langth = max_length - params_values[i].Count;
-                var padding = Enumerable.Repeat(double.NaN, padding_langth);
+                var padding = Enumerable.Repeat<object>(double.NaN, padding_langth);
                 params_values[i].AddRange(padding);
             }
 
@@ -522,7 +557,7 @@ namespace SIMULTAN.Data.Components
         /// </summary>
         /// <param name="_comp">the calling component</param>
         /// <param name="_p">the parameter in the calling component whose value changed</param>
-        internal static void PropagateRefParamValueFromClosestRef(this SimComponent _comp, SimParameter _p)
+        internal static void PropagateRefParamValueFromClosestRef(this SimComponent _comp, SimBaseParameter _p)
         {
             using (AccessCheckingDisabler.Disable(_comp.Factory)) //Referencing parameters may be changed even if there is no write access
             {
@@ -538,50 +573,84 @@ namespace SIMULTAN.Data.Components
                             comps_referencing_this_or_parent.Add(rpC.Owner);
                     }
                 }
-
                 // look for referencing parameters
                 foreach (SimComponent c in comps_referencing_this_or_parent)
                 {
                     GetLocalParamsListWDirectRefsAndLimits(c, out var closest_source, out var closest_sourceMAX, out var closest_sourceMIN, true);
 
                     // direct reference
-                    List<SimParameter> to_synch = closest_source.Where(x => x.Key.Propagation == SimInfoFlow.FromReference &&
-                        x.Key.MultiValuePointer == null && x.Key.TaxonomyEntry.Name == _p.TaxonomyEntry.Name &&
-                        x.Value.Id.LocalId == _p.Id.LocalId).Select(x => x.Key).ToList();
+                    List<SimBaseParameter> to_synch = new List<SimBaseParameter>();
+                    foreach (var x in closest_source)
+                    {
+                        if (x.Key.Propagation == SimInfoFlow.FromReference && x.Key.NameTaxonomyEntry.Name == _p.NameTaxonomyEntry.Name &&
+                        x.Value.Id.LocalId == _p.Id.LocalId)
+                        {
+                            if (x.Key is SimDoubleParameter dParam && dParam.ValueSource == null)
+                            {
+                                to_synch.Add(x.Key);
+                            }
+                            if (x.Key is SimIntegerParameter iParam && iParam.ValueSource == null)
+                            {
+                                to_synch.Add(x.Key);
+                            }
+                            if (x.Key is SimStringParameter sParam && sParam.ValueSource == null)
+                            {
+                                to_synch.Add(x.Key);
+                            }
+                            if (x.Key is SimBoolParameter bParam && bParam.ValueSource == null)
+                            {
+                                to_synch.Add(x.Key);
+                            }
+                        }
 
-                    foreach (SimParameter cP in to_synch)
+                    }
+                    //List<SimBaseParameter> to_synch = closest_source.Where(x => x.Key.Propagation == SimInfoFlow.FromReference &&
+                    //    ((SimBaseParameter<dynamic>)x.Key).ValueSource == null && x.Key.NameTaxonomyEntry.Name == _p.NameTaxonomyEntry.Name &&
+                    //    x.Value.Id.LocalId == _p.Id.LocalId).Select(x => x.Key).ToList();
+
+
+                    foreach (SimBaseParameter cP in to_synch)
                     {
                         PropagateParameterValueChange(cP, _p);
                     }
 
-                    // reference as a minimum value
-                    if (_p.TaxonomyEntry.Name.EndsWith("MIN"))
+
+                    if (_p is SimBaseNumericParameter<ValueType>)
                     {
-                        string p_name_only = _p.TaxonomyEntry.Name.Substring(0, _p.TaxonomyEntry.Name.Length - 3);
-                        List<SimParameter> to_synch_min = closest_sourceMIN.Where(x => x.Key.TaxonomyEntry.Name == p_name_only && x.Value.Id.LocalId == _p.Id.LocalId)
-                            .Select(y => y.Key).ToList();
-                        if (to_synch_min != null && to_synch_min.Count > 0)
+                        // reference as a minimum value
+                        if (_p.NameTaxonomyEntry.Name.EndsWith("MIN"))
                         {
-                            foreach (SimParameter cP in to_synch_min)
+                            string p_name_only = _p.NameTaxonomyEntry.Name.Substring(0, _p.NameTaxonomyEntry.Name.Length - 3);
+                            List<SimBaseParameter> to_synch_min = closest_sourceMIN.Where(x => x.Key.NameTaxonomyEntry.Name == p_name_only && x.Value.Id.LocalId == _p.Id.LocalId)
+                                .Select(y => y.Key).ToList();
+                            if (to_synch_min != null && to_synch_min.Count > 0)
                             {
-                                if (cP.ValueMin != _p.ValueCurrent)
-                                    cP.ValueMin = _p.ValueCurrent;
+                                foreach (SimBaseParameter cP in to_synch_min)
+                                {
+                                    if (_p is SimDoubleParameter doubleParam && cP is SimDoubleParameter doubleCp)
+                                    {
+                                        if (doubleCp.ValueMin != doubleParam.Value)
+                                            doubleCp.ValueMin = doubleParam.Value;
+                                    }
+                                }
                             }
                         }
-                    }
-
-                    // reference as a maximum value
-                    if (_p.TaxonomyEntry.Name.EndsWith("MAX"))
-                    {
-                        string p_name_only = _p.TaxonomyEntry.Name.Substring(0, _p.TaxonomyEntry.Name.Length - 3);
-                        List<SimParameter> to_synch_max = closest_sourceMAX.Where(x => x.Key.TaxonomyEntry.Name == p_name_only && x.Value.Id.LocalId == _p.Id.LocalId)
-                            .Select(y => y.Key).ToList();
-                        if (to_synch_max != null && to_synch_max.Count > 0)
+                        // reference as a maximum value
+                        if (_p.NameTaxonomyEntry.Name.EndsWith("MAX"))
                         {
-                            foreach (SimParameter cP in to_synch_max)
+                            string p_name_only = _p.NameTaxonomyEntry.Name.Substring(0, _p.NameTaxonomyEntry.Name.Length - 3);
+                            List<SimBaseParameter> to_synch_max = closest_sourceMAX.Where(x => x.Key.NameTaxonomyEntry.Name == p_name_only && x.Value.Id.LocalId == _p.Id.LocalId)
+                                .Select(y => y.Key).ToList();
+                            if (to_synch_max != null && to_synch_max.Count > 0)
                             {
-                                if (cP.ValueMax != _p.ValueCurrent)
-                                    cP.ValueMax = _p.ValueCurrent;
+                                foreach (SimBaseParameter cP in to_synch_max)
+                                {
+                                    if (_p is SimDoubleParameter doubleParam && cP is SimDoubleParameter doubleCp)
+                                    {
+                                        if (doubleCp.ValueMin != doubleParam.Value)
+                                            doubleCp.ValueMin = doubleParam.Value;
+                                    }
+                                }
                             }
                         }
                     }
@@ -589,10 +658,38 @@ namespace SIMULTAN.Data.Components
             }
         }
 
-        internal static void PropagateParameterValueChange(SimParameter referencing, SimParameter referenced)
+        internal static void PropagateParameterValueChange(SimBaseParameter referencing, SimBaseParameter referenced)
         {
-            referencing.ValueCurrent = referenced.ValueCurrent;
-            referencing.TextValue = referenced.TextValue;
+            if (referencing is SimDoubleParameter dParamReferencing && referenced is SimDoubleParameter dParamReferenced)
+            {
+                dParamReferencing.Value = dParamReferenced.Value;
+                dParamReferencing.Description = dParamReferenced.Description;
+            }
+            else if (referencing is SimIntegerParameter iParamReferencing && referenced is SimIntegerParameter iParamReferenced)
+            {
+                iParamReferencing.Value = iParamReferenced.Value;
+                iParamReferencing.Description = iParamReferenced.Description;
+            }
+            else if (referencing is SimStringParameter sParamReferencing && referenced is SimStringParameter sParamReferenced)
+            {
+                sParamReferencing.Value = sParamReferenced.Value;
+                sParamReferencing.Description = sParamReferenced.Description;
+            }
+            else if (referencing is SimBoolParameter bParamReferencing && referenced is SimBoolParameter bParamReferenced)
+            {
+                bParamReferencing.Value = bParamReferenced.Value;
+                bParamReferencing.Description = bParamReferenced.Description;
+            }
+            else if (referencing is SimEnumParameter eParamReferencing && referenced is SimEnumParameter eParamReferenced)
+            {
+                eParamReferencing.Value = eParamReferenced.Value;
+                eParamReferencing.Description = eParamReferenced.Description;
+            }
+            else
+            {
+                throw new InvalidOperationException(referencing.GetType().ToString() + " type does not match type " + referenced.GetType().ToString());
+            }
+
         }
 
         /// <summary>
@@ -605,24 +702,35 @@ namespace SIMULTAN.Data.Components
         {
             if (_rComp == null) return;
 
-            Dictionary<SimParameter, SimParameter> closest_source = new Dictionary<SimParameter, SimParameter>();
-            Dictionary<SimParameter, SimParameter> closest_sourceMIN = new Dictionary<SimParameter, SimParameter>();
-            Dictionary<SimParameter, SimParameter> closest_sourceMAX = new Dictionary<SimParameter, SimParameter>();
+            Dictionary<SimBaseParameter, SimBaseParameter> closest_source = new Dictionary<SimBaseParameter, SimBaseParameter>();
+            Dictionary<SimBaseParameter, SimBaseParameter> closest_sourceMIN = new Dictionary<SimBaseParameter, SimBaseParameter>();
+            Dictionary<SimBaseParameter, SimBaseParameter> closest_sourceMAX = new Dictionary<SimBaseParameter, SimBaseParameter>();
             GetLocalParamsListWDirectRefsAndLimits(_comp, out closest_source, out closest_sourceMAX, out closest_sourceMIN, true);
+
 
             // new
             foreach (var entry in closest_source)
             {
-                entry.Key.ValueCurrent = entry.Value.ValueCurrent;
-                entry.Key.TextValue = entry.Value.TextValue;
+                if (entry.Key is SimBaseParameter<ValueType> typedKey
+                    && entry.Value is SimBaseParameter<ValueType> typedValue)
+                {
+                    typedKey.Value = typedValue.Value;
+                    typedKey.Description = typedValue.Description;
+                }
             }
             foreach (var entry in closest_sourceMIN)
             {
-                entry.Key.ValueMin = entry.Value.ValueCurrent;
+                if (entry.Key is SimBaseNumericParameter<ValueType> numeric)
+                {
+                    numeric.ValueMax = numeric.Value;
+                }
             }
             foreach (var entry in closest_sourceMAX)
             {
-                entry.Key.ValueMax = entry.Value.ValueCurrent;
+                if (entry.Key is SimBaseNumericParameter<ValueType> numeric)
+                {
+                    numeric.ValueMax = numeric.Value;
+                }
             }
         }
 
@@ -638,23 +746,23 @@ namespace SIMULTAN.Data.Components
         /// <param name="lower_limits">key = parameter of the calling component, value = corresponding lower limit source parameter</param>
         /// <param name="_recursive">if true, gets a flat list for all subcomponents, if false - only for the calling component</param>
         private static void GetLocalParamsListWDirectRefsAndLimits(SimComponent component,
-                                                             out Dictionary<SimParameter, SimParameter> references,
-                                                             out Dictionary<SimParameter, SimParameter> upper_limits,
-                                                             out Dictionary<SimParameter, SimParameter> lower_limits,
+                                                             out Dictionary<SimBaseParameter, SimBaseParameter> references,
+                                                             out Dictionary<SimBaseParameter, SimBaseParameter> upper_limits,
+                                                             out Dictionary<SimBaseParameter, SimBaseParameter> lower_limits,
                                                              bool _recursive)
         {
-            references = new Dictionary<SimParameter, SimParameter>();
-            upper_limits = new Dictionary<SimParameter, SimParameter>();
-            lower_limits = new Dictionary<SimParameter, SimParameter>();
+            references = new Dictionary<SimBaseParameter, SimBaseParameter>();
+            upper_limits = new Dictionary<SimBaseParameter, SimBaseParameter>();
+            lower_limits = new Dictionary<SimBaseParameter, SimBaseParameter>();
 
             GetParamListWDirectRefsAndLimits_Optimized(component, references, upper_limits, lower_limits, _recursive);
         }
 
 
         private static void GetParamListWDirectRefsAndLimits_Optimized(SimComponent component,
-                                                             Dictionary<SimParameter, SimParameter> references,
-                                                             Dictionary<SimParameter, SimParameter> upper_limits,
-                                                             Dictionary<SimParameter, SimParameter> lower_limits,
+                                                             Dictionary<SimBaseParameter, SimBaseParameter> references,
+                                                             Dictionary<SimBaseParameter, SimBaseParameter> upper_limits,
+                                                             Dictionary<SimBaseParameter, SimBaseParameter> lower_limits,
                                                              bool _recursive)
         {
             // find all components referenced by this (1st in the list) or its parents
@@ -676,18 +784,38 @@ namespace SIMULTAN.Data.Components
             }
 
             // filter the parameters
-            foreach (SimParameter p in component.Parameters)
+            foreach (SimBaseParameter p in component.Parameters)
             {
                 if (p == null) continue;
-                if (p.MultiValuePointer != null) continue;
+                if (p is SimDoubleParameter doubleParam)
+                {
+                    if (doubleParam.ValueSource != null) continue;
+                }
+                if (p is SimIntegerParameter intParam)
+                {
+                    if (intParam.ValueSource != null) continue;
+                }
+                if (p is SimBoolParameter boolParam)
+                {
+                    if (boolParam.ValueSource != null) continue;
+                }
+                if (p is SimStringParameter stringParameter)
+                {
+                    if (stringParameter.ValueSource != null) continue;
+                }
+                if (p is SimEnumParameter enumParameter)
+                {
+                    if (enumParameter.ValueSource != null) continue;
+                }
+
                 if (p.Propagation != SimInfoFlow.FromReference) continue;
 
                 //if (p.Propagation == InfoFlow.REF_IN)
                 {
-                    SimComponent c_source_R = comps_referenced_by_this_or_parent.FirstOrDefault(x => x.Parameters.Where(y => y.TaxonomyEntry.Name == p.TaxonomyEntry.Name).Count() > 0);
+                    SimComponent c_source_R = comps_referenced_by_this_or_parent.FirstOrDefault(x => x.Parameters.Where(y => y.NameTaxonomyEntry.Name == p.NameTaxonomyEntry.Name).Count() > 0);
                     if (c_source_R != null)
                     {
-                        SimParameter p_source = c_source_R.Parameters.FirstOrDefault(x => x.TaxonomyEntry.Name == p.TaxonomyEntry.Name);
+                        SimBaseParameter p_source = c_source_R.Parameters.FirstOrDefault(x => x.NameTaxonomyEntry.Name == p.NameTaxonomyEntry.Name);
                         if (p_source != null)
                             references.Add(p, p_source);
                     }
@@ -696,19 +824,19 @@ namespace SIMULTAN.Data.Components
                 //if (p.Propagation != InfoFlow.TYPE)
                 {
                     string limit_key = "MAX";
-                    SimComponent c_source_UL = comps_referenced_by_this_or_parent.FirstOrDefault(x => x.Parameters.Where(y => y.TaxonomyEntry.Name.EndsWith(limit_key) && y.TaxonomyEntry.Name.Substring(0, y.TaxonomyEntry.Name.Length - limit_key.Length) == p.TaxonomyEntry.Name).Count() > 0);
+                    SimComponent c_source_UL = comps_referenced_by_this_or_parent.FirstOrDefault(x => x.Parameters.Where(y => y.NameTaxonomyEntry.Name.EndsWith(limit_key) && y.NameTaxonomyEntry.Name.Substring(0, y.NameTaxonomyEntry.Name.Length - limit_key.Length) == p.NameTaxonomyEntry.Name).Count() > 0);
                     if (c_source_UL != null)
                     {
-                        SimParameter p_source = c_source_UL.Parameters.FirstOrDefault(x => x.TaxonomyEntry.Name.EndsWith(limit_key) && x.TaxonomyEntry.Name.Substring(0, x.TaxonomyEntry.Name.Length - limit_key.Length) == p.TaxonomyEntry.Name);
+                        SimBaseParameter p_source = c_source_UL.Parameters.FirstOrDefault(x => x.NameTaxonomyEntry.Name.EndsWith(limit_key) && x.NameTaxonomyEntry.Name.Substring(0, x.NameTaxonomyEntry.Name.Length - limit_key.Length) == p.NameTaxonomyEntry.Name);
                         if (p_source != null)
                             upper_limits.Add(p, p_source);
                     }
 
                     limit_key = "MIN";
-                    SimComponent c_source_LL = comps_referenced_by_this_or_parent.FirstOrDefault(x => x.Parameters.Where(y => y.TaxonomyEntry.Name.EndsWith(limit_key) && y.TaxonomyEntry.Name.Substring(0, y.TaxonomyEntry.Name.Length - limit_key.Length) == p.TaxonomyEntry.Name).Count() > 0);
+                    SimComponent c_source_LL = comps_referenced_by_this_or_parent.FirstOrDefault(x => x.Parameters.Where(y => y.NameTaxonomyEntry.Name.EndsWith(limit_key) && y.NameTaxonomyEntry.Name.Substring(0, y.NameTaxonomyEntry.Name.Length - limit_key.Length) == p.NameTaxonomyEntry.Name).Count() > 0);
                     if (c_source_LL != null)
                     {
-                        SimParameter p_source = c_source_LL.Parameters.FirstOrDefault(x => x.TaxonomyEntry.Name.EndsWith(limit_key) && x.TaxonomyEntry.Name.Substring(0, x.TaxonomyEntry.Name.Length - limit_key.Length) == p.TaxonomyEntry.Name);
+                        SimBaseParameter p_source = c_source_LL.Parameters.FirstOrDefault(x => x.NameTaxonomyEntry.Name.EndsWith(limit_key) && x.NameTaxonomyEntry.Name.Substring(0, x.NameTaxonomyEntry.Name.Length - limit_key.Length) == p.NameTaxonomyEntry.Name);
                         if (p_source != null)
                             lower_limits.Add(p, p_source);
                     }
@@ -723,6 +851,170 @@ namespace SIMULTAN.Data.Components
                     GetParamListWDirectRefsAndLimits_Optimized(entry.Component, references, upper_limits, lower_limits, _recursive);
                 }
             }
+        }
+
+        #endregion
+
+        #region Aggregation
+
+        /// <summary>
+        /// Applies an aggregation function to the table and replaces the data in this table by the result.
+        /// </summary>
+        /// <param name="table">The table on which the aggregation is performed</param>
+        /// <param name="function">The function to apply</param>
+        /// <param name="transpose">When set to False, the aggregation is performed to each columns. When set to True, the aggregation is applied to each rows</param>
+        public static void ApplyAggregationFunction(SimMultiValueBigTable table, SimAggregationFunction function, bool transpose)
+        {
+            //Does not handle units correctly
+
+            if (transpose) //Aggregate along rows
+            {
+                // extract named columns
+                List<List<double>> columns = GetDoubles(table, true);
+
+                List<KeyValuePair<string, List<double>>> named_columns = new List<KeyValuePair<string, List<double>>>();
+                for (int i = 0; i < table.ColumnHeaders.Count; i++)
+                {
+                    named_columns.Add(new KeyValuePair<string, List<double>>(table.ColumnHeaders[i].Name, columns[i]));
+                }
+                // group named columns
+                var groups = named_columns.GroupBy(x => x.Key).ToDictionary(gr => gr.Key, gr => gr.Select(x => x.Value).ToList());
+                // aggregate rows
+                var aggregation = ApplyAggregationTo(groups, function);
+
+
+                var resultData = new List<List<object>>(aggregation.Count);
+
+                foreach (var group in aggregation)
+                {
+                    resultData.Add(group.values.Cast<object>().ToList());
+                }
+
+                resultData = resultData.Transpose();
+
+                var columnHeaders = new List<SimMultiValueBigTableHeader>(
+                    aggregation.Select((x, xi) => new SimMultiValueBigTableHeader(
+                        string.Format("{0} {1}", function.ToStringRepresentation(), x.key),
+                        table.ColumnHeaders.First(ch => ch.Name == x.key).Unit)
+                    ));
+
+                table.ReplaceData(columnHeaders, table.RowHeaders, resultData);
+            }
+            else
+            {
+                // use rows
+                List<KeyValuePair<string, List<double>>> named_rows = new List<KeyValuePair<string, List<double>>>();
+                for (int i = 0; i < table.RowHeaders.Count; i++)
+                {
+                    named_rows.Add(new KeyValuePair<string, List<double>>(table.RowHeaders[i].Name, table.GetRow(i).Select(x => GetDoubles(x)).ToList()));
+                }
+                // group named rows
+                Dictionary<string, List<List<double>>> groups = named_rows.GroupBy(x => x.Key).ToDictionary(gr => gr.Key, gr => gr.Select(x => x.Value).ToList());
+                // aggregate rows
+                var aggregation = ApplyAggregationTo(groups, function);
+                var rowHeaders = new ObservableCollection<SimMultiValueBigTableHeader>(
+                    aggregation.Select((x, xi) => new SimMultiValueBigTableHeader(
+                        string.Format("{0} {1}", function.ToStringRepresentation(), x.key),
+                        table.RowHeaders.First(rh => rh.Name == x.key).Unit))
+                    );
+                var resultData = aggregation.Select(x => x.values).ToList();
+
+                var test = resultData.Select(x => x.Cast<object>().ToList()).ToList();
+                table.ReplaceData(table.ColumnHeaders, rowHeaders, test, false);
+            }
+        }
+
+        private static List<(string key, List<double> values)> ApplyAggregationTo(Dictionary<string, List<List<double>>> _input,
+            SimAggregationFunction function, bool _order = true)
+        {
+            List<(string, List<double>)> result = new List<(string, List<double>)>(_input.Count);
+
+            IEnumerable<KeyValuePair<string, List<List<double>>>> orderedInput = _input;
+            if (_order)
+                orderedInput = orderedInput.OrderBy(x => x.Key);
+
+            foreach (var group in orderedInput)
+            {
+                List<double> groupResult = new List<double>();
+                double[] row = new double[group.Value.Count];
+
+                for (int r = 0; r < group.Value[0].Count; r++)
+                {
+                    for (int c = 0; c < group.Value.Count; c++)
+                        row[c] = group.Value[c][r];
+
+                    double rowResult = double.NaN;
+                    switch (function)
+                    {
+                        case SimAggregationFunction.Sum:
+                            rowResult = row.Sum();
+                            break;
+                        case SimAggregationFunction.Average:
+                            rowResult = row.Sum() / row.Length;
+                            break;
+                        case SimAggregationFunction.Max:
+                            rowResult = row.Max();
+                            break;
+                        case SimAggregationFunction.Min:
+                            rowResult = row.Min();
+                            break;
+                        case SimAggregationFunction.Count:
+                            rowResult = row.Length;
+                            break;
+                    }
+
+                    groupResult.Add(rowResult);
+                }
+
+                result.Add((group.Key, groupResult));
+            }
+
+            return result;
+        }
+
+        private static List<List<double>> GetDoubles(SimMultiValueBigTable table, bool transpose)
+        {
+            List<List<double>> result;
+
+            if (transpose)
+            {
+                result = new List<List<double>>(table.Count(1));
+
+                for (int c = 0; c < table.Count(1); c++)
+                {
+                    List<double> row = new List<double>(table.Count(1));
+
+                    for (int r = 0; r < table.Count(0); r++)
+                        row.Add(GetDoubles(table[r, c]));
+
+                    result.Add(row);
+                }
+            }
+            else
+            {
+                result = new List<List<double>>(table.Count(0));
+
+                for (int r = 0; r < table.Count(0); r++)
+                {
+                    List<double> row = new List<double>(table.Count(1));
+
+                    for (int c = 0; c < table.Count(1); c++)
+                        row.Add(GetDoubles(table[r, c]));
+
+                    result.Add(row);
+                }
+            }
+
+            return result;
+        }
+        private static double GetDoubles(object value)
+        {
+            if (value is double d)
+                return d;
+            if (value is int i)
+                return i;
+            else
+                return double.NaN;
         }
 
         #endregion

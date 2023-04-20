@@ -1,7 +1,7 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SIMULTAN.Data.Components;
 using SIMULTAN.Exceptions;
-using SIMULTAN.Tests.Utils;
+using SIMULTAN.Tests.TestUtils;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -97,17 +97,23 @@ namespace SIMULTAN.Tests.Components
             }
         }
 
-        [TestMethod]
-        public void MemoryLeakTest()
+        private WeakReference MemoryLeakTest_Actio()
         {
-            this.LoadProject(testProject);
-
             var component = this.projectData.Components.First(x => x.Name == "Wall 2");
             WeakReference instanceRef = new WeakReference(component.Instances.First());
 
             Assert.IsTrue(instanceRef.IsAlive);
 
             component.Instances.Remove((SimComponentInstance)instanceRef.Target);
+
+            return instanceRef;
+        }
+        [TestMethod]
+        public void MemoryLeakTest()
+        {
+            this.LoadProject(testProject);
+
+            var instanceRef = MemoryLeakTest_Actio();
 
             GC.Collect();
             GC.WaitForPendingFinalizers();
@@ -123,7 +129,7 @@ namespace SIMULTAN.Tests.Components
 
             var component = new SimComponent();
             this.projectData.Components.Add(component);
-            var param1 = new SimParameter("param1", "m", 1.8)
+            var param1 = new SimDoubleParameter("param1", "m", 1.8)
             {
                 Propagation = SimInfoFlow.Input
             };
@@ -243,7 +249,6 @@ namespace SIMULTAN.Tests.Components
 
             //Instance not in tree
             instance.Description = "new description";
-            instance.InstancePath = new List<Point3D>() { new Point3D(1, 2, 3) };
             instance.InstanceRotation = new Quaternion(new Vector3D(0, 0, 1), 33);
             instance.InstanceSize = new SimInstanceSize(new Vector3D(1, 1, 1), new Vector3D(99, 99, 99));
             instance.Name = "another name";
@@ -253,7 +258,6 @@ namespace SIMULTAN.Tests.Components
             //Instance in read only component
             var archInst = archComp.Instances.First();
             Assert.ThrowsException<AccessDeniedException>(() => { archInst.Description = "new description"; });
-            Assert.ThrowsException<AccessDeniedException>(() => { archInst.InstancePath = new List<Point3D>() { new Point3D(1, 2, 3) }; });
             Assert.ThrowsException<AccessDeniedException>(() => { archInst.InstanceRotation = new Quaternion(new Vector3D(0, 0, 1), 33); });
             Assert.ThrowsException<AccessDeniedException>(() => { archInst.InstanceSize = new SimInstanceSize(new Vector3D(1, 1, 1), new Vector3D(99, 99, 99)); });
             Assert.ThrowsException<AccessDeniedException>(() => { archInst.Name = "another name"; });
@@ -266,7 +270,6 @@ namespace SIMULTAN.Tests.Components
             Assert.AreEqual(bphComp, instance.Component);
 
             instance.Description = "new description";
-            instance.InstancePath = new List<Point3D>() { new Point3D(1, 2, 3) };
             instance.InstanceRotation = new Quaternion(new Vector3D(0, 0, 1), 33);
             instance.InstanceSize = new SimInstanceSize(new Vector3D(1, 1, 1), new Vector3D(99, 99, 99));
             instance.Name = "another name";
@@ -280,8 +283,8 @@ namespace SIMULTAN.Tests.Components
 
             var archComp = this.projectData.Components.First(x => x.Name == "ArchComp");
             var bphComp = this.projectData.Components.First(x => x.Name == "BPHComp");
-            var param1 = archComp.Parameters.First(x => x.TaxonomyEntry.Name == "Parameter1");
-            var param2 = bphComp.Parameters.First(x => x.TaxonomyEntry.Name == "Parameter2");
+            var param1 = archComp.Parameters.First(x => x.NameTaxonomyEntry.Name == "Parameter1");
+            var param2 = bphComp.Parameters.First(x => x.NameTaxonomyEntry.Name == "Parameter2");
 
             //Instance outside of tree
             //It's not possible to edit parameters before the instance has been added to the component
@@ -302,8 +305,8 @@ namespace SIMULTAN.Tests.Components
 
             var archComp = this.projectData.Components.First(x => x.Name == "ArchComp");
             var bphComp = this.projectData.Components.First(x => x.Name == "BPHComp");
-            var param1 = archComp.Parameters.First(x => x.TaxonomyEntry.Name == "Parameter1");
-            var param2 = bphComp.Parameters.First(x => x.TaxonomyEntry.Name == "Parameter2");
+            var param1 = archComp.Parameters.First(x => x.NameTaxonomyEntry.Name == "Parameter1");
+            var param2 = bphComp.Parameters.First(x => x.NameTaxonomyEntry.Name == "Parameter2");
 
             //Instance outside of tree
             //It's not possible to edit parameters before the instance has been added to the component

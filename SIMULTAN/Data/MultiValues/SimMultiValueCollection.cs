@@ -1,10 +1,8 @@
 ﻿using SIMULTAN.Data.Components;
 using SIMULTAN.Projects;
-using SIMULTAN.Serializer.DXF;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
 namespace SIMULTAN.Data.MultiValues
 {
@@ -56,6 +54,14 @@ namespace SIMULTAN.Data.MultiValues
             NotifyChanged();
         }
 
+        internal void ClearWithoutDelete()
+        {
+            foreach (var item in this)
+                UnsetValues(item, false);
+            base.ClearItems();
+            NotifyChanged();
+        }
+
 
         private void SetValues(SimMultiValue item)
         {
@@ -78,11 +84,14 @@ namespace SIMULTAN.Data.MultiValues
             item.Factory = this;
         }
 
-        private void UnsetValues(SimMultiValue item)
+        private void UnsetValues(SimMultiValue item, bool delete = true)
         {
             ProjectData.IdGenerator.Remove(item);
             item.Id = SimId.Empty;
             item.Factory = null;
+
+            if (delete)
+                item.NotifyDeleting();
         }
 
         #endregion
@@ -131,8 +140,12 @@ namespace SIMULTAN.Data.MultiValues
             ComponentWalker.ForeachComponent(components, x =>
             {
                 foreach (var param in x.Parameters)
-                    if (param.MultiValuePointer != null && !usedMultiValues.Contains(param.MultiValuePointer.ValueField))
-                        usedMultiValues.Add(param.MultiValuePointer.ValueField);
+                {
+                    if (param.ValueSource != null && param.ValueSource is SimMultiValueParameterSource mvp && !usedMultiValues.Contains(mvp.ValueField))
+                    {
+                        usedMultiValues.Add(mvp.ValueField);
+                    }
+                }
             });
 
             if (_excluded_from_removal != null)
@@ -176,7 +189,7 @@ namespace SIMULTAN.Data.MultiValues
                 throw new ArgumentNullException(nameof(source));
 
             List<(SimMultiValue value, long id)> oldIds = source.Select(x => (x, x.LocalID)).ToList();
-            source.Clear();
+            source.ClearWithoutDelete();
 
             Dictionary<long, long> id_change_record = new Dictionary<long, long>();
 

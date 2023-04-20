@@ -24,12 +24,6 @@ namespace SIMULTAN.Data.Components
         /// Id of the geometry in the geometry model file
         /// </summary>
         public ulong GeometryId { get; set; }
-        /// <summary>
-        /// Saves the id of a complementary geometric object, 
-        /// e.g. the edge loop id of the face, whose id is contained in GeometryId;
-        /// or ... TO BE CONTINUED
-        /// </summary>
-        public List<ulong> RelatedIds { get; set; }
 
         /// <summary>
         /// Returns True if the placements points to a valid geometry id.
@@ -45,16 +39,13 @@ namespace SIMULTAN.Data.Components
         /// </summary>
         /// <param name="fileId">The key of the resource file</param>
         /// <param name="geometryId">The id of the geometry</param>
+        /// <param name="state">State of the placement</param>
         /// <param name="relatedIds">A list of related Ids</param>
-        public SimInstancePlacementGeometry(int fileId, ulong geometryId, IEnumerable<ulong> relatedIds = null)
+        public SimInstancePlacementGeometry(int fileId, ulong geometryId, SimInstancePlacementState state = SimInstancePlacementState.Valid, IEnumerable<ulong> relatedIds = null)
         {
             this.FileId = fileId;
             this.GeometryId = geometryId;
-
-            if (relatedIds != null)
-                this.RelatedIds = relatedIds.ToList();
-            else
-                this.RelatedIds = new List<ulong>();
+            this.State = state;
         }
 
         /// <inheritdoc />

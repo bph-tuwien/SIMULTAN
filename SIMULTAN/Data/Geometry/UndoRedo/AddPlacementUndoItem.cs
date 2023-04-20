@@ -34,7 +34,7 @@ namespace SIMULTAN.Data.Geometry
         public UndoExecutionResult Execute()
         {
             // first create the new instance and remember the placement
-            instance = new SimComponentInstance(component.InstanceType, geometry.ModelGeometry.Model.File.Key, geometry.Id, new ulong[] {});
+            instance = new SimComponentInstance(component.InstanceType, geometry.ModelGeometry.Model.File.Key, geometry.Id, new ulong[] { });
             placement = instance.Placements.FirstOrDefault() as SimInstancePlacementGeometry;
             Redo();
             return UndoExecutionResult.Executed;
@@ -50,9 +50,9 @@ namespace SIMULTAN.Data.Geometry
         public void Undo()
         {
             // lookup instance again, could have changed due to undo/redo
-            instance = component.Instances.FirstOrDefault(x => x.Placements.Any(p => p is SimInstancePlacementGeometry geop 
+            instance = component.Instances.FirstOrDefault(x => x.Placements.Any(p => p is SimInstancePlacementGeometry geop
                 && geop.FileId == placement.FileId && geop.GeometryId == placement.GeometryId));
-            if(!component.Instances.Remove(instance))
+            if (!component.Instances.Remove(instance))
             {
                 throw new Exception("Instance could not be removed.");
             }

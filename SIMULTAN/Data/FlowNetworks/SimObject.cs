@@ -60,7 +60,6 @@ namespace SIMULTAN.Data.FlowNetworks
         /// <summary>
         /// Returns only the local id of the instance.
         /// </summary>
-        [ExcelMappingProperty("SIM_OBJECT_LOCALID")]
         public long LocalID { get { return this.id.LocalId; } }
         /// <summary>
         /// Returns only the global location of the instance.
@@ -75,7 +74,6 @@ namespace SIMULTAN.Data.FlowNetworks
         /// <summary>
         /// The name of the displayable product definition. It can be any character string.
         /// </summary>
-        [ExcelMappingProperty("SIM_OBJECT_NAME")]
         public virtual string Name
         {
             get { return this.name; }
@@ -96,7 +94,6 @@ namespace SIMULTAN.Data.FlowNetworks
         /// <summary>
         /// The description of the displayable product definition. It can be any character string.
         /// </summary>
-        [ExcelMappingProperty("SIM_OBJECT_DESCRIPTION")]
         public string Description
         {
             get { return this.description; }

@@ -1,0 +1,266 @@
+﻿using SIMULTAN.Data.Assets;
+using SIMULTAN.Data.Components;
+using SIMULTAN.Data.Geometry;
+using SIMULTAN.Projects;
+using SIMULTAN.Serializer.SimGeo;
+using SIMULTAN.Utils;
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Data;
+
+namespace SIMULTAN.DataMapping
+{
+    /// <summary>
+    /// Interface used to identify possible child rules for the <see cref="SimDataMappingRuleVolume"/> class
+    /// </summary>
+    public interface ISimDataMappingVolumeRuleChild : ISimDataMappingRuleBase 
+    {
+        /// <summary>
+        /// Creates a deep copy of the rule
+        /// </summary>
+        /// <returns>A deep copy of the rule</returns>
+        ISimDataMappingVolumeRuleChild Clone();
+    }
+
+    /// <summary>
+    /// The properties of a <see cref="Volume"/> that can be mapped
+    /// </summary>
+    public enum SimDataMappingVolumeMappingProperties
+    {
+        /// <summary>
+        /// The name of the volume. (string)
+        /// </summary>
+        Name,
+        /// <summary>
+        /// The local Id of the volume. (int)
+        /// </summary>
+        Id,
+        /// <summary>
+        /// The volume of the volume. (double)
+        /// </summary>
+        Volume,
+        /// <summary>
+        /// The floor area of the volume. (double)
+        /// </summary>
+        FloorArea,
+        /// <summary>
+        /// The height of the volume. (double)
+        /// </summary>
+        Height,
+        /// <summary>
+        /// The elevation of the ceiling of the volume. (double)
+        /// </summary>
+        CeilingElevation,
+        /// <summary>
+        /// The elevation of the floor of the volume. (double)
+        /// </summary>
+        FloorElevation
+    }
+
+    /// <summary>
+    /// Mapping rule for <see cref="Volume"/>
+    /// </summary>
+    public class SimDataMappingRuleVolume 
+        : SimDataMappingRuleBase<SimDataMappingVolumeMappingProperties, SimDataMappingFilterVolume>,
+        ISimDataMappingComponentRuleChild, ISimDataMappingInstanceRuleChild, ISimDataMappingFaceRuleChild
+    {
+        /// <summary>
+        /// The child rules
+        /// </summary>
+        public ObservableCollection<ISimDataMappingVolumeRuleChild> Rules { get; } = new ObservableCollection<ISimDataMappingVolumeRuleChild>();
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SimDataMappingRuleVolume"/> class
+        /// </summary>
+        /// <param name="sheetName">The name of the worksheet</param>
+        public SimDataMappingRuleVolume(string sheetName) : base(sheetName) { }
+
+        /// <inheritdoc />
+        public override void Execute(object rootObject, SimTraversalState state, SimMappedData data)
+        {
+            if (rootObject is SimComponent rootComponent) //Child of component rule
+            {
+                var projectData = rootComponent.Factory.ProjectData;
+
+                foreach (var inst in rootComponent.Instances)
+                {
+                    if (!state.VisitedObjects.Contains(inst))
+                    {
+                        state.VisitedObjects.Add(inst);
+
+                        ExecuteInstance(inst, projectData, state, data);
+
+                        state.VisitedObjects.Remove(inst);
+                    }
+                }
+            }
+            else if (rootObject is SimComponentInstance instance) //Child of instance rule
+            {
+                var projectData = instance.Factory.ProjectData;
+                ExecuteInstance(instance, projectData, state, data);
+            }
+            else if (rootObject is Face face)
+            {
+                foreach (var pface in face.PFaces)
+                {
+                    if (state.MatchCount >= this.MaxMatches)
+                        break;
+
+                    if (!state.VisitedObjects.Contains(pface.Volume))
+                    {
+                        state.VisitedObjects.Add(pface.Volume);
+
+                        HandleMatch(pface.Volume, state, data);
+
+                        state.VisitedObjects.Remove(pface.Volume);
+                    }
+                }
+            }
+        }
+
+        private void ExecuteInstance(SimComponentInstance instance, ProjectData projectData, SimTraversalState state, SimMappedData data)
+        {
+            foreach (var geoPlacement in instance.Placements.OfType<SimInstancePlacementGeometry>())
+            {
+                if (state.MatchCount >= this.MaxMatches)
+                    break;
+
+                //Check if there are any filter for resource file id
+                bool matchesFile = true;
+                foreach (var fileFilter in Filter.Where(x => x.Property == SimDataMappingVolumeFilterProperties.FileKey))
+                {
+                    if (fileFilter.Value is int ikey)
+                        matchesFile &= ikey == geoPlacement.FileId;
+                }
+
+                if (matchesFile)
+                {
+                    //Make sure that the GeometryModel is loaded
+                    var resourceFile = projectData.AssetManager.GetResource(geoPlacement.FileId) as ResourceFileEntry;
+                    if (resourceFile != null)
+                    {
+                        if (!projectData.GeometryModels.TryGetGeometryModel(resourceFile, out var gm, false))
+                        {
+                            List<SimGeoIOError> errors = new List<SimGeoIOError>();
+                            gm = SimGeoIO.Load(resourceFile, projectData, errors, OffsetAlgorithm.Disabled);
+                            projectData.GeometryModels.AddGeometryModel(gm);
+                            state.ModelsToRelease.Add(gm);
+                        }
+
+                        //Find geometry
+                        var volume = gm.Geometry.GeometryFromId(geoPlacement.GeometryId) as Volume;
+                        if (volume != null && !state.VisitedObjects.Contains(volume))
+                        {
+                            state.VisitedObjects.Add(volume);
+
+                            if (Filter.All(f => f.Match(volume)))
+                                HandleMatch(volume, state, data);
+
+                            state.VisitedObjects.Remove(volume);
+                        }
+                    }
+                }
+            }
+        }
+
+        private void HandleMatch(Volume volume, SimTraversalState state, SimMappedData data)
+        {
+            WriteProperties(state, property =>
+            {
+                //Store property
+                switch (property)
+                {
+                    case SimDataMappingVolumeMappingProperties.Name:
+                        data.AddData(this.SheetName, state.CurrentPosition, volume.Name);
+                        break;
+                    case SimDataMappingVolumeMappingProperties.Id:
+                        data.AddData(this.SheetName, state.CurrentPosition, (int)volume.Id);
+                        break;
+                    case SimDataMappingVolumeMappingProperties.Volume:
+                        data.AddData(this.SheetName, state.CurrentPosition,
+                            VolumeAlgorithms.Volume(volume));
+                        break;
+                    case SimDataMappingVolumeMappingProperties.FloorArea:
+                        data.AddData(this.SheetName, state.CurrentPosition,
+                            VolumeAlgorithms.AreaBruttoNetto(volume).areaReference);
+                        break;
+                    case SimDataMappingVolumeMappingProperties.Height:
+                        data.AddData(this.SheetName, state.CurrentPosition,
+                            VolumeAlgorithms.Height(volume).reference);
+                        break;
+                    case SimDataMappingVolumeMappingProperties.CeilingElevation:
+                        data.AddData(this.SheetName, state.CurrentPosition,
+                            VolumeAlgorithms.ElevationReference(volume).ceiling);
+                        break;
+                    case SimDataMappingVolumeMappingProperties.FloorElevation:
+                        data.AddData(this.SheetName, state.CurrentPosition,
+                            VolumeAlgorithms.ElevationReference(volume).floor);
+                        break;
+                    default:
+                        throw new NotSupportedException("Unsupported property");
+                }
+            });
+
+            //Handle child rules
+            ExecuteChildRules(this.Rules, volume, state, data);
+
+            //Advance position for next rule
+            AdvanceReferencePoint(state);
+        }
+        /// <inheritdoc />
+        protected override void OnToolChanged()
+        {
+            foreach (var r in this.Rules)
+                r.Tool = Tool;
+        }
+
+        #region Clone
+
+        /// <summary>
+        /// Creates a deep copy of the rule
+        /// </summary>
+        /// <returns>A deep copy of the rule</returns>
+        public SimDataMappingRuleVolume Clone()
+        {
+            var copy = new SimDataMappingRuleVolume(this.SheetName)
+            {
+                Name = this.Name,
+                MaxMatches = this.MaxMatches,
+                MaxDepth = this.MaxDepth,
+                OffsetParent = this.OffsetParent,
+                OffsetConsecutive = this.OffsetConsecutive,
+                MappingDirection = this.MappingDirection,
+                ReferencePoint = this.ReferencePoint,
+            };
+
+            copy.Properties.AddRange(this.Properties);
+            copy.Filter.AddRange(this.Filter.Select(x => x.Clone()));
+
+            copy.Rules.AddRange(this.Rules.Select(x => x.Clone()));
+
+            return copy;
+        }
+
+        /// <inheritdoc />
+        ISimDataMappingComponentRuleChild ISimDataMappingComponentRuleChild.Clone()
+        {
+            return this.Clone();
+        }
+        /// <inheritdoc />
+        ISimDataMappingInstanceRuleChild ISimDataMappingInstanceRuleChild.Clone()
+        {
+            return this.Clone();
+        }
+        /// <inheritdoc />
+        ISimDataMappingFaceRuleChild ISimDataMappingFaceRuleChild.Clone()
+        {
+            return this.Clone();
+        }
+
+        #endregion
+    }
+}

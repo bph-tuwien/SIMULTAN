@@ -147,16 +147,16 @@ namespace SIMULTAN.Serializer.CSV
                 {
                     foreach (var param in group.Parameters)
                     {
-                        parameterNames.Add(param.TaxonomyEntry.Name);
-                        headerRows.Add(param.TaxonomyEntry.Name);
+                        parameterNames.Add(param.NameTaxonomyEntry.Name);
+                        headerRows.Add(param.NameTaxonomyEntry.Name);
                     }
                 }
                 foreach (var group in blockComponets)
                 {
                     foreach (var param in group.Parameters)
                     {
-                        parameterNames.Add(param.TaxonomyEntry.Name);
-                        headerRows.Add(param.TaxonomyEntry.Name);
+                        parameterNames.Add(param.NameTaxonomyEntry.Name);
+                        headerRows.Add(param.NameTaxonomyEntry.Name);
                     }
                 }
 
@@ -176,9 +176,9 @@ namespace SIMULTAN.Serializer.CSV
                         foreach (var paramName in parameterNames)
                         {
 
-                            if (block.ComponentInstance.InstanceParameterValuesPersistent.Any(t => t.Key.TaxonomyEntry.Name == paramName))
+                            if (block.ComponentInstance.InstanceParameterValuesPersistent.Any(t => t.Key.NameTaxonomyEntry.Name == paramName))
                             {
-                                row.Add(block.ComponentInstance.InstanceParameterValuesPersistent.FirstOrDefault(t => t.Key.TaxonomyEntry.Name == paramName).Value.ToString());
+                                row.Add(block.ComponentInstance.InstanceParameterValuesPersistent.FirstOrDefault(t => t.Key.NameTaxonomyEntry.Name == paramName).Value.ToString());
                             }
                             else
                             {
@@ -201,9 +201,9 @@ namespace SIMULTAN.Serializer.CSV
                         foreach (var paramName in parameterNames)
                         {
 
-                            if (port.ComponentInstance.InstanceParameterValuesPersistent.Any(t => t.Key.TaxonomyEntry.Name == paramName))
+                            if (port.ComponentInstance.InstanceParameterValuesPersistent.Any(t => t.Key.NameTaxonomyEntry.Name == paramName))
                             {
-                                row.Add(port.ComponentInstance.InstanceParameterValuesPersistent.FirstOrDefault(t => t.Key.TaxonomyEntry.Name == paramName).Value.ToString());
+                                row.Add(port.ComponentInstance.InstanceParameterValuesPersistent.FirstOrDefault(t => t.Key.NameTaxonomyEntry.Name == paramName).Value.ToString());
                             }
                             else
                             {

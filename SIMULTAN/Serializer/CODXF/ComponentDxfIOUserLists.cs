@@ -114,7 +114,7 @@ namespace SIMULTAN.Serializer.CODXF
         {
             var name = data.Get<string>(UserComponentListSaveCode.NAME, string.Empty);
             SimId[] rootComponentIds = null;
-            
+
             if (info.FileVersion >= 12)
                 rootComponentIds = data.Get<SimId[]>(UserComponentListSaveCode.ROOT_COMPONENTS, new SimId[] { });
             else

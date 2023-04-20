@@ -2,7 +2,7 @@
 using SIMULTAN.Data;
 using SIMULTAN.Data.Components;
 using SIMULTAN.Data.ValueMappings;
-using SIMULTAN.Tests.Utils;
+using SIMULTAN.Tests.TestUtils;
 using SIMULTAN.Utils;
 using System;
 using System.Collections.Generic;

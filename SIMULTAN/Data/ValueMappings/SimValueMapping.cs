@@ -1,5 +1,6 @@
 ﻿using SIMULTAN.Data.MultiValues;
 using SIMULTAN.Data.SitePlanner;
+using SIMULTAN.Utils;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -186,7 +187,9 @@ namespace SIMULTAN.Data.ValueMappings
         /// <returns>The final color of the mapping</returns>
         public Color ApplyMapping(int objectIndex, int timelineIndex)
         {
-            IEnumerable<double> values = this.componentIndexUsage == SimComponentIndexUsage.Row ? table.GetColumn(objectIndex) : table.GetRow(objectIndex);
+            IEnumerable<double> values = this.componentIndexUsage == SimComponentIndexUsage.Row ?
+                table.GetColumn(objectIndex).Select(x => x.ConvertToDoubleIfNumeric()) :
+                table.GetRow(objectIndex).Select(x => x.ConvertToDoubleIfNumeric());
 
             double filteredValue = Prefilter.Filter(values, timelineIndex).First();
 

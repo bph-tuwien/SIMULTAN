@@ -230,14 +230,34 @@ namespace SIMULTAN.Data.Geometry
 
         private static void BoundaryMinMax(Vertex v, ref Point3D min, ref Point3D max)
         {
+
+            var proxySize = ProxySize(v);
+
             min.X = Math.Min(min.X, v.Position.X);
             min.Y = Math.Min(min.Y, v.Position.Y);
             min.Z = Math.Min(min.Z, v.Position.Z);
 
-            max.X = Math.Max(max.X, v.Position.X);
-            max.Y = Math.Max(max.Y, v.Position.Y);
-            max.Z = Math.Max(max.Z, v.Position.Z);
+            max.X = Math.Max(max.X, v.Position.X + proxySize.X);
+            max.Y = Math.Max(max.Y, v.Position.Y + proxySize.Y);
+            max.Z = Math.Max(max.Z, v.Position.Z + proxySize.Z);
+
         }
+
+
+
+        private static Size3D ProxySize(Vertex vertex)
+        {
+            Size3D size = new Size3D();
+            foreach (var proxy in vertex.ProxyGeometries)
+            {
+                size.X = Math.Max(size.X, proxy.Size.X);
+                size.Y = Math.Max(size.Y, proxy.Size.Y);
+                size.Z = Math.Max(size.Z, proxy.Size.Z);
+            }
+
+            return size;
+        }
+
 
         /// <summary>
         /// Calculates a 3D axis aligned bound box around some geometry objects
@@ -653,18 +673,6 @@ namespace SIMULTAN.Data.Geometry
 
             foreach (var g in from.GeoReferences)
                 CopyGeoReference(g, to, layerLookup, geometryLookup, preserveIds);
-
-            //Restore parents
-            foreach (var copiedGeometry in geometryLookup)
-            {
-                if (copiedGeometry.Key.Parent != null)
-                {
-                    //References to other models are just copied
-                    //References inside the same model are set to the copied target
-                    var reference = copiedGeometry.Key.Parent;
-                    copiedGeometry.Value.Parent = new GeometryReference(reference.ModelID, reference.GeometryID, reference.Name, null, reference.ModelStore);
-                }
-            }
 
             to.EndBatchOperation();
         }

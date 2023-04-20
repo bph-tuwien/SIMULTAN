@@ -1,12 +1,12 @@
-﻿using System;
+﻿using SIMULTAN.Data.SitePlanner;
+using SIMULTAN.Projects;
+using SIMULTAN.Serializer.DXF;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using SIMULTAN.Data.SitePlanner;
-using SIMULTAN.Projects;
-using SIMULTAN.Serializer.DXF;
 
 namespace SIMULTAN.Serializer.GMDXF
 {
@@ -43,11 +43,11 @@ namespace SIMULTAN.Serializer.GMDXF
         internal static void Read(FileInfo file, DXFParserInfo info)
         {
             info.CurrentFile = file;
-            using(var fs = file.OpenRead())
+            using (var fs = file.OpenRead())
             {
                 if (fs.Length == 0)
                     return;
-                using(var reader = new DXFStreamReader(fs))
+                using (var reader = new DXFStreamReader(fs))
                 {
                     Read(reader, info);
                 }
@@ -56,13 +56,13 @@ namespace SIMULTAN.Serializer.GMDXF
 
         internal static void Read(DXFStreamReader reader, DXFParserInfo parserInfo)
         {
-            if(parserInfo.CurrentFile == null)
+            if (parserInfo.CurrentFile == null)
             {
                 throw new ArgumentException("DXFParserInfo has no CurrentFile set but is needed for loading GeoMaps.");
             }
 
             //Version section
-            if(CommonParserElements.VersionSectionElement.IsParsable(reader, parserInfo))
+            if (CommonParserElements.VersionSectionElement.IsParsable(reader, parserInfo))
             {
                 parserInfo = CommonParserElements.VersionSectionElement.Parse(reader, parserInfo).First();
             }
@@ -86,7 +86,7 @@ namespace SIMULTAN.Serializer.GMDXF
         {
             using (var fs = file.Open(FileMode.Create, FileAccess.Write))
             {
-                using(var writer = new DXFStreamWriter(fs))
+                using (var writer = new DXFStreamWriter(fs))
                 {
                     Write(writer, geoMap, projectData);
                 }
@@ -117,11 +117,11 @@ namespace SIMULTAN.Serializer.GMDXF
             writer.WriteArray(GeoMapSaveCode.GEOREFS, geoMap.GeoReferences,
                 (gref, w) =>
                 {
-                    w.Write(GeoMapSaveCode.IMAGEPOS_X, gref.ImagePosition.X); 
-                    w.Write(GeoMapSaveCode.IMAGEPOS_Y, gref.ImagePosition.Y); 
-                    w.Write(GeoMapSaveCode.LONGITUDE, gref.ReferencePoint.X); 
-                    w.Write(GeoMapSaveCode.LATITUDE, gref.ReferencePoint.Y); 
-                    w.Write(GeoMapSaveCode.HEIGHT, gref.ReferencePoint.Z); 
+                    w.Write(GeoMapSaveCode.IMAGEPOS_X, gref.ImagePosition.X);
+                    w.Write(GeoMapSaveCode.IMAGEPOS_Y, gref.ImagePosition.Y);
+                    w.Write(GeoMapSaveCode.LONGITUDE, gref.ReferencePoint.X);
+                    w.Write(GeoMapSaveCode.LATITUDE, gref.ReferencePoint.Y);
+                    w.Write(GeoMapSaveCode.HEIGHT, gref.ReferencePoint.Z);
                 });
 
 
@@ -169,7 +169,7 @@ namespace SIMULTAN.Serializer.GMDXF
 
             // Assume that assets are already loaded
             var resource = info.ProjectData.AssetManager.GetResource(info.CurrentFile);
-            if(resource == null)
+            if (resource == null)
             {
                 throw new Exception("Could not find GeoMap resource file in Assets. Are the Assets already loaded?");
             }
@@ -190,7 +190,7 @@ namespace SIMULTAN.Serializer.GMDXF
             double latitude = arg.Get<double>(GeoMapSaveCode.LATITUDE, 0);
             double height = arg.Get<double>(GeoMapSaveCode.HEIGHT, 0);
 
-            return new ImageGeoReference(new System.Windows.Point(posX, posY), 
+            return new ImageGeoReference(new System.Windows.Point(posX, posY),
                 new System.Windows.Media.Media3D.Point3D(longitude, latitude, height));
         }
 
