@@ -77,7 +77,7 @@ namespace SIMULTAN.Serializer.DXF
         /// Initializes a new instance of the <see cref="DXFSingleEntryParserElement{T}"/> class
         /// </summary>
         /// <param name="code">The code of the entry</param>
-        internal DXFSingleEntryParserElement(ExcelMappingSaveCode code) : base((int)code) { }
+        internal DXFSingleEntryParserElement(DataMappingSaveCode code) : base((int)code) { }
         /// <summary>
         /// Initializes a new instance of the <see cref="DXFSingleEntryParserElement{T}"/> class
         /// </summary>
@@ -118,6 +118,11 @@ namespace SIMULTAN.Serializer.DXF
         /// </summary>
         /// <param name="code">The code of the entry</param>
         internal DXFSingleEntryParserElement(TaxonomySaveCode code) : base((int)code) { }
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DXFSingleEntryParserElement{T}"/> class
+        /// </summary>
+        /// <param name="code">The code of the entry</param>
+        internal DXFSingleEntryParserElement(GeometryRelationSaveCode code) : base((int)code) { }
 
         /// <inheritdoc />
         internal override object ParseInternal(DXFStreamReader reader, DXFParserInfo info)

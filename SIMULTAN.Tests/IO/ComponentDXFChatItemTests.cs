@@ -6,7 +6,7 @@ using SIMULTAN.Serializer.CODXF;
 using SIMULTAN.Serializer.DXF;
 using SIMULTAN.Tests.Properties;
 using SIMULTAN.Tests.Util;
-using SIMULTAN.Tests.Utils;
+using SIMULTAN.Tests.TestUtils;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -67,7 +67,7 @@ namespace SIMULTAN.Tests.IO
                 "0xEA8e38626b5D4fad44B974ee3538241b04c6B4D6", "bdbe91dd450d2bd134a5c429eaa731aa66980dac0629effb8ec025a4403ac63f",
                 "", new DateTime(1987, 10, 19, 0, 0, 0, DateTimeKind.Utc),
                 "Rejected!", SimChatItemState.CLOSED,
-                new List<SimUserRole> {  },
+                new List<SimUserRole> { },
                 Enumerable.Empty<SimChatItem>());
 
             var chatItem = new SimChatItem(SimChatItemType.ANSWER, SimUserRole.BUILDING_PHYSICS,
@@ -127,7 +127,7 @@ namespace SIMULTAN.Tests.IO
             Assert.IsTrue(chatItem.ExpectsReacionsFrom.Contains(SimUserRole.ENERGY_NETWORK_OPERATOR));
 
             Assert.AreEqual(2, chatItem.Children.Count);
-            
+
             var child1 = chatItem.Children[0];
             Assert.IsNotNull(child1);
             Assert.AreEqual(SimChatItemType.QUESTION, child1.Type);

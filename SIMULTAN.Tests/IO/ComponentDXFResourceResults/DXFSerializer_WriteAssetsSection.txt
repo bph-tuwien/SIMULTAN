@@ -22,6 +22,8 @@ SIMULTAN.Data.Assets.ResourceDirectoryEntry
 RootFolder
 7212
 0
+7213
+0
 7207
 2
 0
@@ -38,6 +40,8 @@ SIMULTAN.Data.Assets.ResourceDirectoryEntry
 RootFolder\ChildFolder1
 7212
 1
+7213
+0
 7207
 2
 0
@@ -54,6 +58,8 @@ SIMULTAN.Data.Assets.ContainedResourceFileEntry
 RootFolder\ChildFolder1\MyContainedFile.txt
 7212
 0
+7213
+0
 0
 SEQEND
 0
@@ -67,6 +73,8 @@ SIMULTAN.Data.Assets.LinkedResourceFileEntry
 7204
 MyLinkedFile.txt
 7212
+0
+7213
 0
 0
 SEQEND
@@ -88,6 +96,8 @@ SIMULTAN.Data.Assets.ResourceDirectoryEntry
 RootFolder\ChildFolder2
 7212
 1
+7213
+0
 7207
 0
 0

@@ -4,12 +4,9 @@ using SIMULTAN.Data.Components;
 using SIMULTAN.Data.FlowNetworks;
 using SIMULTAN.Projects;
 using SIMULTAN.Serializer.DXF;
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SIMULTAN.Serializer.CODXF
 {
@@ -120,7 +117,7 @@ namespace SIMULTAN.Serializer.CODXF
         public static void ReadPublic(DXFStreamReader reader, DXFParserInfo parserInfo)
         {
             //Version section
-            if(CommonParserElements.VersionSectionElement.IsParsable(reader, parserInfo))
+            if (CommonParserElements.VersionSectionElement.IsParsable(reader, parserInfo))
             {
                 parserInfo = CommonParserElements.VersionSectionElement.Parse(reader, parserInfo).First();
             }
@@ -135,6 +132,7 @@ namespace SIMULTAN.Serializer.CODXF
             EOFParserElement.Element.Parse(reader);
 
             parserInfo.ProjectData.Components.RestoreReferences(parserInfo.ProjectData.NetworkManager.GetAllNetworkElements());
+            parserInfo.ProjectData.AssetManager.RestoreReferences();
             parserInfo.ProjectData.AssetManager.ReleaseTmpParseRecord();
         }
 
@@ -208,7 +206,7 @@ namespace SIMULTAN.Serializer.CODXF
         public static void Read(DXFStreamReader reader, DXFParserInfo parserInfo)
         {
             //Version section
-            if(CommonParserElements.VersionSectionElement.IsParsable(reader, parserInfo))
+            if (CommonParserElements.VersionSectionElement.IsParsable(reader, parserInfo))
             {
                 parserInfo = CommonParserElements.VersionSectionElement.Parse(reader, parserInfo).First();
             }
@@ -230,7 +228,7 @@ namespace SIMULTAN.Serializer.CODXF
                 if (key == 2 && sectionName == ParamStructTypes.ENTITY_SECTION)
                 {
                     ComponentDxfIOUserLists.ReadUserListsSection(reader, parserInfo);
-                }    
+                }
             }
 
             ComponentDxfIONetworks.ReadNetworkSection(reader, parserInfo);
@@ -254,10 +252,16 @@ namespace SIMULTAN.Serializer.CODXF
             EOFParserElement.Element.Parse(reader);
 
             parserInfo.ProjectData.Components.RestoreReferences(parserInfo.ProjectData.NetworkManager.GetAllNetworkElements());
+            parserInfo.ProjectData.AssetManager.RestoreReferences();
             parserInfo.ProjectData.AssetManager.ReleaseTmpParseRecord();
 
+            if (parserInfo.FileVersion >= 12)
+            {
+                ComponentDxfIOSimNetworks.SubscribeToEvents(reader, parserInfo);
+            }
             parserInfo.FinishLog();
         }
+
 
         #endregion
 
@@ -320,7 +324,7 @@ namespace SIMULTAN.Serializer.CODXF
         public static void ReadLibrary(DXFStreamReader reader, DXFParserInfo parserInfo)
         {
             //Version section
-            if(CommonParserElements.VersionSectionElement.IsParsable(reader, parserInfo))
+            if (CommonParserElements.VersionSectionElement.IsParsable(reader, parserInfo))
             {
                 parserInfo = CommonParserElements.VersionSectionElement.Parse(reader, parserInfo).First();
             }
@@ -333,6 +337,7 @@ namespace SIMULTAN.Serializer.CODXF
             EOFParserElement.Element.Parse(reader);
 
             parserInfo.ProjectData.Components.RestoreReferences(parserInfo.ProjectData.NetworkManager.GetAllNetworkElements());
+            parserInfo.ProjectData.AssetManager.RestoreReferences();
             parserInfo.ProjectData.AssetManager.ReleaseTmpParseRecord();
         }
 

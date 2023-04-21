@@ -103,5 +103,26 @@ namespace SIMULTAN.Utils
         {
             return !lhs.Equals(rhs);
         }
+
+        /// <summary>
+        /// Computes the addition of the indices
+        /// </summary>
+        /// <param name="lhs">First operand</param>
+        /// <param name="rhs">Second operand</param>
+        /// <returns>The sum of the two indices</returns>
+        public static IntIndex2D operator+(IntIndex2D lhs, IntIndex2D rhs)
+        {
+            return new IntIndex2D(lhs.X + rhs.X, lhs.Y + rhs.Y);
+        }
+        /// <summary>
+        /// Computes the subtraction of the indices
+        /// </summary>
+        /// <param name="lhs">First operand</param>
+        /// <param name="rhs">Second operand</param>
+        /// <returns>The difference of the two indices</returns>
+        public static IntIndex2D operator -(IntIndex2D lhs, IntIndex2D rhs)
+        {
+            return new IntIndex2D(lhs.X - rhs.X, lhs.Y - rhs.Y);
+        }
     }
 }

@@ -3,8 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SIMULTAN.Data.Components
 {
@@ -126,11 +124,11 @@ namespace SIMULTAN.Data.Components
             #region Utils
 
             private static List<SimCalculation> OrderCalculationsByDependency(IEnumerable<SimCalculation> calculations,
-                            Func<SimCalculation, IEnumerable<KeyValuePair<string, SimParameter>>> inputSelector,
-                            Func<SimCalculation, IEnumerable<KeyValuePair<string, SimParameter>>> returnSelector)
+                            Func<SimCalculation, IEnumerable<KeyValuePair<string, SimDoubleParameter>>> inputSelector,
+                            Func<SimCalculation, IEnumerable<KeyValuePair<string, SimDoubleParameter>>> returnSelector)
             {
                 //Gather return parameters
-                Dictionary<SimParameter, List<SimCalculation>> returnParameters = new Dictionary<SimParameter, List<SimCalculation>>();
+                Dictionary<SimBaseParameter, List<SimCalculation>> returnParameters = new Dictionary<SimBaseParameter, List<SimCalculation>>();
                 foreach (var calc in calculations)
                 {
                     foreach (var returnParam in returnSelector(calc).Where(x => x.Value != null))

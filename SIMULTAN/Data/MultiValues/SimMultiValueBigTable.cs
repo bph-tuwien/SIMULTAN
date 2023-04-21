@@ -1,14 +1,8 @@
-﻿using SIMULTAN;
-using SIMULTAN.Data.Components;
-using SIMULTAN.Serializer.DXF;
-using SIMULTAN.Utils;
+﻿using SIMULTAN.Utils;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Collections.Specialized;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Media.Media3D;
 
 namespace SIMULTAN.Data.MultiValues
@@ -19,6 +13,14 @@ namespace SIMULTAN.Data.MultiValues
     /// </summary>
     public class SimMultiValueBigTable : SimMultiValue
     {
+        /// <summary>
+        /// Contains the types that are supported as values in <see cref="SimMultiValueBigTable"/>.
+        /// </summary>
+        public static HashSet<Type> SupportedValueTypes { get; } = new HashSet<Type>
+        {
+            typeof(double), typeof(int), typeof(bool), typeof(string)
+        };
+
         #region Helper Classes
 
         /// <summary>
@@ -89,11 +91,11 @@ namespace SIMULTAN.Data.MultiValues
                 if (owner.resizeHandlingEnabled)
                 {
                     if (axis == SimMultiValueBigTableHeader.AxisEnum.Rows)
-                        owner.values.Insert(index, new List<double>(Enumerable.Repeat(0.0, owner.Count(1))));
+                        owner.values.Insert(index, new List<object>(Enumerable.Repeat<object>(null, owner.Count(1))));
                     else if (axis == SimMultiValueBigTableHeader.AxisEnum.Columns)
                     {
                         foreach (var row in owner.values)
-                            row.Insert(index, 0.0);
+                            row.Insert(index, null);
                     }
 
                     item.Index = index;
@@ -320,7 +322,7 @@ namespace SIMULTAN.Data.MultiValues
         /// EventArgs for the CollectionReplaced event. Stores old and new collection for the modified headers.
         /// Note that OldXXXHeader and NewXXXHeader may contain the same values
         /// </summary>
-        public class CollectionsReplacedEventArgs : EventArgs
+        internal class CollectionsReplacedEventArgs : EventArgs
         {
             /// <summary>
             /// The old row header collection
@@ -362,7 +364,7 @@ namespace SIMULTAN.Data.MultiValues
         /// <summary>
         /// Invoked when either the RowHeader or the ColumnHeader collection (or both) has been replaced
         /// </summary>
-        private event EventHandler<CollectionsReplacedEventArgs> CollectionReplaced;
+        internal event EventHandler<CollectionsReplacedEventArgs> CollectionReplaced;
         private void NotifyCollectionReplaced(CollectionsReplacedEventArgs args)
         {
             this.CollectionReplaced?.Invoke(this, args);
@@ -372,6 +374,10 @@ namespace SIMULTAN.Data.MultiValues
 
 
         #region PROPERTIES
+
+        //This is the actual data in the table.
+        //May only contain double, int, string, bool, null.
+        private List<List<object>> values; 
 
         private bool resizeHandlingEnabled = true;
 
@@ -413,13 +419,6 @@ namespace SIMULTAN.Data.MultiValues
         }
 
         /// <summary>
-        /// The table values organized row-wise (a list of consecutive rows)
-        /// </summary>
-        [Obsolete("Use the indexer instead")]
-        public List<List<double>> Values { get { return values; } }
-        private List<List<double>> values;
-
-        /// <summary>
         /// Stores additional information about the valuefield. This can be a multiline text
         /// </summary>
         public string AdditionalInfo
@@ -456,29 +455,35 @@ namespace SIMULTAN.Data.MultiValues
         /// <param name="columnHeaders">List of column headers</param>
         /// <param name="rowHeaders">List of row headers</param>
         /// <param name="values">The values in this field</param>
+        /// <param name="checkValueTypes">When set to True, the constructor checks if all values contain valid types. 
+        /// See <see cref="SupportedValueTypes"/></param>
         public SimMultiValueBigTable(string name, string unitColumns, string unitRows,
             ICollection<SimMultiValueBigTableHeader> columnHeaders, ICollection<SimMultiValueBigTableHeader> rowHeaders,
-            List<List<double>> values)
+            List<List<object>> values, bool checkValueTypes = true)
             : base(name, unitColumns, unitRows, "")
         {
-            if (name == null)
-                throw new ArgumentNullException("Name may not be null or empty");
-            if (columnHeaders == null)
-                throw new ArgumentNullException("columnHeaders may not be null");
-            if (rowHeaders == null)
-                throw new ArgumentNullException("rowNames may not be null");
-            if (values == null)
-                throw new ArgumentNullException("values may not be null");
+            Init(columnHeaders, rowHeaders, values, checkValueTypes);
+        }
 
-            if (values.Count != rowHeaders.Count)
-                throw new ArgumentException("Row header count has to match number of rows in values");
-            for (int i = 0; i < values.Count; ++i)
-                if (values[i].Count != columnHeaders.Count)
-                    throw new ArgumentException(string.Format("Number of elements in Column {0} does not match column header count", i));
-
-            this.ColumnHeaders = new HeaderCollection(this, SimMultiValueBigTableHeader.AxisEnum.Columns, columnHeaders);
-            this.RowHeaders = new HeaderCollection(this, SimMultiValueBigTableHeader.AxisEnum.Rows, rowHeaders);
-            this.values = values.Select(x => x.ToList()).ToList();
+        /// <summary>
+        /// Initializes a new instance of the MultiValueBigTable class.
+        /// rowHeaders.Count has to match values.Count
+        /// columnHeaders.Count has to match the count of each entry in values
+        /// </summary>
+        /// <param name="name">Name of the SimMultiValue field</param>
+        /// <param name="unitColumns">Unit description for the x-axis (columns)</param>
+        /// <param name="unitRows">Unit description for the y-axis (rows)</param>
+        /// <param name="columnHeaders">List of column headers</param>
+        /// <param name="rowHeaders">List of row headers</param>
+        /// <param name="values">The values in this field</param>
+        /// <param name="checkValueTypes">When set to True, the constructor checks if all values contain valid types. 
+        /// See <see cref="SupportedValueTypes"/></param>
+        public SimMultiValueBigTable(string name, string unitColumns, string unitRows,
+            ICollection<SimMultiValueBigTableHeader> columnHeaders, ICollection<SimMultiValueBigTableHeader> rowHeaders,
+            List<List<double>> values, bool checkValueTypes = true)
+            : base(name, unitColumns, unitRows, "")
+        {
+            Init(columnHeaders, rowHeaders, values, checkValueTypes);
         }
 
         /// <summary>
@@ -492,13 +497,73 @@ namespace SIMULTAN.Data.MultiValues
         /// <param name="columnHeaders">List of column headers</param>
         /// <param name="rowHeaders">List of row headers</param>
         /// <param name="values">The values in this field</param>
+        /// <param name="checkValueTypes">When set to True, the constructor checks if all values contain valid types. 
+        /// See <see cref="SupportedValueTypes"/></param>
         public SimMultiValueBigTable(string name, string unitColumns, string unitRows,
             ICollection<SimMultiValueBigTableHeader> columnHeaders, ICollection<SimMultiValueBigTableHeader> rowHeaders,
-            double[,] values)
+            object[,] values, bool checkValueTypes = true)
             : base(name, unitColumns, unitRows, "")
         {
-            if (name == null)
-                throw new ArgumentNullException("Name may not be null or empty");
+            Init(columnHeaders, rowHeaders, values, checkValueTypes);
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the MultiValueBigTable class.
+        /// rowHeaders.Count has to match values.GetLength(0)
+        /// columnHeaders.Count has to match values.GetLength(0)
+        /// </summary>
+        /// <param name="name">Name of the SimMultiValue field</param>
+        /// <param name="unitColumns">Unit description for the x-axis (columns)</param>
+        /// <param name="unitRows">Unit description for the y-axis (rows)</param>
+        /// <param name="columnHeaders">List of column headers</param>
+        /// <param name="rowHeaders">List of row headers</param>
+        /// <param name="values">The values in this field</param>
+        /// <param name="checkValueTypes">When set to True, the constructor checks if all values contain valid types. 
+        /// See <see cref="SupportedValueTypes"/></param>
+        public SimMultiValueBigTable(string name, string unitColumns, string unitRows,
+            ICollection<SimMultiValueBigTableHeader> columnHeaders, ICollection<SimMultiValueBigTableHeader> rowHeaders,
+            double[,] values, bool checkValueTypes = true)
+            : base(name, unitColumns, unitRows, "")
+        {
+            Init(columnHeaders, rowHeaders, values, checkValueTypes);
+        }
+
+        private void Init<T>(ICollection<SimMultiValueBigTableHeader> columnHeaders, ICollection<SimMultiValueBigTableHeader> rowHeaders,
+            List<List<T>> values, bool checkValueTypes = true)
+        {
+            if (columnHeaders == null)
+                throw new ArgumentNullException("columnHeaders may not be null");
+            if (rowHeaders == null)
+                throw new ArgumentNullException("rowNames may not be null");
+            if (values == null)
+                throw new ArgumentNullException("values may not be null");
+
+            if (values.Count != rowHeaders.Count)
+                throw new ArgumentException("Row header count has to match number of rows in values");
+            for (int i = 0; i < values.Count; ++i)
+                if (values[i].Count != columnHeaders.Count)
+                    throw new ArgumentException(string.Format("Number of elements in Column {0} does not match column header count", i));
+
+            if (checkValueTypes)
+            {
+                for (int r = 0; r < values.Count; r++)
+                {
+                    for (int c = 0; c < values[r].Count; c++)
+                    {
+                        if (values[r][c] != null && !SupportedValueTypes.Contains(values[r][c].GetType()))
+                            throw new ArgumentException(string.Format("Values contains unsupported types (Row {0}, Column {1}=", r, c));
+                    }
+                }
+            }
+
+            this.ColumnHeaders = new HeaderCollection(this, SimMultiValueBigTableHeader.AxisEnum.Columns, columnHeaders);
+            this.RowHeaders = new HeaderCollection(this, SimMultiValueBigTableHeader.AxisEnum.Rows, rowHeaders);
+            this.values = values.Select(x => x.Cast<object>().ToList()).ToList();
+        }
+
+        private void Init<T>(ICollection<SimMultiValueBigTableHeader> columnHeaders, ICollection<SimMultiValueBigTableHeader> rowHeaders,
+            T[,] values, bool checkValueTypes = true)
+        {
             if (columnHeaders == null)
                 throw new ArgumentNullException("columnHeaders may not be null");
             if (rowHeaders == null)
@@ -514,12 +579,15 @@ namespace SIMULTAN.Data.MultiValues
             this.ColumnHeaders = new HeaderCollection(this, SimMultiValueBigTableHeader.AxisEnum.Columns, columnHeaders);
             this.RowHeaders = new HeaderCollection(this, SimMultiValueBigTableHeader.AxisEnum.Rows, rowHeaders);
 
-            List<List<double>> valueList = new List<List<double>>(values.GetLength(0));
+            List<List<object>> valueList = new List<List<object>>(values.GetLength(0));
             for (int r = 0; r < values.GetLength(0); r++)
             {
-                List<double> row = new List<double>(values.GetLength(1));
+                List<object> row = new List<object>(values.GetLength(1));
                 for (int c = 0; c < values.GetLength(1); c++)
                 {
+                    if (checkValueTypes && values[r, c] != null && !SupportedValueTypes.Contains(values[r, c].GetType()))
+                        throw new ArgumentException(string.Format("Values contains unsupported types (Row {0}, Column {1}=", r, c));
+
                     row.Add(values[r, c]);
                 }
                 valueList.Add(row);
@@ -544,10 +612,11 @@ namespace SIMULTAN.Data.MultiValues
         /// <param name="rowHeaders">List of row headers</param>
         /// <param name="values">The values in this field</param>
         /// <param name="additionalInfo">Additional info text</param>
+        /// <param name="checkValueTypes">When set to True, the constructor checks if all values supplied in values is one of the supported types</param>
         internal SimMultiValueBigTable(long localId, string name,
                                     string unitColumns, string unitRows,
                                     ICollection<SimMultiValueBigTableHeader> columnHeaders, ICollection<SimMultiValueBigTableHeader> rowHeaders,
-                                    List<List<double>> values, string additionalInfo)
+                                    List<List<object>> values, string additionalInfo, bool checkValueTypes = true)
             : base(localId, name, unitColumns, unitRows, string.Empty)
         {
             if (name == null)
@@ -567,8 +636,20 @@ namespace SIMULTAN.Data.MultiValues
                 if (values[i].Count != columnHeaders.Count)
                     throw new ArgumentException(string.Format("Number of elements in Row {0} does not match columnheaders.Count", i));
 
+            if (checkValueTypes)
+            {
+                for (int r = 0; r < values.Count; r++)
+                {
+                    for (int c = 0; c < values[r].Count; c++)
+                    {
+                        if (values[r][c] != null && !SupportedValueTypes.Contains(values[r][c].GetType()))
+                            throw new ArgumentException(string.Format("Values contains unsupported types (Row {0}, Column {1}=", r, c));
+                    }
+                }
+            }
+
             this.ColumnHeaders = new HeaderCollection(this, SimMultiValueBigTableHeader.AxisEnum.Columns, columnHeaders);
-            this.values = new List<List<double>>(values);
+            this.values = new List<List<object>>(values);
             if (rowHeaders != null)
                 this.RowHeaders = new HeaderCollection(this, SimMultiValueBigTableHeader.AxisEnum.Rows, rowHeaders);
             else
@@ -592,7 +673,7 @@ namespace SIMULTAN.Data.MultiValues
 
             this.RowHeaders = new HeaderCollection(this, SimMultiValueBigTableHeader.AxisEnum.Rows, original.rowHeaders.Select(x => x.Clone()));
             this.ColumnHeaders = new HeaderCollection(this, SimMultiValueBigTableHeader.AxisEnum.Columns, original.columnHeaders.Select(x => x.Clone()));
-            this.values = original.values.Select(x => new List<double>(x)).ToList();
+            this.values = original.values.Select(x => new List<object>(x)).ToList();
             this.additionalInfo = original.additionalInfo;
         }
 
@@ -606,22 +687,6 @@ namespace SIMULTAN.Data.MultiValues
 
 
         #region METHODS: Info
-
-        /// <summary>
-        /// rows-lower, rows-upper, columns-lower, columns-upper limits
-        /// </summary>
-        /// <returns></returns>
-        [Obsolete]
-        public Point4D GetSize()
-        {
-            int size_rows = Count(0);
-            int size_cols = Count(1);
-
-            if (size_rows == 0)
-                return new Point4D(0, 0, 1, size_cols);
-            else
-                return new Point4D(1, size_rows, 1, size_cols);
-        }
 
         /// <summary>
         /// Returns the count along an axis
@@ -646,7 +711,6 @@ namespace SIMULTAN.Data.MultiValues
             }
         }
 
-
         #endregion
 
         #region METHODS: Get Range of Values
@@ -661,9 +725,9 @@ namespace SIMULTAN.Data.MultiValues
         /// W: Column End
         /// </param>
         /// <returns>the extracted values</returns>
-        public List<List<double>> GetRange(Point4D _range_definition)
+        public List<List<object>> GetRange(Point4D _range_definition)
         {
-            List<List<double>> range = new List<List<double>>();
+            List<List<object>> range = new List<List<object>>();
 
             if (this.values.Count == 0) return range;
             if (this.values[0].Count == 0) return range;
@@ -686,10 +750,61 @@ namespace SIMULTAN.Data.MultiValues
             // extract range
             for (int row = row_start; row <= row_end; row++)
             {
-                List<double> current_row = new List<double>();
+                List<object> current_row = new List<object>();
                 for (int col = col_start; col <= col_end; col++)
                 {
                     current_row.Add(this.values[row][col]);
+                }
+                range.Add(current_row);
+            }
+
+            return range;
+        }
+
+
+        /// <summary>
+        /// Gets a rectangular range of values out of the table.
+        /// </summary>
+        /// <param name="_range_definition">gives the 1-based indices of the start and end row, and the start and end column
+        /// X: Row Start
+        /// Y: Row End
+        /// Z: Column Start
+        /// W: Column End
+        /// </param>
+        /// <returns>the extracted values</returns>
+        public List<List<T>> GetRange<T>(Point4D _range_definition)
+        {
+            List<List<T>> range = new List<List<T>>();
+
+            if (this.values.Count == 0) return range;
+            if (this.values[0].Count == 0) return range;
+
+            int row_start = (int)_range_definition.X - 1;
+            int row_end = (int)_range_definition.Y - 1;
+            int col_start = (int)_range_definition.Z - 1;
+            int col_end = (int)_range_definition.W - 1;
+
+            // check validity of range definition
+            if (row_start < 0 || row_start >= this.values.Count ||
+                row_end < 0 || row_end >= this.values.Count ||
+                row_start > row_end)
+                return range;
+            if (col_start < 0 || col_start >= this.values[0].Count ||
+                col_end < 0 || col_end >= this.values[0].Count ||
+                col_start > col_end)
+                return range;
+
+            // extract range
+            for (int row = row_start; row <= row_end; row++)
+            {
+                List<T> current_row = new List<T>();
+                for (int col = col_start; col <= col_end; col++)
+                {
+                    if (this.values[row][col] is T t)
+                    {
+                        current_row.Add(t);
+                    }
+
                 }
                 range.Add(current_row);
             }
@@ -703,7 +818,7 @@ namespace SIMULTAN.Data.MultiValues
         /// <param name="range">The 0-based range which should be extracted</param>
         /// <returns>A rectangular double matrix, limited either by the size of the field or by the defined range.
         /// Ranges outside the valuefield are ignored</returns>
-        public double[,] GetRange(RowColumnRange range)
+        public object[,] GetRange(RowColumnRange range)
         {
             int columnFrom = range.ColumnStart.Clamp(0, Count(1));
             int rowFrom = range.RowStart.Clamp(0, Count(0));
@@ -711,7 +826,7 @@ namespace SIMULTAN.Data.MultiValues
             int columnTo = (range.ColumnStart + range.ColumnCount).Clamp(columnFrom, Count(1));
             int rowTo = (range.RowStart + range.RowCount).Clamp(columnFrom, Count(0));
 
-            double[,] result = new double[rowTo - rowFrom, columnTo - columnFrom];
+            object[,] result = new object[rowTo - rowFrom, columnTo - columnFrom];
 
             for (var row = rowFrom; row < rowTo; row++)
                 for (var col = columnFrom; col < columnTo; col++)
@@ -726,7 +841,7 @@ namespace SIMULTAN.Data.MultiValues
         /// </summary>
         /// <param name="idx">Row index</param>
         /// <returns>Row values</returns>
-        public IEnumerable<double> GetRow(int idx)
+        public IEnumerable<object> GetRow(int idx)
         {
             if (idx < 0 || idx >= rowHeaders.Count)
                 throw new IndexOutOfRangeException("Index must be non-negative and smaller than the row count.");
@@ -740,7 +855,7 @@ namespace SIMULTAN.Data.MultiValues
         /// </summary>
         /// <param name="idx">Column index</param>
         /// <returns>Column values</returns>
-        public IEnumerable<double> GetColumn(int idx)
+        public IEnumerable<object> GetColumn(int idx)
         {
             if (idx < 0 || idx >= ColumnHeaders.Count)
                 throw new IndexOutOfRangeException("Index must be non-negative and smaller than the column count.");
@@ -750,35 +865,33 @@ namespace SIMULTAN.Data.MultiValues
         }
 
         /// <summary>
-        /// Returns the full data of this table. The first dimension equals rows, second dimension describes columns
+        /// Returns a numeric subrange of the value field
         /// </summary>
-        /// <returns>An array containing the full data of this table</returns>
-        public double[,] GetData()
+        /// <param name="range">The range</param>
+        /// <returns>
+        /// A subset of the value field, cast to double. This method uses the algorithm described in <see cref="CommonExtensions.ConvertToDoubleIfNumeric"/>
+        /// to cast all values to double
+        /// </returns>
+        public double[,] GetDoubleRange(RowColumnRange range)
         {
-            return GetRange(new RowColumnRange(0, 0, Count(0), Count(1)));
-        }
+            int columnFrom = range.ColumnStart.Clamp(0, Count(1));
+            int rowFrom = range.RowStart.Clamp(0, Count(0));
 
-        #endregion
+            int columnTo = (range.ColumnStart + range.ColumnCount).Clamp(columnFrom, Count(1));
+            int rowTo = (range.RowStart + range.RowCount).Clamp(columnFrom, Count(0));
 
+            double[,] result = new double[rowTo - rowFrom, columnTo - columnFrom];
 
-        #region To String
-
-        /// <inheritdoc />
-        [Obsolete]
-        public override string ToString()
-        {
-            string t_string = "(" + this.Id + ") "
-                                + this.MVType.ToString() + " [";
-            for (int i = 0; i < this.ColumnHeaders.Count; i++)
+            for (var row = rowFrom; row < rowTo; row++)
             {
-                if (i < this.ColumnHeaders.Count - 1)
-                    t_string += this.ColumnHeaders[i].Unit + ", ";
-                else
-                    t_string += this.ColumnHeaders[i].Unit + "]";
+                for (var col = columnFrom; col < columnTo; col++)
+                {
+                    double val = values[row][col].ConvertToDoubleIfNumeric();
+                    result[row - rowFrom, col - columnFrom] = val;
+                }
             }
-            t_string += ": [" + this.values.Count + " rows]";
 
-            return t_string;
+            return result;
         }
 
         #endregion
@@ -787,370 +900,30 @@ namespace SIMULTAN.Data.MultiValues
         #region METHODS: External Pointer
 
         /// <summary>
-        /// A ValuePointer that points to a cell in a MultiValueBigTable
-        /// </summary>
-        public class SimMultiValueBigTablePointer : SimMultiValuePointer
-        {
-            //~MultiValueBigTablePointer() { Console.WriteLine("~MultiValueBigTablePointer"); }
-
-            private SimMultiValueBigTable table;
-
-            /// <summary>
-            /// The row index of the cell
-            /// </summary>
-            public int Row { get; private set; }
-            /// <summary>
-            /// The column index of the cell
-            /// </summary>
-            public int Column { get; private set; }
-
-            /// <inheritdoc />
-            public override SimMultiValue ValueField
-            {
-                get { return table; }
-                set
-                {
-                    if (value is SimMultiValueBigTable)
-                        table = (SimMultiValueBigTable)value;
-                    else
-                        throw new ArgumentException("MultiValueBigTablePointer only supports MultiValueBigTable fields");
-                }
-            }
-
-            /// <summary>
-            /// Initializes a new instance of the MultiValueBigTablePointer class
-            /// </summary>
-            /// <param name="table">The table into which the pointer points</param>
-            /// <param name="row">Row index of the target cell</param>
-            /// <param name="column">Column index of the target cell</param>
-            public SimMultiValueBigTablePointer(SimMultiValueBigTable table, int row, int column) : base(table)
-            {
-                this.Row = row;
-                this.Column = column;
-
-                if (this.Row >= table.RowHeaders.Count || this.Row < -1 || this.Column >= table.ColumnHeaders.Count || this.Column < -1)
-                    SetRowColumn(-1, -1);
-
-                AttachEvents();
-
-                RegisterParameter(ReservedParameters.MVBT_OFFSET_X_FORMAT, table.UnitX);
-                RegisterParameter(ReservedParameters.MVBT_OFFSET_Y_FORMAT, table.UnitY);
-            }
-
-            /// <inheritdoc />
-            public override double GetValue()
-            {
-                if (IsDisposed)
-                    throw new InvalidOperationException("You're trying to get the value of an unsubscribed value pointer");
-
-                if (Row == -1 && Column == -1)
-                    return double.NaN;
-
-                var offset = GetParameterOffsets();
-
-                if (Row + offset.rowOffset >= table.Count(0) || Column + offset.columnOffset >= table.Count(1))
-                    return double.NaN;
-
-                return table[Row + offset.rowOffset, Column + offset.columnOffset];
-            }
-            /// <inheritdoc />
-            public override SimMultiValuePointer Clone()
-            {
-                return new SimMultiValueBigTablePointer(table, Row, Column);
-            }
-            /// <inheritdoc />
-            public override void SetFromParameters(double axisValueX, double axisValueY, double axisValueZ, string gs)
-            {
-                if (axisValueY >= table.RowHeaders.Count)
-                    Row = table.rowHeaders.Count - 1;
-                else
-                    Row = (int)axisValueY;
-
-                if (axisValueX >= table.ColumnHeaders.Count)
-                    Column = table.ColumnHeaders.Count - 1;
-                else
-                    Column = (int)axisValueX;
-            }
-            /// <inheritdoc />
-            public override bool IsSamePointer(SimMultiValuePointer other)
-            {
-                if (other is SimMultiValueBigTablePointer o)
-                {
-                    return (table == o.table && Row == o.Row && Column == o.Column);
-                }
-                return false;
-            }
-
-            private void Table_ContentReplaced(object sender, CollectionsReplacedEventArgs e)
-            {
-                e.OldColumnHeaders.CollectionChanged -= ColumnHeaders_CollectionChanged;
-                e.OldRowHeaders.CollectionChanged -= RowHeaders_CollectionChanged;
-
-                if (this.Row >= e.NewRowHeaders.Count || this.Column >= e.NewColumnHeaders.Count)
-                    SetRowColumn(-1, -1);
-                this.NotifyValueChanged();
-
-                e.NewColumnHeaders.CollectionChanged += ColumnHeaders_CollectionChanged;
-                e.NewRowHeaders.CollectionChanged += RowHeaders_CollectionChanged;
-            }
-
-            private void Table_ValueChanged(object sender, ValueChangedEventArgs args)
-            {
-                var offset = GetParameterOffsets();
-
-                if (args.Row == this.Row + offset.rowOffset && args.Column == this.Column + offset.columnOffset)
-                    this.NotifyValueChanged();
-            }
-
-            private void RowHeaders_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
-            {
-                if (e.Action == NotifyCollectionChangedAction.Add)
-                {
-                    if (e.NewStartingIndex <= this.Row)
-                    {
-                        SetRowColumn(this.Row + e.NewItems.Count, this.Column);
-                    }
-                }
-                else if (e.Action == NotifyCollectionChangedAction.Remove)
-                {
-                    if (e.OldStartingIndex <= this.Row)
-                    {
-                        if (e.OldStartingIndex + e.OldItems.Count < this.Row) //Removed rows are completely before -> keep pointer
-                            SetRowColumn(this.Row - e.OldItems.Count, this.Column);
-                        else //pointer position got deleted
-                            SetRowColumn(-1, -1);
-                    }
-                }
-            }
-
-            private void ColumnHeaders_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
-            {
-                if (e.Action == NotifyCollectionChangedAction.Add)
-                {
-                    if (e.NewStartingIndex <= this.Column)
-                    {
-                        SetRowColumn(this.Row, this.Column + e.NewItems.Count);
-                    }
-                }
-                else if (e.Action == NotifyCollectionChangedAction.Remove)
-                {
-                    if (e.OldStartingIndex <= this.Column)
-                    {
-                        if (e.OldStartingIndex + e.OldItems.Count < this.Column) //Removed columns are completely before -> keep pointer
-                            SetRowColumn(this.Row, this.Column - e.OldItems.Count);
-                        else //pointer position got deleted
-                            SetRowColumn(-1, -1);
-                    }
-                }
-            }
-
-            private void SetRowColumn(int row, int column)
-            {
-                this.Row = row;
-                this.Column = column;
-                NotifyValueChanged();
-            }
-
-            /// <inheritdoc />
-            protected override void Dispose(bool isDisposing)
-            {
-                if (!IsDisposed)
-                {
-                    DetachEvents();
-                }
-
-                base.Dispose(isDisposing);
-            }
-
-            private bool isAttached = false;
-
-            internal override void AttachEvents()
-            {
-                base.AttachEvents();
-
-                if (!isAttached && !IsDisposed)
-                {
-                    table.RowHeaders.CollectionChanged += RowHeaders_CollectionChanged;
-                    table.ColumnHeaders.CollectionChanged += ColumnHeaders_CollectionChanged;
-                    table.ValueChanged += Table_ValueChanged;
-                    table.CollectionReplaced += Table_ContentReplaced;
-
-                    isAttached = true;
-                }
-            }
-
-            internal override void DetachEvents()
-            {
-                base.DetachEvents();
-
-                if (isAttached)
-                {
-                    isAttached = false;
-                    table.RowHeaders.CollectionChanged -= RowHeaders_CollectionChanged;
-                    table.ColumnHeaders.CollectionChanged -= ColumnHeaders_CollectionChanged;
-                    table.ValueChanged -= Table_ValueChanged;
-                    table.CollectionReplaced -= Table_ContentReplaced;
-                }
-            }
-
-            private (int rowOffset, int columnOffset) GetParameterOffsets()
-            {
-                int paramAddX = 0, paramAddY = 0;
-                var paramX = GetValuePointerParameter(ReservedParameters.MVBT_OFFSET_X_FORMAT);
-                if (paramX != null)
-                    paramAddX = (int)paramX.ValueCurrent;
-
-                var paramY = GetValuePointerParameter(ReservedParameters.MVBT_OFFSET_Y_FORMAT);
-                if (paramY != null)
-                    paramAddY = (int)paramY.ValueCurrent;
-
-                return (paramAddY, paramAddX);
-            }
-        }
-
-        /// <summary>
         /// Returns a default pointer for this table
         /// </summary>
-        public SimMultiValuePointer DefaultPointer
+        public SimMultiValueParameterSource DefaultPointer
         {
-            get { return new SimMultiValueBigTablePointer(this, 0, 0); }
+            get { return new SimMultiValueBigTableParameterSource(this, 0, 0); }
         }
 
         /// <inheritdoc />
-        public override SimMultiValuePointer CreateNewPointer()
+        public override SimMultiValueParameterSource CreateNewPointer()
         {
-            return DefaultPointer;
+            return new SimMultiValueBigTableParameterSource(this, 0, 0);
         }
 
         /// <inheritdoc />
-        public override SimMultiValuePointer CreateNewPointer(SimMultiValuePointer source)
+        public override SimMultiValueParameterSource CreateNewPointer(SimMultiValueParameterSource source)
         {
-            if (source is SimMultiValueBigTablePointer ptr)
+            if (source is SimMultiValueBigTableParameterSource ptr)
             {
-                return new SimMultiValueBigTablePointer(this, ptr.Row, ptr.Column);
+                return new SimMultiValueBigTableParameterSource(this, ptr.Row, ptr.Column);
             }
-            return DefaultPointer;
+            return new SimMultiValueBigTableParameterSource(this, 0, 0);
         }
 
         #endregion
-
-        #region Aggregate
-
-        /// <summary>
-        /// Applies an aggregation function to this table and replaces the data in this table by the result.
-        /// </summary>
-        /// <param name="function">The function to apply</param>
-        /// <param name="transpose">When set to False, the aggregation is performed to each columns. When set to True, the aggregation is applied to each rows</param>
-        internal void ApplyAggregationFunction(SimAggregationFunction function, bool transpose)
-        {
-            //Does not handle units correctly
-
-            if (transpose) //Aggregate along rows
-            {
-                // extract named columns
-                List<List<double>> columns = this.values.Transpose();
-
-                List<KeyValuePair<string, List<double>>> named_columns = new List<KeyValuePair<string, List<double>>>();
-                for (int i = 0; i < this.ColumnHeaders.Count; i++)
-                {
-                    named_columns.Add(new KeyValuePair<string, List<double>>(this.ColumnHeaders[i].Name, columns[i]));
-                }
-                // group named columns
-                var groups = named_columns.GroupBy(x => x.Key).ToDictionary(gr => gr.Key, gr => gr.Select(x => x.Value).ToList());
-                // aggregate rows
-                var aggregation = SimMultiValueBigTable.ApplyAggregationTo(groups, function);
-
-
-                var resultData = new List<List<double>>(aggregation.Count);
-
-                foreach (var group in aggregation)
-                {
-                    resultData.Add(group.values);
-                }
-
-                resultData = resultData.Transpose();
-
-                var columnHeaders = new List<SimMultiValueBigTableHeader>(
-                    aggregation.Select((x, xi) => new SimMultiValueBigTableHeader(
-                        string.Format("{0} {1}", function.ToStringRepresentation(), x.key),
-                        ColumnHeaders.First(ch => ch.Name == x.key).Unit)
-                    ));
-
-                ReplaceData(columnHeaders, this.RowHeaders, resultData);
-            }
-            else
-            {
-                // use rows
-                List<KeyValuePair<string, List<double>>> named_rows = new List<KeyValuePair<string, List<double>>>();
-                for (int i = 0; i < this.RowHeaders.Count; i++)
-                {
-                    named_rows.Add(new KeyValuePair<string, List<double>>(this.RowHeaders[i].Name, this.GetRow(i).ToList()));
-                }
-                // group named rows
-                Dictionary<string, List<List<double>>> groups = named_rows.GroupBy(x => x.Key).ToDictionary(gr => gr.Key, gr => gr.Select(x => x.Value).ToList());
-                // aggregate rows
-                var aggregation = SimMultiValueBigTable.ApplyAggregationTo(groups, function);
-                var rowHeaders = new ObservableCollection<SimMultiValueBigTableHeader>(
-                    aggregation.Select((x, xi) => new SimMultiValueBigTableHeader(
-                        string.Format("{0} {1}", function.ToStringRepresentation(), x.key),
-                        this.RowHeaders.First(rh => rh.Name == x.key).Unit))
-                    );
-                var resultData = aggregation.Select(x => x.values).ToList();
-
-                ReplaceData(this.ColumnHeaders, rowHeaders, resultData);
-            }
-        }
-
-        private static List<(string key, List<double> values)> ApplyAggregationTo(Dictionary<string, List<List<double>>> _input,
-            SimAggregationFunction function, bool _order = true)
-        {
-            List<(string, List<double>)> result = new List<(string, List<double>)>(_input.Count);
-
-            IEnumerable<KeyValuePair<string, List<List<double>>>> orderedInput = _input;
-            if (_order)
-                orderedInput = orderedInput.OrderBy(x => x.Key);
-
-            foreach (var group in orderedInput)
-            {
-                List<double> groupResult = new List<double>();
-                double[] row = new double[group.Value.Count];
-
-                for (int r = 0; r < group.Value[0].Count; r++)
-                {
-                    for (int c = 0; c < group.Value.Count; c++)
-                        row[c] = group.Value[c][r];
-
-                    double rowResult = double.NaN;
-                    switch (function)
-                    {
-                        case SimAggregationFunction.Sum:
-                            rowResult = row.Sum();
-                            break;
-                        case SimAggregationFunction.Average:
-                            rowResult = row.Sum() / row.Length;
-                            break;
-                        case SimAggregationFunction.Max:
-                            rowResult = row.Max();
-                            break;
-                        case SimAggregationFunction.Min:
-                            rowResult = row.Min();
-                            break;
-                        case SimAggregationFunction.Count:
-                            rowResult = row.Length;
-                            break;
-                    }
-
-                    groupResult.Add(rowResult);
-                }
-
-                result.Add((group.Key, groupResult));
-            }
-
-            return result;
-        }
-
-        #endregion
-
 
         #region Data Access
 
@@ -1160,7 +933,7 @@ namespace SIMULTAN.Data.MultiValues
         /// <param name="row">The row</param>
         /// <param name="column">The column</param>
         /// <returns>The value at row/column</returns>
-        public double this[int row, int column]
+        public object this[int row, int column]
         {
             get
             {
@@ -1178,6 +951,9 @@ namespace SIMULTAN.Data.MultiValues
                 if (column >= this.ColumnHeaders.Count || column < 0)
                     throw new IndexOutOfRangeException("column must be positive or smaller than the column count");
 
+                if (value != null && !SupportedValueTypes.Contains(value.GetType()))
+                    throw new ArgumentException("Unsupported value type");
+
                 values[row][column] = value;
                 NotifyValueChanged(row, column);
             }
@@ -1188,7 +964,53 @@ namespace SIMULTAN.Data.MultiValues
         /// </summary>
         /// <param name="columnHeaders">New row headers</param>
         /// <param name="rowHeaders">New column headers</param>
-        /// <param name="values">New values headers</param>
+        /// <param name="values">New values</param>
+        /// <param name="checkValueTypes">When set to True, the method checks if all values supplied in values is one of the supported types</param>
+        public void ReplaceData(ICollection<SimMultiValueBigTableHeader> columnHeaders, ICollection<SimMultiValueBigTableHeader> rowHeaders,
+            List<List<object>> values, bool checkValueTypes = true)
+        {
+            if (columnHeaders == null)
+                throw new ArgumentNullException("columnHeaders may not be null");
+            if (rowHeaders == null)
+                throw new ArgumentNullException("rowNames may not be null");
+            if (values == null)
+                throw new ArgumentNullException("values may not be null");
+
+            if (values.Count != rowHeaders.Count)
+                throw new ArgumentException("rowNames.Count has to match number of rows in values");
+            for (int i = 0; i < values.Count; ++i)
+                if (values[i].Count != columnHeaders.Count)
+                    throw new ArgumentException(string.Format("Number of elements in Column {0} does not match columnheaders.Count", i));
+
+            if (checkValueTypes)
+            {
+                for (int r = 0; r < values.Count; r++)
+                {
+                    for (int c = 0; c < values[r].Count; c++)
+                    {
+                        if (values[r][c] != null && !SupportedValueTypes.Contains(values[r][c].GetType()))
+                            throw new ArgumentException(string.Format("Values contains unsupported types (Row {0}, Column {1}=", r, c));
+                    }
+                }
+            }
+
+            var oldColumnHeaders = this.ColumnHeaders;
+            var oldRowHeaders = this.RowHeaders;
+
+            this.ColumnHeaders = new HeaderCollection(this, SimMultiValueBigTableHeader.AxisEnum.Columns, columnHeaders);
+            this.RowHeaders = new HeaderCollection(this, SimMultiValueBigTableHeader.AxisEnum.Rows, rowHeaders);
+            this.values = values.Select(x => x.ToList()).ToList();
+
+            NotifyResized(ResizeDirection.Both, 0, 0);
+            NotifyCollectionReplaced(new CollectionsReplacedEventArgs(oldRowHeaders, this.RowHeaders, oldColumnHeaders, this.ColumnHeaders));
+        }
+
+        /// <summary>
+        /// Replaces the data in this instance with new data
+        /// </summary>
+        /// <param name="columnHeaders">New row headers</param>
+        /// <param name="rowHeaders">New column headers</param>
+        /// <param name="values">New values</param>
         public void ReplaceData(ICollection<SimMultiValueBigTableHeader> columnHeaders, ICollection<SimMultiValueBigTableHeader> rowHeaders,
             List<List<double>> values)
         {
@@ -1210,7 +1032,7 @@ namespace SIMULTAN.Data.MultiValues
 
             this.ColumnHeaders = new HeaderCollection(this, SimMultiValueBigTableHeader.AxisEnum.Columns, columnHeaders);
             this.RowHeaders = new HeaderCollection(this, SimMultiValueBigTableHeader.AxisEnum.Rows, rowHeaders);
-            this.values = values.Select(x => x.ToList()).ToList();
+            this.values = values.Select(x => x.ConvertAll(d => (object)d)).ToList();
 
             NotifyResized(ResizeDirection.Both, 0, 0);
             NotifyCollectionReplaced(new CollectionsReplacedEventArgs(oldRowHeaders, this.RowHeaders, oldColumnHeaders, this.ColumnHeaders));
@@ -1225,7 +1047,7 @@ namespace SIMULTAN.Data.MultiValues
             var rowHeaderCopies = source.RowHeaders.Select(x => new SimMultiValueBigTableHeader(x.Name, x.Unit)).ToList();
             var columnHeaderCopies = source.ColumnHeaders.Select(x => new SimMultiValueBigTableHeader(x.Name, x.Unit)).ToList();
 
-            ReplaceData(columnHeaderCopies, rowHeaderCopies, source.values); //values gets copied in the ReplaceData method anyway
+            ReplaceData(columnHeaderCopies, rowHeaderCopies, source.values, false); //values gets copied in the ReplaceData method anyway
         }
 
         private void AdjustHeader(SimMultiValueBigTableHeader header, int index, SimMultiValueBigTableHeader.AxisEnum axis)
@@ -1236,12 +1058,11 @@ namespace SIMULTAN.Data.MultiValues
         }
 
         /// <summary>
-        /// Resizes the value field. Fills newly created cells with the supplied value
+        /// Resizes the value field. Fills newly created cells with null values
         /// </summary>
         /// <param name="rows">New number of rows</param>
         /// <param name="columns">New number of columns</param>
-        /// <param name="value">The value used for newly created cells</param>
-        public void Resize(int rows, int columns, double value = 0.0)
+        public void Resize(int rows, int columns)
         {
             if (rows < 1)
                 throw new ArgumentOutOfRangeException("Row Count must be greater than 0");
@@ -1275,7 +1096,7 @@ namespace SIMULTAN.Data.MultiValues
 
             //Values Rows
             while (this.values.Count < rows)
-                this.values.Add(new List<double>(Enumerable.Repeat(value, columns)));
+                this.values.Add(new List<object>(Enumerable.Repeat<object>(null, columns)));
             while (this.values.Count > rows)
                 this.values.RemoveAt(this.values.Count - 1);
 
@@ -1283,7 +1104,7 @@ namespace SIMULTAN.Data.MultiValues
             foreach (var row in this.values)
             {
                 while (row.Count < columns)
-                    row.Add(value);
+                    row.Add(null);
                 while (row.Count > columns)
                     row.RemoveAt(row.Count - 1);
             }

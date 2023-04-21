@@ -29,9 +29,11 @@ namespace SIMULTAN.Data.Taxonomy
         {
             if (item == null)
                 throw new ArgumentNullException(nameof(item));
+            if (owner.Taxonomy != null && owner.Taxonomy.IsReadonly)
+                throw new InvalidOperationException("Cannot add taxonomy entry because the taxonomy is read only.");
 
             // is already in taxonomy, so must be moved
-            if(item.Taxonomy != null)
+            if (item.Taxonomy != null)
             {
                 if (item.Parent != null)
                 {
@@ -47,26 +49,35 @@ namespace SIMULTAN.Data.Taxonomy
 
             SetValues(item);
             base.InsertItem(index, item);
+            owner.NotifyChildrenChanged();
         }
 
         /// <inheritdoc />
         protected override void RemoveItem(int index)
         {
+            if (owner.Taxonomy != null && owner.Taxonomy.IsReadonly)
+                throw new InvalidOperationException("Cannot remove taxonomy entry because the taxonomy is read only.");
+
             var oldItem = this[index];
 
             UnsetValues(oldItem, owner.Factory?.ProjectData.IdGenerator);
             base.RemoveItem(index);
+            owner.NotifyChildrenChanged();
         }
 
         /// <inheritdoc />
         protected override void ClearItems()
         {
+            if (owner.Taxonomy != null && owner.Taxonomy.IsReadonly)
+                throw new InvalidOperationException("Cannot clear taxonomy entry children because the taxonomy is read only.");
+
             foreach (var item in this)
             {
                 UnsetValues(item, owner.Factory?.ProjectData.IdGenerator);
             }
 
             base.ClearItems();
+            owner.NotifyChildrenChanged();
         }
 
         /// <inheritdoc />
@@ -74,12 +85,15 @@ namespace SIMULTAN.Data.Taxonomy
         {
             if (item == null)
                 throw new ArgumentNullException(nameof(item));
+            if (owner.Taxonomy != null && owner.Taxonomy.IsReadonly)
+                throw new InvalidOperationException("Cannot set taxonomy entry because the taxonomy is read only.");
 
             var oldItem = this[index];
             UnsetValues(oldItem, owner.Factory?.ProjectData.IdGenerator);
 
             SetValues(item);
             base.SetItem(index, item);
+            owner.NotifyChildrenChanged();
         }
 
         #endregion

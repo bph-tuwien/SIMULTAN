@@ -1,5 +1,4 @@
-﻿using SIMULTAN.Data;
-using SIMULTAN.Data.Assets;
+﻿using SIMULTAN.Data.Assets;
 using SIMULTAN.Data.Components;
 using SIMULTAN.Data.Users;
 using SIMULTAN.Exceptions;
@@ -7,15 +6,12 @@ using SIMULTAN.Projects;
 using SIMULTAN.Projects.ManagedFiles;
 using SIMULTAN.Serializer.DXF;
 using SIMULTAN.Serializer.PPATH;
-using SIMULTAN.Serializer.TXDXF;
 using SIMULTAN.Utils;
 using SIMULTAN.Utils.Files;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace SIMULTAN.Serializer.Projects
@@ -87,53 +83,6 @@ namespace SIMULTAN.Serializer.Projects
             return created;
         }
 
-        /// <summary>
-        /// Creates a <see cref="HierarchicalProject"/> instance out of the given files, if it is possible.
-        /// </summary>
-        /// <param name="_project_file">the target file for saving the project</param>
-        /// <param name="_files_to_convert_to_project">the files to include in the project</param>
-        /// <param name="_non_managed_files">the files contained in the project, but not managed by it, e.g. PDF files</param>
-        /// <param name="_associated_files">the files linked to the project but not saved in it</param>
-        /// <param name="_project_data_manager">the manager of all relevant data</param>
-        /// <param name="_initialUser">The default user for this project. Has to be an Administrator.</param>
-        /// <returns>The created project or Null</returns>
-        public static HierarchicalProject NewProjectFromFiles(FileInfo _project_file, IEnumerable<FileInfo> _files_to_convert_to_project,
-                                                 IEnumerable<FileInfo> _non_managed_files, IEnumerable<FileInfo> _associated_files,
-                                                 ExtendedProjectData _project_data_manager, SimUser _initialUser)
-        {
-            // 1. create a copy of the data manager, to prevent the reset of the original on project unloading
-            // is done outside ...
-
-            // 2. check and set the initial user
-            if (_initialUser != null && _initialUser.Role != SimUserRole.ADMINISTRATOR)
-                throw new ArgumentException(string.Format("{0} has to be an administrator.", nameof(_initialUser)));
-
-            if (_initialUser != null)
-            {
-                _project_data_manager.UsersManager.Clear();
-                _project_data_manager.UsersManager.Users.Add(_initialUser);
-                _project_data_manager.UsersManager.CurrentUser = _initialUser;
-            }
-
-            // 3. create the project
-            var created = ProjectIO.CreateFromSeparateFiles(_project_file, _files_to_convert_to_project,
-                _non_managed_files, _associated_files, _project_data_manager,
-                ZipProjectIO.EncryptionKey);
-            if (created != null)
-            {
-                // Zip the project                
-                created.LoadDataIntoProjectDataManager();
-                Save(created, false);
-
-                // Close and unload the project
-                created.AuthenticationSkipped = true;
-                Close(created, false, true);
-                Unload(created);
-            }
-
-            return created;
-        }
-
         #endregion
 
 
@@ -169,9 +118,17 @@ namespace SIMULTAN.Serializer.Projects
             }
 
             // Check if TaxonomyRecord exists, otherwise create it
-            if(!files.Any(x => x.Extension == ParamStructFileExtensions.FILE_EXT_TAXONOMY))
+            if (!files.Any(x => x.Extension == ParamStructFileExtensions.FILE_EXT_TAXONOMY))
             {
                 var taxFile = ProjectIO.CreateInitialTaxonomyFile(unpacked_folder.FullName);
+                var tmpFiles = files.ToList();
+                tmpFiles.Add(taxFile);
+                files = tmpFiles;
+            }
+            // Check if Geometry Relations file exists, otherwise create it
+            if (!files.Any(x => x.Extension == ParamStructFileExtensions.FILE_EXT_GEOMETRY_RELATIONS))
+            {
+                var taxFile = ProjectIO.CreateInitialGeometryRelationsFile(unpacked_folder.FullName);
                 var tmpFiles = files.ToList();
                 tmpFiles.Add(taxFile);
                 files = tmpFiles;
@@ -356,6 +313,7 @@ namespace SIMULTAN.Serializer.Projects
 
                 _project.AllProjectDataManagers.ValueManager.ResetChanges();
                 _project.AllProjectDataManagers.Components.ResetChanges();
+                _project.AllProjectDataManagers.GeometryRelations.ResetChanges();
             }
         }
 

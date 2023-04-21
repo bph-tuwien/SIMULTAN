@@ -1,12 +1,9 @@
 ﻿using SIMULTAN.Exceptions;
-using SIMULTAN.Serializer.DXF;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SIMULTAN.Data.Components
 {
@@ -53,18 +50,18 @@ namespace SIMULTAN.Data.Components
             /// <summary>
             /// The parameter in the data component (or in it's subtree)
             /// </summary>
-            public SimParameter DataParameter { get; }
+            public SimDoubleParameter DataParameter { get; }
             /// <summary>
             /// The parameter in the calculator component (or in it's subtree)
             /// </summary>
-            public SimParameter CalculatorParameter { get; }
+            public SimDoubleParameter CalculatorParameter { get; }
 
             /// <summary>
             /// Initializes a new instance of the MappingParameterTuple class
             /// </summary>
             /// <param name="dataParameter">The parameter in the data component (or in it's subtree)</param>
             /// <param name="calculatorParameter">The parameter in the calculator component (or in it's subtree)</param>
-            public MappingParameterTuple(SimParameter dataParameter, SimParameter calculatorParameter)
+            public MappingParameterTuple(SimDoubleParameter dataParameter, SimDoubleParameter calculatorParameter)
             {
                 this.DataParameter = dataParameter;
                 this.CalculatorParameter = calculatorParameter;
@@ -326,7 +323,7 @@ namespace SIMULTAN.Data.Components
         /// </summary>
         /// <param name="_parameter_copy_record">key = id of Parameter in the original, value = Parameter in the copy</param>
         /// <returns>The copied calculator mapping</returns>
-        internal CalculatorMapping ExchangeDataParameter(Dictionary<SimParameter, SimParameter> _parameter_copy_record)
+        internal CalculatorMapping ExchangeDataParameter(Dictionary<SimDoubleParameter, SimDoubleParameter> _parameter_copy_record)
         {
             if (_parameter_copy_record == null)
                 throw new ArgumentNullException(nameof(_parameter_copy_record));
@@ -361,7 +358,7 @@ namespace SIMULTAN.Data.Components
         {
             if (!GetErrors(dataComponent).Any())
             {
-                Dictionary<SimParameter, SimParameter> parameterReplacements = new Dictionary<SimParameter, SimParameter>();
+                Dictionary<SimDoubleParameter, SimDoubleParameter> parameterReplacements = new Dictionary<SimDoubleParameter, SimDoubleParameter>();
                 foreach (var mapping in InputMapping)
                     parameterReplacements.Add(mapping.CalculatorParameter, mapping.DataParameter);
                 foreach (var mapping in OutputMapping)
@@ -390,8 +387,8 @@ namespace SIMULTAN.Data.Components
                         var dataParameterId = map.dataParameterId;
                         var calculatorParameterId = map.calculatorParameterId;
 
-                        var dataParameter = dataComponent.Factory.ProjectData.IdGenerator.GetById<SimParameter>(dataParameterId);
-                        var calcParameter = Calculator.Factory.ProjectData.IdGenerator.GetById<SimParameter>(calculatorParameterId);
+                        var dataParameter = dataComponent.Factory.ProjectData.IdGenerator.GetById<SimDoubleParameter>(dataParameterId);
+                        var calcParameter = Calculator.Factory.ProjectData.IdGenerator.GetById<SimDoubleParameter>(calculatorParameterId);
 
                         if (dataParameter != null && calcParameter != null)
                         {
@@ -410,8 +407,8 @@ namespace SIMULTAN.Data.Components
                         var dataParameterId = map.dataParameterId;
                         var calculatorParameterId = map.calculatorParameterId;
 
-                        var dataParameter = dataComponent.Factory.ProjectData.IdGenerator.GetById<SimParameter>(dataParameterId);
-                        var calcParameter = Calculator.Factory.ProjectData.IdGenerator.GetById<SimParameter>(calculatorParameterId);
+                        var dataParameter = dataComponent.Factory.ProjectData.IdGenerator.GetById<SimDoubleParameter>(dataParameterId);
+                        var calcParameter = Calculator.Factory.ProjectData.IdGenerator.GetById<SimDoubleParameter>(calculatorParameterId);
 
                         if (dataParameter != null && calcParameter != null)
                         {
@@ -452,15 +449,5 @@ namespace SIMULTAN.Data.Components
 
             return comp.Components.Where(x => x.Component != null).Any(x => HasAnyCalculation(x.Component));
         }
-
-        #region TO_STRING
-
-        /// <inheritdoc />
-        public override string ToString()
-        {
-            return this.Name + " to " + this.Calculator.ToInfoString();
-        }
-
-        #endregion
     }
 }

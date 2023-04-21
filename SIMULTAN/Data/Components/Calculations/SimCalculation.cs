@@ -1,12 +1,10 @@
 ﻿using SIMULTAN.Data.MultiValues;
-using SIMULTAN.Serializer.DXF;
 using SIMULTAN.Utils;
 using Sprache;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Text;
 using System.Windows.Threading;
 
 namespace SIMULTAN.Data.Components
@@ -344,8 +342,8 @@ namespace SIMULTAN.Data.Components
         /// <param name="name">The name of the calculation</param>
         /// <param name="inputParameters">List of input parameters. The key has to match the variables in the expression</param>
         /// <param name="returnParameters">List of output / return parameters (each receives the same value)</param>
-        public SimCalculation(string expression, string name, IDictionary<string, SimParameter> inputParameters = null,
-                                                       IDictionary<string, SimParameter> returnParameters = null)
+        public SimCalculation(string expression, string name, IDictionary<string, SimDoubleParameter> inputParameters = null,
+                                                       IDictionary<string, SimDoubleParameter> returnParameters = null)
         {
             this.InputParams = new SimCalculationInputParameterCollection(this);
             this.ReturnParams = new SimCalculationOutputParameterCollection(this);
@@ -368,8 +366,8 @@ namespace SIMULTAN.Data.Components
         /// <param name="overrideResult">When set to True, MultiValue calculations will override a pre-existing valuefield.</param>
         /// <param name="resultAggregation">Aggregation mode for multiple iterations</param>
         public SimCalculation(long localId, string expression, string name,
-                           IDictionary<string, SimParameter> inputParameters,
-                           IDictionary<string, SimParameter> returnParameters,
+                           IDictionary<string, SimDoubleParameter> inputParameters,
+                           IDictionary<string, SimDoubleParameter> returnParameters,
                            IDictionary<string, CalculationParameterMetaData> metaData,
                            List<MultiValueCalculationBinaryOperation> inOrderOperations,
                            int iterationCount, bool overrideResult, SimResultAggregationMethod resultAggregation)
@@ -392,7 +390,7 @@ namespace SIMULTAN.Data.Components
         }
 
         private void Init(string expression, string name,
-            IDictionary<string, SimParameter> inputParameters, IDictionary<string, SimParameter> returnParameters,
+            IDictionary<string, SimDoubleParameter> inputParameters, IDictionary<string, SimDoubleParameter> returnParameters,
             IDictionary<string, CalculationParameterMetaData> metaData,
             int iterationCount, bool overrideResult, SimResultAggregationMethod resultAggregation)
         {
@@ -582,7 +580,7 @@ namespace SIMULTAN.Data.Components
         /// <param name="dispatcher">Dispatcher used to write back results. May be needed when the calculation is executed in a separate thread</param>
         public void Calculate(SimMultiValueCollection valuefieldCollection,
             TableNameProviderDelegate tableNameProvider = null, TableNameProviderDelegate tableNameAverageProvider = null,
-            Dictionary<SimParameter, SimParameter> parameterReplacements = null,
+            Dictionary<SimDoubleParameter, SimDoubleParameter> parameterReplacements = null,
             Dispatcher dispatcher = null)
         {
             if (this.IsMultiValueCalculation)
@@ -603,7 +601,7 @@ namespace SIMULTAN.Data.Components
         /// Does not support Vector calculations
         /// </summary>
         /// <param name="parameterReplacements">A list of replacements. Key is the parameter in the calculation, Value is the replacement value</param>
-        public void Calculate(Dictionary<SimParameter, double> parameterReplacements)
+        public void Calculate(Dictionary<SimDoubleParameter, double> parameterReplacements)
         {
             if (parameterReplacements == null)
                 throw new ArgumentNullException(nameof(parameterReplacements));
@@ -619,7 +617,7 @@ namespace SIMULTAN.Data.Components
                     if (parameterReplacements.TryGetValue(inputParam.Value, out var replacement))
                         parameterValues.Add(inputParam.Key, replacement);
                     else
-                        parameterValues.Add(inputParam.Key, inputParam.Value.ValueCurrent);
+                        parameterValues.Add(inputParam.Key, inputParam.Value.Value);
                 }
 
                 try
@@ -708,7 +706,7 @@ namespace SIMULTAN.Data.Components
                     {
                         foreach (var entry in this.ReturnParams)
                         {
-                            SimParameter p = entry.Value;
+                            SimDoubleParameter p = entry.Value;
                             if (p != null)
                                 SimCalculation.AssignResultFromVectorCalc(p, table, valuefieldCollection, this.OverrideResult);
                         }
@@ -722,7 +720,7 @@ namespace SIMULTAN.Data.Components
             }
         }
 
-        private void ExecuteAsNormalCalculation(Dictionary<SimParameter, SimParameter> parameterReplacements)
+        private void ExecuteAsNormalCalculation(Dictionary<SimDoubleParameter, SimDoubleParameter> parameterReplacements)
         {
             double result = double.NaN;
 
@@ -737,7 +735,7 @@ namespace SIMULTAN.Data.Components
                     if (parameterReplacements != null && parameterReplacements.TryGetValue(entry.Value, out var replaceParam))
                         inputParam = replaceParam;
 
-                    params_in_value.Add(entry.Key, inputParam.ValueCurrent);
+                    params_in_value.Add(entry.Key, inputParam.Value);
                 }
 
                 try
@@ -760,24 +758,24 @@ namespace SIMULTAN.Data.Components
                 if (parameterReplacements != null && parameterReplacements.TryGetValue(entry.Value, out var replacedParam))
                     param = replacedParam;
 
-                if (param.MultiValuePointer != null)
-                    param.MultiValuePointer = null;
-                param.ValueCurrent = result;
+                if (param.ValueSource != null)
+                    param.ValueSource = null;
+                param.Value = result;
             }
         }
 
-        private static void AssignResultFromVectorCalc(SimParameter _p, SimMultiValueBigTable _table, SimMultiValueCollection _table_factory, bool _override_value_fields)
+        private static void AssignResultFromVectorCalc(SimDoubleParameter _p, SimMultiValueBigTable _table, SimMultiValueCollection _table_factory, bool _override_value_fields)
         {
             if (_override_value_fields)
             {
-                if (_p.MultiValuePointer == null)
-                    _p.MultiValuePointer = _table.DefaultPointer;
+                if (_p.ValueSource == null)
+                    _p.ValueSource = _table.DefaultPointer;
                 else
                 {
-                    if (_p.MultiValuePointer is SimMultiValueBigTable.SimMultiValueBigTablePointer)
+                    if (_p.ValueSource is SimMultiValueBigTableParameterSource ptr)
                     {
                         // perform the switch
-                        SimMultiValueBigTable table_old = _p.MultiValuePointer.ValueField as SimMultiValueBigTable;
+                        SimMultiValueBigTable table_old = ptr.Table;
 
                         table_old.ReplaceData(_table);
                         table_old.Name = _table.Name;
@@ -785,38 +783,17 @@ namespace SIMULTAN.Data.Components
                     }
                     else
                     {
-                        _p.MultiValuePointer = _table.DefaultPointer;
+                        _p.ValueSource = _table.DefaultPointer;
                     }
                 }
             }
             else
             {
-                if (_p.MultiValuePointer != null && _p.MultiValuePointer is SimMultiValueBigTable.SimMultiValueBigTablePointer btp)
-                    _p.MultiValuePointer = new SimMultiValueBigTable.SimMultiValueBigTablePointer(_table, btp.Row, btp.Column);
+                if (_p.ValueSource != null && _p.ValueSource is SimMultiValueBigTableParameterSource btp)
+                    _p.ValueSource = new SimMultiValueBigTableParameterSource(_table, btp.Row, btp.Column);
                 else
-                    _p.MultiValuePointer = _table.DefaultPointer;
+                    _p.ValueSource = _table.DefaultPointer;
             }
-        }
-
-        #endregion
-
-        #region METHODS: To String
-
-        /// <inheritdoc />
-        [Obsolete]
-        public override string ToString()
-        {
-            string output = this.Id + ": " + this.Name;
-
-            output += " [ ";
-            foreach (var entry in this.ReturnParams)
-            {
-                output += (entry.Value == null) ? entry.Key + " " : entry.Value.TaxonomyEntry.Name + " ";
-            }
-            output += "]= ";
-            output += " {" + this.Expression + "} ";
-
-            return output;
         }
 
         #endregion

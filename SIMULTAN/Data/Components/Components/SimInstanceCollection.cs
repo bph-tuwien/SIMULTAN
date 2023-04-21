@@ -1,5 +1,4 @@
-﻿using SIMULTAN.Data.FlowNetworks;
-using SIMULTAN.Exceptions;
+﻿using SIMULTAN.Exceptions;
 using System;
 using System.Collections.ObjectModel;
 
@@ -132,7 +131,9 @@ namespace SIMULTAN.Data.Components
                         this.owner.Factory.ProjectData.IdGenerator.Reserve(item, item.Id);
                     }
                     else
+                    {
                         item.Id = this.owner.Factory.ProjectData.IdGenerator.NextId(item, this.owner.Factory.CalledFromLocation);
+                    }
 
                     item.Factory = this.owner.Factory;
                 }
@@ -167,7 +168,7 @@ namespace SIMULTAN.Data.Components
 
             #region Updates from Parameters
 
-            internal void OnParameterAdded(SimParameter parameter)
+            internal void OnParameterAdded(SimBaseParameter parameter)
             {
                 if (parameter == null)
                     throw new ArgumentNullException(nameof(parameter));
@@ -176,7 +177,7 @@ namespace SIMULTAN.Data.Components
                     gr.AddParameter(parameter);
             }
 
-            internal void OnParameterRemoved(SimParameter parameter)
+            internal void OnParameterRemoved(SimBaseParameter parameter)
             {
                 if (parameter == null)
                     throw new ArgumentNullException(nameof(parameter));
@@ -185,7 +186,7 @@ namespace SIMULTAN.Data.Components
                     gr.RemoveParameter(parameter);
             }
 
-            internal void OnParameterValueChanged(SimParameter parameter)
+            internal void OnParameterValueChanged(SimBaseParameter parameter)
             {
                 if (parameter == null)
                     throw new ArgumentNullException(nameof(parameter));

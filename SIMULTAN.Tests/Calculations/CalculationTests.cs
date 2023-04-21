@@ -3,7 +3,7 @@ using SIMULTAN.Data;
 using SIMULTAN.Data.Components;
 using SIMULTAN.Data.Users;
 using SIMULTAN.Exceptions;
-using SIMULTAN.Tests.Utils;
+using SIMULTAN.Tests.TestUtils;
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
@@ -21,7 +21,7 @@ namespace SIMULTAN.Tests.Calculations
         #region Utils
 
         public static void CheckCalculation(SimCalculation calc,
-            (string expression, string name, Dictionary<string, SimParameter> input, Dictionary<string, SimParameter> output) data)
+            (string expression, string name, Dictionary<string, SimDoubleParameter> input, Dictionary<string, SimDoubleParameter> output) data)
         {
             Assert.AreEqual(data.name, calc.Name);
             Assert.AreEqual(data.expression, calc.Expression);
@@ -30,7 +30,7 @@ namespace SIMULTAN.Tests.Calculations
             CheckParamDict(data.output, calc.ReturnParams);
         }
 
-        private static void CheckParamDict(IDictionary<string, SimParameter> expected, SimCalculation.BaseCalculationParameterCollections actual)
+        private static void CheckParamDict(IDictionary<string, SimDoubleParameter> expected, SimCalculation.BaseCalculationParameterCollections actual)
         {
             if (expected == null)
                 Assert.AreEqual(0, actual.Count);
@@ -48,7 +48,7 @@ namespace SIMULTAN.Tests.Calculations
         }
 
         private static void AssertParamCollectionChanged(NotifyCollectionChangedEventArgs arg, NotifyCollectionChangedAction action,
-            KeyValuePair<string, SimParameter> expectedOld, KeyValuePair<string, SimParameter> expectedNew)
+            KeyValuePair<string, SimDoubleParameter> expectedOld, KeyValuePair<string, SimDoubleParameter> expectedNew)
         {
             Assert.AreEqual(action, arg.Action);
 
@@ -82,7 +82,7 @@ namespace SIMULTAN.Tests.Calculations
         public void Ctor()
         {
             var calc = new SimCalculation("x", "calc1", null, null);
-            CheckCalculation(calc, ("x", "calc1", new Dictionary<string, SimParameter> { { "x", null } }, null));
+            CheckCalculation(calc, ("x", "calc1", new Dictionary<string, SimDoubleParameter> { { "x", null } }, null));
             Assert.AreEqual(SimId.Empty, calc.Id);
             Assert.AreEqual(1, calc.IterationCount);
             Assert.AreEqual(true, calc.OverrideResult);
@@ -92,34 +92,34 @@ namespace SIMULTAN.Tests.Calculations
             CheckCalculation(calc, ("", "calc2", null, null));
 
             calc = new SimCalculation("a+b", "calc3", null, null);
-            CheckCalculation(calc, ("a+b", "calc3", new Dictionary<string, SimParameter> { { "a", null }, { "b", null } }, null));
+            CheckCalculation(calc, ("a+b", "calc3", new Dictionary<string, SimDoubleParameter> { { "a", null }, { "b", null } }, null));
 
             LoadProject(calculationProject);
-            var demoParams = projectData.GetParameters("NoCalculation");
+            var demoParams = projectData.GetParameters<SimDoubleParameter>("NoCalculation");
 
             //Starting parameter passing
-            calc = new SimCalculation("a+b", "calc4", new Dictionary<string, SimParameter> { { "a", demoParams["param1"] } }, null);
-            CheckCalculation(calc, ("a+b", "calc4", new Dictionary<string, SimParameter> { { "a", demoParams["param1"] }, { "b", null } }, null));
+            calc = new SimCalculation("a+b", "calc4", new Dictionary<string, SimDoubleParameter> { { "a", demoParams["param1"] } }, null);
+            CheckCalculation(calc, ("a+b", "calc4", new Dictionary<string, SimDoubleParameter> { { "a", demoParams["param1"] }, { "b", null } }, null));
 
             //Mismatching parameter names
-            calc = new SimCalculation("a+b", "calc5", new Dictionary<string, SimParameter> { { "a", demoParams["param1"] }, { "c", demoParams["param2"] } }, null);
-            CheckCalculation(calc, ("a+b", "calc5", new Dictionary<string, SimParameter> { { "a", demoParams["param1"] }, { "b", null } }, null));
+            calc = new SimCalculation("a+b", "calc5", new Dictionary<string, SimDoubleParameter> { { "a", demoParams["param1"] }, { "c", demoParams["param2"] } }, null);
+            CheckCalculation(calc, ("a+b", "calc5", new Dictionary<string, SimDoubleParameter> { { "a", demoParams["param1"] }, { "b", null } }, null));
 
             //Output passing
-            calc = new SimCalculation("a+b", "calc6", null, new Dictionary<string, SimParameter> { { "out1", demoParams["param1"] }, { "out2", null } });
-            CheckCalculation(calc, ("a+b", "calc6", new Dictionary<string, SimParameter> { { "a", null }, { "b", null } },
-                new Dictionary<string, SimParameter> { { "out1", demoParams["param1"] }, { "out2", null } }));
+            calc = new SimCalculation("a+b", "calc6", null, new Dictionary<string, SimDoubleParameter> { { "out1", demoParams["param1"] }, { "out2", null } });
+            CheckCalculation(calc, ("a+b", "calc6", new Dictionary<string, SimDoubleParameter> { { "a", null }, { "b", null } },
+                new Dictionary<string, SimDoubleParameter> { { "out1", demoParams["param1"] }, { "out2", null } }));
 
             //Wrong propagation in input
             Assert.ThrowsException<InvalidStateException>(() =>
             {
-                new SimCalculation("a+b", "calc4", new Dictionary<string, SimParameter> { { "a", demoParams["out"] } }, null);
+                new SimCalculation("a+b", "calc4", new Dictionary<string, SimDoubleParameter> { { "a", demoParams["out"] } }, null);
             });
 
             //Wrong propagation in output
             Assert.ThrowsException<InvalidStateException>(() =>
             {
-                new SimCalculation("a+b", "calc4", null, new Dictionary<string, SimParameter> { { "out1", demoParams["in"] } });
+                new SimCalculation("a+b", "calc4", null, new Dictionary<string, SimDoubleParameter> { { "out1", demoParams["in"] } });
             });
         }
 
@@ -127,7 +127,7 @@ namespace SIMULTAN.Tests.Calculations
         public void CtorParsing()
         {
             var calc = new SimCalculation(12345, "x", "calc1", null, null, null, null, 99, false, SimResultAggregationMethod.Separate);
-            CheckCalculation(calc, ("x", "calc1", new Dictionary<string, SimParameter> { { "x", null } }, null));
+            CheckCalculation(calc, ("x", "calc1", new Dictionary<string, SimDoubleParameter> { { "x", null } }, null));
             Assert.AreEqual(12345, calc.LocalID);
             Assert.AreEqual(99, calc.IterationCount);
             Assert.AreEqual(false, calc.OverrideResult);
@@ -309,7 +309,7 @@ namespace SIMULTAN.Tests.Calculations
         public void InputParamsAdd()
         {
             LoadProject(calculationProject);
-            var demoParams = projectData.GetParameters("NoCalculation");
+            var demoParams = projectData.GetParameters<SimDoubleParameter>("NoCalculation");
 
             var calc = new SimCalculation("a+b", "calc", null, null);
             CollectionChangedEventCounter ccCounter = new CollectionChangedEventCounter(calc.InputParams);
@@ -321,8 +321,8 @@ namespace SIMULTAN.Tests.Calculations
             Assert.AreEqual(demoParams["param1"], calc.InputParams["a"]);
             ccCounter.AssertEventCount(1);
             AssertParamCollectionChanged(ccCounter.CollectionChangedArgs[0], NotifyCollectionChangedAction.Replace,
-                new KeyValuePair<string, SimParameter>("a", null),
-                new KeyValuePair<string, SimParameter>("a", demoParams["param1"]));
+                new KeyValuePair<string, SimDoubleParameter>("a", null),
+                new KeyValuePair<string, SimDoubleParameter>("a", demoParams["param1"]));
             ccCounter.Reset();
         }
 
@@ -330,7 +330,7 @@ namespace SIMULTAN.Tests.Calculations
         public void InputParamsAddWrongPropagation()
         {
             LoadProject(calculationProject);
-            var demoParams = projectData.GetParameters("NoCalculation");
+            var demoParams = projectData.GetParameters<SimDoubleParameter>("NoCalculation");
 
             var calc = new SimCalculation("a+b", "calc", null, null);
             CollectionChangedEventCounter ccCounter = new CollectionChangedEventCounter(calc.InputParams);
@@ -348,7 +348,7 @@ namespace SIMULTAN.Tests.Calculations
         public void InputParamsReplace()
         {
             LoadProject(calculationProject);
-            var demoParams = projectData.GetParameters("NoCalculation");
+            var demoParams = projectData.GetParameters<SimDoubleParameter>("NoCalculation");
 
             var calc = new SimCalculation("a+b", "calc", null, null);
             calc.InputParams["a"] = demoParams["param1"];
@@ -360,8 +360,8 @@ namespace SIMULTAN.Tests.Calculations
             Assert.AreEqual(demoParams["param2"], calc.InputParams["a"]);
             ccCounter.AssertEventCount(1);
             AssertParamCollectionChanged(ccCounter.CollectionChangedArgs[0], NotifyCollectionChangedAction.Replace,
-                new KeyValuePair<string, SimParameter>("a", demoParams["param1"]),
-                new KeyValuePair<string, SimParameter>("a", demoParams["param2"]));
+                new KeyValuePair<string, SimDoubleParameter>("a", demoParams["param1"]),
+                new KeyValuePair<string, SimDoubleParameter>("a", demoParams["param2"]));
             ccCounter.Reset();
         }
 
@@ -369,7 +369,7 @@ namespace SIMULTAN.Tests.Calculations
         public void InputParamsReplaceWrongPropagation()
         {
             LoadProject(calculationProject);
-            var demoParams = projectData.GetParameters("NoCalculation");
+            var demoParams = projectData.GetParameters<SimDoubleParameter>("NoCalculation");
 
             var calc = new SimCalculation("a+b", "calc", null, null);
             calc.InputParams["a"] = demoParams["param1"];
@@ -386,7 +386,7 @@ namespace SIMULTAN.Tests.Calculations
         public void InputParamsRemove()
         {
             LoadProject(calculationProject);
-            var demoParams = projectData.GetParameters("NoCalculation");
+            var demoParams = projectData.GetParameters<SimDoubleParameter>("NoCalculation");
 
             var calc = new SimCalculation("a+b", "calc", null, null);
             calc.InputParams["a"] = demoParams["param1"];
@@ -398,8 +398,8 @@ namespace SIMULTAN.Tests.Calculations
             Assert.AreEqual(null, calc.InputParams["a"]);
             ccCounter.AssertEventCount(1);
             AssertParamCollectionChanged(ccCounter.CollectionChangedArgs[0], NotifyCollectionChangedAction.Replace,
-                new KeyValuePair<string, SimParameter>("a", demoParams["param1"]),
-                new KeyValuePair<string, SimParameter>("a", null));
+                new KeyValuePair<string, SimDoubleParameter>("a", demoParams["param1"]),
+                new KeyValuePair<string, SimDoubleParameter>("a", null));
             ccCounter.Reset();
         }
 
@@ -407,7 +407,7 @@ namespace SIMULTAN.Tests.Calculations
         public void InputParams_ParameterChanged()
         {
             LoadProject(calculationProject);
-            var demoParams = projectData.GetParameters("NoCalculation");
+            var demoParams = projectData.GetParameters<SimDoubleParameter>("NoCalculation");
 
             //Exception for added parameter
             {
@@ -432,7 +432,7 @@ namespace SIMULTAN.Tests.Calculations
 
             //Exception for initial parameter
             {
-                var calc = new SimCalculation("a+b", "calc", new Dictionary<string, SimParameter> { { "a", demoParams["param3"] } }, null);
+                var calc = new SimCalculation("a+b", "calc", new Dictionary<string, SimDoubleParameter> { { "a", demoParams["param3"] } }, null);
                 Assert.ThrowsException<InvalidStateException>(() => { demoParams["param3"].Propagation = SimInfoFlow.Output; });
             }
         }
@@ -446,10 +446,14 @@ namespace SIMULTAN.Tests.Calculations
             var archCalc = archComp.Calculations.First(x => x.Name == "Calc1");
             var bphComp = projectData.Components.First(x => x.Name == "BPHComp");
             var bphCalc = bphComp.Calculations.First(x => x.Name == "Calc2");
-            var param2 = bphComp.Parameters.First(x => x.TaxonomyEntry.Name == "Parameter2");
+            var param2 = bphComp.Parameters.First(x => x.NameTaxonomyEntry.Name == "Parameter2");
 
-            //Working
-            bphCalc.InputParams["b"] = param2;
+            if (param2 is SimDoubleParameter doubleParam)
+            {
+                //Working
+                bphCalc.InputParams["b"] = doubleParam;
+            }
+
 
             //Not working
             Assert.ThrowsException<AccessDeniedException>(() => { archCalc.InputParams["b"] = null; });
@@ -463,7 +467,7 @@ namespace SIMULTAN.Tests.Calculations
         public void ReturnParamsAddEmpty()
         {
             LoadProject(calculationProject);
-            var demoParams = projectData.GetParameters("NoCalculation");
+            var demoParams = projectData.GetParameters<SimDoubleParameter>("NoCalculation");
 
             var calc = new SimCalculation("a+b", "calc", null, null);
             CollectionChangedEventCounter ccCounter = new CollectionChangedEventCounter(calc.ReturnParams);
@@ -474,8 +478,8 @@ namespace SIMULTAN.Tests.Calculations
             Assert.AreEqual(null, calc.ReturnParams["out1"]);
             ccCounter.AssertEventCount(1);
             AssertParamCollectionChanged(ccCounter.CollectionChangedArgs[0], NotifyCollectionChangedAction.Add,
-                new KeyValuePair<string, SimParameter>(),
-                new KeyValuePair<string, SimParameter>("out1", null));
+                new KeyValuePair<string, SimDoubleParameter>(),
+                new KeyValuePair<string, SimDoubleParameter>("out1", null));
             ccCounter.Reset();
         }
 
@@ -483,7 +487,7 @@ namespace SIMULTAN.Tests.Calculations
         public void ReturnParamsWrongPropagation()
         {
             LoadProject(calculationProject);
-            var demoParams = projectData.GetParameters("NoCalculation");
+            var demoParams = projectData.GetParameters<SimDoubleParameter>("NoCalculation");
 
             var calc = new SimCalculation("a+b", "calc", null, null);
             calc.ReturnParams.Add("out1", null);
@@ -500,7 +504,7 @@ namespace SIMULTAN.Tests.Calculations
         public void ReturnParamsAddParameter()
         {
             LoadProject(calculationProject);
-            var demoParams = projectData.GetParameters("NoCalculation");
+            var demoParams = projectData.GetParameters<SimDoubleParameter>("NoCalculation");
 
             var calc = new SimCalculation("a+b", "calc", null, null);
             CollectionChangedEventCounter ccCounter = new CollectionChangedEventCounter(calc.ReturnParams);
@@ -511,8 +515,8 @@ namespace SIMULTAN.Tests.Calculations
             Assert.AreEqual(demoParams["out"], calc.ReturnParams["out2"]);
             ccCounter.AssertEventCount(1);
             AssertParamCollectionChanged(ccCounter.CollectionChangedArgs[0], NotifyCollectionChangedAction.Add,
-                new KeyValuePair<string, SimParameter>(),
-                new KeyValuePair<string, SimParameter>("out2", demoParams["out"]));
+                new KeyValuePair<string, SimDoubleParameter>(),
+                new KeyValuePair<string, SimDoubleParameter>("out2", demoParams["out"]));
             ccCounter.Reset();
         }
 
@@ -520,7 +524,7 @@ namespace SIMULTAN.Tests.Calculations
         public void ReturnParamsReplaceParameter()
         {
             LoadProject(calculationProject);
-            var demoParams = projectData.GetParameters("NoCalculation");
+            var demoParams = projectData.GetParameters<SimDoubleParameter>("NoCalculation");
 
             var calc = new SimCalculation("a+b", "calc", null, null);
             calc.ReturnParams.Add("out1", null);
@@ -533,8 +537,8 @@ namespace SIMULTAN.Tests.Calculations
             Assert.AreEqual(demoParams["param1"], calc.ReturnParams["out1"]);
             ccCounter.AssertEventCount(1);
             AssertParamCollectionChanged(ccCounter.CollectionChangedArgs[0], NotifyCollectionChangedAction.Replace,
-                new KeyValuePair<string, SimParameter>("out1", null),
-                new KeyValuePair<string, SimParameter>("out1", demoParams["param1"]));
+                new KeyValuePair<string, SimDoubleParameter>("out1", null),
+                new KeyValuePair<string, SimDoubleParameter>("out1", demoParams["param1"]));
             ccCounter.Reset();
         }
 
@@ -542,7 +546,7 @@ namespace SIMULTAN.Tests.Calculations
         public void ReturnParamsReplaceWrongPropagation()
         {
             LoadProject(calculationProject);
-            var demoParams = projectData.GetParameters("NoCalculation");
+            var demoParams = projectData.GetParameters<SimDoubleParameter>("NoCalculation");
 
             var calc = new SimCalculation("a+b", "calc", null, null);
             calc.ReturnParams.Add("out1", null);
@@ -560,7 +564,7 @@ namespace SIMULTAN.Tests.Calculations
         public void ReturnParamsUnbind()
         {
             LoadProject(calculationProject);
-            var demoParams = projectData.GetParameters("NoCalculation");
+            var demoParams = projectData.GetParameters<SimDoubleParameter>("NoCalculation");
 
             var calc = new SimCalculation("a+b", "calc", null, null);
             calc.ReturnParams.Add("out1", demoParams["param1"]);
@@ -574,8 +578,8 @@ namespace SIMULTAN.Tests.Calculations
             Assert.AreEqual(2, calc.ReturnParams.Count);
             ccCounter.AssertEventCount(1);
             AssertParamCollectionChanged(ccCounter.CollectionChangedArgs[0], NotifyCollectionChangedAction.Replace,
-                new KeyValuePair<string, SimParameter>("out2", demoParams["out"]),
-                new KeyValuePair<string, SimParameter>("out2", null));
+                new KeyValuePair<string, SimDoubleParameter>("out2", demoParams["out"]),
+                new KeyValuePair<string, SimDoubleParameter>("out2", null));
             ccCounter.Reset();
         }
 
@@ -583,7 +587,7 @@ namespace SIMULTAN.Tests.Calculations
         public void ReturnParamsRemove()
         {
             LoadProject(calculationProject);
-            var demoParams = projectData.GetParameters("NoCalculation");
+            var demoParams = projectData.GetParameters<SimDoubleParameter>("NoCalculation");
 
             var calc = new SimCalculation("a+b", "calc", null, null);
             calc.ReturnParams.Add("out1", demoParams["param1"]);
@@ -598,8 +602,8 @@ namespace SIMULTAN.Tests.Calculations
             ccCounter.AssertEventCount(1);
 
             AssertParamCollectionChanged(ccCounter.CollectionChangedArgs[0], NotifyCollectionChangedAction.Remove,
-                new KeyValuePair<string, SimParameter>("out1", demoParams["param1"]),
-                new KeyValuePair<string, SimParameter>());
+                new KeyValuePair<string, SimDoubleParameter>("out1", demoParams["param1"]),
+                new KeyValuePair<string, SimDoubleParameter>());
             ccCounter.Reset();
         }
 
@@ -607,7 +611,7 @@ namespace SIMULTAN.Tests.Calculations
         public void ReturnParamsClear()
         {
             LoadProject(calculationProject);
-            var demoParams = projectData.GetParameters("NoCalculation");
+            var demoParams = projectData.GetParameters<SimDoubleParameter>("NoCalculation");
 
             var calc = new SimCalculation("a+b", "calc", null, null);
             calc.ReturnParams.Add("out2", demoParams["out"]);
@@ -619,8 +623,8 @@ namespace SIMULTAN.Tests.Calculations
             Assert.AreEqual(0, calc.ReturnParams.Count);
             ccCounter.AssertEventCount(1);
             AssertParamCollectionChanged(ccCounter.CollectionChangedArgs[0], NotifyCollectionChangedAction.Reset,
-                new KeyValuePair<string, SimParameter>(),
-                new KeyValuePair<string, SimParameter>());
+                new KeyValuePair<string, SimDoubleParameter>(),
+                new KeyValuePair<string, SimDoubleParameter>());
             ccCounter.Reset();
         }
 
@@ -628,7 +632,7 @@ namespace SIMULTAN.Tests.Calculations
         public void ReturnParams_ParameterChanged()
         {
             LoadProject(calculationProject);
-            var demoParams = projectData.GetParameters("NoCalculation");
+            var demoParams = projectData.GetParameters<SimDoubleParameter>("NoCalculation");
 
             //Exception for added parameter
             {
@@ -653,7 +657,7 @@ namespace SIMULTAN.Tests.Calculations
 
             //Exception for initial parameter
             {
-                var calc = new SimCalculation("a+b", "calc", null, new Dictionary<string, SimParameter> { { "out1", demoParams["param3"] } });
+                var calc = new SimCalculation("a+b", "calc", null, new Dictionary<string, SimDoubleParameter> { { "out1", demoParams["param3"] } });
                 Assert.ThrowsException<InvalidStateException>(() => { demoParams["param3"].Propagation = SimInfoFlow.Input; });
             }
         }
@@ -668,7 +672,7 @@ namespace SIMULTAN.Tests.Calculations
             var archCalc = archComp.Calculations.First(x => x.Name == "Calc1");
             var bphComp = projectData.Components.First(x => x.Name == "BPHComp");
             var bphCalc = bphComp.Calculations.First(x => x.Name == "Calc2");
-            var param2 = bphComp.Parameters.First(x => x.TaxonomyEntry.Name == "Parameter2");
+            var param2 = bphComp.Parameters.First(x => x.NameTaxonomyEntry.Name == "Parameter2");
 
             //Working
             bphCalc.ReturnParams.Add("out2", null);
@@ -686,9 +690,9 @@ namespace SIMULTAN.Tests.Calculations
             var archCalc = archComp.Calculations.First(x => x.Name == "Calc1");
             var bphComp = projectData.Components.First(x => x.Name == "BPHComp");
             var bphCalc = bphComp.Calculations.First(x => x.Name == "Calc2");
-            var param2 = bphComp.Parameters.First(x => x.TaxonomyEntry.Name == "Parameter2");
+            var param2 = bphComp.Parameters.First(x => x.NameTaxonomyEntry.Name == "Parameter2");
 
-            var outparam = new SimParameter("outputtest", "", 15.0);
+            var outparam = new SimDoubleParameter("outputtest", "", 15.0);
 
             //Working
             bphCalc.ReturnParams["out1"] = outparam;
@@ -706,9 +710,9 @@ namespace SIMULTAN.Tests.Calculations
             var archCalc = archComp.Calculations.First(x => x.Name == "Calc1");
             var bphComp = projectData.Components.First(x => x.Name == "BPHComp");
             var bphCalc = bphComp.Calculations.First(x => x.Name == "Calc2");
-            var param2 = bphComp.Parameters.First(x => x.TaxonomyEntry.Name == "Parameter2");
+            var param2 = bphComp.Parameters.First(x => x.NameTaxonomyEntry.Name == "Parameter2");
 
-            var outparam = new SimParameter("outputtest", "", 15.0);
+            var outparam = new SimDoubleParameter("outputtest", "", 15.0);
 
             //Working
             bphCalc.ReturnParams.Remove("out1");
@@ -725,9 +729,9 @@ namespace SIMULTAN.Tests.Calculations
         public void State_InputParameters()
         {
             LoadProject(calculationProject);
-            var demoParams = projectData.GetParameters("NoCalculation");
+            var demoParams = projectData.GetParameters<SimDoubleParameter>("NoCalculation");
 
-            var calc = new SimCalculation("a+b", "calc", null, new Dictionary<string, SimParameter> { { "out1", demoParams["out"] } });
+            var calc = new SimCalculation("a+b", "calc", null, new Dictionary<string, SimDoubleParameter> { { "out1", demoParams["out"] } });
             PropertyChangedEventCounter propCounter = new PropertyChangedEventCounter(calc);
 
             Assert.AreEqual(SimCalculationValidity.ParamNotBound, calc.State);
@@ -764,11 +768,11 @@ namespace SIMULTAN.Tests.Calculations
         public void State_OutputParameters()
         {
             LoadProject(calculationProject);
-            var demoParams = projectData.GetParameters("NoCalculation");
+            var demoParams = projectData.GetParameters<SimDoubleParameter>("NoCalculation");
 
             var calc = new SimCalculation("a+b", "calc",
-                new Dictionary<string, SimParameter> { { "a", demoParams["param1"] }, { "b", demoParams["param2"] } },
-                new Dictionary<string, SimParameter> { { "out1", null } });
+                new Dictionary<string, SimDoubleParameter> { { "a", demoParams["param1"] }, { "b", demoParams["param2"] } },
+                new Dictionary<string, SimDoubleParameter> { { "out1", null } });
             PropertyChangedEventCounter propCounter = new PropertyChangedEventCounter(calc);
 
             Assert.AreEqual(SimCalculationValidity.ParamNotBound, calc.State);
@@ -801,11 +805,11 @@ namespace SIMULTAN.Tests.Calculations
         public void State_Expression()
         {
             LoadProject(calculationProject);
-            var demoParams = projectData.GetParameters("NoCalculation");
+            var demoParams = projectData.GetParameters<SimDoubleParameter>("NoCalculation");
 
             var calc = new SimCalculation("a+b", "calc",
-                new Dictionary<string, SimParameter> { { "a", demoParams["param1"] }, { "b", demoParams["param2"] } },
-                new Dictionary<string, SimParameter> { { "out1", demoParams["out"] } });
+                new Dictionary<string, SimDoubleParameter> { { "a", demoParams["param1"] }, { "b", demoParams["param2"] } },
+                new Dictionary<string, SimDoubleParameter> { { "out1", demoParams["out"] } });
             PropertyChangedEventCounter propCounter = new PropertyChangedEventCounter(calc);
             Assert.AreEqual(SimCalculationValidity.Valid, calc.State);
 
@@ -826,8 +830,8 @@ namespace SIMULTAN.Tests.Calculations
 
             //Create invalid
             calc = new SimCalculation("a $ b", "calc",
-                new Dictionary<string, SimParameter> { { "a", demoParams["param1"] }, { "b", demoParams["param2"] } },
-                new Dictionary<string, SimParameter> { { "out1", demoParams["out"] } });
+                new Dictionary<string, SimDoubleParameter> { { "a", demoParams["param1"] }, { "b", demoParams["param2"] } },
+                new Dictionary<string, SimDoubleParameter> { { "out1", demoParams["out"] } });
             propCounter = new PropertyChangedEventCounter(calc);
             Assert.AreEqual(SimCalculationValidity.InvalidExpression, calc.State);
 
@@ -855,94 +859,94 @@ namespace SIMULTAN.Tests.Calculations
         public void SimpleCalculations()
         {
             LoadProject(calculationProject);
-            var demoParams = projectData.GetParameters("NoCalculation");
+            var demoParams = projectData.GetParameters<SimDoubleParameter>("NoCalculation");
 
             var calc = new SimCalculation("a+b", "calc",
-                new Dictionary<string, SimParameter> { { "a", demoParams["param1"] }, { "b", demoParams["param2"] } },
-                new Dictionary<string, SimParameter> { { "out1", demoParams["out"] } });
+                new Dictionary<string, SimDoubleParameter> { { "a", demoParams["param1"] }, { "b", demoParams["param2"] } },
+                new Dictionary<string, SimDoubleParameter> { { "out1", demoParams["out"] } });
             PropertyChangedEventCounter propCounter = new PropertyChangedEventCounter(calc);
             Assert.AreEqual(SimCalculationValidity.Valid, calc.State);
 
             calc.Calculate(projectData.ValueManager);
-            AssertUtil.AssertDoubleEqual(3.0, demoParams["out"].ValueCurrent);
+            AssertUtil.AssertDoubleEqual(3.0, demoParams["out"].Value);
 
             //Change parameter value
-            demoParams["param1"].ValueCurrent = 99.0;
+            demoParams["param1"].Value = 99.0;
             calc.Calculate(projectData.ValueManager);
-            AssertUtil.AssertDoubleEqual(101.0, demoParams["out"].ValueCurrent);
+            AssertUtil.AssertDoubleEqual(101.0, demoParams["out"].Value);
 
             //Change parameter
             calc.InputParams["a"] = demoParams["param3"];
             calc.Calculate(projectData.ValueManager);
-            AssertUtil.AssertDoubleEqual(5.0, demoParams["out"].ValueCurrent);
+            AssertUtil.AssertDoubleEqual(5.0, demoParams["out"].Value);
 
             //Change equation
             calc.Expression = "a * b + c";
             calc.InputParams["c"] = demoParams["param1"];
             calc.Calculate(projectData.ValueManager);
-            AssertUtil.AssertDoubleEqual(105.0, demoParams["out"].ValueCurrent);
+            AssertUtil.AssertDoubleEqual(105.0, demoParams["out"].Value);
 
             //Multiple outputs
             calc.ReturnParams.Add("out2", demoParams["out2"]);
             calc.Calculate(projectData.ValueManager);
-            AssertUtil.AssertDoubleEqual(105.0, demoParams["out"].ValueCurrent);
-            AssertUtil.AssertDoubleEqual(105.0, demoParams["out2"].ValueCurrent);
+            AssertUtil.AssertDoubleEqual(105.0, demoParams["out"].Value);
+            AssertUtil.AssertDoubleEqual(105.0, demoParams["out2"].Value);
         }
 
         [TestMethod]
         public void CalculateWithOverwrite()
         {
             LoadProject(calculationProject);
-            var demoParams = projectData.GetParameters("NoCalculation");
+            var demoParams = projectData.GetParameters<SimDoubleParameter>("NoCalculation");
 
             var calc = new SimCalculation("a+b", "calc",
-                new Dictionary<string, SimParameter> { { "a", demoParams["param1"] }, { "b", demoParams["param2"] } },
-                new Dictionary<string, SimParameter> { { "out1", demoParams["out"] } });
+                new Dictionary<string, SimDoubleParameter> { { "a", demoParams["param1"] }, { "b", demoParams["param2"] } },
+                new Dictionary<string, SimDoubleParameter> { { "out1", demoParams["out"] } });
             PropertyChangedEventCounter propCounter = new PropertyChangedEventCounter(calc);
             Assert.AreEqual(SimCalculationValidity.Valid, calc.State);
 
             calc.Calculate(projectData.ValueManager);
-            AssertUtil.AssertDoubleEqual(3.0, demoParams["out"].ValueCurrent);
+            AssertUtil.AssertDoubleEqual(3.0, demoParams["out"].Value);
 
             //Overwrite input
-            Dictionary<SimParameter, SimParameter> overwrites = new Dictionary<SimParameter, SimParameter>
+            Dictionary<SimDoubleParameter, SimDoubleParameter> overwrites = new Dictionary<SimDoubleParameter, SimDoubleParameter>
             {
                 { demoParams["param1"], demoParams["param3"] }
             };
             calc.Calculate(projectData.ValueManager, null, null, overwrites);
-            AssertUtil.AssertDoubleEqual(5.0, demoParams["out"].ValueCurrent);
+            AssertUtil.AssertDoubleEqual(5.0, demoParams["out"].Value);
         }
 
         [TestMethod]
         public void CalculateInstance()
         {
             LoadProject(calculationProject);
-            var demoParams = projectData.GetParameters("NoCalculation");
+            var demoParams = projectData.GetParameters<SimDoubleParameter>("NoCalculation");
 
             var calc = new SimCalculation("a+b", "calc",
-                new Dictionary<string, SimParameter> { { "a", demoParams["param1"] }, { "b", demoParams["param2"] } },
-                new Dictionary<string, SimParameter> { { "out1", demoParams["out"] } });
+                new Dictionary<string, SimDoubleParameter> { { "a", demoParams["param1"] }, { "b", demoParams["param2"] } },
+                new Dictionary<string, SimDoubleParameter> { { "out1", demoParams["out"] } });
 
             PropertyChangedEventCounter propCounter = new PropertyChangedEventCounter(calc);
             Assert.AreEqual(SimCalculationValidity.Valid, calc.State);
 
             //Make sure that output parameter isn't changed
-            demoParams["out"].ValueCurrent = 9999.9;
+            demoParams["out"].Value = 9999.9;
 
-            Dictionary<SimParameter, double> overwrites = new Dictionary<SimParameter, double>()
+            Dictionary<SimDoubleParameter, double> overwrites = new Dictionary<SimDoubleParameter, double>()
             {
                 { demoParams["param1"], 17 },
                 { demoParams["out"], 76.0 }
             };
 
-            Assert.ThrowsException<ArgumentNullException>(() => { calc.Calculate((Dictionary<SimParameter, double>)null); });
+            Assert.ThrowsException<ArgumentNullException>(() => { calc.Calculate(null); });
 
             calc.Calculate(overwrites);
             Assert.AreEqual(2, overwrites.Count);
             Assert.AreEqual(17, overwrites[demoParams["param1"]]);
             Assert.AreEqual(19, overwrites[demoParams["out"]]);
-            Assert.AreEqual(1, demoParams["param1"].ValueCurrent);
-            Assert.AreEqual(9999.9, demoParams["out"].ValueCurrent);
+            Assert.AreEqual(1, demoParams["param1"].Value);
+            Assert.AreEqual(9999.9, demoParams["out"].Value);
         }
 
         #endregion

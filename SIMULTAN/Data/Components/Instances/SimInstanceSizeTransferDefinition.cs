@@ -96,48 +96,6 @@ namespace SIMULTAN.Data.Components
             }
         }
 
-
-        /// <summary>
-        /// Converts a SimInstanceSizeTransferSource enum into a serializable string.
-        /// Use <see cref="StringToSource"/> to convert the string back to an enum.
-        /// </summary>
-        /// <param name="source">The enumeration</param>
-        /// <returns>A string representation for serialization</returns>
-        public static string SourceToString(SimInstanceSizeTransferSource source)
-        {
-            switch (source)
-            {
-                case SimInstanceSizeTransferSource.Parameter:
-                    return "PARAMETER";
-                case SimInstanceSizeTransferSource.Path:
-                    return "PATH";
-                case SimInstanceSizeTransferSource.User:
-                    return "USER";
-                default:
-                    throw new Exception("Unknown enum value");
-            }
-        }
-        /// <summary>
-        /// Converts a serializable string into a SimInstanceSizeTransferSource enum.
-        /// Works with string returned by <see cref="SourceToString"/>.
-        /// </summary>
-        /// <param name="sourceString">The string</param>
-        /// <returns>The enum which matches the string</returns>
-        public static SimInstanceSizeTransferSource StringToSource(string sourceString)
-        {
-            switch (sourceString)
-            {
-                case "PARAMETER":
-                    return SimInstanceSizeTransferSource.Parameter;
-                case "PATH":
-                    return SimInstanceSizeTransferSource.Path;
-                case "USER":
-                    return SimInstanceSizeTransferSource.User;
-                default:
-                    throw new Exception("Unknown enum value");
-            }
-        }
-
         /// <inheritdoc/>
         public ISimInstanceSizeTransferDefinition Clone()
         {

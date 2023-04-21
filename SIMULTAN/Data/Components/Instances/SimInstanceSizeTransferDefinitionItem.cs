@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Linq;
 
 namespace SIMULTAN.Data.Components
 {
@@ -21,7 +17,7 @@ namespace SIMULTAN.Data.Components
         /// <summary>
         /// The parameter bound to this transfer item (only used when <see cref="Source"/> equals <see cref="SimInstanceSizeTransferSource.Parameter"/>)
         /// </summary>
-        public SimParameter Parameter { get; private set; }
+        public SimDoubleParameter Parameter { get; private set; }
         /// <summary>
         /// A value which is added to the parameter value (only used when <see cref="Source"/> equals <see cref="SimInstanceSizeTransferSource.Parameter"/>) 
         /// </summary>
@@ -34,7 +30,7 @@ namespace SIMULTAN.Data.Components
         /// <param name="source">Defines which source should be used</param>
         /// <param name="parameter">The parameter to use</param>
         /// <param name="addend">Additive value which is added to the parameter value</param>
-        public SimInstanceSizeTransferDefinitionItem(SimInstanceSizeTransferSource source, SimParameter parameter, double addend)
+        public SimInstanceSizeTransferDefinitionItem(SimInstanceSizeTransferSource source, SimDoubleParameter parameter, double addend)
         {
             this.Source = source;
             this.Parameter = parameter;
@@ -69,13 +65,13 @@ namespace SIMULTAN.Data.Components
         {
             if (this.loadingParameterId != SimId.Empty)
             {
-                this.Parameter = ids.GetById<SimParameter>(this.loadingParameterId);
+                this.Parameter = ids.GetById<SimDoubleParameter>(this.loadingParameterId);
             }
             else
             {
                 if (loadingParameterName != null && instance.Component != null)
                 {
-                    var param = instance.Component.Parameters.FirstOrDefault(x => x.TaxonomyEntry.Name == loadingParameterName);
+                    var param = instance.Component.Parameters.FirstOrDefault(x => x is SimDoubleParameter && x.NameTaxonomyEntry.Name == loadingParameterName) as SimDoubleParameter;
                     if (param != null)
                         Parameter = param;
                 }

@@ -1,9 +1,10 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SIMULTAN.Data;
 using SIMULTAN.Data.Components;
+using SIMULTAN.Data.Taxonomy;
 using SIMULTAN.Data.Users;
 using SIMULTAN.Exceptions;
-using SIMULTAN.Tests.Utils;
+using SIMULTAN.Tests.TestUtils;
 using SIMULTAN.Utils;
 using System;
 using System.Collections.Generic;
@@ -32,8 +33,8 @@ namespace SIMULTAN.Tests.Components
             projectData.Components.Add(root);
 
             SimComponent child = new SimComponent();
-            var childSlot = new SimSlot(SimDefaultSlots.Cost, "3");
-            child.CurrentSlot = childSlot.SlotBase;
+            var childSlot = new SimSlot(projectData.Taxonomies.GetDefaultSlot(SimDefaultSlotKeys.Cost), "3");
+            child.CurrentSlot = new SimTaxonomyEntryReference(childSlot.SlotBase);
 
             var childEntry = new SimChildComponentEntry(childSlot, child);
             root.Components.Add(childEntry);
@@ -58,8 +59,8 @@ namespace SIMULTAN.Tests.Components
             projectData.Components.Add(root);
 
             SimComponent child = new SimComponent();
-            var childSlot = new SimSlot(SimDefaultSlots.Cost, "3");
-            child.CurrentSlot = childSlot.SlotBase;
+            var childSlot = new SimSlot(projectData.Taxonomies.GetDefaultSlot(SimDefaultSlotKeys.Cost), "3");
+            child.CurrentSlot = new SimTaxonomyEntryReference(childSlot.SlotBase);
 
             var childEntry = new SimChildComponentEntry(childSlot);
             root.Components.Add(childEntry);
@@ -89,7 +90,7 @@ namespace SIMULTAN.Tests.Components
             Assert.ThrowsException<ArgumentNullException>(() => { root.Components.Add(null); });
 
             //Add twice
-            var childSlot = new SimSlot(SimDefaultSlots.Cost, "3");
+            var childSlot = new SimSlot(projectData.Taxonomies.GetDefaultSlot(SimDefaultSlotKeys.Cost), "3");
             var childEntry = new SimChildComponentEntry(childSlot);
             root.Components.Add(childEntry);
 
@@ -105,8 +106,8 @@ namespace SIMULTAN.Tests.Components
             projectData.Components.Add(root);
 
             SimComponent child = new SimComponent();
-            var childSlot = new SimSlot(SimDefaultSlots.Cost, "3");
-            child.CurrentSlot = childSlot.SlotBase;
+            var childSlot = new SimSlot(projectData.Taxonomies.GetDefaultSlot(SimDefaultSlotKeys.Cost), "3");
+            child.CurrentSlot = new SimTaxonomyEntryReference(childSlot.SlotBase);
             var childEntry = new SimChildComponentEntry(childSlot, child);
 
             root.Components.Add(childEntry);
@@ -132,7 +133,7 @@ namespace SIMULTAN.Tests.Components
             Assert.AreEqual(1, counter);
 
             //Remove null entry
-            childEntry = new SimChildComponentEntry(childSlot);
+            childEntry = new SimChildComponentEntry(new SimSlot(childSlot));
             root.Components.Add(childEntry);
             root.Components.Remove(childEntry);
 
@@ -149,8 +150,8 @@ namespace SIMULTAN.Tests.Components
             projectData.Components.Add(root);
 
             SimComponent child = new SimComponent();
-            var childSlot = new SimSlot(SimDefaultSlots.Cost, "3");
-            child.CurrentSlot = childSlot.SlotBase;
+            var childSlot = new SimSlot(projectData.Taxonomies.GetDefaultSlot(SimDefaultSlotKeys.Cost), "3");
+            child.CurrentSlot = new SimTaxonomyEntryReference(childSlot.SlotBase);
             var childEntry = new SimChildComponentEntry(childSlot, child);
 
             root.Components.Add(childEntry);
@@ -187,8 +188,8 @@ namespace SIMULTAN.Tests.Components
             projectData.Components.Add(root);
 
             SimComponent child = new SimComponent();
-            var childSlot = new SimSlot(SimDefaultSlots.Cost, "3");
-            child.CurrentSlot = childSlot.SlotBase;
+            var childSlot = new SimSlot(projectData.Taxonomies.GetDefaultSlot(SimDefaultSlotKeys.Cost), "3");
+            child.CurrentSlot = new SimTaxonomyEntryReference(childSlot.SlotBase);
 
             var childEntry = new SimChildComponentEntry(childSlot, child);
             root.Components.Add(childEntry);
@@ -196,12 +197,13 @@ namespace SIMULTAN.Tests.Components
             var oldId = child.Id;
 
             SimComponent child2 = new SimComponent();
+            child2.CurrentSlot = new SimTaxonomyEntryReference(projectData.Taxonomies.GetDefaultSlot(SimDefaultSlotKeys.Undefined));
 
             //Wrong slot
             Assert.ThrowsException<ArgumentException>(() => childEntry.Component = child2);
 
             //Test
-            child2.CurrentSlot = childSlot.SlotBase;
+            child2.CurrentSlot = new SimTaxonomyEntryReference(childSlot.SlotBase);
             childEntry.Component = child2;
 
             Assert.AreEqual(child2, childEntry.Component);
@@ -238,8 +240,8 @@ namespace SIMULTAN.Tests.Components
             projectData.Components.Add(root);
 
             SimComponent child = new SimComponent();
-            var childSlot = new SimSlot(SimDefaultSlots.Cost, "3");
-            child.CurrentSlot = childSlot.SlotBase;
+            var childSlot = new SimSlot(projectData.Taxonomies.GetDefaultSlot(SimDefaultSlotKeys.Cost), "3");
+            child.CurrentSlot = new SimTaxonomyEntryReference(childSlot.SlotBase);
 
             var childEntry = new SimChildComponentEntry(childSlot, child);
             root.Components.Add(childEntry);
@@ -249,8 +251,8 @@ namespace SIMULTAN.Tests.Components
             //Test
 
             SimComponent child2 = new SimComponent();
-            var child2Slot = new SimSlot(SimDefaultSlots.Joint, "4");
-            child2.CurrentSlot = child2Slot.SlotBase;
+            var child2Slot = new SimSlot(projectData.Taxonomies.GetDefaultSlot(SimDefaultSlotKeys.Joint), "4");
+            child2.CurrentSlot = new SimTaxonomyEntryReference(child2Slot.SlotBase);
             SimChildComponentEntry child2Entry = new SimChildComponentEntry(child2Slot, child2);
 
             int index = root.Components.IndexOf(childEntry);
@@ -296,14 +298,14 @@ namespace SIMULTAN.Tests.Components
             };
             SimSlot[] childSlots = new SimSlot[]
             {
-                new SimSlot(SimDefaultSlots.Cost, "3"),
-                new SimSlot(SimDefaultSlots.Cost, "4"),
-                new SimSlot(SimDefaultSlots.Areas, "2"),
+                new SimSlot(projectData.Taxonomies.GetDefaultSlot(SimDefaultSlotKeys.Cost), "3"),
+                new SimSlot(projectData.Taxonomies.GetDefaultSlot(SimDefaultSlotKeys.Cost), "4"),
+                new SimSlot(projectData.Taxonomies.GetDefaultSlot(SimDefaultSlotKeys.Areas), "2"),
             };
 
             for (int i = 0; i < children.Length; ++i)
                 if (children[i] != null)
-                    children[i].CurrentSlot = childSlots[i].SlotBase;
+                    children[i].CurrentSlot = new SimTaxonomyEntryReference(childSlots[i].SlotBase);
 
             var childEntries = children.Select((x, xi) => new SimChildComponentEntry(childSlots[xi], children[xi])).ToArray();
 
@@ -348,8 +350,8 @@ namespace SIMULTAN.Tests.Components
             projectData.Components.Add(root);
 
             SimComponent child = new SimComponent();
-            var childSlot = new SimSlot(SimDefaultSlots.Cost, "3");
-            child.CurrentSlot = childSlot.SlotBase;
+            var childSlot = new SimSlot(projectData.Taxonomies.GetDefaultSlot(SimDefaultSlotKeys.Cost), "3");
+            child.CurrentSlot = new SimTaxonomyEntryReference(childSlot.SlotBase);
             var childEntry = new SimChildComponentEntry(childSlot, child);
             root.Components.Add(childEntry);
 
@@ -388,23 +390,25 @@ namespace SIMULTAN.Tests.Components
             projectData.Components.Add(root);
 
             SimComponent child = new SimComponent();
-            var childSlot = new SimSlot(SimDefaultSlots.Cost, "3");
-            child.CurrentSlot = childSlot.SlotBase;
+            var costTax = projectData.Taxonomies.GetDefaultSlot(SimDefaultSlotKeys.Cost);
+            var jointTax = projectData.Taxonomies.GetDefaultSlot(SimDefaultSlotKeys.Joint);
+            var childSlot = new SimSlot(costTax, "3");
+            child.CurrentSlot = new SimTaxonomyEntryReference(childSlot.SlotBase);
             var childEntry = new SimChildComponentEntry(childSlot, child);
             root.Components.Add(childEntry);
 
-            Assert.AreEqual(SimDefaultSlots.Cost, childEntry.Slot.SlotBase.Base);
+            Assert.AreEqual(costTax, childEntry.Slot.SlotBase.Target);
             Assert.AreEqual("3", childEntry.Slot.SlotExtension);
-            Assert.AreEqual(SimDefaultSlots.Cost, child.CurrentSlot.Base);
+            Assert.AreEqual(costTax, child.CurrentSlot.Target);
 
             PropertyChangedEventCounter childPC = new PropertyChangedEventCounter(child);
             PropertyChangedEventCounter entryPC = new PropertyChangedEventCounter(childEntry);
 
-            child.CurrentSlot = new SimSlotBase(SimDefaultSlots.Joint);
+            child.CurrentSlot = new SimTaxonomyEntryReference(projectData.Taxonomies.GetDefaultSlot(SimDefaultSlotKeys.Joint));
 
-            Assert.AreEqual(SimDefaultSlots.Joint, childEntry.Slot.SlotBase.Base);
+            Assert.AreEqual(jointTax, childEntry.Slot.SlotBase.Target);
             Assert.AreEqual("3", childEntry.Slot.SlotExtension);
-            Assert.AreEqual(SimDefaultSlots.Joint, child.CurrentSlot.Base);
+            Assert.AreEqual(jointTax, child.CurrentSlot.Target);
 
             childPC.AssertEventCount(1);
             entryPC.AssertEventCount(1);
@@ -419,23 +423,25 @@ namespace SIMULTAN.Tests.Components
             projectData.Components.Add(root);
 
             SimComponent child = new SimComponent();
-            var childSlot = new SimSlot(SimDefaultSlots.Cost, "3");
-            child.CurrentSlot = childSlot.SlotBase;
+            var costTax = projectData.Taxonomies.GetDefaultSlot(SimDefaultSlotKeys.Cost);
+            var jointTax = projectData.Taxonomies.GetDefaultSlot(SimDefaultSlotKeys.Joint);
+            var childSlot = new SimSlot(costTax, "3");
+            child.CurrentSlot = new SimTaxonomyEntryReference(childSlot.SlotBase);
             var childEntry = new SimChildComponentEntry(childSlot, child);
             root.Components.Add(childEntry);
 
-            Assert.AreEqual(SimDefaultSlots.Cost, childEntry.Slot.SlotBase.Base);
+            Assert.AreEqual(costTax, childEntry.Slot.SlotBase.Target);
             Assert.AreEqual("3", childEntry.Slot.SlotExtension);
-            Assert.AreEqual(SimDefaultSlots.Cost, child.CurrentSlot.Base);
+            Assert.AreEqual(costTax, child.CurrentSlot.Target);
 
             PropertyChangedEventCounter childPC = new PropertyChangedEventCounter(child);
             PropertyChangedEventCounter entryPC = new PropertyChangedEventCounter(childEntry);
 
-            childEntry.Slot = new SimSlot(SimDefaultSlots.Joint, "4");
+            childEntry.Slot = new SimSlot(projectData.Taxonomies.GetDefaultSlot(SimDefaultSlotKeys.Joint), "4");
 
-            Assert.AreEqual(SimDefaultSlots.Joint, childEntry.Slot.SlotBase.Base);
+            Assert.AreEqual(jointTax, childEntry.Slot.SlotBase.Target);
             Assert.AreEqual("4", childEntry.Slot.SlotExtension);
-            Assert.AreEqual(SimDefaultSlots.Joint, child.CurrentSlot.Base);
+            Assert.AreEqual(jointTax, child.CurrentSlot.Target);
 
             childPC.AssertEventCount(1);
             entryPC.AssertEventCount(1);
@@ -450,8 +456,8 @@ namespace SIMULTAN.Tests.Components
             projectData.Components.Add(root);
 
             SimComponent child = new SimComponent();
-            var childSlot = new SimSlot(SimDefaultSlots.Cost, "3");
-            child.CurrentSlot = new SimSlotBase(SimDefaultSlots.Calculation);
+            var childSlot = new SimSlot(projectData.Taxonomies.GetDefaultSlot(SimDefaultSlotKeys.Cost), "3");
+            child.CurrentSlot = new SimTaxonomyEntryReference(projectData.Taxonomies.GetDefaultSlot(SimDefaultSlotKeys.Calculation));
 
             Assert.ThrowsException<ArgumentException>(() => { new SimChildComponentEntry(childSlot, child); });
         }
@@ -471,9 +477,9 @@ namespace SIMULTAN.Tests.Components
             {
                 var root = projectData.Components.First(x => x.Name == "BPHRoot");
 
-                var slot = new SimSlot(SimDefaultSlots.Cost, "4");
+                var slot = new SimSlot(projectData.Taxonomies.GetDefaultSlot(SimDefaultSlotKeys.Cost), "4");
                 var comp = new SimComponent();
-                comp.CurrentSlot = slot.SlotBase;
+                comp.CurrentSlot = new SimTaxonomyEntryReference(slot.SlotBase);
 
                 var entry = new SimChildComponentEntry(slot, comp);
                 root.Components.Add(entry);
@@ -491,9 +497,9 @@ namespace SIMULTAN.Tests.Components
 
                 var root = projectData.Components.First(x => x.Name == "ArchRoot");
 
-                var slot = new SimSlot(SimDefaultSlots.Cost, "4");
+                var slot = new SimSlot(projectData.Taxonomies.GetDefaultSlot(SimDefaultSlotKeys.Cost), "4");
                 var comp = new SimComponent();
-                comp.CurrentSlot = slot.SlotBase;
+                comp.CurrentSlot = new SimTaxonomyEntryReference(slot.SlotBase);
 
                 var entry = new SimChildComponentEntry(slot, comp);
 
@@ -517,7 +523,7 @@ namespace SIMULTAN.Tests.Components
 
                 var root = projectData.Components.First(x => x.Name == "ArchRoot");
 
-                var slot = new SimSlot(SimDefaultSlots.Cost, "4");
+                var slot = new SimSlot(projectData.Taxonomies.GetDefaultSlot(SimDefaultSlotKeys.Cost), "4");
                 var entry = new SimChildComponentEntry(slot);
 
                 var startAccess = root.AccessLocal.LastAccess(SimComponentAccessPrivilege.Write);
@@ -544,7 +550,7 @@ namespace SIMULTAN.Tests.Components
                 var entry = root.Components.First(x => x.Component == null);
 
                 var comp = new SimComponent();
-                comp.CurrentSlot = entry.Slot.SlotBase;
+                comp.CurrentSlot = new SimTaxonomyEntryReference(entry.Slot.SlotBase);
 
                 entry.Component = comp;
 
@@ -563,7 +569,7 @@ namespace SIMULTAN.Tests.Components
                 var entry = root.Components.First(x => x.Component == null);
 
                 var comp = new SimComponent();
-                comp.CurrentSlot = entry.Slot.SlotBase;
+                comp.CurrentSlot = new SimTaxonomyEntryReference(entry.Slot.SlotBase);
 
                 var startAccess = root.AccessLocal.LastAccess(SimComponentAccessPrivilege.Write);
                 Assert.ThrowsException<AccessDeniedException>(() => entry.Component = comp);
@@ -776,10 +782,10 @@ namespace SIMULTAN.Tests.Components
                 var comp = entry.Component;
                 var index = root.Components.IndexOf(entry);
 
-                var newSlot = new SimSlot(SimDefaultSlots.Regulation, "argh");
+                var newSlot = new SimSlot(projectData.Taxonomies.GetDefaultSlot(SimDefaultSlotKeys.Regulation), "argh");
                 var newComp = new SimComponent()
                 {
-                    CurrentSlot = newSlot.SlotBase
+                    CurrentSlot = new SimTaxonomyEntryReference(newSlot.SlotBase)
                 };
                 var newEntry = new SimChildComponentEntry(newSlot, newComp);
 
@@ -813,10 +819,10 @@ namespace SIMULTAN.Tests.Components
                 var rootStartAccess = root.AccessLocal.LastAccess(SimComponentAccessPrivilege.Write);
                 var compStartAccess = comp.AccessLocal.LastAccess(SimComponentAccessPrivilege.Write);
 
-                var newSlot = new SimSlot(SimDefaultSlots.Regulation, "argh");
+                var newSlot = new SimSlot(projectData.Taxonomies.GetDefaultSlot(SimDefaultSlotKeys.Regulation), "argh");
                 var newComp = new SimComponent()
                 {
-                    CurrentSlot = newSlot.SlotBase
+                    CurrentSlot = new SimTaxonomyEntryReference(newSlot.SlotBase)
                 };
                 var newEntry = new SimChildComponentEntry(newSlot, newComp);
 
@@ -855,10 +861,10 @@ namespace SIMULTAN.Tests.Components
                 var rootStartAccess = root.AccessLocal.LastAccess(SimComponentAccessPrivilege.Write);
                 var compStartAccess = comp.AccessLocal.LastAccess(SimComponentAccessPrivilege.Write);
 
-                var newSlot = new SimSlot(SimDefaultSlots.Regulation, "argh");
+                var newSlot = new SimSlot(projectData.Taxonomies.GetDefaultSlot(SimDefaultSlotKeys.Regulation), "argh");
                 var newComp = new SimComponent()
                 {
-                    CurrentSlot = newSlot.SlotBase
+                    CurrentSlot = new SimTaxonomyEntryReference(newSlot.SlotBase)
                 };
                 var newEntry = new SimChildComponentEntry(newSlot, newComp);
 
@@ -901,7 +907,7 @@ namespace SIMULTAN.Tests.Components
 
                 var newComp = new SimComponent()
                 {
-                    CurrentSlot = entry.Slot.SlotBase
+                    CurrentSlot = new SimTaxonomyEntryReference(entry.Slot.SlotBase)
                 };
 
                 Assert.IsTrue(root.HasAccess(projectData.UsersManager.CurrentUser, SimComponentAccessPrivilege.Write));
@@ -933,7 +939,7 @@ namespace SIMULTAN.Tests.Components
 
                 var newComp = new SimComponent()
                 {
-                    CurrentSlot = entry.Slot.SlotBase
+                    CurrentSlot = new SimTaxonomyEntryReference(entry.Slot.SlotBase)
                 };
 
                 Assert.IsTrue(root.HasAccess(projectData.UsersManager.CurrentUser, SimComponentAccessPrivilege.Write));
@@ -970,7 +976,7 @@ namespace SIMULTAN.Tests.Components
 
                 var newComp = new SimComponent()
                 {
-                    CurrentSlot = entry.Slot.SlotBase
+                    CurrentSlot = new SimTaxonomyEntryReference(entry.Slot.SlotBase)
                 };
 
                 Assert.IsFalse(root.HasAccess(projectData.UsersManager.CurrentUser, SimComponentAccessPrivilege.Write));
@@ -1195,8 +1201,8 @@ namespace SIMULTAN.Tests.Components
             projectData.Components.Add(root);
 
             SimComponent child = new SimComponent();
-            var childSlot = new SimSlot(SimDefaultSlots.Cost, "3");
-            child.CurrentSlot = childSlot.SlotBase;
+            var childSlot = new SimSlot(projectData.Taxonomies.GetDefaultSlot(SimDefaultSlotKeys.Cost), "3");
+            child.CurrentSlot = new SimTaxonomyEntryReference(childSlot.SlotBase);
 
             var startTime = DateTime.Now;
 
@@ -1230,8 +1236,8 @@ namespace SIMULTAN.Tests.Components
             projectData.Components.Add(root);
 
             SimComponent child = new SimComponent();
-            var childSlot = new SimSlot(SimDefaultSlots.Cost, "3");
-            child.CurrentSlot = childSlot.SlotBase;
+            var childSlot = new SimSlot(projectData.Taxonomies.GetDefaultSlot(SimDefaultSlotKeys.Cost), "3");
+            child.CurrentSlot = new SimTaxonomyEntryReference(childSlot.SlotBase);
 
             var childEntry = new SimChildComponentEntry(childSlot);
             root.Components.Add(childEntry);
@@ -1270,8 +1276,8 @@ namespace SIMULTAN.Tests.Components
 
             SimComponent child = new SimComponent();
             child.AccessLocal[SimUserRole.BUILDING_PHYSICS].Access = SimComponentAccessPrivilege.Read | SimComponentAccessPrivilege.Write;
-            var childSlot = new SimSlot(SimDefaultSlots.Cost, "3");
-            child.CurrentSlot = childSlot.SlotBase;
+            var childSlot = new SimSlot(projectData.Taxonomies.GetDefaultSlot(SimDefaultSlotKeys.Cost), "3");
+            child.CurrentSlot = new SimTaxonomyEntryReference(childSlot.SlotBase);
             var childEntry = new SimChildComponentEntry(childSlot, child);
 
             root.Components.Add(childEntry);
@@ -1310,8 +1316,8 @@ namespace SIMULTAN.Tests.Components
 
             SimComponent child = new SimComponent();
             child.AccessLocal[SimUserRole.BUILDING_PHYSICS].Access = SimComponentAccessPrivilege.Read | SimComponentAccessPrivilege.Write;
-            var childSlot = new SimSlot(SimDefaultSlots.Cost, "3");
-            child.CurrentSlot = childSlot.SlotBase;
+            var childSlot = new SimSlot(projectData.Taxonomies.GetDefaultSlot(SimDefaultSlotKeys.Cost), "3");
+            child.CurrentSlot = new SimTaxonomyEntryReference(childSlot.SlotBase);
             var childEntry = new SimChildComponentEntry(childSlot, child);
 
             root.Components.Add(childEntry);
@@ -1349,15 +1355,15 @@ namespace SIMULTAN.Tests.Components
 
             SimComponent child = new SimComponent();
             child.AccessLocal[SimUserRole.BUILDING_PHYSICS].Access = SimComponentAccessPrivilege.Read | SimComponentAccessPrivilege.Write;
-            var childSlot = new SimSlot(SimDefaultSlots.Cost, "3");
-            child.CurrentSlot = childSlot.SlotBase;
+            var childSlot = new SimSlot(projectData.Taxonomies.GetDefaultSlot(SimDefaultSlotKeys.Cost), "3");
+            child.CurrentSlot = new SimTaxonomyEntryReference(childSlot.SlotBase);
 
             var childEntry = new SimChildComponentEntry(childSlot, child);
             root.Components.Add(childEntry);
 
             SimComponent child2 = new SimComponent();
-            var child2Slot = new SimSlot(SimDefaultSlots.Joint, "4");
-            child2.CurrentSlot = child2Slot.SlotBase;
+            var child2Slot = new SimSlot(projectData.Taxonomies.GetDefaultSlot(SimDefaultSlotKeys.Joint), "4");
+            child2.CurrentSlot = new SimTaxonomyEntryReference(child2Slot.SlotBase);
             SimChildComponentEntry child2Entry = new SimChildComponentEntry(child2Slot, child2);
 
             int index = root.Components.IndexOf(childEntry);
@@ -1399,14 +1405,14 @@ namespace SIMULTAN.Tests.Components
 
             SimComponent child = new SimComponent();
             child.AccessLocal[SimUserRole.BUILDING_PHYSICS].Access = SimComponentAccessPrivilege.Read | SimComponentAccessPrivilege.Write;
-            var childSlot = new SimSlot(SimDefaultSlots.Cost, "3");
-            child.CurrentSlot = childSlot.SlotBase;
+            var childSlot = new SimSlot(projectData.Taxonomies.GetDefaultSlot(SimDefaultSlotKeys.Cost), "3");
+            child.CurrentSlot = new SimTaxonomyEntryReference(childSlot.SlotBase);
 
             var childEntry = new SimChildComponentEntry(childSlot, child);
             root.Components.Add(childEntry);
 
             SimComponent child2 = new SimComponent();
-            child2.CurrentSlot = childSlot.SlotBase;
+            child2.CurrentSlot = new SimTaxonomyEntryReference(childSlot.SlotBase);
             child2.AccessLocal[SimUserRole.BUILDING_PHYSICS].Access = SimComponentAccessPrivilege.Read | SimComponentAccessPrivilege.Write;
 
             projectData.Components.ResetChanges();
@@ -1452,16 +1458,16 @@ namespace SIMULTAN.Tests.Components
             };
             SimSlot[] childSlots = new SimSlot[]
             {
-                new SimSlot(SimDefaultSlots.Cost, "3"),
-                new SimSlot(SimDefaultSlots.Cost, "4"),
-                new SimSlot(SimDefaultSlots.Areas, "2"),
+                new SimSlot(projectData.Taxonomies.GetDefaultSlot(SimDefaultSlotKeys.Cost), "3"),
+                new SimSlot(projectData.Taxonomies.GetDefaultSlot(SimDefaultSlotKeys.Cost), "4"),
+                new SimSlot(projectData.Taxonomies.GetDefaultSlot(SimDefaultSlotKeys.Areas), "2"),
             };
 
             for (int i = 0; i < children.Length; ++i)
             {
                 if (children[i] != null)
                 {
-                    children[i].CurrentSlot = childSlots[i].SlotBase;
+                    children[i].CurrentSlot = new SimTaxonomyEntryReference(childSlots[i].SlotBase);
                     children[i].AccessLocal[SimUserRole.BUILDING_PHYSICS].Access = SimComponentAccessPrivilege.Read | SimComponentAccessPrivilege.Write;
                 }
             }
@@ -1506,8 +1512,8 @@ namespace SIMULTAN.Tests.Components
 
             SimComponent child = new SimComponent();
             child.AccessLocal[SimUserRole.BUILDING_PHYSICS].Access = SimComponentAccessPrivilege.Read | SimComponentAccessPrivilege.Write;
-            var childSlot = new SimSlot(SimDefaultSlots.Cost, "3");
-            child.CurrentSlot = childSlot.SlotBase;
+            var childSlot = new SimSlot(projectData.Taxonomies.GetDefaultSlot(SimDefaultSlotKeys.Cost), "3");
+            child.CurrentSlot = new SimTaxonomyEntryReference(childSlot.SlotBase);
             var childEntry = new SimChildComponentEntry(childSlot, child);
             root.Components.Add(childEntry);
 

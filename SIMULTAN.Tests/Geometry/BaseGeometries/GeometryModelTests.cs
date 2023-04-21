@@ -1,14 +1,12 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using SIMULTAN.Data.Assets;
 using SIMULTAN.Data.Geometry;
 using SIMULTAN.Tests.Geometry.EventData;
-using SIMULTAN.Tests.Util;
+using SIMULTAN.Tests.TestUtils;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Media.Media3D;
 
 namespace SIMULTAN.Tests.Geometry.BaseGeometries
@@ -199,7 +197,7 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
 
             var gm2 = new GeometryModelData();
 
-            data.model.LinkedModels.Add(new GeometryModel(Guid.NewGuid(), "Model2", new DummyResourceFileEntry("dummy2.geosim", 2), OperationPermission.None, gm2));
+            data.model.LinkedModels.Add(new GeometryModel("Model2", new DummyResourceFileEntry("dummy2.geosim", 2), OperationPermission.None, gm2));
             Assert.AreEqual(1, data.model.LinkedModels.Count);
             Assert.AreEqual(gm2, data.model.LinkedModels[0].Geometry);
 

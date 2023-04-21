@@ -1,13 +1,10 @@
 ﻿using Microsoft.VisualBasic.FileIO;
-using SIMULTAN;
-using SIMULTAN.Data;
 using SIMULTAN.Data.MultiValues;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Threading;
 
@@ -66,15 +63,16 @@ namespace SIMULTAN.Serializer.CSV
         /// <summary>
         /// The values in the table
         /// </summary>
-        public List<List<double>> Values;
+        public List<List<object>> Values;
 
         /// <summary>
         /// Initializes an instance of a MultiValueBigTableComponents class
         /// </summary>
         /// <param name="columnHeaders">The column headers</param>
         /// <param name="rowHeaders">The row headers</param>
-        /// <param name="values">Vaues</param>
-        public MultiValueBigTableComponents(List<SimMultiValueBigTableHeader> columnHeaders, List<SimMultiValueBigTableHeader> rowHeaders, List<List<double>> values)
+        /// <param name="values">Values</param>
+        public MultiValueBigTableComponents(List<SimMultiValueBigTableHeader> columnHeaders, List<SimMultiValueBigTableHeader> rowHeaders,
+            List<List<object>> values)
         {
             this.ColumnHeaders = columnHeaders;
             this.RowHeaders = rowHeaders;
@@ -83,7 +81,7 @@ namespace SIMULTAN.Serializer.CSV
     }
 
     /// <summary>
-    /// Class which holds funcitons to import CSV to MultiValueBigTable
+    /// Class which holds functions to import CSV to MultiValueBigTable
     /// </summary>
     public static class CSVToValueFieldImporter
     {
@@ -151,8 +149,9 @@ namespace SIMULTAN.Serializer.CSV
 
 
             List<List<string>> table = new List<List<string>>();
+            var encoding = FileHelper.GetEncoding(file.FullName);
 
-            using (TextFieldParser parser = new TextFieldParser(file.FullName))
+            using (TextFieldParser parser = new TextFieldParser(file.FullName, encoding))
             {
                 parser.TextFieldType = FieldType.Delimited;
                 parser.SetDelimiters(settings.Delimiter);
@@ -324,29 +323,22 @@ namespace SIMULTAN.Serializer.CSV
             int maxChunkSize = 5000; // in rows
             int maxNumberOfChunks = int.MaxValue;
             int numberOfChunks = Math.Min(Math.Min(maxNumberOfChunks - 1, (int)Math.Ceiling(rowCount / (float)maxChunkSize)), rowCount - 1);
-            List<List<double>> values = new List<List<double>>(rowCount);
+            List<List<object>> values = new List<List<object>>(rowCount);
             NumberFormatInfo formatProvider = new NumberFormatInfo();
             formatProvider.NumberDecimalSeparator = settings.DecimalSeparator;
-
-            int errorIndexRow = -1;
-            int errorIndexCol = -1;
 
             if (numberOfChunks <= 1)
             {
                 for (int i = 0; i < rowCount; i++)
                 {
-                    var (vals, errColIndex) = ParseRow(table[i + rowStartIndex], columnStartIndex, formatProvider);
-                    if (errColIndex != -1 && errorIndexCol == -1)
-                    {
-                        errorIndexRow = i;
-                        errorIndexCol = errColIndex;
-                    }
+                    var vals = ParseRow(table[i + rowStartIndex], columnStartIndex, formatProvider);
                     values.Add(vals);
                 }
             }
             else
             {
-                List<Task<(List<List<double>> values, int errColIndex, int errRowIndex)>> tasks = new List<Task<(List<List<double>>, int, int)>>(numberOfChunks);
+                List<Task<(List<List<object>> values, int errColIndex, int errRowIndex)>> tasks =
+                    new List<Task<(List<List<object>>, int, int)>>(numberOfChunks);
                 double rowsPerChunk = rowCount / (double)numberOfChunks;
                 for (int i = 0; i < numberOfChunks; ++i)
                 {
@@ -359,27 +351,7 @@ namespace SIMULTAN.Serializer.CSV
                 foreach (var task in tasks)
                 {
                     values.AddRange(task.Result.values);
-                    if (errorIndexCol == -1)
-                    {
-                        errorIndexCol = task.Result.errColIndex;
-                        errorIndexRow = task.Result.errRowIndex;
-                    }
-                    else
-                    {
-                        errorIndexCol = Math.Min(errorIndexCol, task.Result.errColIndex);
-                        errorIndexRow = Math.Min(errorIndexRow, task.Result.errRowIndex);
-                    }
                 }
-            }
-
-            if (errorIndexCol != -1)
-            {
-                errorIndexRow = errorIndexRow + 1;
-                errorIndexCol = errorIndexCol + 1;
-                throw new CSVImportException(CSVImportExceptionReason.ParseError, new object[]
-                {
-                    errorIndexRow, errorIndexCol
-                });
             }
 
             if (values.Any(n => n.Count == 0))
@@ -393,54 +365,44 @@ namespace SIMULTAN.Serializer.CSV
             return result;
         }
 
-        private static (List<double>, int errColIndex) ParseRow(List<string> cells, int columnStartIndex, IFormatProvider formatProvider)
+        private static List<object> ParseRow(List<string> cells, int columnStartIndex, IFormatProvider formatProvider)
         {
             int columnCount = cells.Count - columnStartIndex;
-            int errColIndex = -1;
-            List<double> row = new List<double>(columnCount);
+            List<object> row = new List<object>(columnCount);
             for (int j = 0; j < columnCount; j++)
             {
                 var val = ParseCell(cells[j + columnStartIndex], formatProvider);
-                if (double.IsNaN(val) && errColIndex == -1)
-                    errColIndex = j;
                 row.Add(val);
             }
-            return (row, errColIndex);
+            return row;
         }
 
-        private static double ParseCell(string cell, IFormatProvider formatProvider)
+        private static object ParseCell(string cell, IFormatProvider formatProvider)
         {
-            if (cell == "")
-                return 0.0;
-
-            double val = double.NaN;
-            if (double.TryParse(cell, NumberStyles.Float, formatProvider, out val))
-            {
-                return val;
-            }
+            if (string.IsNullOrEmpty(cell))
+                return null;
+            else if (double.TryParse(cell, NumberStyles.Float, formatProvider, out var dval))
+                return dval;
+            else if (int.TryParse(cell, NumberStyles.Integer, formatProvider, out var ival))
+                return ival;
+            else if (bool.TryParse(cell, out var bval))
+                return bval;
             else
-            {
-                return double.NaN;
-            }
+                return cell;
         }
 
-        private static (List<List<double>>, int errColIndex, int errRowIndex) ParseRowsAsync(int chunk, double chunkSizeInRows, List<List<string>> table, int rowCount, int rowStartIndex, int columnStartIndex, IFormatProvider formatProvider)
+        private static (List<List<object>>, int errColIndex, int errRowIndex) ParseRowsAsync(int chunk, double chunkSizeInRows, List<List<string>> table, int rowCount, int rowStartIndex, int columnStartIndex, IFormatProvider formatProvider)
         {
             int startRow = (int)Math.Floor(chunk * chunkSizeInRows) + rowStartIndex;
             int endRow = Math.Min((int)Math.Floor((chunk + 1) * chunkSizeInRows), rowCount) + rowStartIndex;
 
-            List<List<double>> result = new List<List<double>>(endRow - startRow);
+            List<List<object>> result = new List<List<object>>(endRow - startRow);
 
             int firstErrColIndex = -1;
             int firstErrRowIndex = -1;
             for (int i = startRow; i < endRow; ++i)
             {
-                var (vals, errColIndex) = ParseRow(table[i], columnStartIndex, formatProvider);
-                if (errColIndex != -1 && firstErrColIndex == -1)
-                {
-                    firstErrRowIndex = i;
-                    firstErrColIndex = errColIndex;
-                }
+                var vals = ParseRow(table[i], columnStartIndex, formatProvider);
                 result.Add(vals);
             }
 

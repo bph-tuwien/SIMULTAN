@@ -1,12 +1,11 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SIMULTAN.Data.Components;
-using SIMULTAN.Tests.Utils;
+using SIMULTAN.Data.FlowNetworks;
+using SIMULTAN.Tests.TestUtils;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media.Media3D;
 
@@ -43,10 +42,6 @@ namespace SIMULTAN.Tests.Instances
             Assert.AreEqual(instance, placement.Instance);
             Assert.AreEqual(node, placement.NetworkElement);
             Assert.AreEqual(SimInstancePlacementState.Valid, placement.State);
-
-            var nodePos = new Point3D(node.Position.X * SimInstancePlacementNetwork.SCALE_PIXEL_TO_M, 0.0, node.Position.Y * SimInstancePlacementNetwork.SCALE_PIXEL_TO_M);
-            Assert.AreEqual(1, instance.InstancePath.Count);
-            Assert.AreEqual(nodePos, instance.InstancePath[0]);
         }
 
         [TestMethod]
@@ -89,6 +84,20 @@ namespace SIMULTAN.Tests.Instances
             Assert.AreEqual(nodeComponent, instance.Component);
         }
 
+
+        private WeakReference NodeInstanceMemoryLeak_Action(SimComponent nodeComponent, SimFlowNetworkNode node)
+        {
+            var instance = new SimComponentInstance(node, new Point(0, 0));
+            WeakReference instRef = new WeakReference(instance);
+
+            nodeComponent.Instances.Add(instance);
+
+            Assert.AreEqual(instance, node.Content);
+
+            nodeComponent.Instances.Remove(instance);
+
+            return instRef;
+        }
         [TestMethod]
         public void NodeInstanceMemoryLeak()
         {
@@ -98,15 +107,7 @@ namespace SIMULTAN.Tests.Instances
             var network = projectData.NetworkManager.NetworkRecord.First(x => x.Name == "Network");
             var node = network.ContainedNodes.Values.First(x => x.Name == "Node 912f497f-2a73-4798-85d6-bdd365da555f: 2");
 
-            var instance = new SimComponentInstance(node, new Point(0, 0));
-            WeakReference instRef = new WeakReference(instance);
-
-            nodeComponent.Instances.Add(instance);
-
-            Assert.AreEqual(instance, node.Content);
-
-            nodeComponent.Instances.Remove(instance);
-            instance = null;
+            var instRef = NodeInstanceMemoryLeak_Action(nodeComponent, node);
 
             Assert.AreEqual(null, node.Content);
 
@@ -118,15 +119,8 @@ namespace SIMULTAN.Tests.Instances
 
         }
 
-        [TestMethod]
-        public void NodePlacementMemoryLeak()
+        private WeakReference NodePlacementMemoryLeak_Action(SimComponent nodeComponent, SimFlowNetworkNode node)
         {
-            LoadProject(instanceProject);
-
-            var nodeComponent = projectData.Components.First(x => x.Name == "Node");
-            var network = projectData.NetworkManager.NetworkRecord.First(x => x.Name == "Network");
-            var node = network.ContainedNodes.Values.First(x => x.Name == "Node 912f497f-2a73-4798-85d6-bdd365da555f: 2");
-
             var instance = new SimComponentInstance(node, new Point(0, 0));
 
             nodeComponent.Instances.Add(instance);
@@ -136,7 +130,19 @@ namespace SIMULTAN.Tests.Instances
             var placement = instance.Placements.FirstOrDefault(x => x is SimInstancePlacementNetwork);
             var placementRef = new WeakReference(placement);
             instance.Placements.Remove(placement);
-            placement = null;
+
+            return placementRef;
+        }
+        [TestMethod]
+        public void NodePlacementMemoryLeak()
+        {
+            LoadProject(instanceProject);
+
+            var nodeComponent = projectData.Components.First(x => x.Name == "Node");
+            var network = projectData.NetworkManager.NetworkRecord.First(x => x.Name == "Network");
+            var node = network.ContainedNodes.Values.First(x => x.Name == "Node 912f497f-2a73-4798-85d6-bdd365da555f: 2");
+
+            var placementRef = NodePlacementMemoryLeak_Action(nodeComponent, node);
 
             Assert.AreEqual(null, node.Content);
 
@@ -145,7 +151,6 @@ namespace SIMULTAN.Tests.Instances
             GC.Collect();
 
             Assert.IsFalse(placementRef.IsAlive);
-
         }
 
 
@@ -174,12 +179,6 @@ namespace SIMULTAN.Tests.Instances
             Assert.AreEqual(instance, placement.Instance);
             Assert.AreEqual(edge, placement.NetworkElement);
             Assert.AreEqual(SimInstancePlacementState.Valid, placement.State);
-
-            var startPos = new Point3D(edge.Start.Position.X * SimInstancePlacementNetwork.SCALE_PIXEL_TO_M, 0.0, edge.Start.Position.Y * SimInstancePlacementNetwork.SCALE_PIXEL_TO_M);
-            var endPos = new Point3D(edge.End.Position.X * SimInstancePlacementNetwork.SCALE_PIXEL_TO_M, 0.0, edge.End.Position.Y * SimInstancePlacementNetwork.SCALE_PIXEL_TO_M);
-            Assert.AreEqual(2, instance.InstancePath.Count);
-            Assert.AreEqual(startPos, instance.InstancePath[0]);
-            Assert.AreEqual(endPos, instance.InstancePath[1]);
         }
 
         [TestMethod]
@@ -222,6 +221,19 @@ namespace SIMULTAN.Tests.Instances
             Assert.AreEqual(nodeComponent, instance.Component);
         }
 
+        private WeakReference EdgeInstanceMemoryLeak_Action(SimComponent nodeComponent, SimFlowNetworkEdge edge)
+        {
+            var instance = new SimComponentInstance(edge, new Point(0, 0));
+            WeakReference instRef = new WeakReference(instance);
+
+            nodeComponent.Instances.Add(instance);
+
+            Assert.AreEqual(instance, edge.Content);
+
+            nodeComponent.Instances.Remove(instance);
+
+            return instRef;
+        }
         [TestMethod]
         public void EdgeInstanceMemoryLeak()
         {
@@ -231,15 +243,7 @@ namespace SIMULTAN.Tests.Instances
             var network = projectData.NetworkManager.NetworkRecord.First(x => x.Name == "Network");
             var edge = network.ContainedEdges.Values.First(x => x.Name == "Edge 4");
 
-            var instance = new SimComponentInstance(edge, new Point(0, 0));
-            WeakReference instRef = new WeakReference(instance);
-
-            nodeComponent.Instances.Add(instance);
-
-            Assert.AreEqual(instance, edge.Content);
-
-            nodeComponent.Instances.Remove(instance);
-            instance = null;
+            var instRef = EdgeInstanceMemoryLeak_Action(nodeComponent, edge);
 
             Assert.AreEqual(null, edge.Content);
 
@@ -251,6 +255,14 @@ namespace SIMULTAN.Tests.Instances
 
         }
 
+        private WeakReference EdgePlacementMemoryLeak_Action(SimComponentInstance instance)
+        {
+            var placement = instance.Placements.FirstOrDefault(x => x is SimInstancePlacementNetwork);
+            var placementRef = new WeakReference(placement);
+            instance.Placements.Remove(placement);
+
+            return placementRef;
+        }
         [TestMethod]
         public void EdgePlacementMemoryLeak()
         {
@@ -266,10 +278,7 @@ namespace SIMULTAN.Tests.Instances
 
             Assert.AreEqual(instance, edge.Content);
 
-            var placement = instance.Placements.FirstOrDefault(x => x is SimInstancePlacementNetwork);
-            var placementRef = new WeakReference(placement);
-            instance.Placements.Remove(placement);
-            placement = null;
+            var placementRef = EdgePlacementMemoryLeak_Action(instance);
 
             Assert.AreEqual(null, edge.Content);
 
@@ -364,7 +373,7 @@ namespace SIMULTAN.Tests.Instances
             var cumulativeComponent = nodeComponent.Components.FirstOrDefault(x => x.Component != null && x.Component.Name == "Cumulative")?.Component;
             Assert.AreNotEqual(null, cumulativeComponent);
 
-            Dictionary<string, SimParameter> cumulativeParameters = new Dictionary<string, SimParameter>
+            Dictionary<string, SimDoubleParameter> cumulativeParameters = new Dictionary<string, SimDoubleParameter>
             {
                 { ReservedParameterKeys.RP_LENGTH_MIN_TOTAL, null },
                 { ReservedParameterKeys.RP_AREA_MIN_TOTAL, null },
@@ -376,25 +385,25 @@ namespace SIMULTAN.Tests.Instances
             };
 
             foreach (var pKey in cumulativeParameters.Keys.ToList())
-                cumulativeParameters[pKey] = cumulativeComponent.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(pKey));
+                cumulativeParameters[pKey] = cumulativeComponent.Parameters.FirstOrDefault(x => x is SimDoubleParameter && x.HasReservedTaxonomyEntry(pKey)) as SimDoubleParameter;
 
-            AssertUtil.AssertDoubleEqual(0.0, cumulativeParameters[ReservedParameterKeys.RP_LENGTH_MIN_TOTAL].ValueCurrent);
-            AssertUtil.AssertDoubleEqual(1.0, cumulativeParameters[ReservedParameterKeys.RP_LENGTH_MAX_TOTAL].ValueCurrent);
-            AssertUtil.AssertDoubleEqual(0.0, cumulativeParameters[ReservedParameterKeys.RP_AREA_MIN_TOTAL].ValueCurrent);
-            AssertUtil.AssertDoubleEqual(1.0, cumulativeParameters[ReservedParameterKeys.RP_AREA_MAX_TOTAL].ValueCurrent);
-            AssertUtil.AssertDoubleEqual(0.0, cumulativeParameters[ReservedParameterKeys.RP_VOLUME_MIN_TOTAL].ValueCurrent);
-            AssertUtil.AssertDoubleEqual(1.0, cumulativeParameters[ReservedParameterKeys.RP_VOLUME_MAX_TOTAL].ValueCurrent);
-            AssertUtil.AssertDoubleEqual(1.0, cumulativeParameters[ReservedParameterKeys.RP_COUNT].ValueCurrent);
+            AssertUtil.AssertDoubleEqual(0.0, cumulativeParameters[ReservedParameterKeys.RP_LENGTH_MIN_TOTAL].Value);
+            AssertUtil.AssertDoubleEqual(1.0, cumulativeParameters[ReservedParameterKeys.RP_LENGTH_MAX_TOTAL].Value);
+            AssertUtil.AssertDoubleEqual(0.0, cumulativeParameters[ReservedParameterKeys.RP_AREA_MIN_TOTAL].Value);
+            AssertUtil.AssertDoubleEqual(1.0, cumulativeParameters[ReservedParameterKeys.RP_AREA_MAX_TOTAL].Value);
+            AssertUtil.AssertDoubleEqual(0.0, cumulativeParameters[ReservedParameterKeys.RP_VOLUME_MIN_TOTAL].Value);
+            AssertUtil.AssertDoubleEqual(1.0, cumulativeParameters[ReservedParameterKeys.RP_VOLUME_MAX_TOTAL].Value);
+            AssertUtil.AssertDoubleEqual(1.0, cumulativeParameters[ReservedParameterKeys.RP_COUNT].Value);
 
             instance.InstanceSize = new SimInstanceSize(new Vector3D(1.0, 2.0, 3.0), new Vector3D(4.0, 5.0, 6.0));
 
-            AssertUtil.AssertDoubleEqual(3.0, cumulativeParameters[ReservedParameterKeys.RP_LENGTH_MIN_TOTAL].ValueCurrent);
-            AssertUtil.AssertDoubleEqual(6.0, cumulativeParameters[ReservedParameterKeys.RP_LENGTH_MAX_TOTAL].ValueCurrent);
-            AssertUtil.AssertDoubleEqual(2.0, cumulativeParameters[ReservedParameterKeys.RP_AREA_MIN_TOTAL].ValueCurrent);
-            AssertUtil.AssertDoubleEqual(20.0, cumulativeParameters[ReservedParameterKeys.RP_AREA_MAX_TOTAL].ValueCurrent);
-            AssertUtil.AssertDoubleEqual(6.0, cumulativeParameters[ReservedParameterKeys.RP_VOLUME_MIN_TOTAL].ValueCurrent);
-            AssertUtil.AssertDoubleEqual(120.0, cumulativeParameters[ReservedParameterKeys.RP_VOLUME_MAX_TOTAL].ValueCurrent);
-            AssertUtil.AssertDoubleEqual(1.0, cumulativeParameters[ReservedParameterKeys.RP_COUNT].ValueCurrent);
+            AssertUtil.AssertDoubleEqual(3.0, cumulativeParameters[ReservedParameterKeys.RP_LENGTH_MIN_TOTAL].Value);
+            AssertUtil.AssertDoubleEqual(6.0, cumulativeParameters[ReservedParameterKeys.RP_LENGTH_MAX_TOTAL].Value);
+            AssertUtil.AssertDoubleEqual(2.0, cumulativeParameters[ReservedParameterKeys.RP_AREA_MIN_TOTAL].Value);
+            AssertUtil.AssertDoubleEqual(20.0, cumulativeParameters[ReservedParameterKeys.RP_AREA_MAX_TOTAL].Value);
+            AssertUtil.AssertDoubleEqual(6.0, cumulativeParameters[ReservedParameterKeys.RP_VOLUME_MIN_TOTAL].Value);
+            AssertUtil.AssertDoubleEqual(120.0, cumulativeParameters[ReservedParameterKeys.RP_VOLUME_MAX_TOTAL].Value);
+            AssertUtil.AssertDoubleEqual(1.0, cumulativeParameters[ReservedParameterKeys.RP_COUNT].Value);
         }
 
         [TestMethod]
@@ -412,7 +421,7 @@ namespace SIMULTAN.Tests.Instances
             var cumulativeComponent = nodeComponent.Components.FirstOrDefault(x => x.Component != null && x.Component.Name == "Cumulative")?.Component;
             Assert.AreNotEqual(null, cumulativeComponent);
 
-            Dictionary<string, SimParameter> cumulativeParameters = new Dictionary<string, SimParameter>
+            Dictionary<string, SimDoubleParameter> cumulativeParameters = new Dictionary<string, SimDoubleParameter>
             {
                 { ReservedParameterKeys.RP_LENGTH_MIN_TOTAL, null },
                 { ReservedParameterKeys.RP_AREA_MIN_TOTAL, null },
@@ -424,264 +433,36 @@ namespace SIMULTAN.Tests.Instances
             };
 
             foreach (var pKey in cumulativeParameters.Keys.ToList())
-                cumulativeParameters[pKey] = cumulativeComponent.Parameters.FirstOrDefault(x => x.HasReservedTaxonomyEntry(pKey));
+                cumulativeParameters[pKey] = cumulativeComponent.Parameters.FirstOrDefault(x => x is SimDoubleParameter && x.HasReservedTaxonomyEntry(pKey)) as SimDoubleParameter;
 
-            AssertUtil.AssertDoubleEqual(3.0,   cumulativeParameters[ReservedParameterKeys.RP_LENGTH_MIN_TOTAL].ValueCurrent);
-            AssertUtil.AssertDoubleEqual(7.0,   cumulativeParameters[ReservedParameterKeys.RP_LENGTH_MAX_TOTAL].ValueCurrent);
-            AssertUtil.AssertDoubleEqual(2.0,   cumulativeParameters[ReservedParameterKeys.RP_AREA_MIN_TOTAL].ValueCurrent);
-            AssertUtil.AssertDoubleEqual(21.0,  cumulativeParameters[ReservedParameterKeys.RP_AREA_MAX_TOTAL].ValueCurrent);
-            AssertUtil.AssertDoubleEqual(6.0,   cumulativeParameters[ReservedParameterKeys.RP_VOLUME_MIN_TOTAL].ValueCurrent);
-            AssertUtil.AssertDoubleEqual(121.0, cumulativeParameters[ReservedParameterKeys.RP_VOLUME_MAX_TOTAL].ValueCurrent);
-            AssertUtil.AssertDoubleEqual(2.0,   cumulativeParameters[ReservedParameterKeys.RP_COUNT].ValueCurrent);
+            AssertUtil.AssertDoubleEqual(3.0, cumulativeParameters[ReservedParameterKeys.RP_LENGTH_MIN_TOTAL].Value);
+            AssertUtil.AssertDoubleEqual(7.0, cumulativeParameters[ReservedParameterKeys.RP_LENGTH_MAX_TOTAL].Value);
+            AssertUtil.AssertDoubleEqual(2.0, cumulativeParameters[ReservedParameterKeys.RP_AREA_MIN_TOTAL].Value);
+            AssertUtil.AssertDoubleEqual(21.0, cumulativeParameters[ReservedParameterKeys.RP_AREA_MAX_TOTAL].Value);
+            AssertUtil.AssertDoubleEqual(6.0, cumulativeParameters[ReservedParameterKeys.RP_VOLUME_MIN_TOTAL].Value);
+            AssertUtil.AssertDoubleEqual(121.0, cumulativeParameters[ReservedParameterKeys.RP_VOLUME_MAX_TOTAL].Value);
+            AssertUtil.AssertDoubleEqual(2.0, cumulativeParameters[ReservedParameterKeys.RP_COUNT].Value);
 
             instance.InstanceSize = new SimInstanceSize(new Vector3D(1.0, 2.0, 3.0), new Vector3D(4.0, 5.0, 6.0));
 
-            AssertUtil.AssertDoubleEqual(6.0,   cumulativeParameters[ReservedParameterKeys.RP_LENGTH_MIN_TOTAL].ValueCurrent);
-            AssertUtil.AssertDoubleEqual(12.0,  cumulativeParameters[ReservedParameterKeys.RP_LENGTH_MAX_TOTAL].ValueCurrent);
-            AssertUtil.AssertDoubleEqual(4.0,   cumulativeParameters[ReservedParameterKeys.RP_AREA_MIN_TOTAL].ValueCurrent);
-            AssertUtil.AssertDoubleEqual(40.0,  cumulativeParameters[ReservedParameterKeys.RP_AREA_MAX_TOTAL].ValueCurrent);
-            AssertUtil.AssertDoubleEqual(12.0,  cumulativeParameters[ReservedParameterKeys.RP_VOLUME_MIN_TOTAL].ValueCurrent);
-            AssertUtil.AssertDoubleEqual(240.0, cumulativeParameters[ReservedParameterKeys.RP_VOLUME_MAX_TOTAL].ValueCurrent);
-            AssertUtil.AssertDoubleEqual(2.0,   cumulativeParameters[ReservedParameterKeys.RP_COUNT].ValueCurrent);
+            AssertUtil.AssertDoubleEqual(6.0, cumulativeParameters[ReservedParameterKeys.RP_LENGTH_MIN_TOTAL].Value);
+            AssertUtil.AssertDoubleEqual(12.0, cumulativeParameters[ReservedParameterKeys.RP_LENGTH_MAX_TOTAL].Value);
+            AssertUtil.AssertDoubleEqual(4.0, cumulativeParameters[ReservedParameterKeys.RP_AREA_MIN_TOTAL].Value);
+            AssertUtil.AssertDoubleEqual(40.0, cumulativeParameters[ReservedParameterKeys.RP_AREA_MAX_TOTAL].Value);
+            AssertUtil.AssertDoubleEqual(12.0, cumulativeParameters[ReservedParameterKeys.RP_VOLUME_MIN_TOTAL].Value);
+            AssertUtil.AssertDoubleEqual(240.0, cumulativeParameters[ReservedParameterKeys.RP_VOLUME_MAX_TOTAL].Value);
+            AssertUtil.AssertDoubleEqual(2.0, cumulativeParameters[ReservedParameterKeys.RP_COUNT].Value);
 
             nodeComponent.Instances.Remove(instance);
 
-            AssertUtil.AssertDoubleEqual(3.0,   cumulativeParameters[ReservedParameterKeys.RP_LENGTH_MIN_TOTAL].ValueCurrent);
-            AssertUtil.AssertDoubleEqual(6.0,   cumulativeParameters[ReservedParameterKeys.RP_LENGTH_MAX_TOTAL].ValueCurrent);
-            AssertUtil.AssertDoubleEqual(2.0,   cumulativeParameters[ReservedParameterKeys.RP_AREA_MIN_TOTAL].ValueCurrent);
-            AssertUtil.AssertDoubleEqual(20.0,  cumulativeParameters[ReservedParameterKeys.RP_AREA_MAX_TOTAL].ValueCurrent);
-            AssertUtil.AssertDoubleEqual(6.0,   cumulativeParameters[ReservedParameterKeys.RP_VOLUME_MIN_TOTAL].ValueCurrent);
-            AssertUtil.AssertDoubleEqual(120.0, cumulativeParameters[ReservedParameterKeys.RP_VOLUME_MAX_TOTAL].ValueCurrent);
-            AssertUtil.AssertDoubleEqual(1.0,   cumulativeParameters[ReservedParameterKeys.RP_COUNT].ValueCurrent);
+            AssertUtil.AssertDoubleEqual(3.0, cumulativeParameters[ReservedParameterKeys.RP_LENGTH_MIN_TOTAL].Value);
+            AssertUtil.AssertDoubleEqual(6.0, cumulativeParameters[ReservedParameterKeys.RP_LENGTH_MAX_TOTAL].Value);
+            AssertUtil.AssertDoubleEqual(2.0, cumulativeParameters[ReservedParameterKeys.RP_AREA_MIN_TOTAL].Value);
+            AssertUtil.AssertDoubleEqual(20.0, cumulativeParameters[ReservedParameterKeys.RP_AREA_MAX_TOTAL].Value);
+            AssertUtil.AssertDoubleEqual(6.0, cumulativeParameters[ReservedParameterKeys.RP_VOLUME_MIN_TOTAL].Value);
+            AssertUtil.AssertDoubleEqual(120.0, cumulativeParameters[ReservedParameterKeys.RP_VOLUME_MAX_TOTAL].Value);
+            AssertUtil.AssertDoubleEqual(1.0, cumulativeParameters[ReservedParameterKeys.RP_COUNT].Value);
 
-        }
-
-        #endregion
-
-        #region Path
-
-        [TestMethod]
-        public void PathChangedNode()
-        {
-            LoadProject(instanceProject, "arch", "arch");
-
-            var network = projectData.NetworkManager.NetworkRecord.First(x => x.Name == "TopNetwork");
-            var node = network.ContainedNodes.Values.First(x => x.Name == "Start");
-
-            var instance = node.Content;
-
-            var initialPos = new Point3D(node.Position.X * SimInstancePlacementNetwork.SCALE_PIXEL_TO_M, 0.0, node.Position.Y * SimInstancePlacementNetwork.SCALE_PIXEL_TO_M);
-            Assert.AreEqual(1, instance.InstancePath.Count);
-            Assert.AreEqual(initialPos, instance.InstancePath[0]);
-
-            var newPosNW = node.Position + new Vector(3, 3);
-            var newPos = new Point3D(newPosNW.X * SimInstancePlacementNetwork.SCALE_PIXEL_TO_M,
-                0.0, newPosNW.Y * SimInstancePlacementNetwork.SCALE_PIXEL_TO_M);
-
-            node.Position = newPosNW;
-            Assert.AreEqual(1, instance.InstancePath.Count);
-            Assert.AreEqual(newPos, instance.InstancePath[0]);
-        }
-
-        [TestMethod]
-        public void PathChangedNodeWithGeometry()
-        {
-            LoadProject(instanceProject, "arch", "arch");
-
-            var network = projectData.NetworkManager.NetworkRecord.First(x => x.Name == "GeometryNetwork");
-            var node = network.ContainedNodes.Values.First(x => x.Name == "Start");
-
-            var instance = node.Content;
-
-            var initialPos = instance.InstancePath[0];
-
-            var newPosNW = node.Position + new Vector(3, 3);
-
-            //Changing the position shouldn't do anything. Path comes from geometry
-            node.Position = newPosNW;
-            Assert.AreEqual(1, instance.InstancePath.Count);
-            Assert.AreEqual(initialPos, instance.InstancePath[0]);
-        }
-
-        [TestMethod]
-        public void PathChangedEdge()
-        {
-            LoadProject(instanceProject, "arch", "arch");
-
-            var network = projectData.NetworkManager.NetworkRecord.First(x => x.Name == "TopNetwork");
-            var node = network.ContainedNodes.Values.First(x => x.Name == "Start");
-            var subNet = network.ContainedFlowNetworks.Values.First(x => x.Name == "SubNet1");
-            var edge = network.ContainedEdges.Values.First(x => x.Name == "TopEdge1");
-
-            var instance = edge.Content;
-
-            var initialEnd = instance.InstancePath[1];
-            var initialPos = new Point3D(node.Position.X * SimInstancePlacementNetwork.SCALE_PIXEL_TO_M, 0.0, node.Position.Y * SimInstancePlacementNetwork.SCALE_PIXEL_TO_M);
-            Assert.AreEqual(2, instance.InstancePath.Count);
-            Assert.AreEqual(initialPos, instance.InstancePath[0]);
-
-            //Start Node changed
-            var newPosNodeNW = node.Position + new Vector(3, 3);
-            var newNodePos = new Point3D(newPosNodeNW.X * SimInstancePlacementNetwork.SCALE_PIXEL_TO_M,
-                0.0, newPosNodeNW.Y * SimInstancePlacementNetwork.SCALE_PIXEL_TO_M);
-
-            node.Position = newPosNodeNW;
-            Assert.AreEqual(2, instance.InstancePath.Count);
-            Assert.AreEqual(newNodePos, instance.InstancePath[0]);
-            Assert.AreEqual(initialEnd, instance.InstancePath[1]);
-
-            //End Network changed
-            var newPosSubnetNW = subNet.Position + new Vector(4, -2);
-            var newSubnetPos = new Point3D(newPosSubnetNW.X * SimInstancePlacementNetwork.SCALE_PIXEL_TO_M,
-                0.0, newPosSubnetNW.Y * SimInstancePlacementNetwork.SCALE_PIXEL_TO_M);
-
-            subNet.Position = newPosSubnetNW;
-            Assert.AreEqual(2, instance.InstancePath.Count);
-            Assert.AreEqual(newNodePos, instance.InstancePath[0]);
-            Assert.AreEqual(newSubnetPos, instance.InstancePath[1]);
-        }
-
-        [TestMethod]
-        public void PathChangedEdgeWithGeometry()
-        {
-            LoadProject(instanceProject, "arch", "arch");
-
-            var network = projectData.NetworkManager.NetworkRecord.First(x => x.Name == "GeometryNetwork");
-            var node = network.ContainedNodes.Values.First(x => x.Name == "Start");
-            var subNet = network.ContainedFlowNetworks.Values.First();
-            var edge = network.ContainedEdges.Values.First(x => x.Name == "TopEdge");
-
-            var instance = edge.Content;
-
-            var originalPath = instance.InstancePath.ToList();
-
-            //Start Node changed
-            var newPosNodeNW = node.Position + new Vector(3, 3);
-            var newNodePos = new Point3D(newPosNodeNW.X * SimInstancePlacementNetwork.SCALE_PIXEL_TO_M,
-                0.0, newPosNodeNW.Y * SimInstancePlacementNetwork.SCALE_PIXEL_TO_M);
-
-            node.Position = newPosNodeNW;
-            AssertUtil.ContainEqualValues(originalPath, instance.InstancePath);
-
-            //End Network changed
-            var newPosSubnetNW = subNet.Position + new Vector(4, -2);
-            var newSubnetPos = new Point3D(newPosSubnetNW.X * SimInstancePlacementNetwork.SCALE_PIXEL_TO_M,
-                0.0, newPosSubnetNW.Y * SimInstancePlacementNetwork.SCALE_PIXEL_TO_M);
-
-            subNet.Position = newPosSubnetNW;
-            AssertUtil.ContainEqualValues(originalPath, instance.InstancePath);
-        }
-
-        [TestMethod]
-        public void SubnetPathChangedNode()
-        {
-            LoadProject(instanceProject, "arch", "arch");
-
-            var network = projectData.NetworkManager.NetworkRecord.First(x => x.Name == "TopNetwork");
-            var subnetwork = network.ContainedFlowNetworks.Values.First(x => x.Name == "SubNet1");
-            var subnetstart = subnetwork.ContainedNodes[subnetwork.NodeStart_ID];
-            var node = subnetwork.ContainedNodes.Values.First(x => x.Name == "SubNetNode1");
-
-            var instance = node.Content;
-
-            var initialPosFlat = subnetwork.Position - subnetstart.Position + node.Position;
-            var initialPos = new Point3D(initialPosFlat.X * SimInstancePlacementNetwork.SCALE_PIXEL_TO_M,
-                0.0, initialPosFlat.Y * SimInstancePlacementNetwork.SCALE_PIXEL_TO_M);
-            Assert.AreEqual(1, instance.InstancePath.Count);
-            Assert.AreEqual(initialPos, instance.InstancePath[0]);
-
-            var newPosNW = node.Position + new Vector(3, 3);
-            var newPosFlat = subnetwork.Position - subnetstart.Position + newPosNW;
-            var newPos = new Point3D(newPosFlat.X * SimInstancePlacementNetwork.SCALE_PIXEL_TO_M,
-                0.0, newPosFlat.Y * SimInstancePlacementNetwork.SCALE_PIXEL_TO_M);
-
-            node.Position = newPosNW;
-            Assert.AreEqual(1, instance.InstancePath.Count);
-            Assert.AreEqual(newPos, instance.InstancePath[0]);
-        }
-
-        [TestMethod]
-        public void SubnetPathChangedEdge()
-        {
-            LoadProject(instanceProject, "arch", "arch");
-
-            var network = projectData.NetworkManager.NetworkRecord.First(x => x.Name == "TopNetwork");
-            var subnetwork = network.ContainedFlowNetworks.Values.First(x => x.Name == "SubNet1");
-            var subnetstart = subnetwork.ContainedNodes[subnetwork.NodeStart_ID];
-            var node = subnetwork.ContainedNodes.Values.First(x => x.Name == "SubNetNode1");
-            var edge = subnetwork.ContainedEdges.Values.First(x => x.Name == "SubNetEdge1");
-
-            var instance = edge.Content;
-
-            var initialEnd = instance.InstancePath[1];
-
-            var initialStartFlat = subnetwork.Position - subnetstart.Position + subnetstart.Position;
-            var initialStartPos = new Point3D(initialStartFlat.X * SimInstancePlacementNetwork.SCALE_PIXEL_TO_M,
-                0.0, initialStartFlat.Y * SimInstancePlacementNetwork.SCALE_PIXEL_TO_M);
-            Assert.AreEqual(2, instance.InstancePath.Count);
-            Assert.AreEqual(initialStartPos, instance.InstancePath[0]);
-
-            //End Node changed
-            var newPosEndNW = node.Position + new Vector(3, 3);
-            var newPosEndFlat = subnetwork.Position - subnetstart.Position + newPosEndNW;
-            var newPosEnd = new Point3D(newPosEndFlat.X * SimInstancePlacementNetwork.SCALE_PIXEL_TO_M,
-                0.0, newPosEndFlat.Y * SimInstancePlacementNetwork.SCALE_PIXEL_TO_M);
-
-            node.Position = newPosEndNW;
-            Assert.AreEqual(2, instance.InstancePath.Count);
-            Assert.AreEqual(initialStartPos, instance.InstancePath[0]);
-            Assert.AreEqual(newPosEnd, instance.InstancePath[1]);
-
-
-            //Start Node changed
-            var newPosStartNW = subnetstart.Position + new Vector(4, -2);
-            var newPosStartFlat = subnetwork.Position;
-            var newPosStart = new Point3D(newPosStartFlat.X * SimInstancePlacementNetwork.SCALE_PIXEL_TO_M,
-                0.0, newPosStartFlat.Y * SimInstancePlacementNetwork.SCALE_PIXEL_TO_M);
-
-            //Also recalcs end pos since start is first node in network
-            newPosEndFlat = subnetwork.Position - newPosStartNW + node.Position;
-            newPosEnd = new Point3D(newPosEndFlat.X * SimInstancePlacementNetwork.SCALE_PIXEL_TO_M,
-                0.0, newPosEndFlat.Y * SimInstancePlacementNetwork.SCALE_PIXEL_TO_M);
-
-            subnetstart.Position = newPosStartNW;
-            Assert.AreEqual(2, instance.InstancePath.Count);
-            Assert.AreEqual(newPosStart, instance.InstancePath[0]);
-            Assert.AreEqual(newPosEnd, instance.InstancePath[1]);
-        }
-
-        [TestMethod]
-        public void SubnetPathSubnetMoved()
-        {
-            LoadProject(instanceProject, "arch", "arch");
-
-            var network = projectData.NetworkManager.NetworkRecord.First(x => x.Name == "TopNetwork");
-            var subnetwork = network.ContainedFlowNetworks.Values.First(x => x.Name == "SubNet1");
-            var subnetstart = subnetwork.ContainedNodes[subnetwork.NodeStart_ID];
-            var node = subnetwork.ContainedNodes.Values.First(x => x.Name == "SubNetNode1");
-            var edge = subnetwork.ContainedEdges.Values.First(x => x.Name == "SubNetEdge1");
-
-            var nodeInstance = node.Content;
-            var edgeInstance = edge.Content;
-
-            Vector offset = new Vector(-3, 4);
-            var initialNodePos = node.Position;
-            var initialFirstPos = subnetstart.Position;
-
-            subnetwork.Position += offset;
-
-            Assert.AreEqual(1, nodeInstance.InstancePath.Count);
-            var nodePosFlat = subnetwork.Position - subnetstart.Position + node.Position;
-            var nodePos = new Point3D(nodePosFlat.X * SimInstancePlacementNetwork.SCALE_PIXEL_TO_M,
-                0.0, nodePosFlat.Y * SimInstancePlacementNetwork.SCALE_PIXEL_TO_M);
-            Assert.AreEqual(nodePos, nodeInstance.InstancePath[0]);
-
-            var subnetStartFlat = subnetwork.Position;
-            var subnetPos = new Point3D(subnetStartFlat.X * SimInstancePlacementNetwork.SCALE_PIXEL_TO_M,
-                0.0, subnetStartFlat.Y * SimInstancePlacementNetwork.SCALE_PIXEL_TO_M);
-            Assert.AreEqual(2, edgeInstance.InstancePath.Count);
-            Assert.AreEqual(subnetPos, edgeInstance.InstancePath[0]);
-            Assert.AreEqual(nodePos, edgeInstance.InstancePath[1]);
         }
 
         #endregion

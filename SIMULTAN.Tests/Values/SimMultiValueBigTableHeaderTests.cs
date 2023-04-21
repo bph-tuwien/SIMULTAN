@@ -3,8 +3,6 @@ using SIMULTAN.Data.MultiValues;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SIMULTAN.Tests.Values
 {
@@ -50,16 +48,32 @@ namespace SIMULTAN.Tests.Values
             Assert.AreEqual(SimMultiValueBigTableHeader.AxisEnum.Rows, header.Axis);
             Assert.AreEqual(2, propertyChanged.Count);
 
-            var data = SimMultiValueBigTableTests.TestDataTable(3, 4);
-            header.Table = data.table;
-            Assert.AreEqual(data.table, header.Table);
+            var dTable = SimMultiValueBigTableTests.DoubleTestDataTable(3, 4);
+            var iTable = SimMultiValueBigTableTests.IntTestDataTable(3, 4);
+            var sTable = SimMultiValueBigTableTests.StringTestDataTable(3, 4);
+            var boolTable = SimMultiValueBigTableTests.BoolTestDataTable(3, 4);
+
+
+
+            header.Table = dTable.table;
+            Assert.AreEqual(dTable.table, header.Table);
+
+            header.Table = iTable.table;
+            Assert.AreEqual(iTable.table, header.Table);
+
+            header.Table = sTable.table;
+            Assert.AreEqual(sTable.table, header.Table);
+
+            header.Table = boolTable.table;
+            Assert.AreEqual(boolTable.table, header.Table);
+
             Assert.AreEqual(2, propertyChanged.Count);
         }
 
         [TestMethod]
         public void Clone()
         {
-            var data = SimMultiValueBigTableTests.TestDataTable(3, 4);
+            var data = SimMultiValueBigTableTests.DoubleTestDataTable(3, 4);
             var header = new SimMultiValueBigTableHeader("name", "unit")
             {
                 Index = 99,

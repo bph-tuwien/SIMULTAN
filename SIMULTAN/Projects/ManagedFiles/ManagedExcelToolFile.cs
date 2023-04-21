@@ -1,4 +1,5 @@
-﻿using SIMULTAN.Excel;
+﻿using SIMULTAN.DataMapping;
+using SIMULTAN.Excel;
 using SIMULTAN.Serializer.DXF;
 using SIMULTAN.Serializer.Projects;
 using System;
@@ -11,7 +12,7 @@ using System.Threading.Tasks;
 namespace SIMULTAN.Projects.ManagedFiles
 {
     /// <summary>
-    /// A management class for a single file containing <see cref="ExcelTool"/> instances.
+    /// A management class for a single file containing <see cref="SimDataMappingTool"/> instances.
     /// </summary>
     public class ManagedExcelToolFile : ManagedFile
     {

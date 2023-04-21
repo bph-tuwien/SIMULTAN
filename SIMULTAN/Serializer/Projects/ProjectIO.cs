@@ -10,6 +10,7 @@ using SIMULTAN.Projects.ManagedFiles;
 using SIMULTAN.Serializer.CODXF;
 using SIMULTAN.Serializer.DXF;
 using SIMULTAN.Serializer.GMDXF;
+using SIMULTAN.Serializer.GRDXF;
 using SIMULTAN.Serializer.METADXF;
 using SIMULTAN.Serializer.MVDXF;
 using SIMULTAN.Serializer.PADXF;
@@ -24,7 +25,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -90,9 +90,10 @@ namespace SIMULTAN.Serializer.Projects
                 {
                     foreach (var param in x.Parameters)
                     {
-                        if (param.MultiValuePointer != null && !exportedMVs.Contains(param.MultiValuePointer.ValueField))
+                        if (param.ValueSource != null && param.ValueSource is SimMultiValueParameterSource mvp &&
+                            !exportedMVs.Contains(mvp.ValueField))
                         {
-                            exportedMVs.Add(param.MultiValuePointer.ValueField);
+                            exportedMVs.Add(mvp.ValueField);
                         }
                     }
                 }
@@ -202,7 +203,7 @@ namespace SIMULTAN.Serializer.Projects
                 throw new ArgumentException(string.Format("File {0} does not exist", _file.FullName));
 
 
-            projectData.ExcelToolMappingManager.ClearRecord();
+            projectData.DataMappingTools.Clear();
             var info = new DXFParserInfo(projectData.Owner.GlobalID, projectData)
             {
                 //FileVersion = ComponentDxfIO.LastParsedFileVersion
@@ -368,7 +369,7 @@ namespace SIMULTAN.Serializer.Projects
             if (projectData == null)
                 throw new ArgumentNullException(nameof(projectData));
 
-            var parseInfo = new DXFParserInfo(projectData.Project.GlobalID, projectData) { CurrentFile = file};
+            var parseInfo = new DXFParserInfo(projectData.Project.GlobalID, projectData) { CurrentFile = file };
             GeoMapDxfIO.Read(file, parseInfo);
         }
 
@@ -385,7 +386,7 @@ namespace SIMULTAN.Serializer.Projects
                 return;
 
             var file = new FileInfo(fileResource.CurrentFullPath);
-            var parseInfo = new DXFParserInfo(projectData.Owner.GlobalID, projectData) { CurrentFile = file};
+            var parseInfo = new DXFParserInfo(projectData.Owner.GlobalID, projectData) { CurrentFile = file };
             SiteplannerDxfIO.Read(file, parseInfo);
         }
 
@@ -396,13 +397,14 @@ namespace SIMULTAN.Serializer.Projects
             _file.LastWriteTime = DateTime.Now;
         }
 
-        internal static void OpenTaxonomyFile(FileInfo file, ExtendedProjectData projectData)
+        internal static ulong OpenTaxonomyFile(FileInfo file, ExtendedProjectData projectData)
         {
             if (file == null || !file.Exists)
-                return;
+                return 0;
 
             var parserInfo = new DXFParserInfo(projectData.Owner.GlobalID, projectData);
             SimTaxonomyDxfIO.Read(file, parserInfo);
+            return parserInfo.FileVersion;
         }
 
         /// <summary>
@@ -418,7 +420,7 @@ namespace SIMULTAN.Serializer.Projects
                 throw new ArgumentException("Provided taxonomy file does not exist");
             if (projectData == null)
                 throw new ArgumentNullException(nameof(projectData));
-                
+
 
             var parserInfo = new DXFParserInfo(projectData.Owner.GlobalID, projectData);
             SimTaxonomyDxfIO.Import(file, parserInfo);
@@ -446,6 +448,22 @@ namespace SIMULTAN.Serializer.Projects
                 throw new ArgumentNullException(nameof(projectData));
 
             SimTaxonomyDxfIO.Export(file, taxonomies, projectData);
+            file.LastWriteTime = DateTime.Now;
+        }
+
+        internal static ulong OpenGeometryRelationsFile(FileInfo file, ExtendedProjectData projectData)
+        {
+            if (file == null || !file.Exists)
+                return 0;
+
+            var parserInfo = new DXFParserInfo(projectData.Owner.GlobalID, projectData);
+            SimGeometryRelationsDxfIO.Read(file, parserInfo);
+            return parserInfo.FileVersion;
+        }
+
+        internal static void SaveGeometryRelationsFile(FileInfo file, ExtendedProjectData projectData)
+        {
+            SimGeometryRelationsDxfIO.Write(file, projectData.GeometryRelations);
             file.LastWriteTime = DateTime.Now;
         }
 
@@ -496,15 +514,6 @@ namespace SIMULTAN.Serializer.Projects
 
             // 1b. SAVE the user file
             SimUsersManager users = _project_data_manager.UsersManager ?? new SimUsersManager();
-            if (users.Users.Count == 0)
-            {
-                SimUser newUser = SimUser.DefaultUser;
-                users.Users.Add(newUser);
-
-                (var user, var userkey) = users.Authenticate(newUser.Name, SimUser.DefaultUserPassword);
-                users.EncryptionKey = userkey;
-                users.CurrentUser = user;
-            }
 
             string file_path_users = Path.Combine(unpacking_dir.FullName, "Users" + ParamStructFileExtensions.FILE_EXT_USERS);
             FileInfo file_users = new FileInfo(file_path_users);
@@ -531,6 +540,12 @@ namespace SIMULTAN.Serializer.Projects
             FileInfo file_public_comps = new FileInfo(file_path_public_comps);
             ProjectIO.SavePublicComponentFile(file_public_comps, _project_data_manager);
             project_content_files.Add(file_public_comps);
+
+            // 1f. Save the initial taxonomy file
+            project_content_files.Add(CreateInitialTaxonomyFile(unpacking_dir.FullName));
+
+            // 1g. Save the initial geometry relations file
+            project_content_files.Add(CreateInitialGeometryRelationsFile(unpacking_dir.FullName));
 
             // 2. copy the other files to the project's directory            
             foreach (FileInfo existing_file in _files_to_convert_to_project)
@@ -585,8 +600,6 @@ namespace SIMULTAN.Serializer.Projects
             File.Create(file_comps.FullName).Dispose();
             file_comps.LastWriteTime = DateTime.Now;
 
-            CreateInitialTaxonomyFile(_path_to_local_tmp_folder);
-
             IEnumerable<FileInfo> files_to_convert_to_project = new List<FileInfo> { file_values, file_comps };
 
             // load the data in the project manager
@@ -604,7 +617,7 @@ namespace SIMULTAN.Serializer.Projects
         }
 
         /// <summary>
-        /// Creates the default Taxonomy record file. Should only be used when creating a new project. Or when loading and it doesn't exist yet.
+        /// Creates the initial empty Taxonomy record file. Should only be used when creating a new project. Or when loading and it doesn't exist yet.
         /// </summary>
         /// <param name="folderPath">The folder path in which to create the file.</param>
         /// <returns>The created file</returns>
@@ -612,10 +625,24 @@ namespace SIMULTAN.Serializer.Projects
         {
             string taxonmyPath = Path.Combine(folderPath, "TaxonomyRecord" + ParamStructFileExtensions.FILE_EXT_TAXONOMY);
             FileInfo file_taxonomy = new FileInfo(taxonmyPath);
+            // just create file so it does not load it with newest file version (migration would not work)
             File.Create(file_taxonomy.FullName).Dispose();
             file_taxonomy.LastWriteTime = DateTime.Now;
-
             return file_taxonomy;
+        }
+
+        /// <summary>
+        /// Creates the initial Geometry Relations file. Should only be used when creating a new project. Or when loading and it doesn't exist yet.
+        /// </summary>
+        /// <param name="folderPath">The folder path in which to create the file.</param>
+        /// <returns>The created file</returns>
+        internal static FileInfo CreateInitialGeometryRelationsFile(string folderPath)
+        {
+            string geometryRelationsPath = Path.Combine(folderPath, "GeometryRelations" + ParamStructFileExtensions.FILE_EXT_GEOMETRY_RELATIONS);
+            FileInfo file_geometry_relations = new FileInfo(geometryRelationsPath);
+            File.Create(file_geometry_relations.FullName).Dispose();
+            file_geometry_relations.LastWriteTime = DateTime.Now;
+            return file_geometry_relations;
         }
 
         /// <summary>
@@ -637,109 +664,6 @@ namespace SIMULTAN.Serializer.Projects
             FileInfo file_links = new FileInfo(file_path_links);
             ProjectIO.SaveLinksFile(file_links, _project.AllProjectDataManagers);
             _project.ManagedFiles.AddFile(file_links, _project.AllProjectDataManagers);
-        }
-
-        #endregion
-
-        #region PROJECTS: create from master file (transition from old UI)
-
-        /// <summary>
-        /// Extracts all information from a master file in order to create a project.
-        /// </summary>
-        /// <param name="_path_master_file">the path to the master file</param>
-        /// <param name="_paths">the paths to the relevant partial files (e.g., components and values)</param>
-        /// <returns>lists of files to include in the project</returns>
-        public static (List<FileInfo> managed, List<FileInfo> non_managed) ExtractFromMasterFile(string _path_master_file, params string[] _paths)
-        {
-            // --------------------------------- 0. check input -------------------------------------
-            if (string.IsNullOrEmpty(_path_master_file))
-                throw new ArgumentException("The path to the master file is not valid!");
-            if (!File.Exists(_path_master_file))
-                throw new ArgumentException("The path to the master file is not valid!");
-
-            DirectoryInfo master_dir = new FileInfo(_path_master_file).Directory;
-
-            if (_paths == null)
-                throw new ArgumentNullException(nameof(_paths));
-            if (_paths.Length < 2)
-                throw new ArgumentException("At least the path to the values and to the components necessary!");
-
-            // ---------------------------- 1. find and the main files ------------------------------
-            FileInfo file_values = null;
-            FileInfo file_components = null;
-            foreach (string p in _paths)
-            {
-                if (string.IsNullOrEmpty(p)) continue;
-
-                FileInfo pfile = new FileInfo(p);
-                if (string.Equals(pfile.Extension, ParamStructFileExtensions.FILE_EXT_MULTIVALUES, StringComparison.InvariantCultureIgnoreCase))
-                {
-                    if (File.Exists(p))
-                        file_values = new FileInfo(p);
-                    else
-                        throw new ArgumentException("The values file is not valid!");
-                }
-                else if (string.Equals(pfile.Extension, ParamStructFileExtensions.FILE_EXT_COMPONENTS, StringComparison.InvariantCultureIgnoreCase))
-                {
-                    if (File.Exists(p))
-                        file_components = new FileInfo(p);
-                    else
-                        throw new ArgumentException("The component file is not valid!");
-                }
-            }
-
-            if (file_values == null || file_components == null)
-                throw new ArgumentException("Could not find the required minimum of files to create a project!");
-
-            // ------------------------ 2. find all other relevant files ----------------------------
-            // ... from the resources
-            List<FileInfo> managed = new List<FileInfo>();
-            List<FileInfo> non_managed = new List<FileInfo>();
-
-            // ... guess the rest from the master file folder            
-            List<FileInfo> master_dir_content = ZipProjectIO.GetFilesRecursive(master_dir);
-            foreach (FileInfo entry in master_dir_content)
-            {
-                // exclude files from the temporary project dir (if it is in the master folder)
-                if (entry.FullName.Contains("~"))
-                    continue;
-
-                if (string.Equals(entry.Extension, ParamStructFileExtensions.FILE_EXT_COMPONENTS, StringComparison.InvariantCultureIgnoreCase) ||
-                    string.Equals(entry.Extension, ParamStructFileExtensions.FILE_EXT_MULTIVALUES, StringComparison.InvariantCultureIgnoreCase) ||
-                    string.Equals(entry.Extension, ParamStructFileExtensions.FILE_EXT_EXCEL_TOOL_COLLECTION, StringComparison.InvariantCultureIgnoreCase))
-                {
-                    // regular managed files : CODXF, MVDXF, ETDXF
-                    managed.Add(entry);
-                }
-                else if (string.Equals(entry.Extension, ParamStructFileExtensions.FILE_EXT_COMPONENTS_PUBLIC, StringComparison.InvariantCultureIgnoreCase) ||
-                         string.Equals(entry.Extension, ParamStructFileExtensions.FILE_EXT_MULTIVALUES_PUBLIC, StringComparison.InvariantCultureIgnoreCase) ||
-                         string.Equals(entry.Extension, ParamStructFileExtensions.FILE_EXT_USERS, StringComparison.InvariantCultureIgnoreCase) ||
-                         string.Equals(entry.Extension, ParamStructFileExtensions.FILE_EXT_LINKS, StringComparison.InvariantCultureIgnoreCase) ||
-                         string.Equals(entry.Extension, ParamStructFileExtensions.FILE_EXT_META, StringComparison.InvariantCultureIgnoreCase) ||
-                         string.Equals(entry.Extension, ParamStructFileExtensions.FILE_EXT_MASTER, StringComparison.InvariantCultureIgnoreCase) ||
-                         string.Equals(entry.Extension, ParamStructFileExtensions.FILE_EXT_PROJECT, StringComparison.InvariantCultureIgnoreCase) ||
-                         string.Equals(entry.Extension, ParamStructFileExtensions.FILE_EXT_PROJECT_COMPACT, StringComparison.InvariantCultureIgnoreCase))
-                {
-                    // ignore automatically generated managed files: CODXFP, MVDXFP, USRDXF, SIMLINKS, METADXF, master, smn, simultan
-                    continue;
-                }
-                else if (string.Equals(entry.Extension, ParamStructFileExtensions.FILE_EXT_GEOMETRY_INTERNAL, StringComparison.InvariantCultureIgnoreCase) ||
-                         string.Equals(entry.Extension, ParamStructFileExtensions.FILE_EXT_PARAMETERS, StringComparison.InvariantCultureIgnoreCase) ||
-                         string.Equals(entry.Extension, ParamStructFileExtensions.FILE_EXT_IMAGES, StringComparison.InvariantCultureIgnoreCase) ||
-                         string.Equals(entry.Extension, ParamStructFileExtensions.FILE_EXT_GEOMAP, StringComparison.InvariantCultureIgnoreCase) ||
-                         string.Equals(entry.Extension, ParamStructFileExtensions.FILE_EXT_SITEPLANNER, StringComparison.InvariantCultureIgnoreCase))
-                {
-                    // take additional managed files: SIMGEO, PADXF, BIN, GMDXF, SPDXF
-                    managed.Add(entry);
-                }
-                else
-                {
-                    // take any other files (e.g., PDF, XML, XLSX, TXT, DOCX, PNG, JPG, etc.) as non-managed
-                    non_managed.Add(entry);
-                }
-            }
-
-            return (managed, non_managed);
         }
 
         #endregion

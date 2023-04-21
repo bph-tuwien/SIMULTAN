@@ -1,12 +1,15 @@
 ﻿using SIMULTAN.Data;
 using SIMULTAN.Data.Assets;
 using SIMULTAN.Data.Geometry;
+using SIMULTAN.Data.Taxonomy;
 using SIMULTAN.Data.ValueMappings;
 using SIMULTAN.Projects;
+using SIMULTAN.Utils.BackgroundWork;
 using SIMULTAN.Utils.Files;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Data;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -70,7 +73,7 @@ namespace SIMULTAN.Serializer.SimGeo
         /// <summary>
         /// The current version of the SimGeo Format
         /// </summary>
-        public static int SimGeoVersion => 11;
+        public static int SimGeoVersion => 12;
 
         /// <summary>
         /// Describes which format should be written
@@ -81,6 +84,59 @@ namespace SIMULTAN.Serializer.SimGeo
             /// Plaintext format
             /// </summary>
             Plaintext
+        }
+
+        /// <summary>
+        /// Used for migrating old parents (previously GeometryReference)
+        /// </summary>
+        private struct ParentMigrationData
+        {
+            public bool IsLegacy;
+            public ulong LegacyId;
+            public Guid ModelId;
+            public ulong GeometryId;
+
+            public static ParentMigrationData Empty = new ParentMigrationData(false, 0, Guid.Empty, 0);
+
+            public ParentMigrationData(bool isLegacy, ulong legacyId, Guid modelId, ulong geometryId)
+            {
+                this.IsLegacy = isLegacy;
+                this.LegacyId = legacyId;
+                this.ModelId = modelId;
+                this.GeometryId = geometryId;
+            }
+
+            public ParentMigrationData(ulong legacyId, ulong geometryId) : this(true, legacyId, Guid.Empty, geometryId)
+            { }
+
+            public ParentMigrationData(Guid modelId, ulong geometryId) : this(false, 0, modelId, geometryId)
+            { }
+        }
+
+        private static readonly string LegacyGeometryTaxonomyName = "Legacy Geometry";
+        private static readonly string LegacyGeometryTaxonomyDescription = "Taxonomy for legacy geometry";
+        private static readonly string LegacyGeometryTaxonomyKey = "legacy geometry";
+        private static readonly string LegacyGeometryParentName = "Legacy Parent";
+        private static readonly string LegacyGeometryParentDescription = "Tag for the legacy parent geometry relation";
+        private static readonly string LegacyGeometryParentKey = "legacy parent";
+
+        /// <summary>
+        /// Returns the legacy taxonomy entry tag used to migrate old geometry parents to <see cref="SimGeometryRelation"/>.
+        /// Also create the legacy taxonomy and entry if it does not yet exist.
+        /// </summary>
+        /// <param name="projectData">The project data. Taxonomies already need to be loaded.</param>
+        /// <returns>The legacy parent taxonomy entry to be used for <see cref="SimGeometryRelation"/> migration.</returns>
+        public static SimTaxonomyEntry GetLegacyParentTaxonomyEntry(ProjectData projectData)
+        {
+            var entry = projectData.Taxonomies.FindEntry(LegacyGeometryTaxonomyKey, LegacyGeometryParentKey);
+            if (entry == null)
+            {
+                var tax = new SimTaxonomy(LegacyGeometryTaxonomyKey, LegacyGeometryTaxonomyName, LegacyGeometryTaxonomyDescription);
+                entry = new SimTaxonomyEntry(LegacyGeometryParentKey, LegacyGeometryParentName, LegacyGeometryParentDescription);
+                tax.Entries.Add(entry);
+                projectData.Taxonomies.Add(tax);
+            }
+            return entry;
         }
 
         /// <summary>
@@ -135,23 +191,73 @@ namespace SIMULTAN.Serializer.SimGeo
             OffsetAlgorithm offsetAlg = OffsetAlgorithm.Full)
         {
             //Translates pre-8 ids to Guids
-            Dictionary<ulong, Guid> idToGuid = new Dictionary<ulong, Guid>();
+            var idToGuid = new Dictionary<ulong, Guid>();
+            var modelLookup = new Dictionary<Guid, GeometryModel>();
+            var legacyParentRelations = new List<(SimBaseGeometryReference source, ParentMigrationData target)>();
 
-            var model = LoadWithoutCheck(geometryFile, projectData, idToGuid, offsetAlg, errors);
-            ConvertIdBasedReferences(model, idToGuid, errors);
+            var model = LoadWithoutCheck(geometryFile, projectData, idToGuid, offsetAlg, errors, modelLookup, legacyParentRelations);
+            ConvertIdBasedReferencesAndRelation(projectData, modelLookup, idToGuid, errors, legacyParentRelations);
 
             return model;
         }
 
+        /// <summary>
+        /// Migrates geometry files and their linked files after they were imported with their relations.
+        /// Uses the <paramref name="importedFilesLookup"/> to find changed file names (duplicate) for the old linked files migration and
+        /// the <paramref name="importedKeysLookup"/> to find changed resource ids of the imported linked files.
+        /// Basically opens the files, migrates them, adds them to the open project and saves them again.
+        /// Manually remove them afterwards if they should not be kept in memory.
+        /// </summary>
+        /// <param name="geometryFiles">The geometry file to import</param>
+        /// <param name="importedKeysLookup">Lookup from linked file resource id before import to id after import</param>
+        /// <param name="importedFilesLookup">Lookup from filenames before import and after import (might have changed if file already existed)</param>
+        /// <param name="projectData">The model store in which the GeometryModels should be loaded</param>
+        /// <param name="errors">A list to which error messages are added</param>
+        /// <param name="offsetAlg">Defines how offset surfaces should be generated after loading</param>
+        public static void MigrateAfterImport(IEnumerable<ResourceFileEntry> geometryFiles, ProjectData projectData,
+            List<SimGeoIOError> errors,
+            Dictionary<int, int> importedKeysLookup, Dictionary<string, string> importedFilesLookup,
+            OffsetAlgorithm offsetAlg = OffsetAlgorithm.Disabled)
+        {
+            var migrateData = new List<(ResourceFileEntry file, GeometryModel model, Dictionary<ulong, Guid> idToGuid)>();
+            var modelLookup = new Dictionary<Guid, GeometryModel>();
+            var legacyParentRelations = new List<(SimBaseGeometryReference source, ParentMigrationData target)>();
+
+            // load all the models
+            foreach (var geometryFile in geometryFiles)
+            {
+                //Translates pre-8 ids to Guids
+                var idToGuid = new Dictionary<ulong, Guid>();
+                // load with lookup to migrate
+                var model = LoadWithoutCheck(geometryFile, projectData, idToGuid, offsetAlg, errors, modelLookup, legacyParentRelations, importedKeysLookup, importedFilesLookup);
+                migrateData.Add((geometryFile, model, idToGuid));
+                // add to project
+                projectData.GeometryModels.AddGeometryModel(model);
+            }
+
+            // perform the geometry relations migration, need to have all the models loaded beforehand
+            foreach (var data in migrateData)
+            {
+                var model = data.model;
+                var idToGuid = data.idToGuid;
+                ConvertIdBasedReferencesAndRelation(projectData, modelLookup, idToGuid, errors, legacyParentRelations);
+
+                // save again
+                Save(model, data.file, WriteMode.Plaintext);
+            }
+        }
+
         private static GeometryModel LoadWithoutCheck(ResourceFileEntry geometryFile,
-            ProjectData projectData, Dictionary<ulong, Guid> idToGuid, OffsetAlgorithm offsetAlg, List<SimGeoIOError> errors)
+            ProjectData projectData, Dictionary<ulong, Guid> idToGuid, OffsetAlgorithm offsetAlg, List<SimGeoIOError> errors,
+            Dictionary<Guid, GeometryModel> modelLookup,
+            List<(SimBaseGeometryReference, ParentMigrationData)> legacyParentRelations,
+            Dictionary<int, int> importedKeysLookup = null, Dictionary<string, string> importedFilesLookup = null)
         {
             if (!geometryFile.Exists)
                 throw new FileNotFoundException(geometryFile.CurrentFullPath);
 
             if (projectData.GeometryModels.TryGetGeometryModel(geometryFile, out var existingModel, false))
             {
-                //Model is already loaded
                 return existingModel;
             }
             else
@@ -161,7 +267,9 @@ namespace SIMULTAN.Serializer.SimGeo
                     var encoding = GetEncoding(geometryFile.CurrentFullPath);
 
                     GeometryModel model = null;
-                    List<FileInfo> linkedModels = new List<FileInfo>();
+                    Guid oldId = Guid.Empty;
+                    int versionNumber = -1;
+                    var linkedModels = new List<Int32>();
 
                     using (FileStream fs = new FileStream(geometryFile.CurrentFullPath, FileMode.Open))
                     {
@@ -170,7 +278,7 @@ namespace SIMULTAN.Serializer.SimGeo
                             var formatIdent = (char)sr.Read();
                             int row = 1, column = 2;
                             if (formatIdent == 'T')
-                                model = LoadPlaintext(sr, geometryFile, linkedModels, projectData, idToGuid, ref row, ref column, offsetAlg);
+                                (model, oldId, versionNumber) = LoadPlaintext(sr, geometryFile, linkedModels, projectData, idToGuid, ref row, ref column, offsetAlg, legacyParentRelations, importedFilesLookup);
                             else
                                 throw new IOException("Unknown format identifier");
                         }
@@ -178,31 +286,50 @@ namespace SIMULTAN.Serializer.SimGeo
 
                     if (model != null)
                     {
-                        foreach (var file in linkedModels)
+                        foreach (var tmpFileId in linkedModels)
                         {
-                            if (!projectData.AssetManager.IsValidResourcePath(file, false))
+                            int fileId = tmpFileId;
+                            // lookup migrated ids, only when file was imported to project, only if the file already contained ids for the linked files (>=v12)
+                            if (versionNumber >= 12)
+                            {
+                                if (importedKeysLookup != null && !importedKeysLookup.TryGetValue(tmpFileId, out fileId))
+                                {
+                                    errors.Add(new SimGeoIOError(SimGeoIOErrorReason.InvalidLinkedModel, new object[]
+                                    {
+                                    tmpFileId.ToString()
+                                    }));
+                                    continue;
+                                }
+                            }
+                            // error while migrating from version < 12 (filenames instead of Ids)
+                            if (fileId < 0)
                             {
                                 errors.Add(new SimGeoIOError(SimGeoIOErrorReason.InvalidLinkedModel, new object[]
                                 {
-                                    file.FullName
+                                    fileId.ToString()
+                                }));
+                                continue;
+                            }
+
+                            var resource = projectData.AssetManager.GetResource(fileId);
+
+                            if (resource == null || !(resource is ResourceFileEntry rfe))
+                            {
+                                errors.Add(new SimGeoIOError(SimGeoIOErrorReason.InvalidLinkedModel, new object[]
+                                {
+                                        fileId.ToString()
                                 }));
                             }
                             else
                             {
-                                var resource = projectData.AssetManager.GetResource(file);
-
-                                if (resource == null)
-                                {
-                                    int key = projectData.AssetManager.AddResourceEntry(file);
-                                    resource = (ResourceFileEntry)projectData.AssetManager.GetResource(key);
-                                }
-
-                                var linkedModel = LoadWithoutCheck(resource, projectData, idToGuid, offsetAlg, errors);
+                                var linkedModel = LoadWithoutCheck((ResourceFileEntry)resource, projectData, idToGuid, offsetAlg, errors, modelLookup, legacyParentRelations);
                                 model.LinkedModels.Add(linkedModel);
                             }
                         }
                     }
 
+                    if (versionNumber < 12)
+                        modelLookup.Add(oldId, model);
                     return model;
                 }
                 catch (Exception e) when (!Debugger.IsAttached)
@@ -219,7 +346,6 @@ namespace SIMULTAN.Serializer.SimGeo
             //HEADER
             sw.Write('T');
             WriteNumberPlaintext<Int32>(sw, SimGeoIO.SimGeoVersion);
-            WriteGuidPlaintext(sw, model.Id);
             WriteNumberPlaintext<UInt64>(sw, (UInt64)model.Permissions.ModelPermissions);
             WriteNumberPlaintext<UInt64>(sw, (UInt64)model.Permissions.GeometryPermissions);
             WriteNumberPlaintext<UInt64>(sw, (UInt64)model.Permissions.LayerPermissions);
@@ -267,6 +393,7 @@ namespace SIMULTAN.Serializer.SimGeo
             foreach (var vm in model.ValueMappings)
                 WriteValueMappingIdPlaintext(sw, vm);
             WriteValueMappingIdPlaintext(sw, model.ActiveValueMapping);
+            sw.WriteLine();
 
             //Linked Models
             foreach (var m in model.LinkedModels)
@@ -306,16 +433,6 @@ namespace SIMULTAN.Serializer.SimGeo
                 case GeometricOrientation.Backward:
                     WriteNumberPlaintext<Byte>(sw, 2);
                     break;
-            }
-        }
-        private static void WriteGeometryReferencePlaintext(StreamWriter sw, GeometryReference reference)
-        {
-            WriteBoolPlaintext(sw, reference != null); //IsValid
-            if (reference != null)
-            {
-                WriteGuidPlaintext(sw, reference.ModelID);
-                WriteNumberPlaintext<UInt64>(sw, reference.GeometryID);
-                WriteStringPlaintext(sw, reference.Name);
             }
         }
         private static void WriteGuidPlaintext(StreamWriter sw, Guid guid)
@@ -361,7 +478,6 @@ namespace SIMULTAN.Serializer.SimGeo
             WriteStringPlaintext(sw, geo.Name);
             WriteNumberPlaintext<UInt64>(sw, geo.Layer.Id);
             WriteBoolPlaintext(sw, geo.IsVisible);
-            WriteGeometryReferencePlaintext(sw, geo.Parent);
         }
         private static void WriteVertexPlaintext(StreamWriter sw, Vertex vertex)
         {
@@ -486,10 +602,7 @@ namespace SIMULTAN.Serializer.SimGeo
 
         private static void WriteLinkedModelPlaintext(StreamWriter sw, GeometryModel linkedModel, GeometryModel sourceModel)
         {
-            var fileInfo = new FileInfo(sourceModel.File.CurrentFullPath);
-
-            var relativePath = FileSystemNavigation.GetRelativePath(fileInfo.Directory.FullName, linkedModel.File.CurrentFullPath);
-            WriteStringPlaintext(sw, relativePath);
+            WriteNumberPlaintext<Int32>(sw, linkedModel.File.Key);
         }
 
         #endregion
@@ -521,15 +634,17 @@ namespace SIMULTAN.Serializer.SimGeo
             return Encoding.Default;
         }
 
-        private static GeometryModel LoadPlaintext(StreamReader stream, ResourceFileEntry file,
-            List<FileInfo> linkedModels, ProjectData projectData, Dictionary<ulong, Guid> idToGuid,
-            ref int row, ref int column, OffsetAlgorithm offsetAlg)
+        private static (GeometryModel model, Guid oldId, int versionNumber) LoadPlaintext(StreamReader stream, ResourceFileEntry file,
+            List<Int32> linkedModels, ProjectData projectData, Dictionary<ulong, Guid> idToGuid,
+            ref int row, ref int column, OffsetAlgorithm offsetAlg,
+            List<(SimBaseGeometryReference, ParentMigrationData)> legacyParentRelations,
+            Dictionary<string, string> importPathLookup)
         {
             //Parse header
             int versionNumber = ReadNumber<Int32>(stream, ref row, ref column, "Version Number");
 
             Guid id = Guid.NewGuid();
-            if (versionNumber >= 8)
+            if (versionNumber >= 8 && versionNumber < 12)
             {
                 id = ReadGuid(stream, ref row, ref column, "Model ID");
             }
@@ -596,29 +711,29 @@ namespace SIMULTAN.Serializer.SimGeo
 
             Dictionary<ulong, BaseGeometry> geometries = new Dictionary<ulong, BaseGeometry>();
             for (int i = 0; i < vertexCount; ++i)
-                ReadVertex(stream, modelData, layers, geometries, projectData, versionNumber, ref row, ref column);
+                ReadVertex(stream, modelData, layers, geometries, projectData, versionNumber, ref row, ref column, file.Key, legacyParentRelations);
 
             for (int i = 0; i < edgeCount; ++i)
-                ReadEdge(stream, modelData, layers, geometries, projectData, versionNumber, ref row, ref column);
+                ReadEdge(stream, modelData, layers, geometries, projectData, versionNumber, ref row, ref column, file.Key, legacyParentRelations);
 
             for (int i = 0; i < edgeLoopCount; ++i)
-                ReadEdgeLoop(stream, modelData, layers, geometries, projectData, versionNumber, ref row, ref column);
+                ReadEdgeLoop(stream, modelData, layers, geometries, projectData, versionNumber, ref row, ref column, file.Key, legacyParentRelations);
 
             for (int i = 0; i < polylineCount; ++i)
-                ReadPolyline(stream, modelData, layers, geometries, projectData, versionNumber, ref row, ref column);
+                ReadPolyline(stream, modelData, layers, geometries, projectData, versionNumber, ref row, ref column, file.Key, legacyParentRelations);
 
             for (int i = 0; i < faceCount; ++i)
-                ReadFace(stream, modelData, layers, geometries, projectData, versionNumber, ref row, ref column);
+                ReadFace(stream, modelData, layers, geometries, projectData, versionNumber, ref row, ref column, file.Key, legacyParentRelations);
 
             for (int i = 0; i < volumeCount; ++i)
-                ReadVolume(stream, modelData, layers, geometries, projectData, versionNumber, ref row, ref column);
+                ReadVolume(stream, modelData, layers, geometries, projectData, versionNumber, ref row, ref column, file.Key, legacyParentRelations);
 
             for (int i = 0; i < proxyCount; ++i)
-                ReadProxyGeometry(stream, modelData, layers, geometries, projectData, versionNumber, ref row, ref column);
+                ReadProxyGeometry(stream, modelData, layers, geometries, projectData, versionNumber, ref row, ref column, file.Key, legacyParentRelations);
 
             modelData.EndBatchOperation();
 
-            var geometryModel = new GeometryModel(id, name, file, permission, modelData);
+            var geometryModel = new GeometryModel(name, file, permission, modelData);
 
             for (int i = 0; i < geoRefCount; ++i)
                 ReadGeoRef(stream, modelData, geometries, versionNumber, ref row, ref column);
@@ -636,12 +751,12 @@ namespace SIMULTAN.Serializer.SimGeo
             }
 
             for (int i = 0; i < linkedModelCount; ++i)
-                linkedModels.Add(ReadLinkedModel(stream, geometryModel, ref row, ref column));
+                linkedModels.Add(ReadLinkedModel(stream, geometryModel, projectData, versionNumber, ref row, ref column, importPathLookup));
 
             if (modelData.EdgeLoops.Any(x => x.Faces.Count == 0))
                 Console.WriteLine("Error: Found unreferenced edge loop");
 
-            return geometryModel;
+            return (geometryModel, id, versionNumber);
         }
 
         private static string ReadToDelimiter(StreamReader sr, ref int row, ref int column, string description)
@@ -756,7 +871,7 @@ namespace SIMULTAN.Serializer.SimGeo
                     throw new IOException(String.Format("Failed to parse orientation {0} at row {1}, column {2}", description, row, column));
             }
         }
-        private static GeometryReference ReadGeometryReference(StreamReader sr, ProjectData projectData, int versionNumber,
+        private static ParentMigrationData ReadGeometryReference(StreamReader sr, ProjectData projectData, int versionNumber,
             ref int row, ref int column, string description)
         {
             if (versionNumber < 5)
@@ -780,14 +895,14 @@ namespace SIMULTAN.Serializer.SimGeo
                 string name = ReadString(sr, ref row, ref column, description + ".Name");
 
                 if (versionNumber >= 8)
-                    return new GeometryReference(modelGuid, geomId, name, null, projectData.GeometryModels);
+                    return new ParentMigrationData(modelGuid, geomId);
                 else if (versionNumber >= 5 && versionNumber < 8)
-                    return new IdBasedGeometryReference(modelId, geomId, name, null, projectData.GeometryModels);
+                    return new ParentMigrationData(modelId, geomId);
                 else
-                    return null; //Cannot happen. Would throw an Exception at start of the method
+                    return ParentMigrationData.Empty; //Cannot happen. Would throw an Exception at start of the method
             }
             else
-                return null;
+                return ParentMigrationData.Empty;
         }
         private static Guid ReadGuid(StreamReader sr, ref int row, ref int column, string description)
         {
@@ -852,29 +967,34 @@ namespace SIMULTAN.Serializer.SimGeo
             layers[layer.Id] = layer;
         }
 
-        private static (ulong id, string name, ulong layer, bool isVisible, GeometryReference parent) ReadBaseGeometryStart(StreamReader sr,
-            ProjectData modelStore, int versionNumber, ref int row, ref int column)
+        private static (ulong id, string name, ulong layer, bool isVisible, ParentMigrationData parent) ReadBaseGeometryStart(StreamReader sr,
+            ProjectData modelStore, int versionNumber, ref int row, ref int column, int fileId,
+            List<(SimBaseGeometryReference, ParentMigrationData)> legacyParentRelations)
         {
             var id = ReadNumber<UInt64>(sr, ref row, ref column, "Geometry ID");
             var name = ReadString(sr, ref row, ref column, "Geometry Name");
             var layer = ReadNumber<UInt64>(sr, ref row, ref column, "Geometry Layer ID");
             var isVisible = ReadBool(sr, ref row, ref column, "Geometry IsVisible");
 
-            GeometryReference parent = null;
-            if (versionNumber >= 5)
+            ParentMigrationData parent = ParentMigrationData.Empty;
+            if (versionNumber >= 5 && versionNumber < 12)
             {
                 parent = ReadGeometryReference(sr, modelStore, versionNumber, ref row, ref column, "Geometry Parent");
+                if (!parent.Equals(ParentMigrationData.Empty))
+                {
+                    var source = new SimBaseGeometryReference(modelStore.Owner.GlobalID, fileId, id);
+                    legacyParentRelations.Add((source, parent));
+                }
             }
 
-            return (
-                id, name, layer, isVisible, parent
-                );
+            return (id, name, layer, isVisible, parent);
         }
         private static void ReadVertex(StreamReader sr, GeometryModelData model, Dictionary<ulong, Layer> layers, Dictionary<ulong, BaseGeometry> geometries,
-            ProjectData modelStore, int versionNumber, ref int row, ref int column)
+            ProjectData modelStore, int versionNumber, ref int row, ref int column, int fileId,
+            List<(SimBaseGeometryReference, ParentMigrationData)> legacyParentRelations)
         {
             var streamPos = sr.BaseStream.Position;
-            var bg = ReadBaseGeometryStart(sr, modelStore, versionNumber, ref row, ref column);
+            var bg = ReadBaseGeometryStart(sr, modelStore, versionNumber, ref row, ref column, fileId, legacyParentRelations);
 
             if (!layers.ContainsKey(bg.layer))
             {
@@ -890,7 +1010,6 @@ namespace SIMULTAN.Serializer.SimGeo
             Vertex v = new Vertex(bg.id, layers[bg.layer], bg.name, new Point3D(x, y, z))
             {
                 IsVisible = bg.isVisible,
-                Parent = bg.parent,
             };
             ReadColor(sr, v.Color, ref row, ref column, "Vertex Color");
 
@@ -898,11 +1017,12 @@ namespace SIMULTAN.Serializer.SimGeo
 
         }
         private static void ReadEdge(StreamReader sr, GeometryModelData model, Dictionary<ulong, Layer> layers, Dictionary<ulong, BaseGeometry> geometries,
-            ProjectData modelStore, int versionNumber, ref int row, ref int column)
+            ProjectData modelStore, int versionNumber, ref int row, ref int column, int fileId,
+            List<(SimBaseGeometryReference, ParentMigrationData)> legacyParentRelations)
         {
             var streamPos = sr.BaseStream.Position;
 
-            var bg = ReadBaseGeometryStart(sr, modelStore, versionNumber, ref row, ref column);
+            var bg = ReadBaseGeometryStart(sr, modelStore, versionNumber, ref row, ref column, fileId, legacyParentRelations);
             if (!layers.ContainsKey(bg.layer))
             {
                 throw new Exception(String.Format("An error occurred during loading at position {1}:\n" +
@@ -929,17 +1049,17 @@ namespace SIMULTAN.Serializer.SimGeo
             Edge e = new Edge(bg.id, layers[bg.layer], bg.name, new Vertex[] { (Vertex)geometries[v1], (Vertex)geometries[v2] })
             {
                 IsVisible = bg.isVisible,
-                Parent = bg.parent,
             };
             ReadColor(sr, e.Color, ref row, ref column, "Edge Color");
 
             geometries.Add(e.Id, e);
         }
         private static void ReadEdgeLoop(StreamReader sr, GeometryModelData model, Dictionary<ulong, Layer> layers, Dictionary<ulong, BaseGeometry> geometries,
-            ProjectData modelStore, int versionNumber, ref int row, ref int column)
+            ProjectData modelStore, int versionNumber, ref int row, ref int column, int fileId,
+            List<(SimBaseGeometryReference, ParentMigrationData)> legacyParentRelations)
         {
             var streamPos = sr.BaseStream.Position;
-            var bg = ReadBaseGeometryStart(sr, modelStore, versionNumber, ref row, ref column);
+            var bg = ReadBaseGeometryStart(sr, modelStore, versionNumber, ref row, ref column, fileId, legacyParentRelations);
 
             if (!layers.ContainsKey(bg.layer))
             {
@@ -967,17 +1087,17 @@ namespace SIMULTAN.Serializer.SimGeo
             EdgeLoop loop = new EdgeLoop(bg.id, layers[bg.layer], bg.name, edges)
             {
                 IsVisible = bg.isVisible,
-                Parent = bg.parent,
             };
             ReadColor(sr, loop.Color, ref row, ref column, "EdgeLoop Color");
 
             geometries.Add(loop.Id, loop);
         }
         private static void ReadPolyline(StreamReader sr, GeometryModelData model, Dictionary<ulong, Layer> layers, Dictionary<ulong, BaseGeometry> geometries,
-            ProjectData modelStore, int versionNumber, ref int row, ref int column)
+            ProjectData modelStore, int versionNumber, ref int row, ref int column, int fileId,
+            List<(SimBaseGeometryReference, ParentMigrationData)> legacyParentRelations)
         {
             var streamPos = sr.BaseStream.Position;
-            var bg = ReadBaseGeometryStart(sr, modelStore, versionNumber, ref row, ref column);
+            var bg = ReadBaseGeometryStart(sr, modelStore, versionNumber, ref row, ref column, fileId, legacyParentRelations);
 
             if (!layers.ContainsKey(bg.layer))
             {
@@ -1005,17 +1125,17 @@ namespace SIMULTAN.Serializer.SimGeo
             Polyline pl = new Polyline(bg.id, layers[bg.layer], bg.name, edges)
             {
                 IsVisible = bg.isVisible,
-                Parent = bg.parent,
             };
             ReadColor(sr, pl.Color, ref row, ref column, "Polyline Color");
 
             geometries.Add(pl.Id, pl);
         }
         private static void ReadFace(StreamReader sr, GeometryModelData model, Dictionary<ulong, Layer> layers, Dictionary<ulong, BaseGeometry> geometries,
-            ProjectData modelStore, int versionNumber, ref int row, ref int column)
+            ProjectData modelStore, int versionNumber, ref int row, ref int column, int fileId,
+            List<(SimBaseGeometryReference, ParentMigrationData)> legacyParentRelations)
         {
             var streamPos = sr.BaseStream.Position;
-            var bg = ReadBaseGeometryStart(sr, modelStore, versionNumber, ref row, ref column);
+            var bg = ReadBaseGeometryStart(sr, modelStore, versionNumber, ref row, ref column, fileId, legacyParentRelations);
 
             if (!layers.ContainsKey(bg.layer))
             {
@@ -1052,17 +1172,17 @@ namespace SIMULTAN.Serializer.SimGeo
             Face f = new Face(bg.id, layers[bg.layer], bg.name, (EdgeLoop)geometries[boundaryId], orient, holes)
             {
                 IsVisible = bg.isVisible,
-                Parent = bg.parent,
             };
             ReadColor(sr, f.Color, ref row, ref column, "Face Color");
 
             geometries.Add(f.Id, f);
         }
         private static void ReadVolume(StreamReader sr, GeometryModelData model, Dictionary<ulong, Layer> layers, Dictionary<ulong, BaseGeometry> geometries,
-            ProjectData modelStore, int versionNumber, ref int row, ref int column)
+            ProjectData modelStore, int versionNumber, ref int row, ref int column, int fileId,
+            List<(SimBaseGeometryReference, ParentMigrationData)> legacyParentRelations)
         {
             var streamPos = sr.BaseStream.Position;
-            var bg = ReadBaseGeometryStart(sr, modelStore, versionNumber, ref row, ref column);
+            var bg = ReadBaseGeometryStart(sr, modelStore, versionNumber, ref row, ref column, fileId, legacyParentRelations);
 
             if (!layers.ContainsKey(bg.layer))
             {
@@ -1090,17 +1210,17 @@ namespace SIMULTAN.Serializer.SimGeo
             Volume v = new Volume(bg.id, layers[bg.layer], bg.name, faces)
             {
                 IsVisible = bg.isVisible,
-                Parent = bg.parent,
             };
             ReadColor(sr, v.Color, ref row, ref column, "Volume Color");
 
             geometries.Add(v.Id, v);
         }
         private static void ReadProxyGeometry(StreamReader sr, GeometryModelData model, Dictionary<ulong, Layer> layers, Dictionary<ulong, BaseGeometry> geometries,
-            ProjectData modelStore, int versionNumber, ref int row, ref int column)
+            ProjectData modelStore, int versionNumber, ref int row, ref int column, int fileId,
+            List<(SimBaseGeometryReference, ParentMigrationData)> legacyParentRelations)
         {
             var streamPos = sr.BaseStream.Position;
-            var bg = ReadBaseGeometryStart(sr, modelStore, versionNumber, ref row, ref column);
+            var bg = ReadBaseGeometryStart(sr, modelStore, versionNumber, ref row, ref column, fileId, legacyParentRelations);
 
             if (!layers.ContainsKey(bg.layer))
             {
@@ -1180,7 +1300,6 @@ namespace SIMULTAN.Serializer.SimGeo
                 Positions = positions,
                 Normals = normals,
                 Indices = indices,
-                Parent = bg.parent,
             };
             ReadColor(sr, proxy.Color, ref row, ref column, "Proxy Color");
 
@@ -1214,38 +1333,76 @@ namespace SIMULTAN.Serializer.SimGeo
             if (mapping != null)
                 model.ValueMappings.Add(mapping);
         }
-        private static FileInfo ReadLinkedModel(StreamReader sr, GeometryModel model, ref int row, ref int column)
+        private static Int32 ReadLinkedModel(StreamReader sr, GeometryModel model, ProjectData projectData, int versionNumber, ref int row, ref int column,
+            Dictionary<string, string> importPathLookup)
         {
-            var path = ReadString(sr, ref row, ref column, "Linked Model Path");
-            return new FileInfo(Path.Combine(Path.GetDirectoryName(model.File.CurrentFullPath), path));
+            // migrate from file path to resource Id
+            if (versionNumber < 12)
+            {
+                var path = ReadString(sr, ref row, ref column, "Linked Model Path");
+                if (importPathLookup != null && !importPathLookup.TryGetValue(path, out path))
+                {
+                    return -1; // could not find in lookup
+                }
+                var file = new FileInfo(Path.Combine(Path.GetDirectoryName(model.File.CurrentFullPath), path));
+                var resource = projectData.AssetManager.GetResource(file);
+
+                if (resource == null) // resource not found
+                    return -1;
+
+                return resource.Key;
+            }
+            return ReadNumber<Int32>(sr, ref row, ref column, "Linked Model File ID");
+        }
+        private static (Guid guid, bool success) LegacyIdToGuid(ulong oldId, Dictionary<ulong, Guid> idToGuid)
+        {
+            bool success = true;
+
+            if (!idToGuid.TryGetValue(oldId, out var guid))
+            {
+                guid = Guid.Empty;
+                success = false;
+            }
+            return ((guid, success));
         }
 
-        private static void ConvertIdBasedReferences(GeometryModel model, Dictionary<ulong, Guid> idToGuid, List<SimGeoIOError> errors)
+        private static void ConvertIdBasedReferencesAndRelation(ProjectData projectData, Dictionary<Guid, GeometryModel> modelLookup, Dictionary<ulong, Guid> idToGuid, List<SimGeoIOError> errors,
+            List<(SimBaseGeometryReference source, ParentMigrationData target)> legacyParentRelations)
         {
-            if (idToGuid.Count == 0) //When there is no model that had an Id, checking for references is not necessary
-                return;
-
-            foreach (var subModel in model.LinkedModels)
+            SimTaxonomyEntry legacyParentTaxEntry = null;
+            for (int i = 0; i < legacyParentRelations.Count; i++)
             {
-                ConvertIdBasedReferences(subModel, idToGuid, errors);
-            }
+                (var source, var parent) = legacyParentRelations[i];
+                if (legacyParentTaxEntry == null)
+                    legacyParentTaxEntry = GetLegacyParentTaxonomyEntry(projectData);
 
-            foreach (var geo in model.Geometry.Geometries)
-            {
-                if (geo.Parent is IdBasedGeometryReference idRef)
+                // convert old Ids to GUIDs
+                if (parent.IsLegacy)
                 {
-                    var convertedReference = idRef.ToGeometryReference(idToGuid);
+                    var convertedReference = LegacyIdToGuid(parent.LegacyId, idToGuid);
 
                     if (!convertedReference.success)
                     {
-                        errors.Add(new SimGeoIOError(SimGeoIOErrorReason.ReferenceConvertFailed,
-                            new object[] { geo.Name }));
+                        errors.Add(new SimGeoIOError(SimGeoIOErrorReason.ReferenceConvertFailed, new object[] { source }));
                     }
 
-                    geo.Parent = convertedReference.reference;
+                    parent = new ParentMigrationData(convertedReference.guid, parent.GeometryId);
+                }
+
+                // find parent and add geometry relation
+                if (modelLookup.TryGetValue(parent.ModelId, out var model))
+                {
+                    var target = new SimBaseGeometryReference(source.ProjectId, model.File.Key, parent.GeometryId);
+                    var relation = new SimGeometryRelation(new SimTaxonomyEntryReference(legacyParentTaxEntry), source, target);
+                    projectData.GeometryRelations.Add(relation);
+                }
+                else
+                {
+                    errors.Add(new SimGeoIOError(SimGeoIOErrorReason.ReferenceConvertFailed, new object[] { source }));
                 }
             }
         }
+
 
         #endregion
     }

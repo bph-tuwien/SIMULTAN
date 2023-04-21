@@ -122,7 +122,7 @@ namespace SIMULTAN.Data.SimNetworks
                         port.ComponentInstance.Component.Instances.Remove(port.ComponentInstance);
                     }
                 }
-                
+
                 if (item.Factory != null)
                 {
                     item.Factory.ProjectData.IdGenerator.Remove(item);
@@ -131,7 +131,7 @@ namespace SIMULTAN.Data.SimNetworks
 
                 item.Id = new SimId(item.Id.GlobalId, item.Id.LocalId);
                 item.ParentNetwork = null;
-                
+
             }
 
             internal void NotifyFactoryChanged(ISimManagedCollection newFactory, ISimManagedCollection oldFactory)

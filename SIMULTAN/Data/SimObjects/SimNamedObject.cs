@@ -16,7 +16,6 @@ namespace SIMULTAN.Data
         /// <summary>
         /// The name of the object. It can be any string.
         /// </summary>
-        [ExcelMappingProperty("SIM_OBJECT_NAME")]
         public string Name
         {
             get { return this.name; }

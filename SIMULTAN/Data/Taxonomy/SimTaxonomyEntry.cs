@@ -1,6 +1,8 @@
-﻿using System;
+﻿using SIMULTAN.Exceptions;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -11,10 +13,12 @@ using static SIMULTAN.Data.Taxonomy.SimTaxonomyEntryReference;
 
 namespace SIMULTAN.Data.Taxonomy
 {
+
     /// <summary>
     /// Data class for a Taxonomy entry
     /// </summary>
-    public class SimTaxonomyEntry : SimNamedObject<SimTaxonomyCollection>
+    [DebuggerDisplay("[TaxonomyEntry] {Name}, {Key}")]
+    public class SimTaxonomyEntry : SimNamedObject<SimTaxonomyCollection>, IComparable<SimTaxonomyEntry>, IComparable
     {
         //~SimTaxonomyEntry() { Console.WriteLine("~SimTaxonomyEntry"); }
 
@@ -33,6 +37,7 @@ namespace SIMULTAN.Data.Taxonomy
             {
                 if (key != value)
                 {
+                    NotifyWriteAccess();
                     if (Taxonomy != null)
                         Taxonomy.UnregisterEntry(this);
 
@@ -64,6 +69,7 @@ namespace SIMULTAN.Data.Taxonomy
             {
                 if (parent != value)
                 {
+                    NotifyWriteAccess();
                     parent = value;
                     NotifyPropertyChanged(nameof(Parent));
                 }
@@ -81,6 +87,8 @@ namespace SIMULTAN.Data.Taxonomy
             {
                 if (taxonomy != value)
                 {
+                    NotifyWriteAccess();
+
                     if (taxonomy != null)
                     {
                         if (Factory != null)
@@ -185,9 +193,9 @@ namespace SIMULTAN.Data.Taxonomy
                 isDeleted = true;
                 var values = references.GetType().GetProperty("Values", BindingFlags.Instance | BindingFlags.NonPublic);
                 var actual = (ICollection<TaxonomyReferenceDeleter>)values.GetValue(references);
-                foreach(var del in actual)
+                foreach (var del in actual)
                 {
-                    del();
+                    del(this);
                 }
                 foreach (var child in Children)
                 {
@@ -201,30 +209,27 @@ namespace SIMULTAN.Data.Taxonomy
         /// <summary>
         /// Creates a new Taxonomy entry
         /// </summary>
-        /// <param name="key">The key of the taxonomy entry</param>
+        /// <param name="key">The key of the taxonomy entry, cannot be null or empty</param>
         /// <param name="name">The name of the taxonomy entry</param>
         /// <param name="description">The description of the taxonomy entry</param>
-        public SimTaxonomyEntry(string key, string name, string description) : this(name, description)
+        public SimTaxonomyEntry(string key, string name, string description) : this(key, name)
         {
+            Description = description ?? "";
+        }
+
+        /// <summary>
+        /// Creates a new Taxonomy entry
+        /// </summary>
+        /// <param name="key">The key of the taxonomy entry, cannot be null or empty</param>
+        /// <param name="name">The name of the taxonomy entry</param>
+        public SimTaxonomyEntry(string key, string name) : this()
+        {
+            if (String.IsNullOrEmpty(key))
+                throw new ArgumentException("Taxonomy entry key cannot be null or empty");
+            if (name == null)
+                throw new ArgumentNullException(nameof(name));
+
             Key = key;
-        }
-
-        /// <summary>
-        /// Creates a new Taxonomy entry
-        /// </summary>
-        /// <param name="name">The name of the taxonomy entry</param>
-        /// <param name="description">The description of the taxonomy entry</param>
-        public SimTaxonomyEntry(string name, string description) : this(name)
-        {
-            Description = description;
-        }
-
-        /// <summary>
-        /// Creates a new Taxonomy entry
-        /// </summary>
-        /// <param name="name">The name of the taxonomy entry</param>
-        public SimTaxonomyEntry(string name) : this()
-        {
             Name = name;
         }
 
@@ -258,8 +263,16 @@ namespace SIMULTAN.Data.Taxonomy
                 throw new ArgumentNullException(nameof(reference));
             if (deleteEntry == null)
                 throw new ArgumentNullException(nameof(deleteEntry));
-            references.Add(reference, deleteEntry);
+            try
+            {
+                references.Add(reference, deleteEntry);
+            }
+            catch (ArgumentException e)
+            {
+                throw new DeleteActionAlreadyRegisteredException("Delete action for taxonomy entry reference was already registered. Taxonomy entry references need to be cloned on reassigned if the deleter is in use.", e);
+            }
         }
+
         /// <summary>
         /// Removes a taxonomy reference from the delete notification list
         /// </summary>
@@ -297,6 +310,39 @@ namespace SIMULTAN.Data.Taxonomy
 
             if (this.Factory != null)
                 this.Factory.NotifyTaxonomyEntryPropertyChanged(this, property);
+        }
+
+        /// <inheritdoc/>
+        public int CompareTo(SimTaxonomyEntry other)
+        {
+            return String.Compare(Name, other.Name);
+        }
+
+        /// <inheritdoc/>
+        protected override void NotifyWriteAccess()
+        {
+            if (Taxonomy != null && Taxonomy.IsReadonly)
+                throw new AccessDeniedException("Cannot change read only taxonomy.");
+
+            base.NotifyWriteAccess();
+        }
+
+        /// <summary>
+        /// Tells the entry that the entries in it's child collection have changed
+        /// </summary>
+        internal void NotifyChildrenChanged()
+        {
+            NotifyPropertyChanged(nameof(Children));
+        }
+
+        /// <inheritdoc/>
+        public int CompareTo(object obj)
+        {
+            if (obj is SimTaxonomyEntry entry)
+            {
+                return CompareTo(entry);
+            }
+            return 1;
         }
     }
 }

@@ -62,26 +62,6 @@ namespace SIMULTAN.Data.Geometry
         private string name;
 
         /// <summary>
-        /// A unique number that identifies the model. Usually supplied per project from the ComponentManager
-        /// </summary>
-        public Guid Id
-        {
-            get
-            {
-                return id;
-            }
-            set
-            {
-                if (id != value)
-                {
-                    id = value;
-                    NotifyPropertyChanged(nameof(Id));
-                }
-            }
-        }
-        private Guid id;
-
-        /// <summary>
         /// The geometry of this model. Invokes the Replaced event when changed
         /// </summary>
         public GeometryModelData Geometry
@@ -99,6 +79,8 @@ namespace SIMULTAN.Data.Geometry
                     geometryModel.Model = this;
                     NotifyReplaced(old, geometryModel);
                     NotifyPropertyChanged(nameof(Geometry));
+
+                    OffsetQuery_GeometryInvalidated(this, null);
                 }
             }
         }
@@ -153,9 +135,9 @@ namespace SIMULTAN.Data.Geometry
         /// <summary>
         /// The <see cref="ComponentGeometryExchange"/> associated with this model
         /// </summary>
-        public ComponentGeometryExchange Exchange 
+        public ComponentGeometryExchange Exchange
         {
-            get 
+            get
             {
                 return offsetQuery;
             }
@@ -240,12 +222,11 @@ namespace SIMULTAN.Data.Geometry
         /// <summary>
         /// Initializes a new instance of the GeometryModel class
         /// </summary>
-        /// <param name="id">Unique id of this GeometryModel (used to handle GeometryReferences between models)</param>
         /// <param name="name">The display name</param>
         /// <param name="file">The geometry file to use</param>
         /// <param name="permissions">The permissions for this model</param>
         /// <param name="geometry">The geometry for this model</param>
-        public GeometryModel(Guid id, string name, ResourceFileEntry file, OperationPermission permissions, GeometryModelData geometry)
+        public GeometryModel(string name, ResourceFileEntry file, OperationPermission permissions, GeometryModelData geometry)
         {
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
@@ -254,7 +235,6 @@ namespace SIMULTAN.Data.Geometry
             if (geometry.Model != null && geometry.Model != this)
                 throw new ArgumentException("Geometry has already been used with another model");
 
-            this.Id = id;
             this.Name = name;
             this.File = file;
             this.Permissions = permissions;

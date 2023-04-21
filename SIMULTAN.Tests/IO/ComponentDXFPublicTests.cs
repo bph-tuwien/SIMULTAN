@@ -2,13 +2,14 @@
 using SIMULTAN.Data;
 using SIMULTAN.Data.Assets;
 using SIMULTAN.Data.Components;
+using SIMULTAN.Data.Taxonomy;
 using SIMULTAN.Data.Users;
 using SIMULTAN.Projects;
 using SIMULTAN.Serializer.CODXF;
 using SIMULTAN.Serializer.DXF;
 using SIMULTAN.Tests.Properties;
 using SIMULTAN.Tests.Util;
-using SIMULTAN.Tests.Utils;
+using SIMULTAN.Tests.TestUtils;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -28,6 +29,8 @@ namespace SIMULTAN.Tests.IO
         {
             var guid = Guid.NewGuid();
             var otherGuid = Guid.Parse("da7d8f7c-8eec-423b-b127-9d6e17f52522");
+            var tempTaxonomies = TaxonomyUtils.GetDefaultTaxonomies();
+            var costTax = tempTaxonomies.GetDefaultSlot(SimDefaultSlotKeys.Cost);
 
             ExtendedProjectData projectData = new ExtendedProjectData();
             projectData.SetCallingLocation(new DummyReferenceLocation(guid));
@@ -41,7 +44,7 @@ namespace SIMULTAN.Tests.IO
                 Name = "C1",
                 Description = "",
                 IsAutomaticallyGenerated = false,
-                CurrentSlot = new SimSlotBase(SimDefaultSlots.Cost),
+                CurrentSlot = new SimTaxonomyEntryReference(costTax),
                 ComponentColor = Color.FromArgb(230, 100, 10, 20),
                 InstanceType = SimInstanceType.AttributesFace,
                 Visibility = SimComponentVisibility.AlwaysVisible,
@@ -54,13 +57,13 @@ namespace SIMULTAN.Tests.IO
                 Name = "C2",
                 Description = "",
                 IsAutomaticallyGenerated = false,
-                CurrentSlot = new SimSlotBase(SimDefaultSlots.Cost),
+                CurrentSlot = new SimTaxonomyEntryReference(costTax),
                 ComponentColor = Color.FromArgb(230, 100, 10, 20),
                 InstanceType = SimInstanceType.AttributesFace,
                 Visibility = SimComponentVisibility.VisibleInProject,
                 SortingType = SimComponentContentSorting.ByName,
             };
-            c1.Components.Add(new SimChildComponentEntry(new SimSlot(c2.CurrentSlot, "1"), c2));
+            c1.Components.Add(new SimChildComponentEntry(new SimSlot(new SimTaxonomyEntryReference(c2.CurrentSlot), "1"), c2));
 
             var c3 = new SimComponent()
             {
@@ -68,7 +71,7 @@ namespace SIMULTAN.Tests.IO
                 Name = "C3",
                 Description = "",
                 IsAutomaticallyGenerated = false,
-                CurrentSlot = new SimSlotBase(SimDefaultSlots.Cost),
+                CurrentSlot = new SimTaxonomyEntryReference(costTax),
                 ComponentColor = Color.FromArgb(230, 100, 10, 20),
                 InstanceType = SimInstanceType.AttributesFace,
                 Visibility = SimComponentVisibility.VisibleInProject,
@@ -153,6 +156,8 @@ namespace SIMULTAN.Tests.IO
             projectData.AssetManager.CreateDocumentAsset(c3, d5, "ABC");
 
             projectData.Components.EndLoading();
+
+            projectData.Taxonomies.MergeWithDefaults(tempTaxonomies);
 
             return projectData;
         }

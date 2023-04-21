@@ -1,6 +1,7 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SIMULTAN.Data.MultiValues;
-using SIMULTAN.Tests.Utils;
+using SIMULTAN.Projects;
+using SIMULTAN.Tests.TestUtils;
 using SIMULTAN.Utils;
 using System;
 using System.Collections.Generic;
@@ -32,12 +33,17 @@ namespace SIMULTAN.Tests.Values
         }
 
         public static (SimMultiValueFunction function,
-            (string name, string unitX, string unitY, string unitZ, Rect bounds, List<double> zs, List<SimMultiValueFunctionGraph> graphs) data)
+            (string name, string unitX, string unitY, string unitZ, Rect bounds, List<double> zs, List<SimMultiValueFunctionGraph> graphs) data,
+            ExtendedProjectData projectData)
             TestDataFunction(int zCount)
         {
             var data = TestData(zCount);
             var func = new SimMultiValueFunction(data.name, data.unitX, data.unitY, data.unitZ, data.bounds, data.zs, data.graphs);
-            return (func, data);
+
+            ExtendedProjectData projectData = new ExtendedProjectData();
+            projectData.ValueManager.Add(func);
+
+            return (func, data, projectData);
         }
 
         public void CheckTestData(SimMultiValueFunction function,
@@ -247,13 +253,27 @@ namespace SIMULTAN.Tests.Values
 
             Assert.AreEqual(null, removeGraph.Function);
             Assert.IsFalse(data.function.Graphs.Contains(removeGraph));
+        }
+
+
+        private WeakReference RemoveGraphMemoryLeakTest_Action(SimMultiValueFunction function)
+        {
+            var removeGraph = function.Graphs[2];
+            function.Graphs.Remove(removeGraph);
 
             //Check for memory leak
             var weakGraph = new WeakReference(removeGraph);
+            return weakGraph;
+        }
 
-            removeGraph = null;
+        [TestMethod]
+        public void RemoveGraphMemoryLeakTest()
+        {
+            var data = TestDataFunction(2);
             data.data.graphs.Clear();
             data.data.graphs = null;
+
+            var weakGraph = RemoveGraphMemoryLeakTest_Action(data.function);
 
             GC.Collect();
             GC.WaitForPendingFinalizers();

@@ -127,7 +127,7 @@ namespace SIMULTAN.Data.Geometry
                     break;
             }
 
-            if (resultGeometry != null && resultGeometry.Any())
+            if (resultGeometry != null)
                 model.OffsetModel.OnOffsetSurfaceChanged(resultGeometry);
 
             return resultGeometry;

@@ -1,22 +1,21 @@
 ﻿using SIMULTAN.Data.Components;
+using SIMULTAN.Data.FlowNetworks;
+using SIMULTAN.Data.Geometry;
 using SIMULTAN.Data.MultiValues;
+using SIMULTAN.Data.SimNetworks;
+using SIMULTAN.Data.Taxonomy;
 using SIMULTAN.Data.Users;
-using SIMULTAN.Data.SitePlanner;
+using SIMULTAN.Data.ValueMappings;
+using SIMULTAN.DataMapping;
 using SIMULTAN.Projects;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Media;
 using System.Windows.Media.Media3D;
 using static SIMULTAN.Data.Components.CalculationParameterMetaData;
-using SIMULTAN.Data.FlowNetworks;
-using SIMULTAN.Excel;
-using SIMULTAN.Data.SimNetworks;
-using SIMULTAN.Data.ValueMappings;
+using static SIMULTAN.Serializer.CODXF.ComponentDxfIOComponents;
 
 namespace SIMULTAN.Serializer.DXF
 {
@@ -86,9 +85,18 @@ namespace SIMULTAN.Serializer.DXF
         IDXFDataConverter<SimComponentContentSorting>,
         IDXFDataConverter<Color>, IDXFDataConverter<Quaternion>, IDXFDataConverter<DateTime>,
         IDXFDataConverter<SimFlowNetworkOperator>, IDXFDataConverter<SimFlowNetworkCalcDirection>,
-        IDXFDataConverter<MappingSubject>, IDXFDataConverter<ExcelMappingRange>,
-        IDXFDataConverter<TraversalStrategy>,
-        IDXFDataConverter<PortType>
+        IDXFDataConverter<SimGeometrySourceProperty>,
+        IDXFDataConverter<PortType>,
+        IDXFDataConverter<SimInstancePlacementState>,
+        IDXFDataConverter<ParameterType>,
+        IDXFDataConverter<SimDataMappingDirection>, IDXFDataConverter<SimDataMappingReferencePoint>,
+        IDXFDataConverter<SimDataMappingComponentMappingProperties>, IDXFDataConverter<SimDataMappingComponentFilterProperties>,
+        IDXFDataConverter<SimDataMappingParameterMappingProperties>, IDXFDataConverter<SimDataMappingParameterFilterProperties>,
+        IDXFDataConverter<SimDataMappingInstanceMappingProperties>, IDXFDataConverter<SimDataMappingInstanceFilterProperties>,
+        IDXFDataConverter<SimDataMappingFaceMappingProperties>, IDXFDataConverter<SimDataMappingFaceFilterProperties>,
+        IDXFDataConverter<SimDataMappingVolumeMappingProperties>, IDXFDataConverter<SimDataMappingVolumeFilterProperties>,
+        IDXFDataConverter<SimDataMappingFilterType>, IDXFDataConverter<SimDataMappingRuleTraversalStrategy>,
+        IDXFDataConverter<SimDataMappingFaceType>, IDXFDataConverter<SimDataMappingParameterRange>
     {
         /// <summary>
         /// Instance of the data converter
@@ -116,6 +124,7 @@ namespace SIMULTAN.Serializer.DXF
         {
             return value.ToString();
         }
+
         /// <inheritdoc />
         Type IDXFDataConverter<Type>.FromDXFString(string value, DXFParserInfo info)
         {
@@ -228,9 +237,187 @@ namespace SIMULTAN.Serializer.DXF
             }
         }
 
+
         #endregion
 
         #region Enums
+
+        /// <inheritdoc />
+        public string ToDXFString(SimDataMappingParameterRange value)
+        {
+            return ToDXFString((uint)value);
+        }
+        /// <inheritdoc />
+        SimDataMappingParameterRange IDXFDataConverter<SimDataMappingParameterRange>.FromDXFString(string value, DXFParserInfo info)
+        {
+            return (SimDataMappingParameterRange)UInt32.Parse(value);
+        }
+
+
+        /// <inheritdoc />
+        public string ToDXFString(SimDataMappingComponentFilterProperties value)
+        {
+            return ToDXFString((uint)value);
+        }
+        /// <inheritdoc />
+        SimDataMappingComponentFilterProperties IDXFDataConverter<SimDataMappingComponentFilterProperties>.FromDXFString(string value, DXFParserInfo info)
+        {
+            return (SimDataMappingComponentFilterProperties)UInt32.Parse(value);
+        }
+
+        /// <inheritdoc />
+        public string ToDXFString(SimDataMappingParameterFilterProperties value)
+        {
+            return ToDXFString((uint)value);
+        }
+        /// <inheritdoc />
+        SimDataMappingParameterFilterProperties IDXFDataConverter<SimDataMappingParameterFilterProperties>.FromDXFString(string value, DXFParserInfo info)
+        {
+            return (SimDataMappingParameterFilterProperties)UInt32.Parse(value);
+        }
+
+        /// <inheritdoc />
+        public string ToDXFString(SimDataMappingInstanceFilterProperties value)
+        {
+            return ToDXFString((uint)value);
+        }
+        /// <inheritdoc />
+        SimDataMappingInstanceFilterProperties IDXFDataConverter<SimDataMappingInstanceFilterProperties>.FromDXFString(string value, DXFParserInfo info)
+        {
+            return (SimDataMappingInstanceFilterProperties)UInt32.Parse(value);
+        }
+
+        /// <inheritdoc />
+        public string ToDXFString(SimDataMappingFaceFilterProperties value)
+        {
+            return ToDXFString((uint)value);
+        }
+        /// <inheritdoc />
+        SimDataMappingFaceFilterProperties IDXFDataConverter<SimDataMappingFaceFilterProperties>.FromDXFString(string value, DXFParserInfo info)
+        {
+            return (SimDataMappingFaceFilterProperties)UInt32.Parse(value);
+        }
+
+        /// <inheritdoc />
+        public string ToDXFString(SimDataMappingVolumeFilterProperties value)
+        {
+            return ToDXFString((uint)value);
+        }
+        /// <inheritdoc />
+        SimDataMappingVolumeFilterProperties IDXFDataConverter<SimDataMappingVolumeFilterProperties>.FromDXFString(string value, DXFParserInfo info)
+        {
+            return (SimDataMappingVolumeFilterProperties)UInt32.Parse(value);
+        }
+
+        /// <inheritdoc />
+        public string ToDXFString(SimDataMappingRuleTraversalStrategy value)
+        {
+            return ToDXFString((uint)value);
+        }
+        /// <inheritdoc />
+        SimDataMappingRuleTraversalStrategy IDXFDataConverter<SimDataMappingRuleTraversalStrategy>.FromDXFString(string value, DXFParserInfo info)
+        {
+            return (SimDataMappingRuleTraversalStrategy)UInt32.Parse(value);
+        }
+
+        /// <inheritdoc />
+        public string ToDXFString(SimDataMappingFilterType value)
+        {
+            return ToDXFString((uint)value);
+        }
+        /// <inheritdoc />
+        SimDataMappingFilterType IDXFDataConverter<SimDataMappingFilterType>.FromDXFString(string value, DXFParserInfo info)
+        {
+            return (SimDataMappingFilterType)UInt32.Parse(value);
+        }
+
+        /// <inheritdoc />
+        public string ToDXFString(SimDataMappingComponentMappingProperties value)
+        {
+            return ToDXFString((uint)value);
+        }
+        /// <inheritdoc />
+        SimDataMappingComponentMappingProperties IDXFDataConverter<SimDataMappingComponentMappingProperties>.FromDXFString(string value, DXFParserInfo info)
+        {
+            return (SimDataMappingComponentMappingProperties)UInt32.Parse(value);
+        }
+
+        /// <inheritdoc />
+        public string ToDXFString(SimDataMappingParameterMappingProperties value)
+        {
+            return ToDXFString((uint)value);
+        }
+        /// <inheritdoc />
+        SimDataMappingParameterMappingProperties IDXFDataConverter<SimDataMappingParameterMappingProperties>.FromDXFString(string value, DXFParserInfo info)
+        {
+            return (SimDataMappingParameterMappingProperties)UInt32.Parse(value);
+        }
+
+        /// <inheritdoc />
+        public string ToDXFString(SimDataMappingFaceMappingProperties value)
+        {
+            return ToDXFString((uint)value);
+        }
+        /// <inheritdoc />
+        SimDataMappingFaceMappingProperties IDXFDataConverter<SimDataMappingFaceMappingProperties>.FromDXFString(string value, DXFParserInfo info)
+        {
+            return (SimDataMappingFaceMappingProperties)UInt32.Parse(value);
+        }
+
+        /// <inheritdoc />
+        public string ToDXFString(SimDataMappingVolumeMappingProperties value)
+        {
+            return ToDXFString((uint)value);
+        }
+        /// <inheritdoc />
+        SimDataMappingVolumeMappingProperties IDXFDataConverter<SimDataMappingVolumeMappingProperties>.FromDXFString(string value, DXFParserInfo info)
+        {
+            return (SimDataMappingVolumeMappingProperties)UInt32.Parse(value);
+        }
+
+        /// <inheritdoc />
+        public string ToDXFString(SimDataMappingInstanceMappingProperties value)
+        {
+            return ToDXFString((uint)value);
+        }
+        /// <inheritdoc />
+        SimDataMappingInstanceMappingProperties IDXFDataConverter<SimDataMappingInstanceMappingProperties>.FromDXFString(string value, DXFParserInfo info)
+        {
+            return (SimDataMappingInstanceMappingProperties)UInt32.Parse(value);
+        }
+
+        /// <inheritdoc />
+        public string ToDXFString(SimDataMappingDirection value)
+        {
+            return ToDXFString((uint)value);
+        }
+        /// <inheritdoc />
+        SimDataMappingDirection IDXFDataConverter<SimDataMappingDirection>.FromDXFString(string value, DXFParserInfo info)
+        {
+            return (SimDataMappingDirection)UInt32.Parse(value);
+        }
+
+        /// <inheritdoc />
+        public string ToDXFString(SimDataMappingReferencePoint value)
+        {
+            return ToDXFString((uint)value);
+        }
+        /// <inheritdoc />
+        SimDataMappingReferencePoint IDXFDataConverter<SimDataMappingReferencePoint>.FromDXFString(string value, DXFParserInfo info)
+        {
+            return (SimDataMappingReferencePoint)UInt32.Parse(value);
+        }
+
+        /// <inheritdoc />
+        public string ToDXFString(SimDataMappingFaceType value)
+        {
+            return ToDXFString((uint)value);
+        }
+        /// <inheritdoc />
+        SimDataMappingFaceType IDXFDataConverter<SimDataMappingFaceType>.FromDXFString(string value, DXFParserInfo info)
+        {
+            return (SimDataMappingFaceType)UInt32.Parse(value);
+        }
 
         /// <inheritdoc />
         public string ToDXFString(SimMultiValueType value)
@@ -351,7 +538,7 @@ namespace SIMULTAN.Serializer.DXF
                     else
                         throw new ArgumentOutOfRangeException("value does not contain a valid SimParameterOperations string");
                 }
-                return result;                
+                return result;
             }
         }
 
@@ -405,8 +592,6 @@ namespace SIMULTAN.Serializer.DXF
             { "SimNetworkBlock", SimInstanceType.SimNetworkBlock },
             { "InPort", SimInstanceType.InPort },
             { "OutPort", SimInstanceType.OutPort },
-            { "PORT_OUT", SimInstanceType.InPort },
-            { "PORT_IN", SimInstanceType.OutPort },
         };
         /// <inheritdoc />
         public string ToDXFString(SimInstanceType value)
@@ -576,7 +761,7 @@ namespace SIMULTAN.Serializer.DXF
         {
             if (info.FileVersion < 12)
             {
-                return (SimComponentIndexUsage) Enum.Parse(typeof(SimComponentIndexUsage), value, true);
+                return (SimComponentIndexUsage)Enum.Parse(typeof(SimComponentIndexUsage), value, true);
             }
             else
             {
@@ -731,87 +916,33 @@ namespace SIMULTAN.Serializer.DXF
             }
         }
 
-        private static Dictionary<string, MappingSubject> stringToMappingSubject = new Dictionary<string, MappingSubject>
-        {
-            { "COMPONENT", MappingSubject.Component },
-            { "PARAMETER", MappingSubject.Parameter },
-            { "GEOMETRY", MappingSubject.Geometry },
-            { "GEOMETRY_POINT", MappingSubject.GeometryPoint },
-            { "GEOMETRY_AREA", MappingSubject.GeometryArea },
-            { "GEOMETRY_ORIENTATION", MappingSubject.GeometricOrientation },
-            { "GEOMETRY_INCLINE", MappingSubject.GeometricIncline },
-            { "INSTANCE", MappingSubject.Instance },
-        };
-        /// <inheritdoc />
-        public string ToDXFString(MappingSubject value)
-        {
-            return ((uint)value).ToString();
-        }
-        /// <inheritdoc />
-        MappingSubject IDXFDataConverter<MappingSubject>.FromDXFString(string value, DXFParserInfo info)
-        {
-            if (info.FileVersion >= 12)
-                return (MappingSubject)uint.Parse(value);
-            else
-            {
-                if (stringToMappingSubject.TryGetValue(value, out var subject))
-                    return subject;
-                throw new ArgumentOutOfRangeException("value does not contain a valid MappingSubject string");
-            }
-        }
-
-        private static Dictionary<string, ExcelMappingRange> stringToExcelMappingRange = new Dictionary<string, ExcelMappingRange>
-        {
-            { "SINGLE_VALUE", ExcelMappingRange.SingleValue },
-            { "VECTOR_VALUES", ExcelMappingRange.VectorValues },
-            { "MATRIX_VALUES", ExcelMappingRange.MatrixValues },
-        };
-        /// <inheritdoc />
-        public string ToDXFString(ExcelMappingRange value)
-        {
-            return ((uint)value).ToString();
-        }
-        /// <inheritdoc />
-        ExcelMappingRange IDXFDataConverter<ExcelMappingRange>.FromDXFString(string value, DXFParserInfo info)
-        {
-            return (ExcelMappingRange)uint.Parse(value);
-        }
-
-        private static Dictionary<string, TraversalStrategy> stringToTraversalStrategy = new Dictionary<string, TraversalStrategy>
-        {
-            { "SUBTREE_ONLY", TraversalStrategy.SUBTREE_ONLY },
-            { "REFERENCES_ONLY", TraversalStrategy.REFERENCES_ONLY },
-            { "SUBTREE_AND_REFERENCES", TraversalStrategy.SUBTREE_AND_REFERENCES },
-        };
-        /// <inheritdoc />
-        public string ToDXFString(TraversalStrategy value)
-        {
-            return ((uint)value).ToString();
-        }
-        /// <inheritdoc />
-        TraversalStrategy IDXFDataConverter<TraversalStrategy>.FromDXFString(string value, DXFParserInfo info)
-        {
-            if (info.FileVersion >= 12)
-                return (TraversalStrategy)uint.Parse(value);
-            else
-            {
-                if (stringToTraversalStrategy.TryGetValue(value, out var strategy))
-                    return strategy;
-                throw new ArgumentOutOfRangeException("value does not contain a valid ExcelMappingRange string");
-            }
-        }
-
 
         public string ToDXFString(PortType value)
         {
             return ((uint)value).ToString();
         }
-
         PortType IDXFDataConverter<PortType>.FromDXFString(string value, DXFParserInfo info)
         {
             return (PortType)uint.Parse(value);
         }
 
+        public string ToDXFString(SimInstancePlacementState value)
+        {
+            return ((uint)value).ToString();
+        }
+        SimInstancePlacementState IDXFDataConverter<SimInstancePlacementState>.FromDXFString(string value, DXFParserInfo info)
+        {
+            return (SimInstancePlacementState)uint.Parse(value);
+        }
+
+        public string ToDXFString(SimGeometrySourceProperty value)
+        {
+            return ((uint)value).ToString();
+        }
+        SimGeometrySourceProperty IDXFDataConverter<SimGeometrySourceProperty>.FromDXFString(string value, DXFParserInfo info)
+        {
+            return (SimGeometrySourceProperty)uint.Parse(value);
+        }
 
         #endregion
 
@@ -820,7 +951,8 @@ namespace SIMULTAN.Serializer.DXF
         /// <inheritdoc />
         public string ToDXFString(SimSlot value)
         {
-            return value.SlotBase + SLOT_DELIMITER + value.SlotExtension;
+            // Before version 15 it also serialized the slot base. This is now a taxonomy entry and needs to be serialized differently
+            return value.SlotExtension;
         }
         /// <inheritdoc />
         SimSlot IDXFDataConverter<SimSlot>.FromDXFString(string value, DXFParserInfo info)
@@ -830,7 +962,7 @@ namespace SIMULTAN.Serializer.DXF
             if (!SimDefaultSlots.AllSlots.Contains(splited.slot))
                 throw new ArgumentException("Invalid base slot");
 
-            return new SimSlot(new SimSlotBase(splited.slot), splited.extension);
+            return new SimSlot(new SimPlaceholderTaxonomyEntryReference(splited.slot), splited.extension);
         }
 
         #endregion
@@ -876,7 +1008,7 @@ namespace SIMULTAN.Serializer.DXF
                 if (DateTime.TryParse(value, new DateTimeFormatInfo(), DateTimeStyles.None, out var dt_tmp))
                     return dt_tmp;
             }
-            
+
 
             throw new ArgumentOutOfRangeException("value does not contain a valid DateTime object");
         }
@@ -909,6 +1041,22 @@ namespace SIMULTAN.Serializer.DXF
             catch (Exception)
             {
                 return null;
+            }
+        }
+
+        public string ToDXFString(ParameterType value)
+        {
+            return ((uint)value).ToString();
+
+        }
+
+        ParameterType IDXFDataConverter<ParameterType>.FromDXFString(string value, DXFParserInfo info)
+        {
+            if (info.FileVersion >= 19)
+                return (ParameterType)uint.Parse(value);
+            else
+            {
+                return ParameterType.Double;
             }
         }
 

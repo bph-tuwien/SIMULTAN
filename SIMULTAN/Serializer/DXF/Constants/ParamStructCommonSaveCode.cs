@@ -1,11 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace SIMULTAN.Serializer.DXF
+﻿namespace SIMULTAN.Serializer.DXF
 {
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+
     // ALL SAVE CODES
     // [0    - 1000]: DXF Specs and general custom codes
     // [1001 - 1100]: Parameter
@@ -46,4 +42,6 @@ namespace SIMULTAN.Serializer.DXF
         V9_VALUE = 990,
         V10_VALUE = 1000
     }
+
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
 }

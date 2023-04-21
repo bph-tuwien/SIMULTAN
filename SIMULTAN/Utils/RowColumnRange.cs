@@ -89,5 +89,45 @@ namespace SIMULTAN.Utils
         {
             return !lhs.Equals(rhs);
         }
+    
+        /// <summary>
+        /// Merges to ranges and computes a range that fits both
+        /// </summary>
+        /// <param name="lhs">First range</param>
+        /// <param name="rhs">Second range</param>
+        /// <returns>A range that contains both input ranges</returns>
+        public static RowColumnRange Merge(RowColumnRange lhs, RowColumnRange rhs)
+        {
+            var startColumn = Math.Min(lhs.ColumnStart, rhs.ColumnStart);
+            var startRow = Math.Min(lhs.RowStart, rhs.RowStart);
+
+            var lhsEndColumn = lhs.ColumnStart + lhs.ColumnCount;
+            var lhsEndRow = lhs.RowStart + lhs.RowCount;
+
+            var rhsEndColumn = rhs.ColumnStart + rhs.ColumnCount;
+            var rhsEndRow = rhs.RowStart + rhs.RowCount;
+
+            return new RowColumnRange(
+                startRow, startColumn,
+                Math.Max(lhsEndRow, rhsEndRow) - startRow,
+                Math.Max(lhsEndColumn, rhsEndColumn) - startColumn
+                );
+        }
+        /// <summary>
+        /// Merges an range with an index and computes a range that fits both
+        /// </summary>
+        /// <param name="lhs">First range</param>
+        /// <param name="rhs">Second range</param>
+        /// <returns>A range that contains both inputs</returns>
+        public static RowColumnRange Merge(RowColumnRange lhs, IntIndex2D rhs)
+        {
+            var startColumn = Math.Min(lhs.ColumnStart, rhs.X);
+            var startRow = Math.Min(lhs.RowStart, rhs.Y);
+
+            var endColumn = Math.Max(lhs.ColumnStart + lhs.ColumnCount, rhs.X + 1);
+            var endRow = Math.Max(lhs.RowStart + lhs.RowCount, rhs.Y + 1);
+
+            return new RowColumnRange(startRow, startColumn, endRow - startRow, endColumn - startColumn);
+        }
     }
 }

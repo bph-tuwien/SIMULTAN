@@ -1,15 +1,14 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using SIMULTAN.Data;
 using SIMULTAN.Data.Components;
 using SIMULTAN.Data.MultiValues;
 using SIMULTAN.Exceptions;
-using SIMULTAN.Tests.Utils;
+using SIMULTAN.Projects;
+using SIMULTAN.Tests.TestUtils;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace SIMULTAN.Tests.Components
 {
@@ -31,7 +30,7 @@ namespace SIMULTAN.Tests.Components
 
             Assert.ThrowsException<ArgumentNullException>(() => { comp.Parameters.Add(null); });
 
-            var param = new SimParameter("param", "unicorns", 2, SimParameterOperations.All);
+            var param = new SimDoubleParameter("param", "unicorns", 2, SimParameterOperations.All);
             comp.Parameters.Add(param);
             var write = comp.AccessLocal.LastAccess(SimComponentAccessPrivilege.Write);
 
@@ -42,7 +41,43 @@ namespace SIMULTAN.Tests.Components
             Assert.AreNotEqual(0, param.Id.LocalId);
             Assert.IsTrue(write.lastAccess > lastWrite.lastAccess);
 
-            Assert.AreEqual(param, projectData.IdGenerator.GetById<SimParameter>(param.Id));
+            Assert.AreEqual(param, projectData.IdGenerator.GetById<SimDoubleParameter>(param.Id));
+        }
+
+        [TestMethod]
+        public void AddParameterNull()
+        {
+            LoadProject(parameterProject);
+            var comp = projectData.Components.First(x => x.Name == "Empty");
+            var lastWrite = comp.AccessLocal.LastAccess(SimComponentAccessPrivilege.Write);
+
+            Thread.Sleep(5);
+
+            Assert.ThrowsException<ArgumentNullException>(() => { comp.Parameters.Add(null); });
+
+            var param = new SimDoubleParameter("param", "unicorns", 2, SimParameterOperations.All);
+            comp.Parameters.Add(param);
+            var write = comp.AccessLocal.LastAccess(SimComponentAccessPrivilege.Write);
+
+            Assert.IsTrue(comp.Parameters.Contains(param));
+            Assert.AreEqual(comp, param.Component);
+            Assert.AreEqual(projectData.Components, param.Factory);
+            Assert.AreEqual(project, param.Id.Location);
+            Assert.AreNotEqual(0, param.Id.LocalId);
+            Assert.IsTrue(write.lastAccess > lastWrite.lastAccess);
+
+            Assert.AreEqual(param, projectData.IdGenerator.GetById<SimDoubleParameter>(param.Id));
+        }
+
+        [TestMethod]
+        public void AddParameterTwice()
+        {
+            LoadProject(parameterProject);
+            var comp = projectData.Components.First(x => x.Name == "Empty");
+            var lastWrite = comp.AccessLocal.LastAccess(SimComponentAccessPrivilege.Write);
+
+            var param = new SimDoubleParameter("param", "unicorns", 2, SimParameterOperations.All);
+            comp.Parameters.Add(param);
 
             Assert.ThrowsException<ArgumentException>(() => { comp.Parameters.Add(param); });
         }
@@ -68,20 +103,20 @@ namespace SIMULTAN.Tests.Components
             Assert.AreEqual(paramId, param.Id.LocalId);
             Assert.IsTrue(write.lastAccess > lastWrite.lastAccess);
 
-            Assert.AreEqual(null, projectData.IdGenerator.GetById<SimParameter>(param.Id));
+            Assert.AreEqual(null, projectData.IdGenerator.GetById<SimBaseParameter>(param.Id));
         }
 
         [TestMethod]
-        public void ReplaceParameter()
+        public void ReplaceDoubleParameter()
         {
             LoadProject(parameterProject);
             var comp = projectData.Components.First(x => x.Name == "Empty");
-            var param = new SimParameter("param", "unicorns", 2, SimParameterOperations.All);
+            var param = new SimDoubleParameter("param", "unicorns", 2, SimParameterOperations.All);
             comp.Parameters.Add(param);
             var lastWrite = comp.AccessLocal.LastAccess(SimComponentAccessPrivilege.Write);
             var index = comp.Parameters.IndexOf(param);
 
-            var param2 = new SimParameter("param2", "unicorns", 2, SimParameterOperations.All);
+            var param2 = new SimDoubleParameter("param2", "unicorns", 2, SimParameterOperations.All);
 
             Assert.ThrowsException<ArgumentNullException>(() => { comp.Parameters[index] = null; });
 
@@ -126,21 +161,88 @@ namespace SIMULTAN.Tests.Components
                 Assert.AreEqual(null, p.Component);
                 Assert.AreEqual(null, p.Factory);
                 Assert.AreEqual(null, p.Id.Location);
-                Assert.AreEqual(null, projectData.IdGenerator.GetById<SimParameter>(p.Id));
+                Assert.AreEqual(null, projectData.IdGenerator.GetById<SimBaseParameter>(p.Id));
             }
         }
 
         [TestMethod]
-        public void MemoryLeakTest()
+        public void MoveParameter()
         {
             LoadProject(parameterProject);
+            var comp1 = projectData.Components.First(x => x.Name == "NotEmpty");
+            var comp2 = projectData.Components.First(x => x.Name == "Empty");
 
+            var param = comp1.Parameters.First(x => x.NameTaxonomyEntry.Name == "a");
+            var id = param.Id;
+
+            //Move to other component
+            comp2.Parameters.Add(param);
+
+            Assert.IsTrue(comp2.Parameters.Contains(param));
+            Assert.AreEqual(id, param.Id);
+            Assert.AreEqual(comp2, param.Component);
+        }
+
+        [TestMethod]
+        public void MoveParameterAsNew()
+        {
+            LoadProject(parameterProject);
+            var comp1 = projectData.Components.First(x => x.Name == "NotEmpty");
+            var comp2 = projectData.Components.First(x => x.Name == "Empty");
+
+            var param = comp1.Parameters.First(x => x.NameTaxonomyEntry.Name == "a");
+            var id = param.Id;
+
+            //Remove from old, add to other component
+            comp1.Parameters.Remove(param);
+
+            Assert.ThrowsException<NotSupportedException>(() => { comp2.Parameters.Add(param); });
+
+            //Reset Id
+            param.Id = SimId.Empty;
+            comp2.Parameters.Add(param);
+
+            Assert.IsTrue(comp2.Parameters.Contains(param));
+            Assert.AreNotEqual(id, param.Id);
+            Assert.AreEqual(comp2, param.Component);
+        }
+
+        [TestMethod]
+        public void MoveParameterToOtherFactory()
+        {
+            LoadProject(parameterProject);
+            var comp1 = projectData.Components.First(x => x.Name == "NotEmpty");
+
+            var param = comp1.Parameters.First(x => x.NameTaxonomyEntry.Name == "a");
+            var id = param.Id;
+
+            ExtendedProjectData data = new ExtendedProjectData();
+            var comp2 = new SimComponent();
+            data.Components.Add(comp2);
+
+            //Move to other component
+            Assert.ThrowsException<NotSupportedException>(() => { comp2.Parameters.Add(param); });
+
+            Assert.IsTrue(comp1.Parameters.Contains(param));
+        }
+
+
+        private WeakReference MemoryLeakTest_Action()
+        {
             var sourceComponent = projectData.Components.FirstOrDefault(x => x.Name == "NotEmpty");
             WeakReference paramRef = new WeakReference(sourceComponent.Parameters.First());
 
             Assert.IsTrue(paramRef.IsAlive);
 
-            sourceComponent.Parameters.Remove((SimParameter)paramRef.Target);
+            sourceComponent.Parameters.Remove((SimBaseParameter)paramRef.Target);
+            return paramRef;
+        }
+        [TestMethod]
+        public void MemoryLeakTest()
+        {
+            LoadProject(parameterProject);
+
+            var paramRef = MemoryLeakTest_Action();
 
             GC.Collect();
             GC.WaitForPendingFinalizers();
@@ -155,7 +257,7 @@ namespace SIMULTAN.Tests.Components
             LoadProject(parameterProject);
             var comp = projectData.Components.First(x => x.Name == "Empty");
 
-            var param = new SimParameter("param", "unicorns", 2, SimParameterOperations.All);
+            var param = new SimDoubleParameter("param", "unicorns", 2, SimParameterOperations.All);
             param.Category = SimCategory.Light_Natural;
 
             Assert.IsFalse(comp.Category.HasFlag(SimCategory.Light_Natural));
@@ -177,7 +279,7 @@ namespace SIMULTAN.Tests.Components
             var bphComp = projectData.Components.First(x => x.Name == "BPHComp");
             var table = (SimMultiValueBigTable)projectData.ValueManager.First(x => x.Name == "Table");
 
-            var param = new SimParameter("add", "football fields", 3.5, SimParameterOperations.All);
+            var param = new SimDoubleParameter("add", "football fields", 3.5, SimParameterOperations.All);
 
             //Add
             Assert.ThrowsException<AccessDeniedException>(() => { archComp.Parameters.Add(param); });
@@ -196,7 +298,7 @@ namespace SIMULTAN.Tests.Components
             var bphComp = projectData.Components.First(x => x.Name == "BPHComp");
             var table = (SimMultiValueBigTable)projectData.ValueManager.First(x => x.Name == "Table");
 
-            var param = new SimParameter("add", "football fields", 3.5, SimParameterOperations.All);
+            var param = new SimDoubleParameter("add", "football fields", 3.5, SimParameterOperations.All);
 
             //Add
             bphComp.Parameters.Add(param);

@@ -1,11 +1,7 @@
-﻿using SIMULTAN.Data.Components;
-using SIMULTAN.Serializer.DXF;
+﻿using SIMULTAN.Serializer.DXF;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SIMULTAN.Data.Components
 {
@@ -13,9 +9,9 @@ namespace SIMULTAN.Data.Components
     /// Stores the instances values for parameters. This is an associative container which uses the Parameter itself as a key.
     /// </summary>
     [DXFSerializerTypeNameAttribute("ParameterStructure.Instances.InstanceParameterCollection")]
-    public abstract class SimInstanceParameterCollection : IEnumerable<KeyValuePair<SimParameter, double>>
+    public abstract class SimInstanceParameterCollection : IEnumerable<KeyValuePair<SimBaseParameter, object>>
     {
-        private Dictionary<SimParameter, double> data;
+        private Dictionary<SimBaseParameter, object> data;
         /// <summary>
         /// Stores the instance to which this collection belongs
         /// </summary>
@@ -27,7 +23,7 @@ namespace SIMULTAN.Data.Components
         /// <param name="owner">The instance to which this collection belongs</param>
         protected SimInstanceParameterCollection(SimComponentInstance owner)
         {
-            data = new Dictionary<SimParameter, double>();
+            data = new Dictionary<SimBaseParameter, object>();
             this.Owner = owner;
         }
 
@@ -36,7 +32,7 @@ namespace SIMULTAN.Data.Components
         /// </summary>
         /// <param name="parameter">The new parameter. May not be contained in the collection before.</param>
         /// <param name="value">The initial value</param>
-        internal void Add(SimParameter parameter, double value)
+        internal void Add(SimBaseParameter parameter, object value)
         {
             if (parameter == null)
                 throw new ArgumentNullException(nameof(parameter));
@@ -44,12 +40,15 @@ namespace SIMULTAN.Data.Components
             if (!data.ContainsKey(parameter))
                 this.data.Add(parameter, value);
         }
+
+
+
         /// <summary>
         /// Removes a parameter from the collection
         /// </summary>
         /// <param name="parameter">The parameter to remove</param>
         /// <returns>True when the parameter was in the collection, otherwise False</returns>
-        internal bool Remove(SimParameter parameter)
+        internal bool Remove(SimBaseParameter parameter)
         {
             if (parameter == null)
                 throw new ArgumentNullException(nameof(parameter));
@@ -60,9 +59,9 @@ namespace SIMULTAN.Data.Components
         /// <summary>
         /// Tests whether a parameter is part of the collection
         /// </summary>
-        /// <param name="parameter">The parametr to test</param>
+        /// <param name="parameter">The parameter to test</param>
         /// <returns>True when the parameter is part of the collection, otherwise False</returns>
-        public bool Contains(SimParameter parameter)
+        public bool Contains(SimBaseParameter parameter)
         {
             if (parameter == null)
                 throw new ArgumentNullException(nameof(parameter));
@@ -77,7 +76,7 @@ namespace SIMULTAN.Data.Components
         /// </summary>
         /// <param name="key">The parameter to access</param>
         /// <returns>The instance value of the parameter</returns>
-        public double this[SimParameter key]
+        public object this[SimBaseParameter key]
         {
             get
             {
@@ -99,13 +98,38 @@ namespace SIMULTAN.Data.Components
         /// <param name="key">The parameter to query</param>
         /// <param name="value">The resulting value. The value is undefined when the method returns false</param>
         /// <returns>True when the parameter is part of the collection, otherwise False</returns>
-        public bool TryGetValue(SimParameter key, out double value)
+        public bool TryGetValue(SimBaseParameter key, out dynamic value)
         {
             if (key == null)
                 throw new ArgumentNullException(nameof(key));
 
             return data.TryGetValue(key, out value);
         }
+
+
+        /// <summary>
+        /// Returns the value of a parameter if the parameter is contained in the collection
+        /// </summary>
+        /// <param name="key">The parameter to query</param>
+        /// <param name="value">The resulting value. The value is undefined when the method returns false</param>
+        /// <returns>True when the parameter is part of the collection, otherwise False</returns>
+        public bool TryGetValue<T>(SimBaseParameter<T> key, out T value)
+        {
+            if (key == null)
+                throw new ArgumentNullException(nameof(key));
+
+            if (data.TryGetValue(key, out var tempValue))
+            {
+                value = ((T)tempValue);
+                return true;
+            }
+            else
+            {
+                value = default(T);
+            }
+            return false;
+        }
+
 
         /// <summary>
         /// Returns the number of elements in the collection
@@ -115,15 +139,54 @@ namespace SIMULTAN.Data.Components
         /// <summary>
         /// Returns the key collection
         /// </summary>
-        public IEnumerable<SimParameter> Keys { get { return data.Keys; } }
+        public IEnumerable<SimBaseParameter> Keys { get { return data.Keys; } }
 
         #region IEnumerable
 
         /// <inheritdoc />
-        public IEnumerator<KeyValuePair<SimParameter, double>> GetEnumerator()
+        public IEnumerator<KeyValuePair<SimBaseParameter, dynamic>> GetEnumerator()
         {
             return data.GetEnumerator();
         }
+
+        /// <summary>
+        /// Returns the values based on T type
+        /// </summary>
+        /// <typeparam name="T">The type of literal</typeparam>
+        /// <returns>List of KeyValuePair containing the parameter  as the key and the literal with type T as value</returns>
+        public List<KeyValuePair<SimBaseParameter, T>> GetRecords<T>()
+        {
+            var returnList = new List<KeyValuePair<SimBaseParameter, T>>();
+            foreach (var item in data)
+            {
+                if (item is KeyValuePair<SimBaseParameter, T> castedItem)
+                {
+                    returnList.Add(castedItem);
+                }
+            }
+            return returnList;
+        }
+
+        /// <summary>
+        /// Returns the values based on T type, only from Parameters type K
+        /// </summary>
+        /// <typeparam name="K">The type of the SimBaseParameter</typeparam>
+        /// <typeparam name="T">The type of literal</typeparam>
+        /// <returns>List of KeyValuePair containing the parameter type K as the key and the literal with type T as value</returns>
+        public List<KeyValuePair<K, T>> GetRecords<K, T>() where K : SimBaseParameter
+        {
+            var returnList = new List<KeyValuePair<K, T>>();
+            foreach (var item in data)
+            {
+                if (item is KeyValuePair<K, T> castedItem)
+                {
+                    returnList.Add(castedItem);
+                }
+            }
+            return returnList;
+        }
+
+
         /// <inheritdoc />
         IEnumerator IEnumerable.GetEnumerator()
         {
@@ -141,9 +204,9 @@ namespace SIMULTAN.Data.Components
         /// Notifies the Geometry Exchange that a parameter has been modified
         /// </summary>
         /// <param name="parameter">The modified parameter</param>
-        protected abstract void NotifyGeometryExchange(SimParameter parameter);
-    
-        internal void SetWithoutNotify(SimParameter key, double value)
+        protected abstract void NotifyGeometryExchange(SimBaseParameter parameter);
+
+        internal void SetWithoutNotify(SimBaseParameter key, object value)
         {
             if (key == null)
                 throw new ArgumentNullException(nameof(key));
@@ -176,7 +239,7 @@ namespace SIMULTAN.Data.Components
                 Owner.NotifyWriteAccess();
             }
             /// <inheritdoc />
-            protected override void NotifyGeometryExchange(SimParameter parameter)
+            protected override void NotifyGeometryExchange(SimBaseParameter parameter)
             {
                 if (Owner.Component != null && Owner.Component.Factory != null)
                     Owner.Component.Factory.ProjectData.ComponentGeometryExchange.OnParameterValueChanged(parameter, Owner);
@@ -200,7 +263,7 @@ namespace SIMULTAN.Data.Components
                 //Do nothing. Temporary parameters are exempt from access management
             }
             /// <inheritdoc />
-            protected override void NotifyGeometryExchange(SimParameter parameter)
+            protected override void NotifyGeometryExchange(SimBaseParameter parameter)
             {
                 //Do nothing
             }

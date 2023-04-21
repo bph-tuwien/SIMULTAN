@@ -1,11 +1,8 @@
-﻿using SIMULTAN;
-using SIMULTAN.Utils;
+﻿using SIMULTAN.Utils;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.IO;
 using System.Linq;
 
 namespace SIMULTAN.Data.Geometry
@@ -262,7 +259,7 @@ namespace SIMULTAN.Data.Geometry
         /// This should only be used when loading from file.
         /// </summary>
         /// <param name="nextId">The next id to use for new BaseGeometries.</param>
-        public GeometryModelData(ulong nextId): this()
+        public GeometryModelData(ulong nextId) : this()
         {
             this.nextId = nextId;
         }
@@ -357,8 +354,8 @@ namespace SIMULTAN.Data.Geometry
                         {
                             // add null if it's a layer just to keep track of the id
                             RegisterId(l.Id, null);
+                        }
                     }
-                }
                 }
 
                 if (HandleConsistency)
@@ -407,7 +404,7 @@ namespace SIMULTAN.Data.Geometry
         public ulong GetFreeId(bool increment = true)
         {
             var newId = nextId;
-            if(increment)
+            if (increment)
                 nextId++;
             return newId;
         }
@@ -461,6 +458,10 @@ namespace SIMULTAN.Data.Geometry
         /// </summary>
         public void EndBatchOperation()
         {
+            if (handleConsistencyCounter == 0)
+            {
+                throw new InvalidOperationException("Can not end a BatchOperation which has not been started");
+            }
             if (this.handleConsistencyCounter <= 1) //After decrement, HandleConsistency will be true
             {
 
@@ -559,7 +560,7 @@ namespace SIMULTAN.Data.Geometry
         /// <returns>The BaseGeometry or null when the id doesn't exist</returns>
         public BaseGeometry GeometryFromId(ulong id)
         {
-            if(geometryLookup.TryGetValue(id, out var geometry))
+            if (geometryLookup.TryGetValue(id, out var geometry))
             {
                 return geometry;
             }

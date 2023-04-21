@@ -5,8 +5,6 @@ using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Linq;
-using System.Runtime.InteropServices;
-using System.Security;
 using System.Windows.Media.Media3D;
 
 namespace SIMULTAN.Utils
@@ -191,7 +189,7 @@ namespace SIMULTAN.Utils
             return RemoveFirst(collection, predicate, out _);
         }
         /// <summary>
-        /// Removes the first occurence that matches the predicate.
+        /// Removes the first occurrence that matches the predicate.
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="collection">The collection</param>
@@ -240,7 +238,7 @@ namespace SIMULTAN.Utils
             foreach (var i in enumerable)
                 sum += (Vector3D)selector(i);
 
-            return (Point3D)(sum / (double)enumerable.Count());
+            return (Point3D)(sum / enumerable.Count());
         }
         /// <summary>
         /// Calculates the average Vector3D
@@ -255,7 +253,7 @@ namespace SIMULTAN.Utils
             foreach (var i in enumerable)
                 sum += selector(i);
 
-            return (sum / (double)enumerable.Count());
+            return (sum / enumerable.Count());
         }
 
         /// <summary>

@@ -50,11 +50,11 @@ namespace SIMULTAN.Serializer.SIMUSER
         /// <exception cref="ArgumentNullException">If an argument is null</exception>
         internal static List<SimUser> Read(FileInfo file, byte[] key, DXFParserInfo info)
         {
-            if(file == null)
+            if (file == null)
                 throw new ArgumentNullException(nameof(file));
             if (key == null || key.Length <= 0)
                 throw new ArgumentNullException(nameof(key));
-            if(info == null)
+            if (info == null)
                 throw new ArgumentNullException(nameof(info));
 
             try
@@ -65,7 +65,7 @@ namespace SIMULTAN.Serializer.SIMUSER
                 }
             }
             // Can happen when there is no version section, so try again without parsing it
-            catch(Exception)
+            catch (Exception)
             {
                 using (FileStream fs = new FileStream(file.FullName, FileMode.Open))
                 {
@@ -90,9 +90,9 @@ namespace SIMULTAN.Serializer.SIMUSER
         {
             if (key == null || key.Length <= 0)
                 throw new ArgumentNullException(nameof(key));
-            if(stream == null)
+            if (stream == null)
                 throw new ArgumentNullException(nameof(stream));
-            if(info == null)
+            if (info == null)
                 throw new ArgumentNullException(nameof(info));
 
             // Create an AES object
@@ -130,9 +130,9 @@ namespace SIMULTAN.Serializer.SIMUSER
         /// <exception cref="ArgumentNullException">If an argument is null</exception>
         internal static List<SimUser> Read(DXFStreamReader reader, DXFParserInfo info, bool parseVersionSection = true)
         {
-            if(reader == null)
+            if (reader == null)
                 throw new ArgumentNullException(nameof(reader));
-            if(info==null)
+            if (info == null)
                 throw new ArgumentNullException(nameof(info));
 
             //Version section
@@ -216,7 +216,7 @@ namespace SIMULTAN.Serializer.SIMUSER
         /// <exception cref="ArgumentNullException">If an argument is null</exception>
         internal static void Write(IEnumerable<SimUser> users, DXFStreamWriter writer)
         {
-            if (users == null) 
+            if (users == null)
                 throw new ArgumentNullException(nameof(users));
             if (writer == null)
                 throw new ArgumentNullException(nameof(writer));

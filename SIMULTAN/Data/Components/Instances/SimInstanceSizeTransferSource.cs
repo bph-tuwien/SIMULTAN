@@ -22,6 +22,7 @@ namespace SIMULTAN.Data.Components
         /// <summary>
         /// The size is defined by the length of the instance path
         /// </summary>
+        [Obsolete("InstancePath does not exist anymore")]
         Path = 2
     }
 }

@@ -5,7 +5,7 @@ VERSION_SECTION
 0
 FILE_VERSION
 10
-14
+21
 0
 ENDSEC
 0
@@ -359,17 +359,29 @@ unit row
 1106
 -
 1116
-2
+5
 909
 column header 1
 909
 column header 2
+909
+column header 3
+909
+column header 4
+909
+column header 5
 1117
-2
+5
 909
 column unit 1
 909
 column unit 2
+909
+column unit 3
+909
+column unit 4
+909
+column unit 5
 1120
 3
 909
@@ -389,13 +401,13 @@ row unit 3
 1119
 3
 901
-2
+5
 1122
-1.00000000_|_2.00000000
+d1.00000000;n2;b1;;sabc;
 1122
-3.00000000_|_4.00000000
+;;n3;d4.00000000;b0;
 1122
-5.00000000_|_6.00000000
+n-1;sa;sb\n\\	\;\nc;d5.00000000;n6;
 1121
 Additional Text[NewLine]With New Line
 0

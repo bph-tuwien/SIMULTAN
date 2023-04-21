@@ -110,7 +110,7 @@ namespace SIMULTAN.Serializer.DXF
         /// <param name="entityName">The name of the entity</param>
         /// <param name="parser">The method used to parse the read data into an object</param>
         /// <param name="entries">The entries in this entity</param>
-        internal DXFEntityParserElement(string entityName, Func<DXFParserResultSet, DXFParserInfo, T> parser, 
+        internal DXFEntityParserElement(string entityName, Func<DXFParserResultSet, DXFParserInfo, T> parser,
             IEnumerable<DXFEntryParserElement> entries)
             : base(entityName, entries)
         {

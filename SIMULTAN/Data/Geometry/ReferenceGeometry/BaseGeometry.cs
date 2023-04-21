@@ -1,8 +1,5 @@
-﻿using SIMULTAN;
-using SIMULTAN.Exceptions;
-using SIMULTAN.Utils.UndoRedo;
+﻿using SIMULTAN.Exceptions;
 using System;
-using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Windows.Media;
@@ -63,17 +60,16 @@ namespace SIMULTAN.Data.Geometry
         /// </summary>
         /// <remarks>The name is NOT unique</remarks>
         public string Name
-        { 
-            get { return name; } 
-            set 
+        {
+            get { return name; }
+            set
             {
                 if (name != value)
                 {
                     name = value;
                     PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Name)));
-                    ModelGeometry?.Model?.Exchange?.OnGeometryNameChanged(this);
                 }
-            } 
+            }
         }
         private string name;
 
@@ -111,29 +107,6 @@ namespace SIMULTAN.Data.Geometry
 
         private bool topologyHasChanged;
 
-        /// <summary>
-        /// Stores a reference to the parent geometry
-        /// </summary>
-        public GeometryReference Parent
-        {
-            get { return parent; }
-            set
-            {
-                var oldParent = parent;
-                if (parent != value)
-                {
-                    parent = value;
-                    OnPropertyChanged(nameof(Parent));
-                }
-
-                /*if (oldParent != null && oldParent.IsLoaded && parent == null) //Remove from parent
-					oldParent.children.Remove(this);
-
-				if (parent != null && !parent.children.Contains(this))
-					parent.children.Add(this);*/
-            }
-        }
-        private GeometryReference parent;
         #endregion
 
 
@@ -158,8 +131,6 @@ namespace SIMULTAN.Data.Geometry
             this.geometryHasChanged = false;
             this.topologyHasChanged = false;
             this.isVisible = true;
-
-            this.parent = null;
 
             this.onColorPropertyChanged = new PropertyChangedEventHandler(Color_PropertyChanged);
 

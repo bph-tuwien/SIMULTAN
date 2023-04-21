@@ -17,9 +17,17 @@ namespace SIMULTAN.Utils.Collections
         private Dictionary<TKey, List<TValue>> dictionary;
 
         /// <summary>
+        /// Returns the keys of the dictionary
+        /// </summary>
+        public ICollection<TKey> Keys
+        {
+            get => dictionary.Keys;
+        }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="MultiDictionary{TKey, TValue}"/> class
         /// </summary>
-        public MultiDictionary() 
+        public MultiDictionary()
         {
             this.dictionary = new Dictionary<TKey, List<TValue>>();
         }
@@ -30,7 +38,7 @@ namespace SIMULTAN.Utils.Collections
         /// <param name="original">The initial data for the dictionary</param>
         public MultiDictionary(MultiDictionary<TKey, TValue> original)
         {
-            dictionary = new Dictionary<TKey, List<TValue>>(original.dictionary);            
+            dictionary = new Dictionary<TKey, List<TValue>>(original.dictionary);
         }
 
         /// <summary>
@@ -44,6 +52,18 @@ namespace SIMULTAN.Utils.Collections
                 values.Add(value);
             else
                 dictionary.Add(key, new List<TValue> { value });
+        }
+        /// <summary>
+        /// Adds several new entries to the dictionary
+        /// </summary>
+        /// <param name="key">The key</param>
+        /// <param name="values">The values</param>
+        public void Add(TKey key, IEnumerable<TValue> values)
+        {
+            if (dictionary.TryGetValue(key, out var existingValues))
+                existingValues.AddRange(values);
+            else
+                dictionary.Add(key, values.ToList());
         }
         /// <summary>
         /// Removes a specific key-value pair from the dictionary
@@ -74,7 +94,7 @@ namespace SIMULTAN.Utils.Collections
         {
             return dictionary.Remove(key);
         }
-    
+
         /// <summary>
         /// Returns the values associated with a key. Throws an exception when the key is not found
         /// </summary>

@@ -8,7 +8,7 @@ using SIMULTAN.Serializer.DXF;
 using SIMULTAN.Serializer.SPDXF;
 using SIMULTAN.Tests.Properties;
 using SIMULTAN.Tests.Util;
-using SIMULTAN.Tests.Utils;
+using SIMULTAN.Tests.TestUtils;
 using SIMULTAN.Utils;
 using System;
 using System.IO;
@@ -42,7 +42,7 @@ namespace SIMULTAN.Tests.IO
             Assert.AreEqual(startSiteplannerCount, projectData.SitePlannerManager.SitePlannerProjects.Count);
             var parseInfo = new DXFParserInfo(project.GlobalID, projectData) { CurrentFile = new FileInfo(spRes.CurrentFullPath) };
 
-            using(DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_SPDXF_EmptyV11)))
+            using (DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_SPDXF_EmptyV11)))
             {
                 SiteplannerDxfIO.Read(reader, parseInfo);
             }
@@ -63,9 +63,9 @@ namespace SIMULTAN.Tests.IO
 
             Assert.AreEqual(startSiteplannerCount, projectData.SitePlannerManager.SitePlannerProjects.Count);
 
-            using(DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_SPDXF_EmptyV12)))
+            using (DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_SPDXF_EmptyV12)))
             {
-                SiteplannerDxfIO.Read(reader, new DXFParserInfo(project.GlobalID, projectData) { CurrentFile = new FileInfo(spRes.CurrentFullPath)});
+                SiteplannerDxfIO.Read(reader, new DXFParserInfo(project.GlobalID, projectData) { CurrentFile = new FileInfo(spRes.CurrentFullPath) });
             }
 
             Assert.AreEqual(startSiteplannerCount + 1, projectData.SitePlannerManager.SitePlannerProjects.Count);
@@ -117,7 +117,7 @@ namespace SIMULTAN.Tests.IO
                 exportedString = Encoding.UTF8.GetString(array);
             }
 
-            AssertUtil.AreEqualMultiline(Properties.Resources.DXFSerializer_SPDXF_Empty, exportedString);
+            AssertUtil.AreEqualMultiline(Properties.Resources.DXFSerializer_SPDXF_WriteEmpty, exportedString);
         }
 
 
@@ -128,9 +128,9 @@ namespace SIMULTAN.Tests.IO
 
             Assert.AreEqual(startSiteplannerCount, projectData.SitePlannerManager.SitePlannerProjects.Count);
 
-            using(DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_SPDXF_GeoMapsV11)))
+            using (DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_SPDXF_GeoMapsV11)))
             {
-                SiteplannerDxfIO.Read(reader, new DXFParserInfo(project.GlobalID, projectData) { CurrentFile = new FileInfo(spRes.CurrentFullPath)});
+                SiteplannerDxfIO.Read(reader, new DXFParserInfo(project.GlobalID, projectData) { CurrentFile = new FileInfo(spRes.CurrentFullPath) });
             }
 
             Assert.AreEqual(startSiteplannerCount + 1, projectData.SitePlannerManager.SitePlannerProjects.Count);
@@ -158,9 +158,9 @@ namespace SIMULTAN.Tests.IO
 
             Assert.AreEqual(startSiteplannerCount, projectData.SitePlannerManager.SitePlannerProjects.Count);
 
-            using(DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_SPDXF_GeoMapsV12)))
+            using (DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_SPDXF_GeoMapsV12)))
             {
-                SiteplannerDxfIO.Read(reader, new DXFParserInfo(project.GlobalID, projectData) { CurrentFile = new FileInfo(spRes.CurrentFullPath)});
+                SiteplannerDxfIO.Read(reader, new DXFParserInfo(project.GlobalID, projectData) { CurrentFile = new FileInfo(spRes.CurrentFullPath) });
             }
 
             Assert.AreEqual(startSiteplannerCount + 1, projectData.SitePlannerManager.SitePlannerProjects.Count);
@@ -249,7 +249,7 @@ namespace SIMULTAN.Tests.IO
                 exportedString = Encoding.UTF8.GetString(array);
             }
 
-            AssertUtil.AreEqualMultiline(Properties.Resources.DXFSerializer_SPDXF_GeoMaps, exportedString);
+            AssertUtil.AreEqualMultiline(Properties.Resources.DXFSerializer_SPDXF_WriteGeoMaps, exportedString);
         }
 
         [TestMethod]
@@ -259,9 +259,9 @@ namespace SIMULTAN.Tests.IO
 
             Assert.AreEqual(startSiteplannerCount, projectData.SitePlannerManager.SitePlannerProjects.Count);
 
-            using(DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_SPDXF_BuildingsV11)))
+            using (DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_SPDXF_BuildingsV11)))
             {
-                SiteplannerDxfIO.Read(reader, new DXFParserInfo(project.GlobalID, projectData) { CurrentFile = new FileInfo(spRes.CurrentFullPath)});
+                SiteplannerDxfIO.Read(reader, new DXFParserInfo(project.GlobalID, projectData) { CurrentFile = new FileInfo(spRes.CurrentFullPath) });
             }
 
             Assert.AreEqual(startSiteplannerCount + 1, projectData.SitePlannerManager.SitePlannerProjects.Count);
@@ -289,9 +289,9 @@ namespace SIMULTAN.Tests.IO
 
             Assert.AreEqual(startSiteplannerCount, projectData.SitePlannerManager.SitePlannerProjects.Count);
 
-            using(DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_SPDXF_BuildingsV12)))
+            using (DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_SPDXF_BuildingsV12)))
             {
-                SiteplannerDxfIO.Read(reader, new DXFParserInfo(project.GlobalID, projectData) { CurrentFile = new FileInfo(spRes.CurrentFullPath)});
+                SiteplannerDxfIO.Read(reader, new DXFParserInfo(project.GlobalID, projectData) { CurrentFile = new FileInfo(spRes.CurrentFullPath) });
             }
 
             Assert.AreEqual(startSiteplannerCount + 1, projectData.SitePlannerManager.SitePlannerProjects.Count);
@@ -377,7 +377,7 @@ namespace SIMULTAN.Tests.IO
                 exportedString = Encoding.UTF8.GetString(array);
             }
 
-            AssertUtil.AreEqualMultiline(Properties.Resources.DXFSerializer_SPDXF_Buildings, exportedString);
+            AssertUtil.AreEqualMultiline(Properties.Resources.DXFSerializer_SPDXF_WriteBuildings, exportedString);
         }
 
 
@@ -396,9 +396,9 @@ namespace SIMULTAN.Tests.IO
 
             Assert.AreEqual(startSiteplannerCount, projectData.SitePlannerManager.SitePlannerProjects.Count);
 
-            using(DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_SPDXF_AssociationsV5)))
+            using (DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_SPDXF_AssociationsV5)))
             {
-                SiteplannerDxfIO.Read(reader, new DXFParserInfo(project.GlobalID, projectData) { CurrentFile = new FileInfo(spRes.CurrentFullPath)});
+                SiteplannerDxfIO.Read(reader, new DXFParserInfo(project.GlobalID, projectData) { CurrentFile = new FileInfo(spRes.CurrentFullPath) });
             }
 
             Assert.AreEqual(startSiteplannerCount + 1, projectData.SitePlannerManager.SitePlannerProjects.Count);
@@ -473,9 +473,9 @@ namespace SIMULTAN.Tests.IO
 
             Assert.AreEqual(startSiteplannerCount, projectData.SitePlannerManager.SitePlannerProjects.Count);
 
-            using(DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_SPDXF_AssociationsV11)))
+            using (DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_SPDXF_AssociationsV11)))
             {
-                SiteplannerDxfIO.Read(reader, new DXFParserInfo(project.GlobalID, projectData) { CurrentFile = new FileInfo(spRes.CurrentFullPath)});
+                SiteplannerDxfIO.Read(reader, new DXFParserInfo(project.GlobalID, projectData) { CurrentFile = new FileInfo(spRes.CurrentFullPath) });
             }
 
             Assert.AreEqual(startSiteplannerCount + 1, projectData.SitePlannerManager.SitePlannerProjects.Count);
@@ -549,9 +549,9 @@ namespace SIMULTAN.Tests.IO
 
             Assert.AreEqual(startSiteplannerCount, projectData.SitePlannerManager.SitePlannerProjects.Count);
 
-            using(DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_SPDXF_AssociationsParseV12)))
+            using (DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_SPDXF_AssociationsParseV12)))
             {
-                SiteplannerDxfIO.Read(reader, new DXFParserInfo(project.GlobalID, projectData) { CurrentFile = new FileInfo(spRes.CurrentFullPath)});
+                SiteplannerDxfIO.Read(reader, new DXFParserInfo(project.GlobalID, projectData) { CurrentFile = new FileInfo(spRes.CurrentFullPath) });
             }
 
             Assert.AreEqual(startSiteplannerCount + 1, projectData.SitePlannerManager.SitePlannerProjects.Count);
@@ -699,7 +699,7 @@ namespace SIMULTAN.Tests.IO
                 exportedString = Encoding.UTF8.GetString(array);
             }
 
-            AssertUtil.AreEqualMultiline(Properties.Resources.DXFSerializer_SPDXF_Associations, exportedString);
+            AssertUtil.AreEqualMultiline(Properties.Resources.DXFSerializer_SPDXF_WriteAssociations, exportedString);
         }
     }
 }

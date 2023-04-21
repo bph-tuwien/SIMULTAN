@@ -1,15 +1,11 @@
 ﻿using SIMULTAN.Data.Assets;
 using SIMULTAN.Projects;
-using SIMULTAN.Serializer.Geometry;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SIMULTAN.Data.Geometry
 {
@@ -105,19 +101,19 @@ namespace SIMULTAN.Data.Geometry
 
                 ProjectData.ComponentGeometryExchange.AddGeometryModel(model);
 
-                //Linked models
-                foreach (var linkedModel in model.LinkedModels)
-                    AddGeometryModel(linkedModel);
-
                 model.LinkedModels.CollectionChanged += this.LinkedModels_CollectionChanged;
             }
+
+            //Linked models
+            foreach (var linkedModel in model.LinkedModels)
+                AddGeometryModel(linkedModel);
         }
 
         /// <summary>
         /// Removes a GeometryModel from the store. Only frees the model when this has been the last reference to the model.
         /// </summary>
-        /// <param name="model"></param>
-        /// <returns></returns>
+        /// <param name="model">The GeometryModel that should be removed</param>
+        /// <returns>True when the GeometryModel is now deleted, False when some other references to the model exist</returns>
         public bool RemoveGeometryModel(GeometryModel model)
         {
             if (this.geometryModels.TryGetValue(model.File, out var entry))
@@ -148,33 +144,6 @@ namespace SIMULTAN.Data.Geometry
                 throw new Exception("Model has never been added");
         }
 
-        /// <summary>
-        /// Tries to find a GeometryModel with a given id
-        /// </summary>
-        /// <param name="id">The id to search for</param>
-        /// <param name="model">Returns the model when one exists</param>
-        /// <param name="isOwning">
-        /// When set to true, the reference counter for this model is increased by one.
-        /// A model requested with isOwning == true has to be freed by calling RemoveGeometryModel
-        /// </param>
-        /// <returns>True when a model with this id exists, otherwise False</returns>
-        public bool TryGetGeometryModel(Guid id, out GeometryModel model, bool isOwning = true)
-        {
-            foreach (var entry in this.geometryModels.Values)
-            {
-                if (entry.Model.Id == id)
-                {
-                    if (isOwning)
-                        entry.ReferenceCounter++;
-
-                    model = entry.Model;
-                    return true;
-                }
-            }
-
-            model = null;
-            return false;
-        }
         /// <summary>
         /// Tries to find a GeometryModel for a given file
         /// </summary>

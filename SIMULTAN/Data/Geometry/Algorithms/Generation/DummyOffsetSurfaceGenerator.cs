@@ -24,9 +24,9 @@ namespace SIMULTAN.Data.Geometry
             {
                 foreach (var face in model.Faces)
                 {
-                    model.OffsetModel.Faces.Add((face, GeometricOrientation.Forward), DummyFace(face, GeometricOrientation.Forward, 
+                    model.OffsetModel.Faces.Add((face, GeometricOrientation.Forward), DummyFace(face, GeometricOrientation.Forward,
                         model.Model.Exchange));
-                    model.OffsetModel.Faces.Add((face, GeometricOrientation.Backward), DummyFace(face, GeometricOrientation.Backward, 
+                    model.OffsetModel.Faces.Add((face, GeometricOrientation.Backward), DummyFace(face, GeometricOrientation.Backward,
                         model.Model.Exchange));
                 }
             }
@@ -57,9 +57,9 @@ namespace SIMULTAN.Data.Geometry
                     {
                         modified.Add(face);
 
-                        model.OffsetModel.Faces[(face, GeometricOrientation.Forward)] = DummyFace(face, GeometricOrientation.Forward, 
+                        model.OffsetModel.Faces[(face, GeometricOrientation.Forward)] = DummyFace(face, GeometricOrientation.Forward,
                             model.Model.Exchange);
-                        model.OffsetModel.Faces[(face, GeometricOrientation.Backward)] = DummyFace(face, GeometricOrientation.Backward, 
+                        model.OffsetModel.Faces[(face, GeometricOrientation.Backward)] = DummyFace(face, GeometricOrientation.Backward,
                             model.Model.Exchange);
                     }
                 }

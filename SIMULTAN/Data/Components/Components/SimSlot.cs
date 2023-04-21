@@ -1,10 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
+﻿using SIMULTAN.Data.Taxonomy;
+using System;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SIMULTAN.Data.Components
 {
@@ -22,13 +18,12 @@ namespace SIMULTAN.Data.Components
             get { return new SimSlot(); }
         }
 
-
         #region PROPERTIES
 
         /// <summary>
         /// Main function (e.g. Material).
         /// </summary>
-        public SimSlotBase SlotBase { get; }
+        public SimTaxonomyEntryReference SlotBase { get; }
         /// <summary>
         /// Sub-function (e.g. 23 - the 23rd material).
         /// </summary>
@@ -41,20 +36,20 @@ namespace SIMULTAN.Data.Components
         /// </summary>
         /// <param name="slotBase">The slot base</param>
         /// <param name="slotExtension">The slot extension</param>
-        public SimSlot(SimSlotBase slotBase, string slotExtension)
-        {
-            this.SlotBase = slotBase;
-            this.SlotExtension = slotExtension == null ? string.Empty : slotExtension;
-        }
+        public SimSlot(SimTaxonomyEntry slotBase, string slotExtension) :
+            this(slotBase == null ? null : new SimTaxonomyEntryReference(slotBase), slotExtension)
+        { }
 
         /// <summary>
         /// Initializes an object of type Slot.
         /// </summary>
         /// <param name="slotBase">The slot base</param>
         /// <param name="slotExtension">The slot extension</param>
-        public SimSlot(string slotBase, string slotExtension)
+        public SimSlot(SimTaxonomyEntryReference slotBase, string slotExtension)
         {
-            this.SlotBase = new SimSlotBase(slotBase);
+            if (slotBase == null)
+                throw new ArgumentNullException(nameof(slotBase));
+            this.SlotBase = slotBase;
             this.SlotExtension = slotExtension == null ? string.Empty : slotExtension;
         }
 
@@ -64,7 +59,7 @@ namespace SIMULTAN.Data.Components
         /// <param name="original">the original slot</param>
         public SimSlot(SimSlot original)
         {
-            this.SlotBase = original.SlotBase;
+            this.SlotBase = new SimTaxonomyEntryReference(original.SlotBase);
             this.SlotExtension = original.SlotExtension;
         }
 
@@ -127,30 +122,18 @@ namespace SIMULTAN.Data.Components
         #endregion
 
         /// <summary>
-        /// Serializes the slot into a string. Use <see cref="FromSerializerString(string)"/> to deserialize the result.
+        /// Serializes the slot into a string.
         /// </summary>
         /// <returns>A serialized representation of the slot</returns>
         public string ToSerializerString()
         {
-            return this.SlotBase + SimDefaultSlots.COMP_SLOT_DELIMITER + this.SlotExtension;
-        }
-
-        /// <summary>
-        /// Deserializes a string created by the <see cref="ToSerializerString"/> method into a <see cref="SimSlot"/>
-        /// </summary>
-        /// <param name="serializerString">The serialized string representation</param>
-        /// <returns>The slot described by the serialized string</returns>
-        public static SimSlot FromSerializerString(string serializerString)
-        {
-            if (string.IsNullOrEmpty(serializerString))
-                throw new ArgumentException("Invalid slot format");
-
-            var splited = SimDefaultSlots.SplitExtensionSlot(serializerString);
-
-            if (!SimDefaultSlots.AllSlots.Contains(splited.slot))
-                throw new ArgumentException("Invalid base slot");
-
-            return new SimSlot(new SimSlotBase(splited.slot), splited.extension);
+            // ToDo: This is only used in excel mapping, needs to be removed with it
+            var name = "";
+            if (SimDefaultSlotKeys.KeyToBaseLookup.TryGetValue(SlotBase.Target.Key, out var basename))
+                name = basename;
+            else
+                name = SlotBase.Target.Name;
+            return name + SimDefaultSlots.COMP_SLOT_DELIMITER + this.SlotExtension;
         }
     }
 }

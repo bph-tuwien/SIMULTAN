@@ -4,8 +4,6 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SIMULTAN.Data.Components
 {
@@ -143,12 +141,12 @@ namespace SIMULTAN.Data.Components
         /// <param name="replaceReturn"></param>
         /// <returns></returns>
         public static CalculationValidationResult ValidateCalculationParameters(SimCalculation calculation,
-            IEnumerable<KeyValuePair<string, SimParameter>> replaceInput,
-            IEnumerable<KeyValuePair<string, SimParameter>> replaceReturn)
+            IEnumerable<KeyValuePair<string, SimDoubleParameter>> replaceInput,
+            IEnumerable<KeyValuePair<string, SimDoubleParameter>> replaceReturn)
         {
             foreach (var entry in replaceInput)
             {
-                SimParameter p = entry.Value;
+                SimDoubleParameter p = entry.Value;
                 if (p != null)
                 {
                     bool valid = IsInSubtree(calculation.Component, p);
@@ -161,19 +159,19 @@ namespace SIMULTAN.Data.Components
             }
 
             //Find output parameters of all equations here and above
-            HashSet<SimParameter> usedOutParameters = new HashSet<SimParameter>();
+            HashSet<SimDoubleParameter> usedOutParameters = new HashSet<SimDoubleParameter>();
             var parent = calculation.Component;
             while (parent != null)
             {
                 foreach (var calc in parent.Calculations.Where(x => x != calculation))
                     foreach (var param in calc.ReturnParams.Where(x => x.Value != null))
                         usedOutParameters.Add(param.Value);
-                parent = (SimComponent)parent.Parent;
+                parent = parent.Parent;
             }
 
             foreach (var entry in replaceReturn)
             {
-                SimParameter p = entry.Value;
+                SimDoubleParameter p = entry.Value;
                 if (p != null)
                 {
                     // output parameters cannot be input
@@ -202,8 +200,8 @@ namespace SIMULTAN.Data.Components
 
             //Check if loops would be present in the calculation tree
             var ordered = OrderCalculationsByDependency(calculation.Component.Calculations,
-                x => x == calculation ? (IEnumerable<KeyValuePair<string, SimParameter>>)replaceInput : x.InputParams,
-                x => x == calculation ? (IEnumerable<KeyValuePair<string, SimParameter>>)replaceReturn : x.ReturnParams);
+                x => x == calculation ? replaceInput : x.InputParams,
+                x => x == calculation ? replaceReturn : x.ReturnParams);
 
             if (ordered == null)
                 return CalculationValidationResult.CAUSES_CALCULATION_LOOP;
@@ -211,7 +209,7 @@ namespace SIMULTAN.Data.Components
             return CalculationValidationResult.VALID;
         }
 
-        private static bool IsInSubtree(SimComponent rootComponent, SimParameter parameter)
+        private static bool IsInSubtree(SimComponent rootComponent, SimDoubleParameter parameter)
         {
             var comp = parameter.Component;
 
@@ -219,7 +217,7 @@ namespace SIMULTAN.Data.Components
             {
                 if (comp == rootComponent)
                     return true;
-                comp = (SimComponent)comp.Parent;
+                comp = comp.Parent;
             }
 
             return false;
@@ -254,11 +252,11 @@ namespace SIMULTAN.Data.Components
         #region Utils
 
         private static List<SimCalculation> OrderCalculationsByDependency(IEnumerable<SimCalculation> calculations,
-            Func<SimCalculation, IEnumerable<KeyValuePair<string, SimParameter>>> inputSelector,
-            Func<SimCalculation, IEnumerable<KeyValuePair<string, SimParameter>>> returnSelector)
+            Func<SimCalculation, IEnumerable<KeyValuePair<string, SimDoubleParameter>>> inputSelector,
+            Func<SimCalculation, IEnumerable<KeyValuePair<string, SimDoubleParameter>>> returnSelector)
         {
             //Gather return parameters
-            Dictionary<SimParameter, List<SimCalculation>> returnParameters = new Dictionary<SimParameter, List<SimCalculation>>();
+            Dictionary<SimDoubleParameter, List<SimCalculation>> returnParameters = new Dictionary<SimDoubleParameter, List<SimCalculation>>();
             foreach (var calc in calculations)
             {
                 foreach (var returnParam in returnSelector(calc).Where(x => x.Value != null))
@@ -384,7 +382,7 @@ namespace SIMULTAN.Data.Components
             {
                 if (entry.Value != null)
                 {
-                    SimParameter p = calculation.Component.GetCorresponding(entry.Value);
+                    SimDoubleParameter p = calculation.Component.GetCorresponding(entry.Value);
                     if (p != null)
                         calculation.InputParams[entry.Key] = p;
                     else if (!IsInSubtree(calculation.Component, entry.Value))
@@ -396,7 +394,7 @@ namespace SIMULTAN.Data.Components
             {
                 if (entry.Value != null)
                 {
-                    SimParameter p = calculation.Component.GetCorresponding(entry.Value);
+                    SimDoubleParameter p = calculation.Component.GetCorresponding(entry.Value);
                     if (p != null && !IsUsedAsOutputBySelfOrParent(calculation.Component, p, calculation))
                         calculation.ReturnParams[entry.Key] = p;
                     else if (!IsInSubtree(calculation.Component, entry.Value) || IsUsedAsOutputBySelfOrParent(calculation.Component, entry.Value, calculation))
@@ -407,7 +405,7 @@ namespace SIMULTAN.Data.Components
             }
         }
 
-        private static bool IsUsedAsOutputBySelfOrParent(SimComponent _comp, SimParameter _p, SimCalculation _calc_to_exclude)
+        private static bool IsUsedAsOutputBySelfOrParent(SimComponent _comp, SimDoubleParameter _p, SimCalculation _calc_to_exclude)
         {
             if (_p == null)
                 return false;
@@ -420,7 +418,7 @@ namespace SIMULTAN.Data.Components
 
             if (_comp.Parent != null)
             {
-                bool in_parent = IsUsedAsOutputBySelfOrParent((SimComponent)_comp.Parent, _p, _calc_to_exclude);
+                bool in_parent = IsUsedAsOutputBySelfOrParent(_comp.Parent, _p, _calc_to_exclude);
                 if (in_parent)
                     return true;
             }
@@ -435,17 +433,17 @@ namespace SIMULTAN.Data.Components
         /// <param name="_comp">The component instance</param>
         /// <param name="_p">The parameter, whose corresponding we are looking for</param>
         /// <returns>a parameter or null</returns>
-        private static SimParameter GetCorresponding(this SimComponent _comp, SimParameter _p)
+        private static SimDoubleParameter GetCorresponding(this SimComponent _comp, SimDoubleParameter _p)
         {
             if (_p == null || _p.Component == null)
                 return null;
 
             // look locally first
-            SimParameter p_corresp = _comp.Parameters.FirstOrDefault(
-                x => x.TaxonomyEntry.Equals(_p.TaxonomyEntry) &&
-                     x.Unit == _p.Unit &&
+            SimDoubleParameter p_corresp = _comp.Parameters.FirstOrDefault(
+                x => x is SimDoubleParameter numeric && numeric.NameTaxonomyEntry.Equals(_p.NameTaxonomyEntry) &&
+                     numeric.Unit == _p.Unit &&
                      x.Propagation == _p.Propagation
-                );
+                ) as SimDoubleParameter;
 
             if (p_corresp != null)
                 return p_corresp;

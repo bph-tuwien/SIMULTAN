@@ -1,10 +1,6 @@
 ﻿using SIMULTAN.Data.Components;
 using SIMULTAN.Data.SitePlanner;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SIMULTAN.Exchange.SitePlannerConnectors
 {
@@ -38,8 +34,8 @@ namespace SIMULTAN.Exchange.SitePlannerConnectors
             this.Placement = placement;
 
             //Make sure that parameter exists
-            ExchangeHelpers.CreateParameterIfNotExists(placement.Instance.Component,
-                ReservedParameterKeys.RP_PARAM_TO_GEOMETRY, ReservedParameters.RP_PARAM_TO_GEOMETRY, SimParameterInstancePropagation.PropagateIfInstance, 1.0);
+            ExchangeHelpers.CreateIntegerParameterIfNotExsists(placement.Instance.Component,
+                ReservedParameterKeys.RP_PARAM_TO_GEOMETRY, ReservedParameters.RP_PARAM_TO_GEOMETRY, SimParameterInstancePropagation.PropagateIfInstance, 1);
         }
     }
 }

@@ -1,8 +1,10 @@
-﻿using SIMULTAN.Serializer.DXF;
+﻿using SIMULTAN.Data.MultiValues;
+using SIMULTAN.Serializer.DXF;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -15,7 +17,7 @@ namespace SIMULTAN.Serializer.MVDXF
     {
         #region MEMBERS
 
-        private List<List<double>> data;
+        private SimMultiValueBigTable data;
         private int serializationCode;
         private int chunkSize;
 
@@ -27,7 +29,7 @@ namespace SIMULTAN.Serializer.MVDXF
         /// <param name="data">the data to be serialized</param>
         /// <param name="chunkSize">the number of rows to pass to a single instance for serialization</param>
         /// <param name="serializationCode">the DXF-style code to insert in front of the line of actual data</param>
-        internal ParallelBigTableSerializer(List<List<double>> data, int chunkSize, int serializationCode)
+        internal ParallelBigTableSerializer(SimMultiValueBigTable data, int chunkSize, int serializationCode)
         {
             if (data == null)
                 throw new NullReferenceException("The data cannot be null!");
@@ -36,7 +38,7 @@ namespace SIMULTAN.Serializer.MVDXF
 
             this.data = data;
             this.serializationCode = serializationCode;
-            this.chunkSize = Math.Min(chunkSize, data.Count);
+            this.chunkSize = Math.Min(chunkSize, data.Count(0));
         }
 
         /// <summary>
@@ -45,8 +47,8 @@ namespace SIMULTAN.Serializer.MVDXF
         /// <returns>the serialized data</returns>
         internal async Task SerializeValuesAsync(DXFStreamWriter sw)
         {
-            int nr_chunks = this.data.Count / this.chunkSize;
-            int size_last_chunk = this.data.Count % this.chunkSize;
+            int nr_chunks = this.data.Count(0) / this.chunkSize;
+            int size_last_chunk = this.data.Count(0) % this.chunkSize;
             if (size_last_chunk > 0)
                 nr_chunks++;
 
@@ -79,7 +81,7 @@ namespace SIMULTAN.Serializer.MVDXF
     {
         #region MEMBERS
 
-        private List<List<double>> data;
+        private SimMultiValueBigTable data;
         private int serializationCode;
 
         private int index;
@@ -101,14 +103,14 @@ namespace SIMULTAN.Serializer.MVDXF
         /// <param name="index">the index of the instance in the serialization context (see <see cref="ParallelBigTableSerializer"/>)</param>
         /// <param name="rowStart">the row in the data from which to start the serialization (inclusive)</param>
         /// <param name="rowCount">the number of rows to serialize</param>
-        internal ParallelBigTableSerializerInstance(List<List<double>> data, 
+        internal ParallelBigTableSerializerInstance(SimMultiValueBigTable data,
             int serializationCode, int index, int rowStart, int rowCount)
         {
             if (data == null)
                 throw new NullReferenceException("The data cannot be null!");
-            if (rowStart < 0 || rowStart >= data.Count)
+            if (rowStart < 0 || rowStart >= data.Count(0))
                 throw new IndexOutOfRangeException("The first row index is out of range!");
-            if (rowStart + rowCount < 0 || rowStart + rowCount > data.Count)
+            if (rowStart + rowCount < 0 || rowStart + rowCount > data.Count(0))
                 throw new IndexOutOfRangeException("The last row index is out of range!");
 
             this.data = data;
@@ -123,17 +125,59 @@ namespace SIMULTAN.Serializer.MVDXF
         internal void SerializeValueRangeDXFStyle()
         {
             this.Result = new StringBuilder();
-            for (int i = this.rowStart; i < this.rowStart + this.rowCount; i++)
+            for (int row = this.rowStart; row < this.rowStart + this.rowCount; row++)
             {
                 this.Result.Append(this.serializationCode);
                 this.Result.AppendLine();
-                for (int n = 0; n < this.data[i].Count; n++)
+
+                for (int n = 0; n < this.data.Count(1); n++)
                 {
-                    this.Result.Append(DXFDataConverter<double>.P.ToDXFString(this.data[i][n]));
-                    if (n < this.data[i].Count - 1)
-                        this.Result.Append(ParamStructTypes.DELIMITER_WITHIN_ENTRY);
+                    if (data[row, n] is double d)
+                    {
+                        this.Result.Append("d");
+                        this.Result.Append(DXFDataConverter<double>.P.ToDXFString(d));
+                    }
+                    else if (data[row, n] is int i)
+                    {
+                        this.Result.Append("n");
+                        this.Result.Append(DXFDataConverter<int>.P.ToDXFString(i));
+                    }
+                    else if (data[row, n] is bool b)
+                    {
+                        this.Result.Append("b");
+                        this.Result.Append(DXFDataConverter<bool>.P.ToDXFString(b));
+                    }
+                    else if (data[row, n] is string s)
+                    {
+                        this.Result.Append("s");
+
+                        /* Replace the following characters 
+                         * ; with \;
+                         * line break with \n
+                         * \ with \\
+                         */
+                        foreach (var c in s)
+                        {
+                            if (c == '\\')
+                                this.Result.Append(@"\\");
+                            else if (c == ParamStructTypes.DELIMITER_WITHIN_ENTRY)
+                            {
+                                this.Result.Append('\\');
+                                this.Result.Append(ParamStructTypes.DELIMITER_WITHIN_ENTRY);
+                            }
+                            else if (c == '\n')
+                                this.Result.Append(@"\n");
+                            else if (c == '\r')
+                            { }
+                            else
+                                this.Result.Append(c);
+                        }
+                    }
+
+                    this.Result.Append(ParamStructTypes.DELIMITER_WITHIN_ENTRY);
                 }
-                if (i < this.rowStart + this.rowCount - 1)
+
+                if (row < this.rowStart + this.rowCount - 1)
                     this.Result.AppendLine();
             }
         }
@@ -150,6 +194,7 @@ namespace SIMULTAN.Serializer.MVDXF
                 return string.Empty;
         }
     }
+
 
     internal class ParallelBigTableSerializerElement : DXFEntryParserElement
     {
@@ -184,7 +229,7 @@ namespace SIMULTAN.Serializer.MVDXF
             int numberOfChunks = Math.Min(Math.Min(maxNumberOfChunks - 1, (int)Math.Ceiling(rowCount * columnCount / (double)maxChunkSize)), rowCount);
             double rowsPerChunk = rowCount / (double)numberOfChunks;
 
-            Task<List<List<double>>>[] tasks = new Task<List<List<double>>>[numberOfChunks];
+            Task<List<List<object>>>[] tasks = new Task<List<List<object>>>[numberOfChunks];
             for (int i = 0; i < numberOfChunks; i++)
             {
                 List<string> rows = new List<string>();
@@ -212,32 +257,121 @@ namespace SIMULTAN.Serializer.MVDXF
             return tasks;
         }
 
-        private List<double> ParseRow(string row, int columnCount, string delimiter, DXFParserInfo info)
+        private List<object> ParseRow(string row, int columnCount, DXFParserInfo info)
         {
-            List<double> values = new List<double>(columnCount);
+            List<object> values = new List<object>(columnCount);
 
-            int match = row.IndexOf(delimiter);
-            int lastMatchEnd = 0;
-            while (match != -1)
+            if (info.FileVersion >= 18)
             {
-                string cell = row.Substring(lastMatchEnd, match - lastMatchEnd);
-                values.Add(DXFDataConverter<double>.P.FromDXFString(cell, info));
-                lastMatchEnd = match + delimiter.Length;
-                match = row.IndexOf(delimiter, lastMatchEnd);
+                int lastMatchEnd = 0;
+                Type type = null;
+
+                for (int i = 0; i < row.Length; i++)
+                {
+                    if (type == null && row[i] != ParamStructTypes.DELIMITER_WITHIN_ENTRY) //Type identifier
+                    {
+                        switch (row[i])
+                        {
+                            case 'd':
+                                type = typeof(double);
+                                break;
+                            case 'n':
+                                type = typeof(int);
+                                break;
+                            case 'b':
+                                type = typeof(bool);
+                                break;
+                            case 's':
+                                type = typeof(string);
+                                break;
+                            default:
+                                throw new Exception("Invalid type identifier");
+                        }
+                    }
+                    else if (row[i] == '\\') //Escape character
+                    {
+                        i++; //skip next char
+                    }
+                    else if (row[i] == ParamStructTypes.DELIMITER_WITHIN_ENTRY) //Delimiter -> end of cell
+                    {
+                        if (type == null)
+                        {
+                            values.Add(null);
+                        }
+                        else if (type == typeof(double))
+                        {
+                            values.Add(DXFDataConverter<double>.P.FromDXFString(row.Substring(lastMatchEnd + 1, i - lastMatchEnd - 1), info));
+                        }
+                        else if (type == typeof(int))
+                        {
+                            values.Add(DXFDataConverter<int>.P.FromDXFString(row.Substring(lastMatchEnd + 1, i - lastMatchEnd - 1), info));
+                        }
+                        else if (type == typeof(bool))
+                        {
+                            values.Add(DXFDataConverter<bool>.P.FromDXFString(row.Substring(lastMatchEnd + 1, i - lastMatchEnd - 1), info));
+                        }
+                        else if (type == typeof(string))
+                        {
+                            //Unescape string
+                            StringBuilder sb = new StringBuilder(i - lastMatchEnd);
+                            for (int si = lastMatchEnd + 1; si < i; ++si)
+                            {
+                                if (row[si] == '\\') //Escape sign
+                                {
+                                    if (row[si + 1] == 'n')
+                                    {
+                                        sb.Append('\n');
+                                        si++;
+                                    }
+                                    else if (row[si + 1] == '\\')
+                                    {
+                                        sb.Append('\\');
+                                        si++;
+                                    }
+                                    //else ignore and just add the next char
+
+                                }
+                                else
+                                {
+                                    sb.Append(row[si]);
+                                }
+                            }
+
+                            values.Add(sb.ToString());
+                        }
+
+                        lastMatchEnd = i + 1;
+                        type = null;
+                    }
+                }
             }
-            //last part
-            if (lastMatchEnd < row.Length)
-                values.Add(DXFDataConverter<double>.P.FromDXFString(row.Substring(lastMatchEnd), info));
+            else //if (info.FileVersion < 17)
+            {
+                string delimiter = ParamStructTypes.DELIMITER_WITHIN_ENTRY_BEFORE_V18;
+
+                int match = row.IndexOf(delimiter);
+                int lastMatchEnd = 0;
+                while (match != -1)
+                {
+                    string cell = row.Substring(lastMatchEnd, match - lastMatchEnd);
+                    values.Add(DXFDataConverter<double>.P.FromDXFString(cell, info));
+                    lastMatchEnd = match + delimiter.Length;
+                    match = row.IndexOf(delimiter, lastMatchEnd);
+                }
+                //last part
+                if (lastMatchEnd < row.Length)
+                    values.Add(DXFDataConverter<double>.P.FromDXFString(row.Substring(lastMatchEnd), info));
+            }
 
             return values;
         }
 
-        private List<List<double>> ParseRowsAsync(List<string> rows, int columnCount, DXFParserInfo info)
+        private List<List<object>> ParseRowsAsync(List<string> rows, int columnCount, DXFParserInfo info)
         {
-            List<List<double>> result = new List<List<double>>(rows.Count);
+            List<List<object>> result = new List<List<object>>(rows.Count);
 
             for (int i = 0; i < rows.Count; ++i)
-                result.Add(ParseRow(rows[i], columnCount, ParamStructTypes.DELIMITER_WITHIN_ENTRY, info));
+                result.Add(ParseRow(rows[i], columnCount, info));
 
             return result;
         }

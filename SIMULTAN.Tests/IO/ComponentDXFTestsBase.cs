@@ -4,17 +4,15 @@ using SIMULTAN.Data.Assets;
 using SIMULTAN.Data.Components;
 using SIMULTAN.Data.FlowNetworks;
 using SIMULTAN.Data.SimNetworks;
-using SIMULTAN.Data.SitePlanner;
+using SIMULTAN.Data.Taxonomy;
 using SIMULTAN.Data.Users;
 using SIMULTAN.Data.ValueMappings;
-using SIMULTAN.Excel;
 using SIMULTAN.Projects;
+using SIMULTAN.Tests.TestUtils;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Media3D;
@@ -179,13 +177,19 @@ namespace SIMULTAN.Tests.IO
         {
             var node = data.NetworkManager.NetworkRecord.First().ContainedNodes.Values.First();
 
+            // load some temp defaut taxonomies and merge them back in later to get valid ids
+            var taxonomies = TaxonomyUtils.GetDefaultTaxonomies();
+            var costTax = taxonomies.GetDefaultSlot(SimDefaultSlotKeys.Cost);
+            var undefinedTax = taxonomies.GetDefaultSlot(SimDefaultSlotKeys.Undefined);
+            var jointTax = taxonomies.GetDefaultSlot(SimDefaultSlotKeys.Joint);
+
             SimComponent childComponent1 = new SimComponent()
             {
                 Id = new Data.SimId(Guid.Empty, 131),
                 Name = "Child Component 1",
                 Description = "Some\r\ndescriptive\r\ntext2",
                 IsAutomaticallyGenerated = false,
-                CurrentSlot = new SimSlotBase(SimDefaultSlots.Cost),
+                CurrentSlot = new SimTaxonomyEntryReference(costTax),
                 ComponentColor = Color.FromArgb(230, 100, 10, 20),
                 InstanceType = SimInstanceType.AttributesFace,
                 Visibility = SimComponentVisibility.VisibleInProject,
@@ -200,7 +204,7 @@ namespace SIMULTAN.Tests.IO
                 Name = "Child Component 2",
                 Description = "Some\r\ndescriptive\r\ntext3",
                 IsAutomaticallyGenerated = true,
-                CurrentSlot = new SimSlotBase(SimDefaultSlots.Undefined),
+                CurrentSlot = new SimTaxonomyEntryReference(undefinedTax),
                 ComponentColor = Color.FromArgb(230, 240, 10, 32),
                 InstanceType = SimInstanceType.AttributesPoint,
                 Visibility = SimComponentVisibility.VisibleInProject,
@@ -212,26 +216,26 @@ namespace SIMULTAN.Tests.IO
             childComponent2.AccessLocal[SimUserRole.ARCHITECTURE].LastAccessWrite = new DateTime(2022, 05, 07, 0, 0, 0, DateTimeKind.Utc);
 
             //Parameter
-            childComponent1.Parameters.Add(new SimParameter("A1", "aunit", 34.6, SimParameterOperations.All)
+            childComponent1.Parameters.Add(new SimDoubleParameter("A1", "aunit", 34.6, SimParameterOperations.All)
             {
                 Id = new Data.SimId(20011),
                 Propagation = SimInfoFlow.Input,
                 Category = SimCategory.Air,
             });
-            childComponent1.Parameters.Add(new SimParameter("B1", "bunit", 35.7, SimParameterOperations.All)
+            childComponent1.Parameters.Add(new SimDoubleParameter("B1", "bunit", 35.7, SimParameterOperations.All)
             {
                 Id = new Data.SimId(20012),
                 Propagation = SimInfoFlow.Output,
                 Category = SimCategory.FireSafety
             });
 
-            childComponent2.Parameters.Add(new SimParameter("A", "aunit", 34.6, SimParameterOperations.All)
+            childComponent2.Parameters.Add(new SimDoubleParameter("A", "aunit", 34.6, SimParameterOperations.All)
             {
                 Id = new Data.SimId(20001),
                 Propagation = SimInfoFlow.Input,
                 Category = SimCategory.Air
             });
-            childComponent2.Parameters.Add(new SimParameter("B", "bunit", 35.7, SimParameterOperations.All)
+            childComponent2.Parameters.Add(new SimDoubleParameter("B", "bunit", 35.7, SimParameterOperations.All)
             {
                 Id = new Data.SimId(20002),
                 Propagation = SimInfoFlow.Output,
@@ -249,13 +253,12 @@ namespace SIMULTAN.Tests.IO
                 SizeTransfer = new SimInstanceSizeTransferDefinition(new SimInstanceSizeTransferDefinitionItem[]
                 {
                     new SimInstanceSizeTransferDefinitionItem(SimInstanceSizeTransferSource.User, null, 0.0),
-                    new SimInstanceSizeTransferDefinitionItem(SimInstanceSizeTransferSource.Parameter, childComponent2.Parameters[1], 12.5),
+                    new SimInstanceSizeTransferDefinitionItem(SimInstanceSizeTransferSource.Parameter, childComponent2.Parameters[1] as SimDoubleParameter, 12.5),
                     new SimInstanceSizeTransferDefinitionItem(SimInstanceSizeTransferSource.User, null, 0.0),
                     new SimInstanceSizeTransferDefinitionItem(SimInstanceSizeTransferSource.Path, null, 0.0),
                     new SimInstanceSizeTransferDefinitionItem(SimInstanceSizeTransferSource.User, null, 0.0),
                     new SimInstanceSizeTransferDefinitionItem(SimInstanceSizeTransferSource.User, null, 0.0),
                 }),
-                InstancePath = new List<Point3D> { new Point3D(0.175, 0, 0.18) },
                 PropagateParameterChanges = false,
             });
             childComponent2.Instances[0].Placements.Add(new SimInstancePlacementNetwork(node));
@@ -272,23 +275,22 @@ namespace SIMULTAN.Tests.IO
                 SizeTransfer = new SimInstanceSizeTransferDefinition(new SimInstanceSizeTransferDefinitionItem[]
                 {
                     new SimInstanceSizeTransferDefinitionItem(SimInstanceSizeTransferSource.User, null, 0.0),
-                    new SimInstanceSizeTransferDefinitionItem(SimInstanceSizeTransferSource.Parameter, childComponent2.Parameters[0], 12.5),
+                    new SimInstanceSizeTransferDefinitionItem(SimInstanceSizeTransferSource.Parameter, childComponent2.Parameters[0] as SimDoubleParameter, 12.5),
                     new SimInstanceSizeTransferDefinitionItem(SimInstanceSizeTransferSource.User, null, 0.0),
                     new SimInstanceSizeTransferDefinitionItem(SimInstanceSizeTransferSource.Path, null, 0.0),
                     new SimInstanceSizeTransferDefinitionItem(SimInstanceSizeTransferSource.User, null, 0.0),
                     new SimInstanceSizeTransferDefinitionItem(SimInstanceSizeTransferSource.User, null, 0.0),
                 }),
-                InstancePath = new List<Point3D> { new Point3D(0.175, 0, 0.18) },
                 PropagateParameterChanges = false,
             });
             childComponent2.Instances[1].Placements.Add(new SimInstancePlacementGeometry(3, 332));
-            childComponent2.Instances[1].InstanceParameterValuesPersistent[childComponent2.Parameters[0]] = -1;
-            childComponent2.Instances[1].InstanceParameterValuesPersistent[childComponent2.Parameters[1]] = -2;
+            childComponent2.Instances[1].InstanceParameterValuesPersistent[childComponent2.Parameters[0]] = -1.0;
+            childComponent2.Instances[1].InstanceParameterValuesPersistent[childComponent2.Parameters[1]] = -2.0;
 
             //Calculation
             childComponent2.Calculations.Add(new SimCalculation("x*x", "AB-Calc",
-                new Dictionary<string, SimParameter> { { "x", childComponent2.Parameters[0] } },
-                new Dictionary<string, SimParameter> { { "ret", childComponent2.Parameters[1] } })
+                new Dictionary<string, SimDoubleParameter> { { "x", childComponent2.Parameters[0] as SimDoubleParameter } },
+                new Dictionary<string, SimDoubleParameter> { { "ret", childComponent2.Parameters[1] as SimDoubleParameter } })
             {
                 Id = new SimId(30001)
             });
@@ -299,14 +301,14 @@ namespace SIMULTAN.Tests.IO
                 Name = "Root Component",
                 Description = "Some\r\ndescriptive\r\ntext",
                 IsAutomaticallyGenerated = true,
-                CurrentSlot = new SimSlotBase(SimDefaultSlots.Joint),
+                CurrentSlot = new SimTaxonomyEntryReference(jointTax),
                 ComponentColor = Color.FromArgb(230, 240, 10, 20),
                 Visibility = SimComponentVisibility.AlwaysVisible,
                 SortingType = SimComponentContentSorting.BySlot,
             };
-            root.Components.Add(new SimChildComponentEntry(new SimSlot(SimDefaultSlots.Cost, "0"), childComponent1));
-            root.Components.Add(new SimChildComponentEntry(new SimSlot(SimDefaultSlots.Undefined, "1"), childComponent2));
-            root.Components.Add(new SimChildComponentEntry(new SimSlot(SimDefaultSlots.Cost, "1")));
+            root.Components.Add(new SimChildComponentEntry(new SimSlot(costTax, "0"), childComponent1));
+            root.Components.Add(new SimChildComponentEntry(new SimSlot(undefinedTax, "1"), childComponent2));
+            root.Components.Add(new SimChildComponentEntry(new SimSlot(costTax, "1")));
 
             root.AccessLocal[SimUserRole.ARCHITECTURE].Access = SimComponentAccessPrivilege.All;
             root.AccessLocal[SimUserRole.ARCHITECTURE].LastAccessWrite = new DateTime(2022, 05, 05, 0, 0, 0, DateTimeKind.Utc);
@@ -314,28 +316,22 @@ namespace SIMULTAN.Tests.IO
             root.AccessLocal[SimUserRole.ARCHITECTURE].LastAccessRelease = new DateTime(2022, 05, 07, 0, 0, 0, DateTimeKind.Utc);
 
             //References
-            childComponent1.ReferencedComponents.Add(new SimComponentReference(new SimSlot(new SimSlotBase(SimDefaultSlots.Joint), "0")));
-            childComponent1.ReferencedComponents.Add(new SimComponentReference(new SimSlot(new SimSlotBase(SimDefaultSlots.Joint), "1"),
+            childComponent1.ReferencedComponents.Add(new SimComponentReference(new SimSlot(jointTax, "0")));
+            childComponent1.ReferencedComponents.Add(new SimComponentReference(new SimSlot(jointTax, "1"),
                 childComponent2));
-            childComponent1.ReferencedComponents.Add(new SimComponentReference(new SimSlot(new SimSlotBase(SimDefaultSlots.Joint), "2"),
+            childComponent1.ReferencedComponents.Add(new SimComponentReference(new SimSlot(jointTax, "2"),
                 new SimId(otherguid, 8877)));
-            childComponent1.ReferencedComponents.Add(new SimComponentReference(new SimSlot(new SimSlotBase(SimDefaultSlots.Joint), "3"),
+            childComponent1.ReferencedComponents.Add(new SimComponentReference(new SimSlot(jointTax, "3"),
                 new SimId(guid, 4456)));
 
             //Mappings
             childComponent1.CreateMappingTo("My Mapping", childComponent2,
                 new CalculatorMapping.MappingParameterTuple[] {
-                    new CalculatorMapping.MappingParameterTuple(childComponent1.Parameters[0], childComponent2.Parameters[0])
+                    new CalculatorMapping.MappingParameterTuple(childComponent1.Parameters[0] as SimDoubleParameter, childComponent2.Parameters[0] as SimDoubleParameter)
                 },
                 new CalculatorMapping.MappingParameterTuple[] {
-                    new CalculatorMapping.MappingParameterTuple(childComponent1.Parameters[1], childComponent2.Parameters[1])
+                    new CalculatorMapping.MappingParameterTuple(childComponent1.Parameters[1] as SimDoubleParameter, childComponent2.Parameters[1] as SimDoubleParameter)
                 });
-
-            //Excel Mapping
-            var excelMap1 = new ExcelComponentMapping(new long[] { 5566, 5567, 5568 }, "ExcelTool", "ExcelRuleA", 1);
-            root.MappingsPerExcelTool.Add(excelMap1.ConstructKey(), excelMap1);
-            var excelMap2 = new ExcelComponentMapping(new long[] { 5569 }, "ExcelTool", "ExcelRuleB", 2);
-            root.MappingsPerExcelTool.Add(excelMap2.ConstructKey(), excelMap2);
 
             //Chat
             var childItem1 = new SimChatItem(SimChatItemType.QUESTION, SimUserRole.BUILDING_PHYSICS,
@@ -365,6 +361,7 @@ namespace SIMULTAN.Tests.IO
             data.Components.StartLoading();
             data.Components.Add(root);
             data.Components.EndLoading();
+            data.Taxonomies.MergeWithDefaults(taxonomies);
         }
 
         public void CreateValueMappingTestData(ProjectData data, Guid guid)

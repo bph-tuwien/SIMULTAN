@@ -1,6 +1,4 @@
-﻿using SIMULTAN.Serializer.DXF;
-using System;
-using System.Text;
+﻿using System;
 
 namespace SIMULTAN.Data.MultiValues
 {
@@ -34,13 +32,10 @@ namespace SIMULTAN.Data.MultiValues
     public abstract class SimMultiValue : SimNamedObject<SimMultiValueCollection>
     {
         #region STATIC
-
         internal static readonly string NEWLINE_PLACEHOLDER = "[NewLine]";
-
         #endregion
 
         #region Properties
-
         /// <summary>
         /// Gets or sets the type of the value field.
         /// This value is redundant since types have a 1-1 mapping to C# types
@@ -109,8 +104,23 @@ namespace SIMULTAN.Data.MultiValues
 
         #endregion
 
+        #region Events
 
-        #region .CTOR
+        /// <summary>
+        /// Invoked when the MultiValue gets removed from the containing collection
+        /// </summary>
+        public event EventHandler Deleting;
+        /// <summary>
+        /// Invokes the <see cref="Deleting"/> event
+        /// </summary>
+        internal void NotifyDeleting()
+        {
+            this.Deleting?.Invoke(this, EventArgs.Empty);
+        }
+
+        #endregion
+
+
 
         /// <summary>
         /// Initializes a new instance of the SimMultiValue class
@@ -130,10 +140,6 @@ namespace SIMULTAN.Data.MultiValues
             this.unitY = (string.IsNullOrEmpty(unitY)) ? "-" : unitY;
             this.unitZ = (string.IsNullOrEmpty(unitZ)) ? "-" : unitZ;
         }
-
-        #endregion
-
-        #region .CTOR for PARSING
 
         /// <summary>
         /// Initializes a new instance of the SimMultiValue class
@@ -156,10 +162,6 @@ namespace SIMULTAN.Data.MultiValues
             this.unitZ = (string.IsNullOrEmpty(unitZ)) ? "-" : unitZ;
         }
 
-        #endregion
-
-        #region .CTOR for COPYING
-
         /// <summary>
         /// Creates a deep copy of a SimMultiValue
         /// </summary>
@@ -176,12 +178,13 @@ namespace SIMULTAN.Data.MultiValues
             this.unitZ = original.UnitZ;
         }
 
+
+
         /// <summary>
         /// Creates a deep copy of this instance
         /// </summary>
         public abstract SimMultiValue Clone();
 
-        #endregion
 
         #region METHODS: External Pointer
 
@@ -189,14 +192,17 @@ namespace SIMULTAN.Data.MultiValues
         /// Creates a new (default) pointer to this SimMultiValue
         /// </summary>
         /// <returns>A pointer to this field with a default pointer address</returns>
-        public abstract SimMultiValuePointer CreateNewPointer();
+        public abstract SimMultiValueParameterSource CreateNewPointer();
+
+
         /// <summary>
         /// Creates a new pointer which copies data from an existing pointer.
         /// In general, this is only possible when the source pointer points to the same type of ValueField.
         /// </summary>
         /// <returns>A pointer to this field with parameters taken from the source pointer</returns>
-        public abstract SimMultiValuePointer CreateNewPointer(SimMultiValuePointer source);
+        public abstract SimMultiValueParameterSource CreateNewPointer(SimMultiValueParameterSource source);
 
         #endregion
+
     }
 }

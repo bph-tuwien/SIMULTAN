@@ -6,7 +6,7 @@ using SIMULTAN.Serializer.DXF;
 using SIMULTAN.Serializer.GMDXF;
 using SIMULTAN.Tests.Properties;
 using SIMULTAN.Tests.Util;
-using SIMULTAN.Tests.Utils;
+using SIMULTAN.Tests.TestUtils;
 using System;
 using System.IO;
 using System.Linq;
@@ -39,7 +39,7 @@ namespace SIMULTAN.Tests.IO
 
             using (DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_GMDXF_EmptyV11)))
             {
-                GeoMapDxfIO.Read(reader, new DXFParserInfo(project.GlobalID, projectData) { CurrentFile = new FileInfo(mapRes.CurrentFullPath)});
+                GeoMapDxfIO.Read(reader, new DXFParserInfo(project.GlobalID, projectData) { CurrentFile = new FileInfo(mapRes.CurrentFullPath) });
             }
 
             Assert.AreEqual(2, projectData.SitePlannerManager.GeoMaps.Count);
@@ -85,7 +85,7 @@ namespace SIMULTAN.Tests.IO
 
             using (DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_ReadGMDXF_MapResourceV11)))
             {
-                GeoMapDxfIO.Read(reader, new DXFParserInfo(project.GlobalID, projectData) { CurrentFile = new FileInfo(mapRes.CurrentFullPath)});
+                GeoMapDxfIO.Read(reader, new DXFParserInfo(project.GlobalID, projectData) { CurrentFile = new FileInfo(mapRes.CurrentFullPath) });
             }
 
             Assert.AreEqual(2, projectData.SitePlannerManager.GeoMaps.Count);
@@ -108,7 +108,7 @@ namespace SIMULTAN.Tests.IO
 
             using (DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_ReadGMDXF_MapResourceV12)))
             {
-                GeoMapDxfIO.Read(reader, new DXFParserInfo(project.GlobalID, projectData) { CurrentFile = new FileInfo(mapRes.CurrentFullPath)});
+                GeoMapDxfIO.Read(reader, new DXFParserInfo(project.GlobalID, projectData) { CurrentFile = new FileInfo(mapRes.CurrentFullPath) });
             }
 
             Assert.AreEqual(2, projectData.SitePlannerManager.GeoMaps.Count);
@@ -131,7 +131,7 @@ namespace SIMULTAN.Tests.IO
 
             using (DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_ReadGMDXF_MapResourceOtherProjectV12)))
             {
-                GeoMapDxfIO.Read(reader, new DXFParserInfo(project.GlobalID, projectData) { CurrentFile = new FileInfo(mapRes.CurrentFullPath)});
+                GeoMapDxfIO.Read(reader, new DXFParserInfo(project.GlobalID, projectData) { CurrentFile = new FileInfo(mapRes.CurrentFullPath) });
             }
 
             Assert.AreEqual(2, projectData.SitePlannerManager.GeoMaps.Count);
@@ -179,7 +179,7 @@ namespace SIMULTAN.Tests.IO
             Guid resGuid = new Guid("a5ef2c5d-9519-4335-9ac2-4beb0a597326");
 
             Assert.AreEqual(1, projectData.SitePlannerManager.GeoMaps.Count);
-            
+
             using (DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_ReadGMDXF_GeoReferencesV12)))
             {
                 GeoMapDxfIO.Read(reader, new DXFParserInfo(project.GlobalID, projectData) { CurrentFile = new FileInfo(mapRes.CurrentFullPath) });

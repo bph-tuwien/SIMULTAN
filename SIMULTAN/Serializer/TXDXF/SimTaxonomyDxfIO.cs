@@ -1,13 +1,13 @@
-﻿using System;
+﻿using SIMULTAN.Data;
+using SIMULTAN.Data.Taxonomy;
+using SIMULTAN.Projects;
+using SIMULTAN.Serializer.DXF;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using SIMULTAN.Data;
-using SIMULTAN.Data.Taxonomy;
-using SIMULTAN.Projects;
-using SIMULTAN.Serializer.DXF;
 
 namespace SIMULTAN.Serializer.TXDXF
 {
@@ -32,6 +32,7 @@ namespace SIMULTAN.Serializer.TXDXF
                 new DXFSingleEntryParserElement<string>(ParamStructCommonSaveCode.ENTITY_NAME),
                 new DXFMultiLineTextElement(TaxonomySaveCode.TAXONOMY_DESCRIPTION),
                 new DXFSingleEntryParserElement<bool>(TaxonomySaveCode.TAXONOMY_IS_READONLY) { IsOptional = true },
+                new DXFSingleEntryParserElement<bool>(TaxonomySaveCode.TAXONOMY_IS_DELETABLE) { IsOptional = true },
                 new DXFEntitySequenceEntryParserElement<SimTaxonomyEntry>(TaxonomySaveCode.TAXONOMY_ENTRIES,
                     new DXFComplexEntityParserElement<SimTaxonomyEntry>(new DXFEntityParserElement<SimTaxonomyEntry>(ParamStructTypes.TAXONOMY_ENTRY,
                         (re, inf) => ParseTaxonomyEntry(re, inf, false),
@@ -62,6 +63,7 @@ namespace SIMULTAN.Serializer.TXDXF
                 new DXFSingleEntryParserElement<string>(TaxonomySaveCode.TAXONOMY_KEY),
                 new DXFMultiLineTextElement(TaxonomySaveCode.TAXONOMY_DESCRIPTION),
                 new DXFSingleEntryParserElement<bool>(TaxonomySaveCode.TAXONOMY_IS_READONLY) { IsOptional = true },
+                new DXFSingleEntryParserElement<bool>(TaxonomySaveCode.TAXONOMY_IS_DELETABLE) { IsOptional = true },
                 new DXFEntitySequenceEntryParserElement<SimTaxonomyEntry>(TaxonomySaveCode.TAXONOMY_ENTRIES,
                     new DXFComplexEntityParserElement<SimTaxonomyEntry>(new DXFEntityParserElement<SimTaxonomyEntry>(ParamStructTypes.TAXONOMY_ENTRY,
                         (r, i) => ParseTaxonomyEntry(r, i, true),
@@ -99,7 +101,7 @@ namespace SIMULTAN.Serializer.TXDXF
             {
                 var localId = result.Get<long>(ParamStructCommonSaveCode.ENTITY_LOCAL_ID, 0);
                 var id = new SimId(Guid.Empty, localId);
-                taxEntry = new SimTaxonomyEntry(id) {Key = key, Name = name, Description = description };
+                taxEntry = new SimTaxonomyEntry(id) { Key = key, Name = name, Description = description };
             }
             else
             {
@@ -120,6 +122,7 @@ namespace SIMULTAN.Serializer.TXDXF
             var name = result.Get<string>(ParamStructCommonSaveCode.ENTITY_NAME, "");
             var description = result.Get<string>(TaxonomySaveCode.TAXONOMY_DESCRIPTION, "");
             var isReadonly = result.Get<bool>(TaxonomySaveCode.TAXONOMY_IS_READONLY, false);
+            var isDeletable = result.Get<bool>(TaxonomySaveCode.TAXONOMY_IS_DELETABLE, true);
 
             var entries = result.Get<SimTaxonomyEntry[]>(TaxonomySaveCode.TAXONOMY_ENTRIES, new SimTaxonomyEntry[] { });
 
@@ -127,41 +130,23 @@ namespace SIMULTAN.Serializer.TXDXF
             if (!isImport)
             {
                 var id = result.GetSimId(ParamStructCommonSaveCode.ENTITY_GLOBAL_ID, ParamStructCommonSaveCode.ENTITY_LOCAL_ID, info.GlobalId);
-                taxnomy = new SimTaxonomy(id) { Key = key, Name = name, Description = description, IsReadonly = isReadonly };
+                taxnomy = new SimTaxonomy(id) { Key = key, Name = name, Description = description, IsDeletable = isDeletable };
             }
             else
             {
-                taxnomy = new SimTaxonomy(key, name, description) { IsReadonly = isReadonly };
+                taxnomy = new SimTaxonomy(key, name, description) { IsDeletable = isDeletable };
             }
-
-            // ToDo: remove, only for testing
-            int lastkey = 0;
-            CheckKeys(taxnomy, entries,ref lastkey);
 
             foreach (var entry in entries)
             {
                 taxnomy.Entries.Add(entry);
             }
 
+            // set at the end, cause otherwise entries cannot be added
+            taxnomy.IsReadonly = isReadonly;
+
             return taxnomy;
         }
-
-        private static void CheckKeys(SimTaxonomy taxonomy, IEnumerable<SimTaxonomyEntry> entries, ref int lastkey)
-        {
-            if (entries == null)
-                return;
-            foreach(var entry in entries)
-            {
-                if (string.IsNullOrEmpty(entry.Key))
-                {
-                    lastkey++;
-                    while (taxonomy.IsKeyInUse(lastkey.ToString())) { lastkey++; }
-                    entry.Key = lastkey.ToString();
-                }
-                CheckKeys(taxonomy, entry.Children, ref lastkey);
-            }
-        }
-
 
         #endregion
 
@@ -228,7 +213,7 @@ namespace SIMULTAN.Serializer.TXDXF
         private static void Read(DXFStreamReader reader, DXFParserInfo parserInfo, bool isImport)
         {
             //Version section
-            if(CommonParserElements.VersionSectionElement.IsParsable(reader, parserInfo))
+            if (CommonParserElements.VersionSectionElement.IsParsable(reader, parserInfo))
             {
                 parserInfo = CommonParserElements.VersionSectionElement.Parse(reader, parserInfo).First();
             }
@@ -349,6 +334,7 @@ namespace SIMULTAN.Serializer.TXDXF
             writer.Write(ParamStructCommonSaveCode.ENTITY_NAME, taxonomy.Name);
             writer.WriteMultilineText(TaxonomySaveCode.TAXONOMY_DESCRIPTION, taxonomy.Description);
             writer.Write(TaxonomySaveCode.TAXONOMY_IS_READONLY, taxonomy.IsReadonly);
+            writer.Write(TaxonomySaveCode.TAXONOMY_IS_DELETABLE, taxonomy.IsDeletable);
 
             // Child Entries
             writer.WriteEntitySequence(TaxonomySaveCode.TAXONOMY_ENTRIES, taxonomy.Entries, (e, w) => WriteTaxonomyEntry(e, w, isExport));

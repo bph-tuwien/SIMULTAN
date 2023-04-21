@@ -112,7 +112,7 @@ namespace SIMULTAN.Data.ValueMappings
         /// </summary>
         /// <param name="projectData">The <see cref="ProjectData"/> this collection belongs to</param>
         public SimValueMappingCollection(ProjectData projectData) : base(projectData)
-        { 
+        {
         }
     }
 }

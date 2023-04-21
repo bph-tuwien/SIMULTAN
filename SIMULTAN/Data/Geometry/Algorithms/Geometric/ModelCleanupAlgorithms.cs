@@ -1,6 +1,8 @@
 ﻿using Microsoft.SqlServer.Server;
 using SIMULTAN.Data.Components;
+using SIMULTAN.Data.Taxonomy;
 using SIMULTAN.Exchange;
+using SIMULTAN.Projects;
 using SIMULTAN.Utils;
 using SIMULTAN.Utils.BackgroundWork;
 using SIMULTAN.Utils.Collections;
@@ -27,7 +29,7 @@ namespace SIMULTAN.Data.Geometry
         /// If the same geometry is replaced multiple times only the final geometry is retained.
         /// </summary>
         /// <typeparam name="T">The type of BaseGeomtery to track</typeparam>
-        public class ReplacementTracker<T> where T: BaseGeometry
+        public class ReplacementTracker<T> where T : BaseGeometry
         {
             private Dictionary<T, T> originalGeoms;
             private MultiDictionary<T, T> tracked;
@@ -61,8 +63,8 @@ namespace SIMULTAN.Data.Geometry
             public T FindOriginal(T geom)
             {
                 T start = geom;
-                while(originalGeoms.TryGetValue(start, out var orig))
-                        start = orig;
+                while (originalGeoms.TryGetValue(start, out var orig))
+                    start = orig;
 
                 return start;
             }
@@ -81,10 +83,10 @@ namespace SIMULTAN.Data.Geometry
 
                 // find the actual original geometry (if it was replaced multiple times)
                 var origGeom = FindOriginal(oldGeom);
-                if(tracked.ContainsKey(origGeom))
+                if (tracked.ContainsKey(origGeom))
                 {
                     // remove intermediate geometry, we don't need geometry that was replaced again
-                    tracked.Remove(origGeom,oldGeom);
+                    tracked.Remove(origGeom, oldGeom);
                 }
 
                 // track the new replacements
@@ -107,12 +109,11 @@ namespace SIMULTAN.Data.Geometry
         /// Also keeps track of the remaining BaseGeometry of the merge.
         /// </summary>
         /// <typeparam name="T">The type of BaseGeometry to track.</typeparam>
-        public class MergeTracker<T> where T: BaseGeometry
+        public class MergeTracker<T> where T : BaseGeometry
         {
             /// <summary>
             /// An entry for the MergeTracker. Keeps track of all the merged geometries and their last remaining entry.
             /// </summary>
-            /// <typeparam name="T">the type of BaseGeometry</typeparam>
             public class MergeTrackEntry
             {
                 /// <summary>
@@ -155,11 +156,11 @@ namespace SIMULTAN.Data.Geometry
             /// </summary>
             /// <param name="a">One of the merged geometires. Considered as the remaining one.</param>
             /// <param name="b">One of the merged geometires. Considered as the deleted one.</param>
-            public void Track(T a, T b) 
+            public void Track(T a, T b)
             {
                 var foundSetA = Tracked.FirstOrDefault(x => x.Entries.Contains(a));
                 var foundSetB = Tracked.FirstOrDefault(x => x.Entries.Contains(b));
-                if(foundSetA != null && foundSetB != null)
+                if (foundSetA != null && foundSetB != null)
                 {
                     if (foundSetA != foundSetB)
                     {
@@ -173,19 +174,19 @@ namespace SIMULTAN.Data.Geometry
                         return; // they are already tracked
                     }
                 }
-                else if(foundSetA != null)
+                else if (foundSetA != null)
                 {
                     foundSetA.Entries.Add(b);
                     foundSetA.LastEntry = a;
                 }
-                else if(foundSetB != null)
+                else if (foundSetB != null)
                 {
                     foundSetB.Entries.Add(a);
                     foundSetB.LastEntry = a;
                 }
                 else
                 {
-                    Tracked.Add(new MergeTrackEntry(new T[] {a, b}, a));
+                    Tracked.Add(new MergeTrackEntry(new T[] { a, b }, a));
                 }
             }
 
@@ -228,6 +229,96 @@ namespace SIMULTAN.Data.Geometry
 
         #endregion
 
+        /// <summary>
+        /// Creates a list of UndoItems that remove and recreate (reassign) <see cref="SimGeometryRelation"/> for geometry that was replaced with other geometry during cleanup.
+        /// </summary>
+        /// <typeparam name="T">The type of BaseGeometry</typeparam>
+        /// <param name="toReplace">The BaseGeometries that were replaced</param>
+        /// <param name="originals">The list of the BaseGeometries that are in the original model.</param>
+        /// <param name="projectData">The project data.</param>
+        public static List<IUndoItem> ReassignRelationsAfterReplacement<T>(List<(T replaced, List<T> remaining)> toReplace, IList<T> originals, ProjectData projectData)
+            where T : BaseGeometry
+        {
+            var undoItems = new List<IUndoItem>();
+            foreach (var replace in toReplace)
+            {
+                var original = TryFindOriginalGeometry(replace.replaced, originals);
+                if (!(original.ModelGeometry == null || original.ModelGeometry.Model == null))
+                {
+                    var relationsFrom = projectData.GeometryRelations.GetRelationsFrom(original);
+                    var relationsTo = projectData.GeometryRelations.GetRelationsTo(original);
+                    undoItems.AddRange(relationsFrom.Select(x => new RemoveGeometryRelationUndoItem(x)));
+                    undoItems.AddRange(relationsTo.Select(x => new RemoveGeometryRelationUndoItem(x)));
+                    foreach (var newgeom in replace.remaining)
+                    {
+                        foreach (var rel in relationsFrom)
+                        {
+                            var source = new SimBaseGeometryReference(rel.Source.ProjectId, rel.Source.FileId, newgeom.Id);
+                            var newrel = new SimGeometryRelation(rel.RelationType == null ? null : new SimTaxonomyEntryReference(rel.RelationType.Target), source, rel.Target, rel.IsAutogenerated);
+                            undoItems.Add(new AddGeometryRelationUndoItem(newrel, rel.Factory));
+                        }
+                        foreach (var rel in relationsTo)
+                        {
+                            var target = new SimBaseGeometryReference(rel.Target.ProjectId, rel.Target.FileId, newgeom.Id);
+                            var newrel = new SimGeometryRelation(rel.RelationType == null ? null : new SimTaxonomyEntryReference(rel.RelationType.Target), rel.Source, target, rel.IsAutogenerated);
+                            undoItems.Add(new AddGeometryRelationUndoItem(newrel, rel.Factory));
+                        }
+                    }
+                }
+            }
+            return undoItems;
+        }
+
+        /// <summary>
+        /// Creates a list of UndoItems that remove and recreate (reassign) <see cref="SimGeometryRelation"/> for geometry that was 
+        /// merged with other geometry during cleanup.
+        /// </summary>
+        /// <typeparam name="T">The type of BaseGeometry</typeparam>
+        /// <param name="toMerge">The BaseGeometries that were replaced</param>
+        /// <param name="originals">The list of the BaseGeometries that are in the original model.</param>
+        /// <param name="projectData">The project data.</param>
+        /// <param name="replacementTracker">The replacement tracker</param>
+        public static List<IUndoItem> ReassignRelationsAfterMerge<T>(List<(T remaining, HashSet<T> merged)> toMerge, IList<T> originals, ProjectData projectData,
+            ReplacementTracker<T> replacementTracker = null)
+            where T : BaseGeometry
+        {
+            var undoItems = new List<IUndoItem>();
+            foreach (var merge in toMerge)
+            {
+                var originalLast = TryFindOriginalGeometry(merge.remaining, originals);
+                foreach (var merged in merge.merged)
+                {
+                    var original = TryFindOriginalGeometry(merged, originals, replacementTracker);
+                    var replacedOriginal = TryFindOriginalGeometry(merged, originals);
+
+                    if (replacedOriginal != originalLast)
+                    {
+                        // can only have components if it belongs to a model
+                        if (original.ModelGeometry != null && original.ModelGeometry.Model != null)
+                        {
+                            var relationsFrom = projectData.GeometryRelations.GetRelationsFrom(original);
+                            var relationsTo = projectData.GeometryRelations.GetRelationsTo(original);
+                            undoItems.AddRange(relationsFrom.Select(x => new RemoveGeometryRelationUndoItem(x)));
+                            undoItems.AddRange(relationsTo.Select(x => new RemoveGeometryRelationUndoItem(x)));
+                            foreach (var rel in relationsFrom)
+                            {
+                                var source = new SimBaseGeometryReference(rel.Source.ProjectId, rel.Source.FileId, originalLast.Id);
+                                var newrel = new SimGeometryRelation(rel.RelationType == null ? null : new SimTaxonomyEntryReference(rel.RelationType.Target), source, rel.Target, rel.IsAutogenerated);
+                                undoItems.Add(new AddGeometryRelationUndoItem(newrel, rel.Factory));
+                            }
+                            foreach (var rel in relationsTo)
+                            {
+                                var target = new SimBaseGeometryReference(rel.Target.ProjectId, rel.Target.FileId, originalLast.Id);
+                                var newrel = new SimGeometryRelation(rel.RelationType == null ? null : new SimTaxonomyEntryReference(rel.RelationType.Target), rel.Source, target, rel.IsAutogenerated);
+                                undoItems.Add(new AddGeometryRelationUndoItem(newrel, rel.Factory));
+                            }
+                        }
+                    }
+                }
+            }
+            return undoItems;
+        }
+
         #region Component Reassignment
 
         /// <summary>
@@ -239,9 +330,9 @@ namespace SIMULTAN.Data.Geometry
         /// <param name="exchange">The exchange</param>
         /// <param name="toReassociate">The list where BaseGeometries that need to be reassigned are added to.</param>
         /// <param name="toDeassociate">The list where to add BaseGeomtries that need to be unassigned afterwards</param>
-        public static void ReassignComponentsAfterReplacement<T>(List<(T, List<T>)> toReplace, IList<T> originals,ComponentGeometryExchange exchange, 
-            IList<(BaseGeometry, SimComponent)> toReassociate ,HashSet<SimInstancePlacementGeometry> toDeassociate)
-            where T: BaseGeometry
+        public static void ReassignComponentsAfterReplacement<T>(List<(T, List<T>)> toReplace, IList<T> originals, ComponentGeometryExchange exchange,
+            IList<(BaseGeometry, SimComponent)> toReassociate, HashSet<SimInstancePlacementGeometry> toDeassociate)
+            where T : BaseGeometry
         {
             toReplace.ForEach(x =>
             {
@@ -251,13 +342,13 @@ namespace SIMULTAN.Data.Geometry
                 {
                     var placements = exchange.GetPlacements(original).Where(y => !y.Instance.Component.IsAutomaticallyGenerated);
                     var comps = placements.Select(p => p.Instance.Component);
-                    if(comps.Any())
+                    if (comps.Any())
                     {
                         // only reassociate if it is still in the geometry
                         var geoms = x.Item2.Where(g => g.ModelGeometry.ContainsGeometry(g)).OfType<BaseGeometry>().ToList();
                         if (geoms.Any())
                         {
-                            foreach(var geom in geoms)
+                            foreach (var geom in geoms)
                             {
                                 foreach (var comp in comps)
                                 {
@@ -270,7 +361,7 @@ namespace SIMULTAN.Data.Geometry
                     if (placements.Any())
                     {
                         // all the geometry that needs to be unassigned
-                        foreach(var placement in placements)
+                        foreach (var placement in placements)
                         {
                             toDeassociate.Add(placement);
                         }
@@ -289,10 +380,10 @@ namespace SIMULTAN.Data.Geometry
         /// <param name="replacementTracker"></param>
         /// <returns></returns>
         private static T TryFindOriginalGeometry<T>(T geom, IEnumerable<T> originals, ReplacementTracker<T> replacementTracker = null)
-            where T: BaseGeometry
+            where T : BaseGeometry
         {
             var original = originals.FirstOrDefault(other => other.Id == geom.Id);
-            if(original == null && replacementTracker != null)
+            if (original == null && replacementTracker != null)
             {
                 original = replacementTracker.FindOriginal(geom);
                 // try to find that in the original geometry again, altough with the replacement tracker
@@ -313,13 +404,13 @@ namespace SIMULTAN.Data.Geometry
         /// <param name="toReassociate">The list where BaseGeometries that need to be reassigned are added to.</param>
         /// <param name="toDeassociate">The list where to add BaseGeomtries that need to be unassigned afterwards</param>
         /// <param name="replacementTracker">The replacement tracker for the type of BaseGeometry. Set if a replacement was performed beforehand.</param>
-        public static void ReassignComponentsAfterMerge<T>(List<(T, HashSet<T>)> toMerge, IList<T> originals,ComponentGeometryExchange exchange, 
+        public static void ReassignComponentsAfterMerge<T>(List<(T, HashSet<T>)> toMerge, IList<T> originals, ComponentGeometryExchange exchange,
              IList<(BaseGeometry, SimComponent)> toReassociate, HashSet<SimInstancePlacementGeometry> toDeassociate, ReplacementTracker<T> replacementTracker = null)
-            where T: BaseGeometry
+            where T : BaseGeometry
         {
             toMerge.ForEach(x =>
                 {
-                    var originalLast = TryFindOriginalGeometry(x.Item1, originals); 
+                    var originalLast = TryFindOriginalGeometry(x.Item1, originals);
 
                     x.Item2.ForEach(y =>
                     {
@@ -338,16 +429,16 @@ namespace SIMULTAN.Data.Geometry
                                     // only reassociate if it is still in the geometry
                                     if (originalLast.ModelGeometry.ContainsGeometry(originalLast))
                                     {
-                                        foreach(var comp in comps)
+                                        foreach (var comp in comps)
                                         {
                                             // assign new geometry
                                             toReassociate.Add((originalLast, comp));
                                         }
                                     }
                                 }
-                                if(placements.Any())
+                                if (placements.Any())
                                 {
-                                    foreach(var placement in placements)
+                                    foreach (var placement in placements)
                                     {
                                         toDeassociate.Add(placement);
                                     }
@@ -372,7 +463,7 @@ namespace SIMULTAN.Data.Geometry
         /// <param name="edgeGrid">Speedup structure containing all edges</param>
         /// <param name="mergeTracker">Tracks changes of component assignments. May be null when no tracking is needed</param>
         /// <param name="backgroundInfo">The background algorithm info for this task</param>
-        public static int RemoveDuplicateVertices(GeometryModelData model, double tolerance, 
+        public static int RemoveDuplicateVertices(GeometryModelData model, double tolerance,
             ref AABBGrid vertexGrid, ref AABBGrid edgeGrid, MergeTracker<Vertex> mergeTracker = null,
             IBackgroundAlgorithmInfo backgroundInfo = null)
         {
@@ -573,7 +664,7 @@ namespace SIMULTAN.Data.Geometry
         /// <param name="edgeGrid">Speedup structure containing all edges</param>
         /// <param name="mergeTracker">Tracks changes of component assignments. May be null when no tracking is needed</param>
         /// <param name="backgroundInfo">The background algorithm info for this task</param>
-        public static int RemoveDuplicateEdges(GeometryModelData model, ref AABBGrid edgeGrid, MergeTracker<Edge> mergeTracker = null, 
+        public static int RemoveDuplicateEdges(GeometryModelData model, ref AABBGrid edgeGrid, MergeTracker<Edge> mergeTracker = null,
             IBackgroundAlgorithmInfo backgroundInfo = null)
         {
             if (backgroundInfo == null)
@@ -1064,7 +1155,6 @@ namespace SIMULTAN.Data.Geometry
         }
 
 
-
         /// <summary>
         /// Handles Edge-Edge intersection (in one point) and overlapping edges
         /// </summary>
@@ -1073,7 +1163,7 @@ namespace SIMULTAN.Data.Geometry
         /// <param name="edgeGrid">Speedup structure containing all edges</param>
         /// <param name="replacementTracker">Tracks changes of component assignments. May be null when no tracking is needed</param>
         /// <param name="backgroundInfo">The background algorithm info for this task</param>
-        public static int SplitEdgeEdgeIntersections(GeometryModelData model, double tolerance, ref AABBGrid edgeGrid, 
+        public static int SplitEdgeEdgeIntersections(GeometryModelData model, double tolerance, ref AABBGrid edgeGrid,
             ReplacementTracker<Edge> replacementTracker = null,
             IBackgroundAlgorithmInfo backgroundInfo = null)
         {
@@ -1132,11 +1222,11 @@ namespace SIMULTAN.Data.Geometry
                                         var intersectionVertex = new Vertex(ei.Layer, string.Format("{0} - {1}", ei.Name, ej.Name), intersectionPoint);
                                         var ei_part1 = new Edge(ei.Layer, string.Format("{0} ({1})", ei.Name, 1), new List<Vertex> { ei.Vertices[0], intersectionVertex });
                                         var ei_part2 = new Edge(ei.Layer, string.Format("{0} ({1})", ei.Name, 2), new List<Vertex> { intersectionVertex, ei.Vertices[1] });
-                                        tracker?.Track(ei, new Edge[] { ei_part1, ei_part2});
+                                        tracker?.Track(ei, new Edge[] { ei_part1, ei_part2 });
 
                                         var ej_part1 = new Edge(ej.Layer, string.Format("{0} ({1})", ej.Name, 1), new List<Vertex> { ej.Vertices[0], intersectionVertex });
                                         var ej_part2 = new Edge(ej.Layer, string.Format("{0} ({1})", ej.Name, 2), new List<Vertex> { intersectionVertex, ej.Vertices[1] });
-                                        tracker?.Track(ej, new Edge[] { ej_part1, ej_part2});
+                                        tracker?.Track(ej, new Edge[] { ej_part1, ej_part2 });
 
                                         //Search for all occasions of ei and replace it there
                                         EdgeAlgorithms.ReplaceEdge(ei, new List<Edge> { ei_part1, ei_part2 });
@@ -1555,7 +1645,7 @@ namespace SIMULTAN.Data.Geometry
                     }
                     catch (Exception e)
                     {
-                        result = new SplitFaceResult { success = false, exception = e, exceptionFace = faces[i]};
+                        result = new SplitFaceResult { success = false, exception = e, exceptionFace = faces[i] };
 
                         if (Debugger.IsAttached)
                             throw;
@@ -1568,14 +1658,14 @@ namespace SIMULTAN.Data.Geometry
                     {
                         model.EndBatchOperation();
                         backgroundInfo.Cancel = true;
-                        return new SplitFaceResult { success = true, exception = null, exceptionFace = null};
+                        return new SplitFaceResult { success = true, exception = null, exceptionFace = null };
                     }
                     backgroundInfo.ReportProgress((int)((double)i / (double)model.Faces.Count * 100.0));
                 }
             }
             catch (Exception e)
             {
-                result = new SplitFaceResult { success = false, exception = e, exceptionFace = null};
+                result = new SplitFaceResult { success = false, exception = e, exceptionFace = null };
 
                 if (Debugger.IsAttached)
                     throw;
@@ -1589,7 +1679,7 @@ namespace SIMULTAN.Data.Geometry
 
             replacementTracker?.MergeWith(tracker);
 
-            result = new SplitFaceResult { success = result.success, exception = result.exception, exceptionFace = result.exceptionFace};
+            result = new SplitFaceResult { success = result.success, exception = result.exception, exceptionFace = result.exceptionFace };
 
             return result;
         }

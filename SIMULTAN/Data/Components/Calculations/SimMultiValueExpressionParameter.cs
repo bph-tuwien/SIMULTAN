@@ -1,11 +1,5 @@
-﻿using SIMULTAN.Data.Components;
-using SIMULTAN.Data.MultiValues;
+﻿using SIMULTAN.Data.MultiValues;
 using SIMULTAN.Utils;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SIMULTAN.Data.Components
 {
@@ -42,18 +36,18 @@ namespace SIMULTAN.Data.Components
                 if (param.Propagation == SimInfoFlow.FromReference)
                 {
                     var referencedParameter = param.GetReferencedParameter();
-                    if (referencedParameter != null)
-                        param = referencedParameter;
+                    if (referencedParameter is SimDoubleParameter referenceDoubleParam)
+                        param = referenceDoubleParam;
                 }
 
                 //Return ValueCurrent unless a Table is attached
-                if (param.MultiValuePointer != null && param.MultiValuePointer.ValueField is SimMultiValueBigTable table)
+                if (param.ValueSource != null && param.ValueSource is SimMultiValueBigTableParameterSource ptr)
                 {
-                    values = table.GetRange(metaData.Range);
+                    values = ptr.Table.GetDoubleRange(metaData.Range);
                 }
                 else
                 {
-                    values = new double[,] { { param.ValueCurrent } };
+                    values = new double[,] { { param.Value } };
                 }
 
                 if (metaData.IsRandomized)

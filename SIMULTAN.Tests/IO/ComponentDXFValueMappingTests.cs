@@ -7,7 +7,7 @@ using SIMULTAN.Serializer.CODXF;
 using SIMULTAN.Serializer.DXF;
 using SIMULTAN.Tests.Properties;
 using SIMULTAN.Tests.Util;
-using SIMULTAN.Tests.Utils;
+using SIMULTAN.Tests.TestUtils;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -88,7 +88,7 @@ namespace SIMULTAN.Tests.IO
                 var info = new DXFParserInfo(guid, projectData);
                 info.FileVersion = 13;
 
-                ComponentDxfIOValueMappings.ReadValueMappingSection(reader, info);           
+                ComponentDxfIOValueMappings.ReadValueMappingSection(reader, info);
             }
 
             CheckTestData(projectData);
@@ -159,7 +159,7 @@ namespace SIMULTAN.Tests.IO
             Assert.AreEqual(SimComponentIndexUsage.Column, valueMapping.ComponentIndexUsage);
 
             var colorMap = valueMapping.ColorMap as SimLinearGradientColorMap;
-            Assert.IsNotNull (colorMap);
+            Assert.IsNotNull(colorMap);
             Assert.AreEqual(3, colorMap.ColorMarkers.Count);
 
             var marker = colorMap.ColorMarkers[0];
@@ -190,7 +190,7 @@ namespace SIMULTAN.Tests.IO
             //Mapping
             data.ValueMappings.StartLoading();
             var valueMap1 = new SimValueMapping("my mapping 1", table, new SimMinimumPrefilter(), new SimLinearGradientColorMap(
-                new SimColorMarker[] 
+                new SimColorMarker[]
                 {
                     new SimColorMarker(-1.0, Color.FromArgb(255, 255, 0, 0)),
                     new SimColorMarker(5.0, Color.FromArgb(255, 0, 255, 0)),

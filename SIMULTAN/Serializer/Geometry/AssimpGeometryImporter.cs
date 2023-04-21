@@ -1,5 +1,6 @@
 ﻿using Assimp;
 using SIMULTAN.Data.Geometry;
+using SIMULTAN.Excel;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -40,24 +41,33 @@ namespace SIMULTAN.Serializer.Geometry
             AssimpContext aContext = new AssimpContext();
             try
             {
-                var aScene = aContext.ImportFile(path, PostProcessSteps.Triangulate | PostProcessSteps.PreTransformVertices | PostProcessSteps.GenerateNormals);
-
-                foreach (var aMesh in aScene.Meshes)
+                using (FileStream fs = new FileStream(path, FileMode.Open))
                 {
-                    var indexOffset = result.Vertices.Count;
-                    result.Vertices.AddRange(aMesh.Vertices.Select(x => new System.Windows.Media.Media3D.Point3D(x.X, x.Y, x.Z)));
-                    if (aMesh.HasNormals)
+                    var extension = Path.GetExtension(path);
+                    if (extension.Length > 0)
+                        extension = extension.Substring(1); //Remove .
+
+                    var aScene = aContext.ImportFileFromStream(fs,
+                        PostProcessSteps.Triangulate | PostProcessSteps.PreTransformVertices | PostProcessSteps.GenerateNormals,
+                        extension);
+
+                    foreach (var aMesh in aScene.Meshes)
                     {
-                        result.Normals.AddRange(aMesh.Normals.Select(x => new System.Windows.Media.Media3D.Vector3D(x.X, x.Y, x.Z)));
-                    }
-                    else
-                    {
-                        for (var i = 0; i < aMesh.Vertices.Count; i++)
+                        var indexOffset = result.Vertices.Count;
+                        result.Vertices.AddRange(aMesh.Vertices.Select(x => new System.Windows.Media.Media3D.Point3D(x.X, x.Y, x.Z)));
+                        if (aMesh.HasNormals)
                         {
-                            result.Normals.Add(new System.Windows.Media.Media3D.Vector3D(0, 0, 0));
+                            result.Normals.AddRange(aMesh.Normals.Select(x => new System.Windows.Media.Media3D.Vector3D(x.X, x.Y, x.Z)));
                         }
+                        else
+                        {
+                            for (var i = 0; i < aMesh.Vertices.Count; i++)
+                            {
+                                result.Normals.Add(new System.Windows.Media.Media3D.Vector3D(0, 0, 0));
+                            }
+                        }
+                        result.Indices.AddRange(new List<int>(aMesh.GetIndices()).Select(x => x + indexOffset));
                     }
-                    result.Indices.AddRange(new List<int>(aMesh.GetIndices()).Select(x => x + indexOffset));
                 }
             }
             catch (AssimpException e)

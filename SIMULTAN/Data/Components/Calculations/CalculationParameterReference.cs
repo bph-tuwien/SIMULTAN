@@ -1,10 +1,6 @@
-﻿using SIMULTAN.Data.Components;
-using SIMULTAN.Exceptions;
+﻿using SIMULTAN.Exceptions;
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using static SIMULTAN.Data.Components.SimCalculation;
 
 namespace SIMULTAN.Data.Components
@@ -20,7 +16,7 @@ namespace SIMULTAN.Data.Components
         /// <summary>
         /// The parameter
         /// </summary>
-        public SimParameter Parameter { get; }
+        public SimDoubleParameter Parameter { get; }
 
         /// <summary>
         /// The meta data for this parameter
@@ -33,7 +29,7 @@ namespace SIMULTAN.Data.Components
         /// <param name="calculation">The calculation this entry belongs to</param>
         /// <param name="parameter">The parameter referenced by the symbol</param>
         /// <param name="metaData">The meta data for this parameter</param>
-        public CalculationParameterReference(BaseCalculationParameterCollections calculation, SimParameter parameter, CalculationParameterMetaData metaData = null)
+        public CalculationParameterReference(BaseCalculationParameterCollections calculation, SimDoubleParameter parameter, CalculationParameterMetaData metaData = null)
         {
             if (calculation == null)
                 throw new ArgumentNullException(nameof(calculation));
@@ -69,7 +65,7 @@ namespace SIMULTAN.Data.Components
             {
                 if (owner.TryGetTarget(out var target))
                 {
-                    try { target.CheckParameter((SimParameter)sender); }
+                    try { target.CheckParameter((SimDoubleParameter)sender); }
                     catch (InvalidStateException ise)
                     {
                         throw new InvalidStateException("Invalid Calculation Parameter", ise);
@@ -95,7 +91,7 @@ namespace SIMULTAN.Data.Components
         }
 
         /// <summary>
-        /// Registers the calculation in the affected parameter's <see cref="SimParameter.ReferencingCalculations"/> collection
+        /// Registers the calculation in the affected parameter's <see cref="SimBaseNumericParameter{T}.ReferencingCalculations"/> collection
         /// </summary>
         internal void RegisterReferences()
         {
@@ -107,11 +103,11 @@ namespace SIMULTAN.Data.Components
             }
         }
         /// <summary>
-        /// Removes the calculation from the affected parameter's <see cref="SimParameter.ReferencingCalculations"/> collection
+        /// Removes the calculation from the affected parameter's <see cref="SimBaseNumericParameter{T}.ReferencingCalculations"/> collection
         /// </summary>
         public void UnregisterReferences()
         {
-            if (this.Parameter != null && 
+            if (this.Parameter != null &&
                 owner.TryGetTarget(out var collection) && collection.Owner != null &&
                 (collection.Owner.Factory == null || !collection.ContainsValue(this.Parameter)))
             {

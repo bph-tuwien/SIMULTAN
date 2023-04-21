@@ -1,12 +1,10 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SIMULTAN.Data.Components;
-using SIMULTAN.Tests.Utils;
+using SIMULTAN.Tests.TestUtils;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SIMULTAN.Tests.Calculations
 {
@@ -19,13 +17,14 @@ namespace SIMULTAN.Tests.Calculations
         public void ReplaceSingleParameter()
         {
             LoadProject(calculationProject);
-            var demoParams = projectData.GetParameters("NoCalculation");
+            var demoParams = projectData.GetParameters<SimDoubleParameter>("NoCalculation");
+
 
             //Trivial case
             {
                 SimCalculation calc = new SimCalculation("a + b", "calc1",
-                    new Dictionary<string, SimParameter> { { "a", demoParams["param1"] }, { "b", demoParams["param2"] } },
-                    new Dictionary<string, SimParameter> { { "out", demoParams["out"] } }
+                    new Dictionary<string, SimDoubleParameter> { { "a", demoParams["param1"] }, { "b", demoParams["param2"] } },
+                    new Dictionary<string, SimDoubleParameter> { { "out", demoParams["out"] } }
                     );
 
                 //Failure case
@@ -43,8 +42,8 @@ namespace SIMULTAN.Tests.Calculations
             //Case with brackets and multi-use
             {
                 SimCalculation calc = new SimCalculation("(a + b) * a", "calc1",
-                    new Dictionary<string, SimParameter> { { "a", demoParams["param1"] }, { "b", demoParams["param2"] } },
-                    new Dictionary<string, SimParameter> { { "out", demoParams["out"] } }
+                    new Dictionary<string, SimDoubleParameter> { { "a", demoParams["param1"] }, { "b", demoParams["param2"] } },
+                    new Dictionary<string, SimDoubleParameter> { { "out", demoParams["out"] } }
                     );
 
                 calc.ReplaceParameter("a", 9.9);
@@ -59,8 +58,8 @@ namespace SIMULTAN.Tests.Calculations
             //Case with functions
             {
                 SimCalculation calc = new SimCalculation("a + b * Sin(a)", "calc1",
-                    new Dictionary<string, SimParameter> { { "a", demoParams["param1"] }, { "b", demoParams["param2"] } },
-                    new Dictionary<string, SimParameter> { { "out", demoParams["out"] } }
+                    new Dictionary<string, SimDoubleParameter> { { "a", demoParams["param1"] }, { "b", demoParams["param2"] } },
+                    new Dictionary<string, SimDoubleParameter> { { "out", demoParams["out"] } }
                     );
 
                 calc.ReplaceParameter("a", 9.9);
@@ -75,8 +74,8 @@ namespace SIMULTAN.Tests.Calculations
             //Case with constants
             {
                 SimCalculation calc = new SimCalculation("a + b * PI", "calc1",
-                    new Dictionary<string, SimParameter> { { "a", demoParams["param1"] }, { "b", demoParams["param2"] } },
-                    new Dictionary<string, SimParameter> { { "out", demoParams["out"] } }
+                    new Dictionary<string, SimDoubleParameter> { { "a", demoParams["param1"] }, { "b", demoParams["param2"] } },
+                    new Dictionary<string, SimDoubleParameter> { { "out", demoParams["out"] } }
                     );
 
                 calc.ReplaceParameter("a", 9.9);
@@ -91,8 +90,8 @@ namespace SIMULTAN.Tests.Calculations
             //Case with names similar to functions
             {
                 SimCalculation calc = new SimCalculation("Sin + b * Sin(Sin)", "calc1",
-                    new Dictionary<string, SimParameter> { { "a", demoParams["param1"] }, { "b", demoParams["param2"] } },
-                    new Dictionary<string, SimParameter> { { "out", demoParams["out"] } }
+                    new Dictionary<string, SimDoubleParameter> { { "a", demoParams["param1"] }, { "b", demoParams["param2"] } },
+                    new Dictionary<string, SimDoubleParameter> { { "out", demoParams["out"] } }
                     );
 
                 calc.ReplaceParameter("Sin", 9.9);
@@ -110,11 +109,11 @@ namespace SIMULTAN.Tests.Calculations
         {
             LoadProject(calculationProject);
             var comp1 = projectData.Components.First(x => x.Name == "NoCalculation");
-            var demoParams = projectData.GetParameters("NoCalculation");
+            var demoParams = projectData.GetParameters<SimDoubleParameter>("NoCalculation");
 
             var calc = new SimCalculation("a+b*c", "calc",
-                new Dictionary<string, SimParameter> { { "a", demoParams["param1"] }, { "b", demoParams["param2"] }, { "c", demoParams["param3"] } },
-                new Dictionary<string, SimParameter> { { "out1", demoParams["out"] }, { "out2", demoParams["out2"] } });
+                new Dictionary<string, SimDoubleParameter> { { "a", demoParams["param1"] }, { "b", demoParams["param2"] }, { "c", demoParams["param3"] } },
+                new Dictionary<string, SimDoubleParameter> { { "out1", demoParams["out"] }, { "out2", demoParams["out2"] } });
 
             comp1.Calculations.Add(calc);
             Assert.IsTrue(comp1.Calculations.Contains(calc));
@@ -129,10 +128,10 @@ namespace SIMULTAN.Tests.Calculations
             Assert.AreEqual(comp2, calc.Component);
 
             //Check parameters
-            Assert.AreEqual(comp2.Parameters.First(x => x.TaxonomyEntry.Name == "param1"), calc.InputParams["a"]);
-            Assert.AreEqual(comp2child.Parameters.First(x => x.TaxonomyEntry.Name == "param2"), calc.InputParams["b"]);
+            Assert.AreEqual(comp2.Parameters.First(x => x.NameTaxonomyEntry.Name == "param1"), calc.InputParams["a"]);
+            Assert.AreEqual(comp2child.Parameters.First(x => x.NameTaxonomyEntry.Name == "param2"), calc.InputParams["b"]);
             Assert.AreEqual(null, calc.InputParams["c"]);
-            Assert.AreEqual(comp2.Parameters.First(x => x.TaxonomyEntry.Name == "out"), calc.ReturnParams["out1"]);
+            Assert.AreEqual(comp2.Parameters.First(x => x.NameTaxonomyEntry.Name == "out"), calc.ReturnParams["out1"]);
             Assert.AreEqual(null, calc.ReturnParams["out2"]);
         }
 
@@ -141,11 +140,11 @@ namespace SIMULTAN.Tests.Calculations
         {
             LoadProject(calculationProject);
             var comp1 = projectData.Components.First(x => x.Name == "NoCalculation");
-            var demoParams = projectData.GetParameters("NoCalculation");
+            var demoParams = projectData.GetParameters<SimDoubleParameter>("NoCalculation");
 
             var calc = new SimCalculation("a+b*c", "calc",
-                new Dictionary<string, SimParameter> { { "a", demoParams["param1"] }, { "b", demoParams["param2"] }, { "c", demoParams["param3"] } },
-                new Dictionary<string, SimParameter> { { "out1", demoParams["out"] }, { "out2", demoParams["out2"] } });
+                new Dictionary<string, SimDoubleParameter> { { "a", demoParams["param1"] }, { "b", demoParams["param2"] }, { "c", demoParams["param3"] } },
+                new Dictionary<string, SimDoubleParameter> { { "out1", demoParams["out"] }, { "out2", demoParams["out2"] } });
 
             comp1.Calculations.Add(calc);
             Assert.IsTrue(comp1.Calculations.Contains(calc));
@@ -159,10 +158,10 @@ namespace SIMULTAN.Tests.Calculations
             Assert.AreEqual(comp2, copy.Component);
 
             //Check parameters
-            Assert.AreEqual(comp2.Parameters.First(x => x.TaxonomyEntry.Name == "param1"), copy.InputParams["a"]);
-            Assert.AreEqual(comp2child.Parameters.First(x => x.TaxonomyEntry.Name == "param2"), copy.InputParams["b"]);
+            Assert.AreEqual(comp2.Parameters.First(x => x.NameTaxonomyEntry.Name == "param1"), copy.InputParams["a"]);
+            Assert.AreEqual(comp2child.Parameters.First(x => x.NameTaxonomyEntry.Name == "param2"), copy.InputParams["b"]);
             Assert.AreEqual(null, copy.InputParams["c"]);
-            Assert.AreEqual(comp2.Parameters.First(x => x.TaxonomyEntry.Name == "out"), copy.ReturnParams["out1"]);
+            Assert.AreEqual(comp2.Parameters.First(x => x.NameTaxonomyEntry.Name == "out"), copy.ReturnParams["out1"]);
             Assert.AreEqual(null, copy.ReturnParams["out2"]);
         }
     }

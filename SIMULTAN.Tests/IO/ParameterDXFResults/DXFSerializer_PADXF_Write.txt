@@ -5,7 +5,7 @@ VERSION_SECTION
 0
 FILE_VERSION
 10
-14
+21
 0
 ENDSEC
 0
@@ -14,8 +14,8 @@ SECTION
 ENTITIES
 0
 PARAMETER
-100
-SIMULTAN.Data.Components.SimParameter
+1034
+0
 900
 99
 1001
@@ -42,8 +42,8 @@ text value with spaces
 1
 0
 PARAMETER
-100
-SIMULTAN.Data.Components.SimParameter
+1034
+0
 900
 100
 1001

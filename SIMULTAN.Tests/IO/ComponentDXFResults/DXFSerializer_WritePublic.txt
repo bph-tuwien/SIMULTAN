@@ -5,7 +5,7 @@ VERSION_SECTION
 0
 FILE_VERSION
 10
-14
+21
 0
 ENDSEC
 0
@@ -32,6 +32,8 @@ SIMULTAN.Data.Assets.ResourceDirectoryEntry
 F1
 7212
 0
+7213
+0
 7207
 2
 0
@@ -48,6 +50,8 @@ SIMULTAN.Data.Assets.ResourceDirectoryEntry
 F1\F2
 7212
 1
+7213
+0
 7207
 1
 0
@@ -63,6 +67,8 @@ SIMULTAN.Data.Assets.ContainedResourceFileEntry
 7204
 F1\F2\D1.txt
 7212
+0
+7213
 0
 0
 SEQEND
@@ -84,6 +90,8 @@ SIMULTAN.Data.Assets.ContainedResourceFileEntry
 F1\D2.txt
 7212
 1
+7213
+0
 0
 SEQEND
 0
@@ -104,6 +112,8 @@ SIMULTAN.Data.Assets.ResourceDirectoryEntry
 F4
 7212
 1
+7213
+0
 7207
 1
 0
@@ -120,6 +130,8 @@ SIMULTAN.Data.Assets.ContainedResourceFileEntry
 F4\D4.txt
 7212
 1
+7213
+0
 0
 SEQEND
 0
@@ -369,7 +381,7 @@ SEQEND
 0
 ENTCTN
 1406
-Kosten
+141
 1420
 #E6640A14
 1407
@@ -379,7 +391,7 @@ ENTSEQ
 0
 COMPONENT
 904
-Kosten_01
+1
 100
 SIMULTAN.Data.Components.SimComponent
 900
@@ -585,7 +597,7 @@ SEQEND
 0
 ENTCTN
 1406
-Kosten
+141
 1420
 #E6640A14
 1407
@@ -603,8 +615,6 @@ Kosten
 1414
 0
 1416
-0
-1418
 0
 8101
 0
@@ -631,8 +641,6 @@ ENTCTN
 1414
 0
 1416
-0
-1418
 0
 8101
 0

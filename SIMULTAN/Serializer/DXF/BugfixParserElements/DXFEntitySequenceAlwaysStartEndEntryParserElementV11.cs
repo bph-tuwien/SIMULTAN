@@ -66,7 +66,7 @@ namespace SIMULTAN.Serializer.DXF
 
             return ParseBody(reader, info, count);
         }
-    
+
         private object ParseBody(DXFStreamReader reader, DXFParserInfo info, int count)
         {
             T[] resultArray = new T[count];

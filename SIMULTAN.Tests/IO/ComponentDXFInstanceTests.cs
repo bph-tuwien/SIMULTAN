@@ -2,21 +2,21 @@
 using SIMULTAN.Data;
 using SIMULTAN.Data.Components;
 using SIMULTAN.Data.FlowNetworks;
+using SIMULTAN.Data.Geometry;
 using SIMULTAN.Data.SimNetworks;
+using SIMULTAN.Data.Taxonomy;
 using SIMULTAN.Projects;
 using SIMULTAN.Serializer.CODXF;
 using SIMULTAN.Serializer.DXF;
 using SIMULTAN.Tests.Properties;
+using SIMULTAN.Tests.TestUtils;
 using SIMULTAN.Tests.Util;
-using SIMULTAN.Tests.Utils;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Reflection;
 using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Media;
 using System.Windows.Media.Media3D;
 
 namespace SIMULTAN.Tests.IO
@@ -33,17 +33,50 @@ namespace SIMULTAN.Tests.IO
             SimFlowNetworkNode node = new SimFlowNetworkNode(guid, 123, "", "", true, new Point(3.5, 3.6), null);
             SimFlowNetworkNode otherNode = new SimFlowNetworkNode(otherGuid, 124, "", "", true, new Point(3.5, 3.6), null);
 
-            SimNetworkBlock block = new SimNetworkBlock("Block", new Point(12, 13), new SimId(guid, 125), new SimNetworkPort[0]);
+            SimNetworkBlock block = new SimNetworkBlock("Block", new Point(12, 13), new SimId(guid, 125), new SimNetworkPort[0], new DerivedColor(Colors.DarkGray));
 
-            SimComponent component = new SimComponent() 
+            SimComponent component = new SimComponent()
             {
-                Id = new SimId(guid, 999999), 
+                Id = new SimId(guid, 999999),
                 InstanceType = SimInstanceType.NetworkNode,
+                CurrentSlot = new SimTaxonomyEntryReference(TaxonomyUtils.GetDefaultSlot(SimDefaultSlotKeys.Undefined)),
             };
 
-            SimParameter param1 = new SimParameter("test", "", -2 - 12.5) { Id = new SimId(guid, 336) };
-            SimParameter param2 = new SimParameter("test", "", -3 - 13.5) { Id = new SimId(otherGuid, 337) };
+            SimDoubleParameter param1 = new SimDoubleParameter("test", "", -2 - 12.5) { Id = new SimId(guid, 336) };
+            SimDoubleParameter param2 = new SimDoubleParameter("test", "", -3 - 13.5) { Id = new SimId(otherGuid, 337) };
+
+            SimIntegerParameter param3 = new SimIntegerParameter("test", "", 2) { Id = new SimId(guid, 338) };
+            SimIntegerParameter param4 = new SimIntegerParameter("test", "", 4) { Id = new SimId(otherGuid, 339) };
+
+            SimStringParameter param5 = new SimStringParameter("test", "ASD") { Id = new SimId(guid, 340) };
+            SimStringParameter param6 = new SimStringParameter("test", "ASD2") { Id = new SimId(otherGuid, 341) };
+
+            SimBoolParameter param7 = new SimBoolParameter("test", true) { Id = new SimId(guid, 342) };
+            SimBoolParameter param8 = new SimBoolParameter("test", false) { Id = new SimId(otherGuid, 343) };
+
+
+
+            var tax = new SimTaxonomy(new SimId(1200)) { Name = "Taxonomy" };
+            var taxEntry = new SimTaxonomyEntry(new SimId(1201)) { Name = "Parameter X", Key = "key" };
+            tax.Entries.Add(taxEntry);
+
+            var taxonomy = new SimTaxonomy("BaseTax");
+            var baseTaxonomyEntry = new SimTaxonomyEntry("BaseEnumTaxEntry", "BaseTaxEntry");
+            taxonomy.Entries.Add(baseTaxonomyEntry);
+            var taxVal1 = new SimTaxonomyEntry("EnumVal1", "EnumVal1");
+            var taxVal2 = new SimTaxonomyEntry("EnumVal2", "EnumVal2");
+
+            baseTaxonomyEntry.Children.Add(taxVal1);
+            baseTaxonomyEntry.Children.Add(taxVal2);
+
+            SimEnumParameter param9 = new SimEnumParameter("test", baseTaxonomyEntry) { Id = new SimId(guid, 344), Value = new SimTaxonomyEntryReference(taxVal1), };
+            SimEnumParameter param10 = new SimEnumParameter("test", baseTaxonomyEntry) { Id = new SimId(otherGuid, 345), Value = new SimTaxonomyEntryReference(taxVal2), };
+
             component.Parameters.Add(param1);
+            component.Parameters.Add(param3);
+            component.Parameters.Add(param5);
+            component.Parameters.Add(param7);
+            component.Parameters.Add(param9);
 
             SimComponentInstance instance = new SimComponentInstance(SimInstanceType.NetworkNode)
             {
@@ -51,17 +84,17 @@ namespace SIMULTAN.Tests.IO
                 Id = new SimId(guid, 3669),
                 InstanceRotation = new Quaternion(1, 2, 3, 4),
                 InstanceSize = new SimInstanceSize(new Vector3D(-1, -2, -3), new Vector3D(2, 4, 6)),
-                SizeTransfer = new SimInstanceSizeTransferDefinition(new SimInstanceSizeTransferDefinitionItem[]
+                SizeTransfer = new SimInstanceSizeTransferDefinition(new SimInstanceSizeTransferDefinitionItem[6]
                 {
                     new SimInstanceSizeTransferDefinitionItem(SimInstanceSizeTransferSource.User, null, 0.0),
                     new SimInstanceSizeTransferDefinitionItem(SimInstanceSizeTransferSource.Parameter, param1, 12.5),
                     new SimInstanceSizeTransferDefinitionItem(SimInstanceSizeTransferSource.Parameter, param2, 13.5),
-                    new SimInstanceSizeTransferDefinitionItem(SimInstanceSizeTransferSource.Path, null, 0.0),
+                    new SimInstanceSizeTransferDefinitionItem(SimInstanceSizeTransferSource.User, null, 0.0),
                     new SimInstanceSizeTransferDefinitionItem(SimInstanceSizeTransferSource.User, null, 0.0),
                     new SimInstanceSizeTransferDefinitionItem(SimInstanceSizeTransferSource.User, null, 0.0),
                 }),
             };
-            instance.Placements.Add(new SimInstancePlacementGeometry(3, 58, null));
+            instance.Placements.Add(new SimInstancePlacementGeometry(3, 58, SimInstancePlacementState.Valid, null));
             instance.Placements.Add(new SimInstancePlacementNetwork(node));
             instance.Placements.Add(new SimInstancePlacementNetwork(otherNode));
             instance.Placements.Add(new SimInstancePlacementSimNetwork(block));
@@ -70,6 +103,10 @@ namespace SIMULTAN.Tests.IO
             //Parameter values
             instance.PropagateParameterChanges = false;
             instance.InstanceParameterValuesPersistent[param1] = 6677.88;
+            instance.InstanceParameterValuesPersistent[param3] = 6;
+            instance.InstanceParameterValuesPersistent[param5] = "Different";
+            instance.InstanceParameterValuesPersistent[param7] = false;
+            instance.InstanceParameterValuesPersistent[param9] = new SimTaxonomyEntryReference(taxVal2);
 
             string exportedString = null;
             using (MemoryStream stream = new MemoryStream())
@@ -88,6 +125,9 @@ namespace SIMULTAN.Tests.IO
 
             AssertUtil.AreEqualMultiline(Properties.Resources.DXFSerializer_WriteInstance, exportedString);
         }
+
+
+
 
         [TestMethod]
         public void ParseInstanceV12()
@@ -131,7 +171,7 @@ namespace SIMULTAN.Tests.IO
             Assert.AreEqual(3, gpl.FileId);
             Assert.AreEqual((ulong)58, gpl.GeometryId);
 
-            var loadingMember = typeof(SimInstancePlacementNetwork).GetField("loadingNetworkElement", 
+            var loadingMember = typeof(SimInstancePlacementNetwork).GetField("loadingNetworkElement",
                 BindingFlags.NonPublic | BindingFlags.Instance);
             var npl = instance.Placements[1] as SimInstancePlacementNetwork;
             Assert.IsNotNull(npl);
@@ -179,12 +219,6 @@ namespace SIMULTAN.Tests.IO
             Assert.AreEqual(SimInstanceSizeTransferSource.User, instance.SizeTransfer[SimInstanceSizeIndex.MaxZ].Source);
             Assert.AreEqual(0.0, instance.SizeTransfer[SimInstanceSizeIndex.MaxZ].Addend);
             Assert.AreEqual(SimId.Empty, stLoadingId.GetValue(instance.SizeTransfer[SimInstanceSizeIndex.MaxZ]));
-
-            //Path
-            Assert.AreEqual(1, instance.InstancePath.Count);
-            Assert.AreEqual(0.175, instance.InstancePath[0].X);
-            Assert.AreEqual(0.0, instance.InstancePath[0].Y);
-            Assert.AreEqual(0.18, instance.InstancePath[0].Z);
 
             //Parameters
             Assert.AreEqual(1, instance.LoadingParameterValuesPersistent.Count);
@@ -273,12 +307,6 @@ namespace SIMULTAN.Tests.IO
             Assert.AreEqual(SimInstanceSizeTransferSource.User, instance.SizeTransfer[SimInstanceSizeIndex.MaxZ].Source);
             Assert.AreEqual(0.0, instance.SizeTransfer[SimInstanceSizeIndex.MaxZ].Addend);
             Assert.AreEqual(SimId.Empty, stLoadingId.GetValue(instance.SizeTransfer[SimInstanceSizeIndex.MaxZ]));
-
-            //Path
-            Assert.AreEqual(1, instance.InstancePath.Count);
-            Assert.AreEqual(0.175, instance.InstancePath[0].X);
-            Assert.AreEqual(0.0, instance.InstancePath[0].Y);
-            Assert.AreEqual(0.18, instance.InstancePath[0].Z);
 
             //Parameters
             Assert.AreEqual(1, instance.LoadingParameterValuesPersistent.Count);
@@ -376,12 +404,6 @@ namespace SIMULTAN.Tests.IO
             Assert.AreEqual(SimId.Empty, stLoadingId.GetValue(instance.SizeTransfer[SimInstanceSizeIndex.MaxZ]));
             Assert.AreEqual(String.Empty, stLoadingParamName.GetValue(instance.SizeTransfer[SimInstanceSizeIndex.MaxZ]));
 
-            //Path
-            Assert.AreEqual(1, instance.InstancePath.Count);
-            Assert.AreEqual(0.175, instance.InstancePath[0].X);
-            Assert.AreEqual(0.0, instance.InstancePath[0].Y);
-            Assert.AreEqual(0.18, instance.InstancePath[0].Z);
-
             //Parameters
             Assert.AreEqual(1, instance.LoadingParameterValuesPersistent.Count);
             Assert.AreEqual(SimId.Empty, instance.LoadingParameterValuesPersistent[0].id);
@@ -477,12 +499,6 @@ namespace SIMULTAN.Tests.IO
             Assert.AreEqual(0.0, instance.SizeTransfer[SimInstanceSizeIndex.MaxZ].Addend);
             Assert.AreEqual(SimId.Empty, stLoadingId.GetValue(instance.SizeTransfer[SimInstanceSizeIndex.MaxZ]));
             Assert.AreEqual(String.Empty, stLoadingParamName.GetValue(instance.SizeTransfer[SimInstanceSizeIndex.MaxZ]));
-
-            //Path
-            Assert.AreEqual(1, instance.InstancePath.Count);
-            Assert.AreEqual(0.175, instance.InstancePath[0].X);
-            Assert.AreEqual(0.0, instance.InstancePath[0].Y);
-            Assert.AreEqual(0.18, instance.InstancePath[0].Z);
 
             //Parameters
             Assert.AreEqual(1, instance.LoadingParameterValuesPersistent.Count);

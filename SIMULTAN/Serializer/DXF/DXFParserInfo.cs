@@ -2,13 +2,9 @@
 using SIMULTAN.Data.Components;
 using SIMULTAN.Data.MultiValues;
 using SIMULTAN.Projects;
-using SIMULTAN.Serializer.DXF;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SIMULTAN.Serializer.DXF
 {
@@ -19,13 +15,13 @@ namespace SIMULTAN.Serializer.DXF
     {
         #region Id Translation
 
-        private static readonly Dictionary<Type, (long start, long maxCount, ulong version)> idTranslationInfo = 
+        private static readonly Dictionary<Type, (long start, long maxCount, ulong version)> idTranslationInfo =
             new Dictionary<Type, (long start, long maxCount, ulong version)>
         {
             { typeof(SimComponent),     (0, 1073741824, 8)  }, //2^30
             { typeof(SimMultiValue),    (1073741824 + 1000000, 1073741824 + 2000000, 5) }, //1M
             { typeof(SimCalculation),   (1073741824 + 2000000, 1073741824 + 3000000, 4) }, //1M
-            { typeof(SimParameter),     (1073741824 + 3000000, 1073741824 + 4000000, 4) }, //1M
+            { typeof(SimBaseParameter),     (1073741824 + 3000000, 1073741824 + 4000000, 4) }, //1M
             { typeof(SimComponentInstance), (1073741824 + 4000000, 1073741824L + 1073741824L, 8) }, //2^30
         };
         private static ulong IdTranslationMaxId { get; } = 1073741824L + 1073741824L;
@@ -35,7 +31,7 @@ namespace SIMULTAN.Serializer.DXF
             { typeof(SimComponent), 1 }, //1 because 0 is the empty id
             { typeof(SimMultiValue), 0 },
             { typeof(SimCalculation), 0 },
-            { typeof(SimParameter), 0 },
+            { typeof(SimBaseParameter), 0 },
             { typeof(SimComponentInstance), 0 },
         };
 

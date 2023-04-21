@@ -46,9 +46,9 @@ namespace SIMULTAN.Data.Geometry
                 throw new Exception("Placement could not be removed");
             }
             // remove instance if it does not haven any placements anymore
-            if(!instance.Placements.Any())
+            if (!instance.Placements.Any())
             {
-                if(!component.Instances.Remove(instance))
+                if (!component.Instances.Remove(instance))
                 {
                     throw new Exception("Instance could not be removed");
                 }
@@ -59,7 +59,7 @@ namespace SIMULTAN.Data.Geometry
         public void Undo()
         {
             // re-add the instance if it was removed
-            if(!component.Instances.Contains(instance))
+            if (!component.Instances.Contains(instance))
             {
                 component.Instances.Add(instance);
             }

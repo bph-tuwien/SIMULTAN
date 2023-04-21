@@ -1,10 +1,8 @@
 ﻿using SIMULTAN.Data;
-using SIMULTAN.Serializer.DXF;
+using SIMULTAN.Data.Components;
+using SIMULTAN.Data.Taxonomy;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SIMULTAN.Serializer.DXF
 {
@@ -38,6 +36,8 @@ namespace SIMULTAN.Serializer.DXF
                 return (T)result;
             return defaultValue;
         }
+
+
         /// <summary>
         /// Gets the data for a given code, or a default value when the code does not exist in the data set
         /// </summary>
@@ -93,6 +93,7 @@ namespace SIMULTAN.Serializer.DXF
         {
             return this.Get<T>((int)code, defaultValue);
         }
+
         /// <summary>
         /// Gets the data for a given code, or a default value when the code does not exist in the data set
         /// </summary>
@@ -177,7 +178,7 @@ namespace SIMULTAN.Serializer.DXF
         /// <param name="code">The code to search for</param>
         /// <param name="defaultValue">The default value returned when the code does not exist</param>
         /// <returns>The data for a given code, or a default value when the code does not exist in the data set</returns>
-        internal T Get<T>(ExcelMappingSaveCode code, T defaultValue)
+        internal T Get<T>(DataMappingSaveCode code, T defaultValue)
         {
             return this.Get<T>((int)code, defaultValue);
         }
@@ -269,6 +270,17 @@ namespace SIMULTAN.Serializer.DXF
         {
             return this.Get<T>((int)code, defaultValue);
         }
+        /// <summary>
+        /// Gets the data for a given code, or a default value when the code does not exist in the data set
+        /// </summary>
+        /// <typeparam name="T">Type of the result</typeparam>
+        /// <param name="code">The code to search for</param>
+        /// <param name="defaultValue">The default value returned when the code does not exist</param>
+        /// <returns>The data for a given code, or a default value when the code does not exist in the data set</returns>
+        internal T Get<T>(GeometryRelationSaveCode code, T defaultValue)
+        {
+            return this.Get<T>((int)code, defaultValue);
+        }
 
         /// <summary>
         /// Gets a SimId by reading two entries from the dataset.
@@ -277,7 +289,7 @@ namespace SIMULTAN.Serializer.DXF
         /// <param name="globalIdCode">DXF code for the global id</param>
         /// <param name="localIdCode">DXF code for the local id</param>
         /// <param name="projectId">Global Id of the current project</param>
-        /// <returns></returns>
+        /// <returns>The SimId loaded from the two save codes</returns>
         internal SimId GetSimId(int globalIdCode, int localIdCode, Guid projectId)
         {
             var globalId = Get<Guid>(globalIdCode, Guid.Empty);
@@ -295,7 +307,43 @@ namespace SIMULTAN.Serializer.DXF
         /// <param name="globalIdCode">DXF code for the global id</param>
         /// <param name="localIdCode">DXF code for the local id</param>
         /// <param name="projectId">Global Id of the current project</param>
-        /// <returns></returns>
+        /// <returns>The SimId loaded from the two save codes</returns>
+        internal SimId GetSimId(DataMappingSaveCode globalIdCode, DataMappingSaveCode localIdCode, Guid projectId)
+        {
+            return GetSimId((int)globalIdCode, (int)localIdCode, projectId);
+        }
+        /// <summary>
+        /// Gets a SimId by reading two entries from the dataset.
+        /// When the global Id equals <see cref="Guid.Empty"/> and the local id is not 0, the global Id gets replaced with projectId.
+        /// </summary>
+        /// <param name="globalIdCode">DXF code for the global id</param>
+        /// <param name="localIdCode">DXF code for the local id</param>
+        /// <param name="projectId">Global Id of the current project</param>
+        /// <returns>The SimId loaded from the two save codes</returns>
+        internal SimId GetSimId(ComponentSaveCode globalIdCode, ComponentSaveCode localIdCode, Guid projectId)
+        {
+            return GetSimId((int)globalIdCode, (int)localIdCode, projectId);
+        }
+        /// <summary>
+        /// Gets a SimId by reading two entries from the dataset.
+        /// When the global Id equals <see cref="Guid.Empty"/> and the local id is not 0, the global Id gets replaced with projectId.
+        /// </summary>
+        /// <param name="globalIdCode">DXF code for the global id</param>
+        /// <param name="localIdCode">DXF code for the local id</param>
+        /// <param name="projectId">Global Id of the current project</param>
+        /// <returns>The SimId loaded from the two save codes</returns>
+        internal SimId GetSimId(ResourceSaveCode globalIdCode, ResourceSaveCode localIdCode, Guid projectId)
+        {
+            return GetSimId((int)globalIdCode, (int)localIdCode, projectId);
+        }
+        /// <summary>
+        /// Gets a SimId by reading two entries from the dataset.
+        /// When the global Id equals <see cref="Guid.Empty"/> and the local id is not 0, the global Id gets replaced with projectId.
+        /// </summary>
+        /// <param name="globalIdCode">DXF code for the global id</param>
+        /// <param name="localIdCode">DXF code for the local id</param>
+        /// <param name="projectId">Global Id of the current project</param>
+        /// <returns>The SimId loaded from the two save codes</returns>
         internal SimId GetSimId(CalculatorMappingSaveCode globalIdCode, CalculatorMappingSaveCode localIdCode, Guid projectId)
         {
             return GetSimId((int)globalIdCode, (int)localIdCode, projectId);
@@ -307,7 +355,7 @@ namespace SIMULTAN.Serializer.DXF
         /// <param name="globalIdCode">DXF code for the global id</param>
         /// <param name="localIdCode">DXF code for the local id</param>
         /// <param name="projectId">Global Id of the current project</param>
-        /// <returns></returns>
+        /// <returns>The SimId loaded from the two save codes</returns>
         internal SimId GetSimId(ParameterSaveCode globalIdCode, ParameterSaveCode localIdCode, Guid projectId)
         {
             return GetSimId((int)globalIdCode, (int)localIdCode, projectId);
@@ -319,7 +367,7 @@ namespace SIMULTAN.Serializer.DXF
         /// <param name="globalIdCode">DXF code for the global id</param>
         /// <param name="localIdCode">DXF code for the local id</param>
         /// <param name="projectId">Global Id of the current project</param>
-        /// <returns></returns>
+        /// <returns>The SimId loaded from the two save codes</returns>
         internal SimId GetSimId(MultiValueSaveCode globalIdCode, MultiValueSaveCode localIdCode, Guid projectId)
         {
             return GetSimId((int)globalIdCode, (int)localIdCode, projectId);
@@ -331,7 +379,7 @@ namespace SIMULTAN.Serializer.DXF
         /// <param name="globalIdCode">DXF code for the global id</param>
         /// <param name="localIdCode">DXF code for the local id</param>
         /// <param name="projectId">Global Id of the current project</param>
-        /// <returns></returns>
+        /// <returns>The SimId loaded from the two save codes</returns>
         internal SimId GetSimId(SitePlannerSaveCode globalIdCode, SitePlannerSaveCode localIdCode, Guid projectId)
         {
             return GetSimId((int)globalIdCode, (int)localIdCode, projectId);
@@ -343,7 +391,7 @@ namespace SIMULTAN.Serializer.DXF
         /// <param name="globalIdCode">DXF code for the global id</param>
         /// <param name="localIdCode">DXF code for the local id</param>
         /// <param name="projectId">Global Id of the current project</param>
-        /// <returns></returns>
+        /// <returns>The SimId loaded from the two save codes</returns>
         internal SimId GetSimId(ParamStructCommonSaveCode globalIdCode, ParamStructCommonSaveCode localIdCode, Guid projectId)
         {
             return GetSimId((int)globalIdCode, (int)localIdCode, projectId);
@@ -355,7 +403,19 @@ namespace SIMULTAN.Serializer.DXF
         /// <param name="globalIdCode">DXF code for the global id</param>
         /// <param name="localIdCode">DXF code for the local id</param>
         /// <param name="projectId">Global Id of the current project</param>
-        /// <returns></returns>
+        /// <returns>The SimId loaded from the two save codes</returns>
+        internal SimId GetSimId(GeometryRelationSaveCode globalIdCode, GeometryRelationSaveCode localIdCode, Guid projectId)
+        {
+            return GetSimId((int)globalIdCode, (int)localIdCode, projectId);
+        }
+        /// <summary>
+        /// Gets a SimId by reading two entries from the dataset.
+        /// When the global Id equals <see cref="Guid.Empty"/> and the local id is not 0, the global Id gets replaced with projectId.
+        /// </summary>
+        /// <param name="globalIdCode">DXF code for the global id</param>
+        /// <param name="localIdCode">DXF code for the local id</param>
+        /// <param name="projectId">Global Id of the current project</param>
+        /// <returns>The SimId loaded from the two save codes</returns>
         internal SimId GetSimId(AssetSaveCode globalIdCode, AssetSaveCode localIdCode, Guid projectId)
         {
             return GetSimId((int)globalIdCode, (int)localIdCode, projectId);
@@ -367,7 +427,7 @@ namespace SIMULTAN.Serializer.DXF
         /// <param name="globalIdCode">DXF code for the global id</param>
         /// <param name="localIdCode">DXF code for the local id</param>
         /// <param name="projectId">Global Id of the current project</param>
-        /// <returns></returns>
+        /// <returns>The SimId loaded from the two save codes</returns>
         internal SimId GetSimId(ComponentInstanceSaveCode globalIdCode, ComponentInstanceSaveCode localIdCode, Guid projectId)
         {
             return GetSimId((int)globalIdCode, (int)localIdCode, projectId);
@@ -379,10 +439,41 @@ namespace SIMULTAN.Serializer.DXF
         /// <param name="globalIdCode">DXF code for the global id</param>
         /// <param name="localIdCode">DXF code for the local id</param>
         /// <param name="projectId">Global Id of the current project</param>
-        /// <returns></returns>
+        /// <returns>The SimId loaded from the two save codes</returns>
         internal SimId GetSimId(ValueMappingSaveCode globalIdCode, ValueMappingSaveCode localIdCode, Guid projectId)
         {
             return GetSimId((int)globalIdCode, (int)localIdCode, projectId);
+        }
+
+        /// <summary>
+        /// Get the SimSlot by reading two entries for the slot extension and for the <see cref="SimTaxonomyEntry"/> local id.
+        /// </summary>
+        /// <param name="extensionSaveCode">Save code for the extension</param>
+        /// <param name="taxonomyEntryGlobalIdSaveCode">Save code for the global id of the <see cref="SimTaxonomyEntry"/></param>
+        /// <param name="taxonomyEntrySaveCode">Save code for the <see cref="SimTaxonomyEntry"/> local id</param>
+        /// <param name="projectId">The id of the project, used to make the SimId for the <see cref="SimTaxonomyEntryReference"/></param>
+        /// <returns>The <see cref="SimSlot"/> with the slot extension and taxonomy entry reference containing only the taxonomy entry id</returns>
+        internal SimSlot GetSlot(ParamStructCommonSaveCode extensionSaveCode, ComponentSaveCode taxonomyEntryGlobalIdSaveCode, ComponentSaveCode taxonomyEntrySaveCode, Guid projectId)
+        {
+            return GetSlot((int)extensionSaveCode, (int)taxonomyEntryGlobalIdSaveCode, (int)taxonomyEntrySaveCode, projectId);
+        }
+
+        /// <summary>
+        /// Get the SimSlot by reading two entries for the slot extension and for the <see cref="SimTaxonomyEntry"/> local id.
+        /// </summary>
+        /// <param name="extensionSaveCode">Save code for the extension</param>
+        /// <param name="taxonomyEntryGlobalIdSaveCode">Save code for the global id of the <see cref="SimTaxonomyEntry"/></param>
+        /// <param name="taxonomyEntrySaveCode">Save code for the <see cref="SimTaxonomyEntry"/> local id</param>
+        /// <param name="projectId">The id of the project, used to make the SimId for the <see cref="SimTaxonomyEntryReference"/></param>
+        /// <returns>The <see cref="SimSlot"/> with the slot extension and taxonomy entry reference containing only the taxonomy entry id</returns>
+        internal SimSlot GetSlot(int extensionSaveCode, int taxonomyEntryGlobalIdSaveCode, int taxonomyEntrySaveCode, Guid projectId)
+        {
+            var extension = Get<String>(extensionSaveCode, "");
+            var taxEntId = GetSimId(taxonomyEntryGlobalIdSaveCode, taxonomyEntrySaveCode, projectId);
+            if (taxEntId.LocalId == 0)
+                throw new Exception("Slot taxonomy entry local id cannot be zero");
+            var taxRef = new SimTaxonomyEntryReference(taxEntId);
+            return new SimSlot(taxRef, extension);
         }
 
         /// <summary>

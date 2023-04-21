@@ -5,9 +5,6 @@ using SIMULTAN.Utils.Collections;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Threading;
 
 namespace SIMULTAN.Exchange.GeometryConnectors
 {
@@ -19,11 +16,12 @@ namespace SIMULTAN.Exchange.GeometryConnectors
     {
         #region Properties & Fields
 
-        private MultiDictionary<ulong, BaseGeometryConnector> connectors = 
-            new MultiDictionary<ulong, BaseGeometryConnector>();
+        private MultiDictionary<ulong, ParameterSourceConnector> parameterSources =
+            new MultiDictionary<ulong, ParameterSourceConnector>();
+        private MultiDictionary<ulong, (SimGeometryParameterSource source, SimInstancePlacementGeometry placement)> missingParameterSources =
+            new MultiDictionary<ulong, (SimGeometryParameterSource source, SimInstancePlacementGeometry placement)>();
 
-        private MultiDictionary<ulong, SimInstancePlacementGeometry> missingGeometryPlacements = 
-            new MultiDictionary<ulong, SimInstancePlacementGeometry>();
+        private MultiDictionary<ulong, SimInstancePlacementGeometry> placements = new MultiDictionary<ulong, SimInstancePlacementGeometry>();
 
         internal ComponentGeometryExchange Exchange { get; }
         internal GeometryModel GeometryModel { get; }
@@ -36,10 +34,10 @@ namespace SIMULTAN.Exchange.GeometryConnectors
 
         internal GeometryModelConnector(GeometryModel model, ComponentGeometryExchange exchange)
         {
-            if (model == null) 
+            if (model == null)
                 throw new ArgumentNullException(nameof(model));
             if (exchange == null)
-                throw new ArgumentNullException(nameof (exchange));
+                throw new ArgumentNullException(nameof(exchange));
 
             this.Exchange = exchange;
             this.GeometryModel = model;
@@ -108,30 +106,37 @@ namespace SIMULTAN.Exchange.GeometryConnectors
         {
             foreach (var geom in geometry)
             {
-                if (missingGeometryPlacements.TryGetValues(geom.Id, out var placements))
+                //Check which parameter sources are available now
+                if (missingParameterSources.TryGetValues(geom.Id, out var sources))
                 {
-                    foreach (var placement in placements)
-                        AddConnector(placement, geom, true);
+                    List<(SimGeometryParameterSource, SimInstancePlacementGeometry)> stillMissingSources
+                        = new List<(SimGeometryParameterSource, SimInstancePlacementGeometry)>();
 
-                    missingGeometryPlacements.Remove(geom.Id);
-                }
-
-                //When a face gets added which covers a hole: Inform all faces that have this hole
-                if (geom is Face face)
-                {
-                    foreach (var otherFace in face.Boundary.Faces)
+                    foreach (var source in sources)
                     {
-                        if (otherFace != face)
+                        if (ParameterSourceConnector.SourceMatchesGeometry(source.source.GeometryProperty, geom))
                         {
-                            if (connectors.TryGetValues(otherFace.Id, out var otherFaceCons))
-                            {
-                                foreach (var con in otherFaceCons)
-                                {
-                                    con.OnTopologyChanged();
-                                }
-                            }
+                            var valueSourceConnector = new ParameterSourceConnector(geom, source.source, source.placement);
+                            this.parameterSources.Add(geom.Id,
+                                valueSourceConnector);
+                            valueSourceConnector.OnConnectorsInitialized();
+                        }
+                        else
+                        {
+                            //Id exists, but wrong geometry type
+                            stillMissingSources.Add(source);
                         }
                     }
+
+                    missingParameterSources.Remove(geom.Id);
+                    if (stillMissingSources.Count > 0)
+                        missingParameterSources.Add(geom.Id, stillMissingSources);
+                }
+
+                if (this.placements.TryGetValues(geom.Id, out var placements))
+                {
+                    foreach (var placement in placements)
+                        InitGeometryConnection(placement, geom, false);
                 }
             }
         }
@@ -140,37 +145,24 @@ namespace SIMULTAN.Exchange.GeometryConnectors
         {
             foreach (var geom in geometry)
             {
-                if (connectors.TryGetValues(geom.Id, out var conns))
+                if (placements.TryGetValues(geom.Id, out var conns))
                 {
-                    //Notify
-                    foreach (var con in conns.ToList())
+                    //Set state to invalid
+                    foreach (var placement in conns.ToList())
                     {
-                        con.OnGeometryRemoved();
+                        placement.State = SimInstancePlacementState.InstanceTargetMissing;
                     }
-
-                    //Push all remaining connectors to missing list. This is needed because OnGeometryRemoved might remove sub connectors
-                    conns = connectors[geom.Id];
-                    foreach (var con in conns)
-                        missingGeometryPlacements.Add(geom.Id, con.Placement);
-                    connectors.Remove(geom.Id);
                 }
 
-                //When a face is deleted which covers a hole: Inform all face connectors of the faces that have this hole inside
-                if (geom is Face face)
+                //Parameter Sources
+                if (parameterSources.TryGetValues(geom.Id, out var sources))
                 {
-                    foreach (var otherFace in face.Boundary.Faces)
-                    {
-                        if (otherFace != face)
-                        {
-                            if (connectors.TryGetValues(otherFace.Id, out var otherFaceCons))
-                            {
-                                foreach (var con in otherFaceCons)
-                                {
-                                    con.OnTopologyChanged();
-                                }
-                            }
-                        }
-                    }
+                    sources.ForEach(x => x.OnGeometryRemoved());
+
+                    //Push all sources to missing list
+                    foreach (var source in sources)
+                        missingParameterSources.Add(geom.Id, (source.ParameterSource, source.Placement));
+                    parameterSources.Remove(geom.Id);
                 }
             }
         }
@@ -191,64 +183,73 @@ namespace SIMULTAN.Exchange.GeometryConnectors
             //Update connectors
             if (e.NewGeometry == null) //There is no new Geometry -> Invalidate all placements
             {
-                foreach (var cons in connectors)
+                foreach (var cons in placements)
                 {
-                    foreach (var con in cons.Value)
+                    foreach (var placement in cons.Value)
                     {
-                        con.OnGeometryRemoved();
-                        missingGeometryPlacements.Add(cons.Key, con.Placement);
+                        placement.State = SimInstancePlacementState.InstanceTargetMissing;
                     }
                 }
-
-                connectors.Clear();
             }
             else //Check which connectors have to be added/removed
             {
-                //Copy missing items (to check them later)
-                var oldMissings = new MultiDictionary<ulong, SimInstancePlacementGeometry>(missingGeometryPlacements);
-                var oldConnectors = new MultiDictionary<ulong, BaseGeometryConnector>(connectors);
-
-                missingGeometryPlacements.Clear();
-                connectors.Clear();
-
-                //Check which connectors are missing and update their geometry references
-                foreach (var cons in oldConnectors)
+                //Parameter Sources
                 {
-                    var geometry = e.NewGeometry.GeometryFromId(cons.Key);
+                    var oldMissing = new MultiDictionary<ulong,
+                        (SimGeometryParameterSource source, SimInstancePlacementGeometry placement)>(this.missingParameterSources);
+                    var oldSources = new MultiDictionary<ulong, ParameterSourceConnector>(this.parameterSources);
 
-                    foreach (var con in cons.Value)
+                    missingParameterSources.Clear();
+                    parameterSources.Clear();
+
+                    //Check which existing connectors are missing and update the other ones
+                    foreach (var cons in oldSources)
                     {
-                        bool success = false;
+                        var geometry = e.NewGeometry.GeometryFromId(cons.Key);
 
-                        if (geometry != null) //Try to update connectors to new geometry
+                        foreach (var con in cons.Value)
                         {
-                            success = con.ChangeBaseGeometry(geometry);
-                            if (success)
-                                this.connectors.Add(geometry.Id, con);
+                            if (geometry != null && ParameterSourceConnector.SourceMatchesGeometry(con.ParameterSource.GeometryProperty, geometry))
+                            {
+                                con.ChangeGeometry(geometry);
+                                parameterSources.Add(cons.Key, con);
+                            }
+                            else
+                            {
+                                con.OnGeometryRemoved();
+                                missingParameterSources.Add(cons.Key, (con.ParameterSource, con.Placement));
+                            }
                         }
+                    }
 
-                        if (!success) //Either geometry missing or wrong type -> delete connector
+                    //Check which previously missing sources are now available
+                    foreach (var missings in oldMissing)
+                    {
+                        var geometry = e.NewGeometry.GeometryFromId(missings.Key);
+
+                        foreach (var missing in missings.Value)
                         {
-                            con.OnGeometryRemoved();
-                            this.missingGeometryPlacements.Add(cons.Key, con.Placement);
+                            if (geometry != null &&
+                                ParameterSourceConnector.SourceMatchesGeometry(missing.source.GeometryProperty, geometry))
+                            {
+                                var valueSourceConnector = new ParameterSourceConnector(geometry, missing.source, missing.placement);
+                                this.parameterSources.Add(geometry.Id,
+                                    valueSourceConnector);
+                                valueSourceConnector.OnConnectorsInitialized();
+                            }
+                            else
+                                missingParameterSources.Add(missings.Key, missing);
                         }
                     }
                 }
 
-                //Check which missing connectors are now available
-                foreach (var missing in oldMissings)
+                //Geometry connectors
                 {
-                    var geometry = e.NewGeometry.GeometryFromId(missing.Key);
-
-                    foreach (var placement in missing.Value)
+                    foreach (var pls in placements)
                     {
-                        bool success = false;
-
-                        if (geometry != null)
-                            success = AddConnector(placement, geometry, true);
-
-                        if (!success) //Either geometry not found or type mismatch
-                            missingGeometryPlacements.Add(missing.Key, placement);
+                        var geometry = e.NewGeometry.GeometryFromId(pls.Key);
+                        foreach (var pl in pls.Value)
+                            InitGeometryConnection(pl, geometry, false);
                     }
                 }
             }
@@ -273,20 +274,14 @@ namespace SIMULTAN.Exchange.GeometryConnectors
 
             foreach (var geom in this.topologyChangedGeometries)
             {
-                if (connectors.TryGetValues(geom.Id, out var cons))
-                    cons.ForEach(x => x.OnTopologyChanged());
+                if (parameterSources.TryGetValues(geom.Id, out var sources))
+                    sources.ForEach(x => x.OnGeometryChanged());
             }
 
             foreach (var geom in this.geometryChangedGeometries)
             {
-                if (connectors.TryGetValues(geom.Id, out var cons))
-                    cons.ForEach(x => x.OnGeometryChanged());
-            }
-
-            foreach (var geom in this.offsetSurfacesChangedGeometries)
-            {
-                if (connectors.TryGetValues(geom.Id, out var cons))
-                    cons.ForEach(x => x.OnOffsetSurfacesChanged());
+                if (parameterSources.TryGetValues(geom.Id, out var sources))
+                    sources.ForEach(x => x.OnGeometryChanged());
             }
 
             //Invalidate/Recalculate all references
@@ -314,8 +309,8 @@ namespace SIMULTAN.Exchange.GeometryConnectors
             Exchange.NotifyGeometryInvalidated(null);
 
             //Initialize all connectors
-            foreach (var con in this.connectors)
-                con.Value.ForEach(x => x.OnConnectorsInitialized());
+            foreach (var sources in this.parameterSources)
+                sources.Value.ForEach(x => x.OnConnectorsInitialized());
 
             //Invalidate/Recalculate all references
             Exchange.ProjectData.Components.EnableReferencePropagation = enableReferencePropagation;
@@ -343,83 +338,90 @@ namespace SIMULTAN.Exchange.GeometryConnectors
 
         private void CreateConnector(SimInstancePlacementGeometry placement, bool initialize)
         {
-            //Create connector
-            var geometry = this.GeometryModel.Geometry.GeometryFromId(placement.GeometryId);
-            bool isGeometryValid = false;
-            if (geometry != null)
-            {
-                isGeometryValid = AddConnector(placement, geometry, initialize); //False when the geometry type doesn't match the connector
-            }
+            this.placements.Add(placement.GeometryId, placement);
 
-            if (!isGeometryValid) //Geometry doesn't exist
+            //Create connection
+            var geometry = this.GeometryModel.Geometry.GeometryFromId(placement.GeometryId);
+            InitGeometryConnection(placement, geometry, initialize);
+
+            //Parameter source connectors
+            foreach (var parameter in placement.Instance.Component.Parameters)
             {
-                missingGeometryPlacements.Add(placement.GeometryId, placement);
-                placement.State = SimInstancePlacementState.InstanceTargetMissing;
+                if (parameter.ValueSource is SimGeometryParameterSource gps)
+                {
+                    if (geometry != null && ParameterSourceConnector.SourceMatchesGeometry(gps.GeometryProperty, geometry))
+                    {
+                        var valueSourceConnector = new ParameterSourceConnector(geometry, gps, placement);
+                        this.parameterSources.Add(placement.GeometryId,
+                            valueSourceConnector);
+                        if (initialize)
+                            valueSourceConnector.OnConnectorsInitialized();
+                    }
+                    else //Either no geometry or wrong type
+                    {
+                        //Set parameter instance value
+                        placement.Instance.InstanceParameterValuesPersistent[parameter] = double.NaN;
+                        ((SimDoubleParameter)parameter).Value = double.NaN;
+                        this.missingParameterSources.Add(placement.GeometryId, (gps, placement));
+                    }
+                }
             }
         }
-    
-        private bool AddConnector(SimInstancePlacementGeometry placement, BaseGeometry geometry, bool initialize)
+
+
+        private bool InitGeometryConnection(SimInstancePlacementGeometry placement, BaseGeometry geometry, bool createNew)
         {
-            BaseGeometryConnector connector = null;
+            bool isValid = false;
 
             //When adding a if here, also add it to ComponentGeometryExchangeNew.IsValidAssociation
-            if (geometry is Face face)
+            if (geometry is Vertex)
+                isValid = placement.Instance.Component.InstanceType == SimInstanceType.AttributesPoint;
+            else if (geometry is Edge)
+                isValid = placement.Instance.Component.InstanceType == SimInstanceType.AttributesEdge;
+            else if (geometry is Face)
             {
-                if (placement.Instance.Component.InstanceType == SimInstanceType.AttributesFace)
+                isValid = placement.Instance.Component.InstanceType == SimInstanceType.AttributesFace;
+
+                if (isValid)
                 {
-                    connector = new FaceConnector(face, placement);
-                }
-                else if (placement.Instance.Component.InstanceType == SimInstanceType.GeometricSurface)
-                {
-                    connector = new VolumeFaceConnector(face, placement, this);
+                    using (AccessCheckingDisabler.Disable(placement.Instance.Component.Factory))
+                    {
+                        //Create din/dout
+                        ExchangeHelpers.CreateParameterIfNotExists(placement.Instance.Component,
+                            ReservedParameterKeys.RP_MATERIAL_COMPOSITE_D_IN, ReservedParameters.RP_MATERIAL_COMPOSITE_D_IN,
+                        SimParameterInstancePropagation.PropagateIfInstance, 0.0);
+                        ExchangeHelpers.CreateParameterIfNotExists(placement.Instance.Component,
+                            ReservedParameterKeys.RP_MATERIAL_COMPOSITE_D_OUT, ReservedParameters.RP_MATERIAL_COMPOSITE_D_OUT,
+                            SimParameterInstancePropagation.PropagateIfInstance, 0.0);
+                    }
                 }
             }
-            else if (geometry is Volume volume)
+            if (geometry is Volume)
             {
                 if (placement.Instance.Component.InstanceType == SimInstanceType.Entity3D)
-                {
-                    connector = new VolumeConnector(volume, placement, this);
-                }
-                else if (placement.Instance.Component.InstanceType == SimInstanceType.GeometricVolume)
-                {
-                    connector = new VolumeVolumeConnector(volume, placement);
-                }
+                    isValid = true;
                 else if (placement.Instance.Component.InstanceType == SimInstanceType.NetworkNode)
                 {
                     return true; //This is a instance that connects a network node with it's parent
                 }
             }
-            else if (geometry is EdgeLoop loop)
-            {
-                if (placement.Instance.Component.InstanceType == SimInstanceType.GeometricSurface)
-                    connector = new VolumeFaceHoleConnector(loop, placement);
-            }
-            else if(geometry is Edge edge)
-            {
-                if(placement.Instance.Component.InstanceType == SimInstanceType.AttributesEdge)
-                    connector = new EdgeConnector(edge, placement);
-            }
-            else if(geometry is Vertex vertex)
-            {
-                if(placement.Instance.Component.InstanceType == SimInstanceType.AttributesPoint)
-                    connector = new VertexConnector(vertex, placement);
-            }
 
-            if (connector != null)
+            if (isValid)
             {
-                connectors.Add(geometry.Id, connector);
-
-                if (initialize)
-                    connector.OnConnectorsInitialized();
+                placement.State = SimInstancePlacementState.Valid;
 
                 this.Exchange.NotifyAssociationChanged(new BaseGeometry[] { geometry });
                 if (placement.Instance.InstanceType == SimInstanceType.AttributesFace)
                     this.Exchange.NotifyGeometryInvalidated(new BaseGeometry[] { geometry });
-                return true;
+            }
+            else
+            {
+                placement.State = SimInstancePlacementState.InstanceTargetMissing;
             }
 
-            return false;
+            return isValid;
         }
+
 
         /// <summary>
         /// Called when a placement has been added which references this <see cref="GeometryModel"/>
@@ -431,18 +433,6 @@ namespace SIMULTAN.Exchange.GeometryConnectors
                 throw new ArgumentException("Placement does not belong to this GeometryModel");
 
             CreateConnector(placement, true);
-
-            //If AttributesFace, inform potential volume components
-            if (placement.Instance.InstanceType == SimInstanceType.AttributesFace)
-            {
-                if (connectors.TryGetValues(placement.GeometryId, out var cons))
-                {
-                    foreach (var con in cons.OfType<VolumeFaceConnector>())
-                    {
-                        con.OnAttributesFacePlacementAdded(placement);
-                    }
-                }
-            }
         }
         /// <summary>
         /// Called when a placement has been removed which references this <see cref="GeometryModel"/>
@@ -453,48 +443,74 @@ namespace SIMULTAN.Exchange.GeometryConnectors
             if (placement.FileId != this.GeometryModel.File.Key)
                 throw new ArgumentException("Placement does not belong to this GeometryModel");
 
-            if (connectors.TryGetValues(placement.GeometryId, out var cons))
+            //Remove and detach connected parameter sources
+            if (parameterSources.TryGetValues(placement.GeometryId, out var paramSources))
             {
-                var con = cons.FirstOrDefault(x => x.Placement == placement);
-                if (con != null)
+                foreach (var sourceConnector in paramSources.ToList())
                 {
-                    connectors.Remove(placement.GeometryId, con);
-                    con.OnPlacementRemoved();
-
-                    var geometry = GeometryModel.Geometry.GeometryFromId(placement.GeometryId);
-                    if (geometry != null)
+                    if (sourceConnector.Placement == placement)
                     {
-                        this.Exchange.NotifyAssociationChanged(new BaseGeometry[] { geometry });
-
-                        if (placement.Instance.InstanceType == SimInstanceType.AttributesFace)
-                            this.Exchange.NotifyGeometryInvalidated(new BaseGeometry[] { geometry });
+                        sourceConnector.OnPlacementRemoved();
+                        parameterSources.Remove(placement.GeometryId, sourceConnector);
                     }
                 }
+            }
 
-                //If AttributesFace, inform potential volume components
+            //Remove from missing sources
+            foreach (var param in placement.Instance.Component.Parameters)
+            {
+                if (param.ValueSource is SimGeometryParameterSource gps)
+                    missingParameterSources.Remove(placement.GeometryId, (gps, placement));
+            }
+
+            this.placements.Remove(placement.GeometryId, placement);
+
+            var geometry = GeometryModel.Geometry.GeometryFromId(placement.GeometryId);
+            if (geometry != null)
+            {
+                this.Exchange.NotifyAssociationChanged(new BaseGeometry[] { geometry });
+
                 if (placement.Instance.InstanceType == SimInstanceType.AttributesFace)
-                {
-                    foreach (var volFaceCon in cons.OfType<VolumeFaceConnector>())
-                    {
-                        volFaceCon.OnAttributesFacePlacementRemoved(placement);
-                    }
-                }
-            }
-            else //Geometry missing
-            {
-                missingGeometryPlacements.Remove(placement.GeometryId, placement);
+                    this.Exchange.NotifyGeometryInvalidated(new BaseGeometry[] { geometry });
             }
         }
 
-        /// <summary>
-        /// Called when the name of a BaseGeometry has changed
-        /// </summary>
-        /// <param name="geometry">The geometry in which the name has changed</param>
-        internal void OnGeometryNameChanged(BaseGeometry geometry)
+
+        internal void OnParameterSourceAdded(SimGeometryParameterSource source, SimInstancePlacementGeometry placement)
         {
-            if (this.connectors.TryGetValues(geometry.Id, out var cons))
-                cons.ForEach(x => x.OnGeometryNameChanged(geometry));
+            var geometry = this.GeometryModel.Geometry.GeometryFromId(placement.GeometryId);
+
+            if (geometry != null)
+            {
+                var valueSourceConnector = new ParameterSourceConnector(geometry, source, placement);
+                this.parameterSources.Add(placement.GeometryId,
+                    valueSourceConnector);
+                valueSourceConnector.OnConnectorsInitialized();
+            }
+            else
+            {
+                this.missingParameterSources.Add(placement.GeometryId, (source, placement));
+            }
         }
+        internal void OnParameterSourceRemoved(SimGeometryParameterSource source, SimInstancePlacementGeometry placement)
+        {
+            if (parameterSources.TryGetValues(placement.GeometryId, out var removeConnectors))
+            {
+                //There is only one entry to remove
+                var connector = removeConnectors.First(x => x.ParameterSource == source);
+                connector.OnSourceRemoved();
+                parameterSources.Remove(placement.GeometryId, connector);
+            }
+
+            missingParameterSources.Remove(placement.GeometryId, (source, placement));
+        }
+
+        internal void OnParameterSourceFilterChanged(SimGeometryParameterSource source)
+        {
+            var connectors = parameterSources.SelectMany(x => x.Value.Where(y => y.ParameterSource == source));
+            connectors.ForEach(x => x.OnFilterChanged());
+        }
+
 
         /// <summary>
         /// Notifies the connector that a parameters value has changed which is used in an instance that connects 
@@ -503,11 +519,11 @@ namespace SIMULTAN.Exchange.GeometryConnectors
         /// <param name="placement">The placement in which the parameter has been changed</param>
         /// <param name="parameter">The modified parameter</param>
         /// <returns>A list of all Geometries that are affected by the parameter change</returns>
-        internal IEnumerable<BaseGeometry> OnParameterValueChanged(SimInstancePlacementGeometry placement, SimParameter parameter)
+        internal IEnumerable<BaseGeometry> OnParameterValueChanged(SimInstancePlacementGeometry placement, SimBaseParameter parameter)
         {
             if (placement.FileId != this.GeometryModel.File.Key)
                 throw new ArgumentException("Placement does not belong to this GeometryModel");
-            
+
             if (placement.Instance.InstanceType == SimInstanceType.AttributesFace)
             {
                 if (parameter.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_MATERIAL_COMPOSITE_D_IN) ||
@@ -536,22 +552,11 @@ namespace SIMULTAN.Exchange.GeometryConnectors
         internal IEnumerable<SimInstancePlacementGeometry> GetPlacements(BaseGeometry geometry)
         {
             //This method assumes that geometry is part of the connected model
-            if (this.connectors.TryGetValues(geometry.Id, out var cons))
+            if (this.placements.TryGetValues(geometry.Id, out var cons))
             {
                 foreach (var con in cons)
-                    yield return con.Placement;
+                    yield return con;
             }
-        }
-        /// <summary>
-        /// Returns all connectors for a specific geometry
-        /// </summary>
-        /// <param name="geometry">The geometry</param>
-        /// <returns>A list of all connectors connecting to the Geometry</returns>
-        internal IEnumerable<BaseGeometryConnector> GetConnectors(BaseGeometry geometry)
-        {
-            if (connectors.TryGetValues(geometry.Id, out var cons))
-                return cons;
-            return Enumerable.Empty<BaseGeometryConnector>();
         }
 
         public void Dispose()

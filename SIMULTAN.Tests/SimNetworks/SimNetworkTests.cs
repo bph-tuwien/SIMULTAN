@@ -1,12 +1,15 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SIMULTAN.Data;
 using SIMULTAN.Data.Components;
+using SIMULTAN.Data.Geometry;
 using SIMULTAN.Data.SimNetworks;
-using SIMULTAN.Tests.Utils;
+using SIMULTAN.Data.Taxonomy;
+using SIMULTAN.Tests.TestUtils;
 using System;
 using System.IO;
 using System.Linq;
 using System.Windows;
+using System.Windows.Media;
 using static SIMULTAN.Data.SimNetworks.BaseSimNetworkElement;
 using static SIMULTAN.Data.SimNetworks.SimNetwork;
 using static SIMULTAN.Data.SimNetworks.SimNetworkPort;
@@ -104,18 +107,23 @@ namespace SIMULTAN.Tests.SimNetworks
         }
 
 
-
-        [TestMethod]
-        public void MemoryLeakTestNetworkDelete()
+        private WeakReference MemoryLeakTestNetworkDelete_Action()
         {
-            this.LoadProject(simNetworkProject);
-
             Assert.IsNotNull(this.projectData.SimNetworks.FirstOrDefault(t => t.Name == this._name));
             Assert.IsNotNull(this.projectData.SimNetworks.FirstOrDefault(t => t.Name == this._name).ContainedElements);
             WeakReference nwRef = new WeakReference(this.projectData.SimNetworks.FirstOrDefault(t => t.Name == this._name));
             Assert.IsTrue(nwRef.IsAlive);
 
             this.projectData.SimNetworks.Remove(this.projectData.SimNetworks.FirstOrDefault(t => t.Name == this._name));
+
+            return nwRef;
+        }
+        [TestMethod]
+        public void MemoryLeakTestNetworkDelete()
+        {
+            this.LoadProject(simNetworkProject);
+
+            var nwRef = MemoryLeakTestNetworkDelete_Action();
 
             GC.Collect();
             GC.WaitForPendingFinalizers();
@@ -134,14 +142,14 @@ namespace SIMULTAN.Tests.SimNetworks
 
             //Test execptions
             Assert.ThrowsException<ArgumentNullException>(() => new SimNetwork(null));
-            Assert.ThrowsException<ArgumentNullException>(() => new SimNetwork(new SimId(), null, new Point(0, 0), 
-                Enumerable.Empty<SimNetworkPort>(), Enumerable.Empty<BaseSimNetworkElement>(), Enumerable.Empty<SimNetworkConnector>()));
+            Assert.ThrowsException<ArgumentNullException>(() => new SimNetwork(new SimId(), null, new Point(0, 0),
+                Enumerable.Empty<SimNetworkPort>(), Enumerable.Empty<BaseSimNetworkElement>(), Enumerable.Empty<SimNetworkConnector>(), new DerivedColor(Colors.DarkGray)));
             Assert.ThrowsException<ArgumentNullException>(() => new SimNetwork(new SimId(), "", new Point(0, 0),
-                null, Enumerable.Empty<BaseSimNetworkElement>(), Enumerable.Empty<SimNetworkConnector>()));
+                null, Enumerable.Empty<BaseSimNetworkElement>(), Enumerable.Empty<SimNetworkConnector>(), new DerivedColor(Colors.DarkGray)));
             Assert.ThrowsException<ArgumentNullException>(() => new SimNetwork(new SimId(), "", new Point(0, 0),
-                Enumerable.Empty<SimNetworkPort>(), null, Enumerable.Empty<SimNetworkConnector>()));
+                Enumerable.Empty<SimNetworkPort>(), null, Enumerable.Empty<SimNetworkConnector>(), new DerivedColor(Colors.DarkGray)));
             Assert.ThrowsException<ArgumentNullException>(() => new SimNetwork(new SimId(), "", new Point(0, 0),
-                Enumerable.Empty<SimNetworkPort>(), Enumerable.Empty<BaseSimNetworkElement>(), null));
+                Enumerable.Empty<SimNetworkPort>(), Enumerable.Empty<BaseSimNetworkElement>(), null, new DerivedColor(Colors.DarkGray)));
             Assert.ThrowsException<ArgumentNullException>(() => new SimNetwork(null, new Point(0, 0)));
 
             //Create a network
@@ -206,7 +214,7 @@ namespace SIMULTAN.Tests.SimNetworks
 
 
             //Test execptions
-            Assert.ThrowsException<ArgumentNullException>(() => new SimNetworkBlock(null, new Point(0, 0), new SimId(), new SimNetworkPort[0]));
+            Assert.ThrowsException<ArgumentNullException>(() => new SimNetworkBlock(null, new Point(0, 0), new SimId(), new SimNetworkPort[0], new DerivedColor(Colors.DarkGray)));
             Assert.ThrowsException<ArgumentNullException>(() => new SimNetworkBlock(null, new Point(0, 0)));
 
 
@@ -303,6 +311,9 @@ namespace SIMULTAN.Tests.SimNetworks
             //DELETE BLOCK
             loadedNW.ContainedElements.Remove(loadedBlock1);
 
+
+            Assert.AreEqual(portOutComp.Component.Instances.SelectMany(t => t.Placements).Count(), 0);
+
             //TODO: Check if the Ports get their components assigned disassociated
             Assert.IsTrue(loadedBlock1.Ports.All(p => p.ComponentInstance == null));
             Assert.IsTrue(portInComp.Component.Instances.Count == 0);
@@ -311,27 +322,29 @@ namespace SIMULTAN.Tests.SimNetworks
         }
 
 
-        [TestMethod]
-        public void MemoryLeakTestBlockDelete()
+        private WeakReference MemoryLeakTestBlockDelete_Action()
         {
-            this.LoadProject(simNetworkProject);
             var loadedNW = this.projectData.SimNetworks.FirstOrDefault(t => t.Name == this._name);
 
             Assert.IsNotNull(loadedNW);
             Assert.IsNotNull(loadedNW.ContainedElements);
 
-
             WeakReference blockRef = new WeakReference(loadedNW.ContainedElements.FirstOrDefault(e => e.Name == this._bName1) as SimNetworkBlock);
             Assert.IsTrue(blockRef.IsAlive);
 
             loadedNW.ContainedElements.Remove(loadedNW.ContainedElements.FirstOrDefault(e => e.Name == this._bName1) as SimNetworkBlock);
+            return blockRef;
+        }
+        [TestMethod]
+        public void MemoryLeakTestBlockDelete()
+        {
+            this.LoadProject(simNetworkProject);
 
+            var blockRef = MemoryLeakTestBlockDelete_Action();
 
             GC.Collect();
             GC.WaitForPendingFinalizers();
             GC.Collect();
-
-
 
             Assert.IsFalse(blockRef.IsAlive);
         }
@@ -407,11 +420,8 @@ namespace SIMULTAN.Tests.SimNetworks
             return sourcePort.Connectors.FirstOrDefault();
         }
 
-
-        [TestMethod]
-        public void MemoryLeakTestPortDelete()
+        private WeakReference MemoryLeakTestPortDelete_Action()
         {
-            this.LoadProject(simNetworkProject);
             var loadedNW = this.projectData.SimNetworks.FirstOrDefault(t => t.Name == this._name);
 
             Assert.IsNotNull(loadedNW);
@@ -429,6 +439,14 @@ namespace SIMULTAN.Tests.SimNetworks
             var searchForPort = loadedBlock.Ports.FirstOrDefault(p => p.Id == deletedId);
             Assert.IsNull(searchForPort);
 
+            return portRef;
+        }
+        [TestMethod]
+        public void MemoryLeakTestPortDelete()
+        {
+            this.LoadProject(simNetworkProject);
+
+            var portRef = MemoryLeakTestPortDelete_Action();
 
             GC.Collect();
             GC.WaitForPendingFinalizers();
@@ -534,11 +552,8 @@ namespace SIMULTAN.Tests.SimNetworks
 
         }
 
-        [TestMethod]
-        public void MemoryLeakCheckConnectorMemory()
+        private WeakReference MemoryLeakCheckConnectorMemory_Action()
         {
-
-            this.LoadProject(simNetworkProject);
             var loadedNW = this.projectData.SimNetworks.FirstOrDefault(t => t.Name == this._name);
             Assert.IsNotNull(loadedNW);
             Assert.IsNotNull(loadedNW.ContainedElements);
@@ -558,12 +573,19 @@ namespace SIMULTAN.Tests.SimNetworks
             sourcePort.ConnectTo(targetPort);
 
 
-
-
             WeakReference nwRef = new WeakReference(loadedNW.ContainedConnectors.FirstOrDefault());
             Assert.IsTrue(nwRef.IsAlive);
 
             loadedNW.ContainedConnectors.Remove(loadedNW.ContainedConnectors.FirstOrDefault());
+
+            return nwRef;
+        }
+        [TestMethod]
+        public void MemoryLeakCheckConnectorMemory()
+        {
+            this.LoadProject(simNetworkProject);
+
+            var nwRef = MemoryLeakCheckConnectorMemory_Action();
 
             GC.Collect();
             GC.WaitForPendingFinalizers();
@@ -638,7 +660,7 @@ namespace SIMULTAN.Tests.SimNetworks
             CheckNetworkProperties(lNw1, "SimNetwork1", new Point(0, 0), null, this.projectData.SimNetworks);
 
             var network2 = new SimNetwork(SimId.Empty, "SimNetwork2", new Point(0, 0),
-                Enumerable.Empty<SimNetworkPort>(), Enumerable.Empty<BaseSimNetworkElement>(), Enumerable.Empty<SimNetworkConnector>());
+                Enumerable.Empty<SimNetworkPort>(), Enumerable.Empty<BaseSimNetworkElement>(), Enumerable.Empty<SimNetworkConnector>(), new DerivedColor(Colors.DarkGray));
             this.projectData.SimNetworks.Add(network2);
             var lNw2 = this.projectData.SimNetworks.FirstOrDefault(t => t.Name == "SimNetwork2");
             Assert.IsNotNull(lNw2);
@@ -664,7 +686,7 @@ namespace SIMULTAN.Tests.SimNetworks
             Assert.IsNotNull(lookUpBlock1);
 
 
-            var block2 = new SimNetworkBlock("NewNetworkBlock2", new Point(0, 0), SimId.Empty, new SimNetworkPort[0]);
+            var block2 = new SimNetworkBlock("NewNetworkBlock2", new Point(0, 0), SimId.Empty, new SimNetworkPort[0], new DerivedColor(Colors.DarkGray));
             loadedNW.ContainedElements.Add(block2);
             var lookUpBlock2 = loadedNW.ContainedElements.FirstOrDefault(t => t.Name == "NewNetworkBlock2");
             Assert.IsNotNull(lookUpBlock2);
@@ -672,7 +694,84 @@ namespace SIMULTAN.Tests.SimNetworks
         }
 
 
+        /// <summary>
+        /// Checks whether the Placement is gone after deleting dissociating the component from network element
+        /// </summary>
+        [TestMethod]
+        public void CheckPlacementDeletionAfterComponentDissociation()
+        {
+            this.LoadProject(simNetworkProject);
+            var loadedNW = this.projectData.SimNetworks.FirstOrDefault(t => t.Name == this._name);
+            Assert.IsNotNull(loadedNW);
+            Assert.IsNotNull(loadedNW.ContainedElements);
 
+            var loadedBlock1 = loadedNW.ContainedElements.FirstOrDefault(e => e.Name == this._bName1) as SimNetworkBlock;
+
+            var component = this.projectData.Components.FirstOrDefault(t => t.Name == this._BlockComp);
+
+
+            var compInstance = new SimComponentInstance(loadedBlock1);
+            component.Instances.Add(compInstance);
+            var placements1 = component.Instances.SelectMany(s => s.Placements);
+
+
+
+            Assert.IsNotNull(loadedBlock1.ComponentInstance);
+            Assert.IsNotNull(loadedBlock1.ComponentInstance.Component);
+            Assert.AreEqual(loadedBlock1.ComponentInstance.Component.Name, this._BlockComp);
+
+
+            loadedBlock1.RemoveComponentInstance();
+            var findInstance = component.Instances.FirstOrDefault(t => t.Id == compInstance.Id);
+            var placements2 = component.Instances.SelectMany(s => s.Placements);
+            Assert.AreEqual(findInstance, null);
+            Assert.AreEqual(placements2.Count(), 0);
+
+            //Check if ID is free
+            var elment = this.projectData.IdGenerator.GetById<SimComponentInstance>(compInstance.Id);
+            Assert.AreEqual(null, elment);
+
+        }
+
+        /// <summary>
+        /// Checks whether the Placement is gone after deleting the network element
+        /// </summary>
+        [TestMethod]
+        public void CheckPlacementDeletionAfterDeletingNetworkElement()
+        {
+            this.LoadProject(simNetworkProject);
+            var loadedNW = this.projectData.SimNetworks.FirstOrDefault(t => t.Name == this._name);
+            Assert.IsNotNull(loadedNW);
+            Assert.IsNotNull(loadedNW.ContainedElements);
+
+            var loadedBlock1 = loadedNW.ContainedElements.FirstOrDefault(e => e.Name == this._bName1) as SimNetworkBlock;
+
+            var component = this.projectData.Components.FirstOrDefault(t => t.Name == this._BlockComp);
+
+
+            var compInstance = new SimComponentInstance(loadedBlock1);
+            component.Instances.Add(compInstance);
+            var placements1 = component.Instances.SelectMany(s => s.Placements);
+
+
+
+            Assert.IsNotNull(loadedBlock1.ComponentInstance);
+            Assert.IsNotNull(loadedBlock1.ComponentInstance.Component);
+            Assert.AreEqual(loadedBlock1.ComponentInstance.Component.Name, this._BlockComp);
+
+
+            // loadedBlock1.RemoveComponentInstance();
+            loadedBlock1.ParentNetwork.ContainedElements.Remove(loadedBlock1);
+            var findInstance = component.Instances.FirstOrDefault(t => t.Id == compInstance.Id);
+            var placements2 = component.Instances.SelectMany(s => s.Placements);
+            Assert.AreEqual(findInstance, null);
+            Assert.AreEqual(placements2.Count(), 0);
+
+            //Check if ID is free
+            var elment = this.projectData.IdGenerator.GetById<SimComponentInstance>(compInstance.Id);
+            Assert.AreEqual(null, elment);
+
+        }
 
 
 
@@ -757,10 +856,7 @@ namespace SIMULTAN.Tests.SimNetworks
             //TODO: Check if the Ports get their components assisnged disasociated
             Assert.IsTrue(loadedBlock1.Ports.All(p => p.ComponentInstance == null));
 
-
         }
-
-
 
 
         [TestMethod]
@@ -781,12 +877,14 @@ namespace SIMULTAN.Tests.SimNetworks
 
             //Create the new SubComponent for the component
 
+            var undefinedSlot = projectData.Taxonomies.GetDefaultSlot(SimDefaultSlotKeys.Undefined);
             var newPortInComponent = new SimComponent()
             {
                 Name = "PortIn",
                 InstanceType = SimInstanceType.InPort,
+                CurrentSlot = new SimTaxonomyEntryReference(undefinedSlot),
             };
-            var newSlot = component.Components.FindAvailableSlot(new SimSlotBase(SimDefaultSlots.Undefined));
+            var newSlot = component.Components.FindAvailableSlot(undefinedSlot);
             component.Components.Add(new SimChildComponentEntry(newSlot, newPortInComponent));
 
 
@@ -798,8 +896,9 @@ namespace SIMULTAN.Tests.SimNetworks
             {
                 Name = "PortOut",
                 InstanceType = SimInstanceType.OutPort,
+                CurrentSlot = new SimTaxonomyEntryReference(undefinedSlot),
             };
-            newSlot = component.Components.FindAvailableSlot(new SimSlotBase(SimDefaultSlots.Undefined));
+            newSlot = component.Components.FindAvailableSlot(undefinedSlot);
             component.Components.Add(new SimChildComponentEntry(newSlot, newPortOutComponent));
 
             var portWithComp2 = loadedBlock1.Ports.FirstOrDefault(p => p.ComponentInstance.Component != null && p.ComponentInstance.Component == newPortOutComponent);

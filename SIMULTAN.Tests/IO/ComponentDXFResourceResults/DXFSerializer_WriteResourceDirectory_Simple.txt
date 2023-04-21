@@ -10,6 +10,10 @@ SIMULTAN.Data.Assets.ResourceDirectoryEntry
 RootFolder
 7212
 0
+7213
+1
+7215
+57
 7207
 0
 0

@@ -510,7 +510,7 @@ namespace SIMULTAN.Data.Geometry
 
             return peri;
         }
-    
+
         /// <summary>
         /// Tests if a point is inside a volume
         /// </summary>
@@ -520,7 +520,7 @@ namespace SIMULTAN.Data.Geometry
         public static bool IsInside(Volume volume, Point3D point)
         {
             int count = 0;
-            
+
             foreach (var pface in volume.Faces)
             {
                 if (FaceAlgorithms.IntersectsRay(pface.Face, point, new Vector3D(1, 0, 0)))

@@ -169,5 +169,20 @@ namespace SIMULTAN.Utils
                     throw new ArgumentOutOfRangeException(string.Format("{0} has to be between 1 and 4", nameof(fieldCount)));
             }
         }
+
+        /// <summary>
+        /// Converts an object to a double. Numeric values (double, int) are directly converted. All other types return <see cref="double.NaN"/>.
+        /// </summary>
+        /// <param name="value">The value to convert</param>
+        /// <returns>For double, int: The value cast to a double. All other types return <see cref="double.NaN"/></returns>
+        public static double ConvertToDoubleIfNumeric(this object value)
+        {
+            if (value is double d)
+                return d;
+            else if (value is int i)
+                return (double)i;
+            else
+                return double.NaN;
+        }
     }
 }

@@ -66,7 +66,7 @@ namespace SIMULTAN.Data.Assets
             bool admissible = IsAdmissible(item, this.ForbiddenFolder);
             if (!admissible)
                 throw new InvalidPathException();
-            
+
             base.InsertItem(index, item);
         }
 
@@ -77,7 +77,7 @@ namespace SIMULTAN.Data.Assets
 
             if (!admissible)
                 throw new InvalidPathException();
-            
+
             base.SetItem(index, item);
         }
 

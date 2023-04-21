@@ -1,14 +1,13 @@
 ﻿using SIMULTAN.Data.Components;
+using SIMULTAN.Data.Geometry;
+using SIMULTAN.Data.Taxonomy;
 using SIMULTAN.Data.Users;
-using SIMULTAN.Serializer.DXF;
 using SIMULTAN.Utils.Files;
 using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.ComponentModel;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SIMULTAN.Data.Assets
 {
@@ -50,7 +49,13 @@ namespace SIMULTAN.Data.Assets
         /// For example when a file is updated on the file system level.
         /// </summary>
         public event ResourceChangedEventHandler ResourceChanged;
-
+        /// <summary>
+        /// Emits the ResourceChanged Event.
+        /// </summary>
+        internal void NotifyResourceChanged()
+        {
+            ResourceChanged?.Invoke(this);
+        }
 
         /// <summary>
         /// Event handler to listen to the deletion of the resource
@@ -64,7 +69,7 @@ namespace SIMULTAN.Data.Assets
         /// <summary>
         /// Invokes the deleting event
         /// </summary>
-        public void OnDeleting()
+        internal void NotifyDeleting()
         {
             this.Deleting?.Invoke(this);
         }
@@ -81,17 +86,12 @@ namespace SIMULTAN.Data.Assets
         /// <summary>
         /// Invokes the Deleted event
         /// </summary>
-        public void OnDeleted()
+        internal void NotifyDeleted()
         {
             this.Deleted?.Invoke(this);
-        }
-
-        /// <summary>
-        /// Emits the ResourceChanged Event.
-        /// </summary>
-        public void OnResourceChanged()
-        {
-            ResourceChanged?.Invoke(this);
+            NotifyFilterTagsChanged();
+            Tags.CollectionChanged -= Tags_CollectionChanged;
+            this.manager.NotifyResourceDeleted(this);
         }
 
         #endregion
@@ -217,6 +217,15 @@ namespace SIMULTAN.Data.Assets
         /// </summary>
         protected virtual void PropagateVisibilityToChildren() { }
 
+
+        /// <summary>
+        /// Tags of the resource.
+        /// </summary>
+        public SimTaxonomyEntryReferenceCollection Tags
+        {
+            get;
+        }
+
         #endregion
 
         #region PROPERTIES: Structure
@@ -277,9 +286,34 @@ namespace SIMULTAN.Data.Assets
             this.manager = _manger;
             this.current_relative_path = AssetManager.PATH_NOT_FOUND;
             this.current_full_path = AssetManager.PATH_NOT_FOUND;
+            this.Tags = new SimTaxonomyEntryReferenceCollection();
+            this.Tags.CollectionChanged += Tags_CollectionChanged;
 
             this.visibility = SimComponentVisibility.AlwaysVisible;
         }
+
+        private void Tags_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+        {
+            NotifyFilterTagsChanged();
+        }
+
+        private void NotifyFilterTagsChanged()
+        {
+            if (manager != null && this.manager.ProjectData != null)
+            {
+                ComponentWalker.ForeachComponent(manager.ProjectData.Components, component =>
+                {
+                    foreach (var parameter in component.Parameters)
+                    {
+                        if (parameter.ValueSource != null && parameter.ValueSource is SimGeometryParameterSource source)
+                        {
+                            source.NotifyResourceEntryFilterChanged(this);
+                        }
+                    }
+                });
+            }
+        }
+
 
         #region METHODS: Path handling
 

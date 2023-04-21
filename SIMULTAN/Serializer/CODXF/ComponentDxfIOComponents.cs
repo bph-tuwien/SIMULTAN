@@ -1,24 +1,23 @@
 ﻿using SIMULTAN.Data;
 using SIMULTAN.Data.Components;
 using SIMULTAN.Data.FlowNetworks;
+using SIMULTAN.Data.Geometry;
 using SIMULTAN.Data.MultiValues;
 using SIMULTAN.Data.Taxonomy;
 using SIMULTAN.Data.Users;
-using SIMULTAN.Excel;
 using SIMULTAN.Serializer.DXF;
 using SIMULTAN.Utils;
 using System;
 using System.Collections.Generic;
-using System.IO;
+using System.Globalization;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Media;
 using System.Windows.Media.Media3D;
 using static SIMULTAN.Data.Components.CalculationParameterMetaData;
 
 namespace SIMULTAN.Serializer.CODXF
 {
+
     /// <summary>
     /// Contains methods to read/write components in DXF format.
     /// 
@@ -26,38 +25,87 @@ namespace SIMULTAN.Serializer.CODXF
     /// </summary>
     public static class ComponentDxfIOComponents
     {
+        /// <summary>
+        /// Enumeration for the different types of parameters
+        /// </summary>
+        public enum ParameterType
+        {
+            /// <summary>
+            /// value used for saving <see cref="SimDoubleParameter"> and it´s instances </see>
+            /// </summary>
+            Double = 0,
+            /// <summary>
+            /// value used for saving <see cref="SimIntegerParameter"> and it´s instances </see>
+            /// </summary>
+            Integer = 1,
+            /// <summary>
+            /// value used for saving <see cref="SimBoolParameter"> and it´s instances </see>
+            /// </summary>
+            Boolean = 2,
+            /// <summary>
+            /// value used for saving <see cref="SimStringParameter"> and it´s instances </see>
+            /// </summary>
+            String = 3,
+            /// <summary>
+            /// value used for saving <see cref="SimEnumParameter"> and it´s instances </see>
+            /// </summary>
+            Enum = 4
+        }
+
+
+
         #region Syntax Parameter
 
         /// <summary>
-        /// Syntax for a <see cref="SimParameter"/>
+        /// Handles the parsing of all the subtype of <see cref="SimBaseParameter"/>
+        /// Handled subtypes: 
+        /// <see cref="SimDoubleParameter"/>
+        /// <see cref="SimIntegerParameter"/>
+        /// <see cref="SimStringParameter"/>
+        /// <see cref="SimBoolParameter"/>
+        /// <see cref="SimEnumParameter"/>
         /// </summary>
-        internal static DXFEntityParserElement<SimParameter> ParameterEntityElement =
-            new DXFEntityParserElement<SimParameter>(ParamStructTypes.PARAMETER,
-                (data, info) => ParseParameter(data, info),
+        internal static DXFEntityParserElement<SimBaseParameter> BaseParameterEntityElement =
+            new DXFEntityParserElement<SimBaseParameter>(ParamStructTypes.PARAMETER,
+                (data, info) => ParseBaseParameter(data, info),
                 new DXFEntryParserElement[]
                 {
                     new DXFSingleEntryParserElement<long>(ParamStructCommonSaveCode.ENTITY_LOCAL_ID),
+                    new DXFSingleEntryParserElement<ParameterType>(ParameterSaveCode.PARAMTYPE),
                     new DXFSingleEntryParserElement<string>(ParameterSaveCode.NAME),
                     new DXFSingleEntryParserElement<string>(ParameterSaveCode.UNIT),
                     new DXFSingleEntryParserElement<SimCategory>(ParameterSaveCode.CATEGORY),
-                    new DXFSingleEntryParserElement<Guid>(ParameterSaveCode.TAXONOMY_PROJECT_ID) {IsOptional = true, MinVersion = 14 },
-                    new DXFSingleEntryParserElement<long>(ParameterSaveCode.TAXONOMY_ID) {IsOptional = true, MinVersion = 14 },
+                    new DXFSingleEntryParserElement<Guid>(ParameterSaveCode.TAXONOMY_PROJECT_ID) {IsOptional = true, MinVersion = 17 },
                     new DXFSingleEntryParserElement<long>(ParameterSaveCode.TAXONOMY_ENTRY_ID) {IsOptional = true, MinVersion = 14 },
                     new DXFSingleEntryParserElement<SimInfoFlow>(ParameterSaveCode.PROPAGATION),
                     new DXFSingleEntryParserElement<SimParameterInstancePropagation>(ParameterSaveCode.INSTANCE_PROPAGATION),
-                    new DXFSingleEntryParserElement<double>(ParameterSaveCode.VALUE_MIN),
-                    new DXFSingleEntryParserElement<double>(ParameterSaveCode.VALUE_MAX),
-                    new DXFSingleEntryParserElement<double>(ParameterSaveCode.VALUE_CURRENT),
+                    new DXFSingleEntryParserElement<string>(ParameterSaveCode.VALUE_MIN),
+                    new DXFSingleEntryParserElement<string>(ParameterSaveCode.VALUE_MAX),
+                    new DXFSingleEntryParserElement<string>(ParameterSaveCode.VALUE_CURRENT),
                     new DXFSingleEntryParserElement<string>(ParameterSaveCode.VALUE_TEXT),
                     new DXFSingleEntryParserElement<SimParameterOperations>(ParameterSaveCode.ALLOWED_OPERATIONS),
                     new DXFSingleEntryParserElement<bool>(ParameterSaveCode.IS_AUTOGENERATED),
 
-                    new DXFSingleEntryParserElement<Guid>(MultiValueSaveCode.MVPTR_GLOBALID),
-                    new DXFSingleEntryParserElement<long>(MultiValueSaveCode.MVPTR_LOCALID),
-                    new DXFSingleEntryParserElement<double>(MultiValueSaveCode.MVPTR_AXIS_X),
-                    new DXFSingleEntryParserElement<double>(MultiValueSaveCode.MVPTR_AXIS_Y),
-                    new DXFSingleEntryParserElement<double>(MultiValueSaveCode.MVPTR_AXIS_Z),
-                    new DXFSingleEntryParserElement<string>(MultiValueSaveCode.MVPTR_GRAPHNAME),
+                    new DXFSingleEntryParserElement<Guid>(MultiValueSaveCode.MVSRC_GLOBALID),
+                    new DXFSingleEntryParserElement<long>(MultiValueSaveCode.MVSRC_LOCALID),
+                    new DXFSingleEntryParserElement<double>(MultiValueSaveCode.MVSRC_AXIS_X),
+                    new DXFSingleEntryParserElement<double>(MultiValueSaveCode.MVSRC_AXIS_Y),
+                    new DXFSingleEntryParserElement<double>(MultiValueSaveCode.MVSRC_AXIS_Z),
+                    new DXFSingleEntryParserElement<string>(MultiValueSaveCode.MVSRC_GRAPHNAME),
+                    new DXFSingleEntryParserElement<SimGeometrySourceProperty>(MultiValueSaveCode.GEOSRC_PROPERTY),
+                    new DXFStructArrayEntryParserElement<SimId>(MultiValueSaveCode.GEOSRC_FILTER, ParseFilterTag,
+                        new DXFEntryParserElement[]
+                        {
+                            new DXFSingleEntryParserElement<Guid>(MultiValueSaveCode.GEOSRC_FILTER_ENTRY_GLOBAL_ID) { IsOptional = true },
+                            new DXFSingleEntryParserElement<long>(MultiValueSaveCode.GEOSRC_FILTER_ENTRY_LOCAL_ID),
+                        }) { MinVersion = 17 },
+
+
+                    //SimEnumparameters
+                    new DXFSingleEntryParserElement<long>(ParameterSaveCode.ENUMPARAM_TAXONOMYENTRY_VALUE_LOCALID) { MinVersion = 18, IsOptional = true },
+                    new DXFSingleEntryParserElement<Guid>(ParameterSaveCode.ENUMPARAM_TAXOMYENTRY_VALUE_GLOBALID)  { MinVersion = 18 , IsOptional = true},
+                    new DXFSingleEntryParserElement<long>(ParameterSaveCode.ENUMPARAM_PARENT_TAXONOMYENTRY_LOCALID)  { MinVersion = 18 , IsOptional = true},
+                    new DXFSingleEntryParserElement<Guid>(ParameterSaveCode.ENUMPARAM_PARENT_TAXONOMYENTRY_GLOBALID )  { MinVersion = 18, IsOptional = true },
 
                     //Legacy
                     new DXFSingleEntryParserElement<long>(ParameterSaveCode.VALUE_FIELD_REF) { MaxVersion = 0 },
@@ -178,7 +226,8 @@ namespace SIMULTAN.Serializer.CODXF
                 new DXFEntryParserElement[]
                 {
                     new DXFSingleEntryParserElement<int>(ComponentInstanceSaveCode.GEOM_REF_FILE),
-                    new DXFSingleEntryParserElement<ulong>(ComponentInstanceSaveCode.GEOM_REF_ID)
+                    new DXFSingleEntryParserElement<ulong>(ComponentInstanceSaveCode.GEOM_REF_ID),
+                    new DXFSingleEntryParserElement<SimInstancePlacementState>(ComponentInstanceSaveCode.PLACEMENT_STATE),
                 })
                 );
 
@@ -233,22 +282,7 @@ namespace SIMULTAN.Serializer.CODXF
                             new DXFSingleEntryParserElement<double>(ComponentInstanceSaveCode.INST_SIZE_TS_ADDEND),
                         }),
 
-                    new DXFStructArrayEntryParserElement<Point3D>(ComponentInstanceSaveCode.INST_PATH,
-                        (data, info) => {
-                            return new Point3D(
-                                data.Get<double>(ParamStructCommonSaveCode.X_VALUE, 0.0),
-                                data.Get<double>(ParamStructCommonSaveCode.Y_VALUE, 0.0),
-                                data.Get<double>(ParamStructCommonSaveCode.Z_VALUE, 0.0)
-                                );
-                        },
-                        new DXFEntryParserElement[]
-                        {
-                            new DXFSingleEntryParserElement<double>(ParamStructCommonSaveCode.X_VALUE),
-                            new DXFSingleEntryParserElement<double>(ParamStructCommonSaveCode.Y_VALUE),
-                            new DXFSingleEntryParserElement<double>(ParamStructCommonSaveCode.Z_VALUE),
-                        }),
-
-                    new DXFStructArrayEntryParserElement<(SimId, string, double)>(ComponentInstanceSaveCode.INST_PARAMS,
+                    new DXFStructArrayEntryParserElement<(SimId, string, object)>(ComponentInstanceSaveCode.INST_PARAMS,
                         (data, info) => {
 
                             var paramName = "";
@@ -259,21 +293,49 @@ namespace SIMULTAN.Serializer.CODXF
                             else
                                 paramName = data.Get<string>(ComponentInstanceSaveCode.INST_PARAM_ID, string.Empty);
 
+                            var parameterType = ParameterType.Double;
+                            if(info.FileVersion >= 19)
+                            {
+                                parameterType =  data.Get<ParameterType>(ParameterSaveCode.PARAMTYPE, ParameterType.Double);
+                            }
                             return (
                                 paramId,
                                 paramName,
-                                data.Get<double>(ComponentInstanceSaveCode.INST_PARAM_VAL, 0.0)
+                                GetParameterInstanceValue(data, parameterType, info,  paramId)
                                 );
                         },
                         new DXFEntryParserElement[]
                         {
                             new DXFSingleEntryParserElement<long>(ComponentInstanceSaveCode.INST_PARAM_ID) { MinVersion = 8 },
                             new DXFSingleEntryParserElement<string>(ComponentInstanceSaveCode.INST_PARAM_ID) { MaxVersion = 7 },
-                            new DXFSingleEntryParserElement<double>(ComponentInstanceSaveCode.INST_PARAM_VAL),
+                            new DXFSingleEntryParserElement<ParameterType>(ParameterSaveCode.PARAMTYPE) { MinVersion = 19 },
+                            new DXFSingleEntryParserElement<string>(ComponentInstanceSaveCode.INST_PARAM_VAL),
                         }),
                 });
 
         #endregion
+
+
+        private static object GetParameterInstanceValue(DXFParserResultSet data, ParameterType parameterType, DXFParserInfo info, SimId paramId)
+        {
+            var stringVal = data.Get<string>((int)ComponentInstanceSaveCode.INST_PARAM_VAL, "");
+            switch (parameterType)
+            {
+                case ParameterType.Double:
+                    return DXFDataConverter<double>.P.FromDXFString(stringVal, info);
+                case ParameterType.Integer:
+                    return DXFDataConverter<int>.P.FromDXFString(stringVal, info);
+                case ParameterType.Boolean:
+                    return DXFDataConverter<bool>.P.FromDXFString(stringVal, info);
+                case ParameterType.String:
+                    return DXFDataConverter<string>.P.FromDXFString(stringVal, info);
+                case ParameterType.Enum:
+                    return DXFDataConverter<long>.P.FromDXFString(stringVal, info); // We save the localId of the selected value 
+                default:
+                    return null;
+            }
+
+        }
 
         #region Syntax Mappings
 
@@ -341,24 +403,14 @@ namespace SIMULTAN.Serializer.CODXF
         #region Syntax Excel Component Mapping
 
         /// <summary>
-        /// Syntax for a <see cref="ExcelComponentMapping"/>
+        /// Syntax for a ExcelComponentMapping
         /// </summary>
-        internal static DXFEntityParserElementBase<ExcelComponentMapping> ExcelComponentMappingElement =
-            new DXFEntityParserElement<ExcelComponentMapping>(
+        internal static DXFEntityParserElementBase<object> ExcelComponentMappingElement =
+            new DXFEntityParserElement<object>(
                 ParamStructTypes.EXCEL_MAPPING,
-                (data, info) => ParseExcelComponentMapping(data, info),
+                (data, info) => null,
                 new DXFEntryParserElement[]
                 {
-                    new DXFStructArrayEntryParserElement<SimId>(ExcelMappingSaveCode.MAP_PATH, ParseExcelMappingPathItem,
-                        new DXFEntryParserElement[]
-                        {
-                            new DXFSingleEntryParserElement<long>(ParamStructCommonSaveCode.X_VALUE),
-                            new DXFSingleEntryParserElement<Guid>(ParamStructCommonSaveCode.Y_VALUE) { MinVersion = 12 }
-                        }),
-
-                    new DXFSingleEntryParserElement<string>(ExcelMappingSaveCode.MAP_TOOL_NAME),
-                    new DXFSingleEntryParserElement<string>(ExcelMappingSaveCode.MAP_RULE_NAME),
-                    new DXFSingleEntryParserElement<int>(ExcelMappingSaveCode.MAP_RULE_INDEX),
                 });
 
         #endregion
@@ -386,7 +438,7 @@ namespace SIMULTAN.Serializer.CODXF
 
                     new DXFArrayEntryParserElement<SimUserRole>(ChatItemSaveCode.EXPECTED_REACTIONS_FROM, ParamStructCommonSaveCode.X_VALUE),
 
-                    new DXFEntitySequenceEntryParserElement<SimChatItem>(ChatItemSaveCode.CHILDREN, 
+                    new DXFEntitySequenceEntryParserElement<SimChatItem>(ChatItemSaveCode.CHILDREN,
                         new DXFRecursiveEntityParserElement<SimChatItem>(ParamStructTypes.CHAT_ITEM, "SimChatItem")
                         ),
                 })
@@ -421,17 +473,27 @@ namespace SIMULTAN.Serializer.CODXF
                     (data, info) => ParseComponent(data, info),
                     new DXFEntryParserElement[]
                     {
-                        new DXFSingleEntryParserElement<SimSlot>(ParamStructCommonSaveCode.ENTITY_KEY),
+                        new DXFSingleEntryParserElement<SimSlot>(ParamStructCommonSaveCode.ENTITY_KEY) { MaxVersion = 15},
+                        new DXFSingleEntryParserElement<String>(ParamStructCommonSaveCode.ENTITY_KEY) { MinVersion = 16}, // Slot extension
 
                         new DXFSingleEntryParserElement<long>(ParamStructCommonSaveCode.ENTITY_LOCAL_ID),
                         new DXFSingleEntryParserElement<string>(ComponentSaveCode.NAME),
                         new DXFMultiLineTextElement(ComponentSaveCode.DESCRIPTION),
                         new DXFSingleEntryParserElement<bool>(ComponentSaveCode.GENERATED_AUTOMATICALLY),
-                        new DXFSingleEntryParserElement<string>(ComponentSaveCode.CURRENT_SLOT),
+                        new DXFSingleEntryParserElement<string>(ComponentSaveCode.CURRENT_SLOT) {MaxVersion = 15},
+                        new DXFSingleEntryParserElement<long>(ComponentSaveCode.CURRENT_SLOT) {MinVersion = 16},
 
                         new DXFEntitySequenceEntryParserElement<(SimSlot, SimComponent)>(ComponentSaveCode.CONTAINED_COMPONENTS,
                             new DXFRecursiveEntityParserElement<(SimSlot, SimComponent)>(ParamStructTypes.COMPONENT, "SimComponent")),
-                        new DXFArrayEntryParserElement<SimSlot>(ComponentSaveCode.CONTAINED_COMPONENT_SLOTS, ParamStructCommonSaveCode.STRING_VALUE),
+                        new DXFArrayEntryParserElement<SimSlot>(ComponentSaveCode.CONTAINED_COMPONENT_SLOTS, ParamStructCommonSaveCode.STRING_VALUE) {MaxVersion = 15},
+                        new DXFStructArrayEntryParserElement<SimSlot>(ComponentSaveCode.CONTAINED_COMPONENT_SLOTS,
+                            (result, info) => result.GetSlot(ParamStructCommonSaveCode.STRING_VALUE,ComponentSaveCode.SLOT_TAXONOMY_ENTRY_PROJECT_ID, ComponentSaveCode.SLOT_TAXONOMY_ENTRY_ID, info.GlobalId),
+                            new DXFEntryParserElement[]
+                            {
+                                new DXFSingleEntryParserElement<String>(ParamStructCommonSaveCode.STRING_VALUE),
+                                new DXFSingleEntryParserElement<Guid>(ComponentSaveCode.SLOT_TAXONOMY_ENTRY_PROJECT_ID){IsOptional = true},
+                                new DXFSingleEntryParserElement<long>(ComponentSaveCode.SLOT_TAXONOMY_ENTRY_ID),
+                            }) { MinVersion = 16},
 
                         new DXFEntitySequenceEntryParserElement<SimAccessProfileEntry>(ComponentSaveCode.PROFILE,
                             ProfileEntryElement) { MinVersion = 12 },
@@ -442,28 +504,37 @@ namespace SIMULTAN.Serializer.CODXF
                             (data, info) => ParseComponentReference(data, info),
                             new DXFEntryParserElement[]
                             {
-                                new DXFSingleEntryParserElement<SimSlot>(ParamStructCommonSaveCode.STRING_VALUE),
+                                new DXFSingleEntryParserElement<SimSlot>(ParamStructCommonSaveCode.STRING_VALUE) {MaxVersion = 15},
+                                new DXFSingleEntryParserElement<String>(ParamStructCommonSaveCode.STRING_VALUE) {MinVersion = 16},
+                                new DXFSingleEntryParserElement<Guid>(ComponentSaveCode.SLOT_TAXONOMY_ENTRY_PROJECT_ID) {IsOptional = true, MinVersion = 17},
+                                new DXFSingleEntryParserElement<long>(ComponentSaveCode.SLOT_TAXONOMY_ENTRY_ID) {MinVersion = 16},
                                 new DXFSingleEntryParserElement<long>(ParamStructCommonSaveCode.X_VALUE),
                                 new DXFSingleEntryParserElement<Guid>(ParamStructCommonSaveCode.Y_VALUE) { MinVersion = 2 }
                             }),
 
-                        new DXFEntitySequenceEntryParserElement<SimParameter>(ComponentSaveCode.CONTAINED_PARAMETERS,
-                            ParameterEntityElement),
+
+
+                        new DXFEntitySequenceEntryParserElement<SimBaseParameter>(ComponentSaveCode.CONTAINED_PARAMETERS,
+                            BaseParameterEntityElement),
+
+
                         new DXFEntitySequenceEntryParserElement<CalculationInitializationData>(ComponentSaveCode.CONTAINED_CALCULATIONS,
                             CalculationEntityElement),
 
                         new DXFSingleEntryParserElement<SimInstanceType>(ComponentSaveCode.INSTANCE_TYPE),
-                        new DXFEntitySequenceEntryParserElement<SimComponentInstance>(ComponentSaveCode.INSTANCES, 
+                        new DXFEntitySequenceEntryParserElement<SimComponentInstance>(ComponentSaveCode.INSTANCES,
                             InstanceEntityElement),
 
                         new DXFEntitySequenceEntryParserElement<CalculatorMapping>(ComponentSaveCode.CALCULATOR_MAPPINGS,
                             CalculatorMappingElement),
 
-                        new DXFEntitySequenceEntryParserElement<ExcelComponentMapping>(ComponentSaveCode.MAPPINGS_TO_EXCEL_TOOLS,
-                            ExcelComponentMappingElement) { MinVersion = 12 },
-                        new DXFEntitySequenceAlwaysStartEndEntryParserElementV11<ExcelComponentMapping>(
+                        //Not used anymore, but must be skipped when importing old files
+                        new DXFEntitySequenceEntryParserElement<object>(ComponentSaveCode.MAPPINGS_TO_EXCEL_TOOLS,
+                            ExcelComponentMappingElement) { MinVersion = 12, MaxVersion = 20 },
+                        new DXFEntitySequenceAlwaysStartEndEntryParserElementV11<object>(
                             ComponentSaveCode.MAPPINGS_TO_EXCEL_TOOLS,
                             ExcelComponentMappingElement) { MaxVersion = 11 },
+                        //End not used anymore
 
                         new DXFEntitySequenceEntryParserElement<SimChatItem>(ChatItemSaveCode.CONVERSATION,
                             SimChatItemElement) { MinVersion = 12 },
@@ -479,15 +550,15 @@ namespace SIMULTAN.Serializer.CODXF
                             MaxVersion = 11
                         }
                     }))
-                {
-                    Identifier = "SimComponent"
-                };
+            {
+                Identifier = "SimComponent"
+            };
 
         /// <summary>
         /// Syntax for a section containing Components
         /// </summary>
         public static DXFSectionParserElement<(SimSlot, SimComponent)> ComponentSectionEntityElement =
-            new DXFSectionParserElement<(SimSlot, SimComponent)>(ParamStructTypes.ENTITY_SECTION, 
+            new DXFSectionParserElement<(SimSlot, SimComponent)>(ParamStructTypes.ENTITY_SECTION,
                 new DXFEntityParserElementBase<(SimSlot, SimComponent)>[]
                 {
                     ComponentEntityElement
@@ -569,7 +640,8 @@ namespace SIMULTAN.Serializer.CODXF
             writer.Write(ComponentSaveCode.ACCESS_STATE, component.AccessLocal.ProfileState);
             writer.WriteEntitySequence(ComponentSaveCode.PROFILE, component.AccessLocal, WriteProfileEntry);
 
-            writer.Write(ComponentSaveCode.CURRENT_SLOT, component.CurrentSlot.Base);
+            writer.Write(ComponentSaveCode.CURRENT_SLOT, component.CurrentSlot.Target.Id.LocalId);
+
             writer.Write(ComponentSaveCode.COLOR, component.ComponentColor);
 
             //Sub Components
@@ -581,6 +653,8 @@ namespace SIMULTAN.Serializer.CODXF
                 (entry, iwriter) =>
                 {
                     iwriter.Write(ParamStructCommonSaveCode.STRING_VALUE, entry.Slot);
+                    // not writing global Id of taxonomy entry yet cause it is not needed now and may bloat the file
+                    iwriter.Write(ComponentSaveCode.SLOT_TAXONOMY_ENTRY_ID, entry.Slot.SlotBase.Target.Id.LocalId);
                 });
 
             //Referenced Components
@@ -597,12 +671,8 @@ namespace SIMULTAN.Serializer.CODXF
             writer.WriteEntitySequence(ComponentSaveCode.INSTANCES, component.Instances, WriteInstance);
 
             //Mappings
-            writer.WriteEntitySequence(ComponentSaveCode.CALCULATOR_MAPPINGS, component.CalculatorMappings, 
+            writer.WriteEntitySequence(ComponentSaveCode.CALCULATOR_MAPPINGS, component.CalculatorMappings,
                 (item, iwriter) => WriteMapping(item, iwriter, component));
-
-            //Excel Mapping
-            writer.WriteEntitySequence(ComponentSaveCode.MAPPINGS_TO_EXCEL_TOOLS, component.MappingsPerExcelTool.Values,
-                WriteExcelComponentMapping);
 
             //Chat
             writer.WriteEntitySequence(ChatItemSaveCode.CONVERSATION, component.Conversation.TopItems,
@@ -617,7 +687,17 @@ namespace SIMULTAN.Serializer.CODXF
         }
         private static (SimSlot, SimComponent) ParseComponent(DXFParserResultSet data, DXFParserInfo info)
         {
-            var slot = data.Get<SimSlot>(ParamStructCommonSaveCode.ENTITY_KEY, SimSlot.Invalid);
+            SimSlot slot;
+            String slotExtension = "";
+            if (info.FileVersion < 16)
+            {
+                slot = data.Get<SimSlot>(ParamStructCommonSaveCode.ENTITY_KEY, SimSlot.Invalid);
+            }
+            else
+            {
+                slot = SimSlot.Invalid;
+                slotExtension = data.Get<String>(ParamStructCommonSaveCode.ENTITY_KEY, "");
+            }
 
             var localId = data.Get<long>(ParamStructCommonSaveCode.ENTITY_LOCAL_ID, 0);
             localId = info.TranslateId(typeof(SimComponent), localId);
@@ -625,7 +705,20 @@ namespace SIMULTAN.Serializer.CODXF
             var name = data.Get<string>(ComponentSaveCode.NAME, string.Empty);
             var description = data.Get<string>(ComponentSaveCode.DESCRIPTION, string.Empty);
             var isAutogenerated = data.Get<bool>(ComponentSaveCode.GENERATED_AUTOMATICALLY, false);
-            string currentSlot = data.Get<string>(ComponentSaveCode.CURRENT_SLOT, SimDefaultSlots.Undefined);
+            string currentSlot = "";
+            SimId currentSlotTaxId = SimId.Empty;
+            if (info.FileVersion < 16)
+            {
+                currentSlot = data.Get<string>(ComponentSaveCode.CURRENT_SLOT, SimDefaultSlots.Undefined);
+            }
+            else
+            {
+                currentSlotTaxId = data.GetSimId(ComponentSaveCode.SLOT_TAXONOMY_ENTRY_PROJECT_ID, ComponentSaveCode.CURRENT_SLOT, info.GlobalId);
+                if (!String.IsNullOrEmpty(slotExtension))
+                {
+                    slot = new SimSlot(new SimTaxonomyEntryReference(currentSlotTaxId), slotExtension);
+                }
+            }
 
             Color color = Colors.Black;
             if (info.FileVersion >= 12)
@@ -635,11 +728,12 @@ namespace SIMULTAN.Serializer.CODXF
 
             var containedComponents = data.Get<(SimSlot, SimComponent)[]>(ComponentSaveCode.CONTAINED_COMPONENTS,
                 new (SimSlot, SimComponent)[0]).ToList();
+
             var containedSlots = data.Get<SimSlot[]>(ComponentSaveCode.CONTAINED_COMPONENT_SLOTS, new SimSlot[0]);
             foreach (var cs in containedSlots)
                 containedComponents.Add((cs, null));
 
-            var containedParameters = data.Get<SimParameter[]>(ComponentSaveCode.CONTAINED_PARAMETERS, new SimParameter[0]).Where(x => x != null).ToArray();
+            var containedParameters = data.Get<SimBaseParameter[]>(ComponentSaveCode.CONTAINED_PARAMETERS, new SimBaseParameter[0]).Where(x => x != null).ToList();
 
             var references = data.Get<SimComponentReference[]>(ComponentSaveCode.REFERENCED_COMPONENTS, new SimComponentReference[0]);
 
@@ -651,8 +745,6 @@ namespace SIMULTAN.Serializer.CODXF
 
             var mappings = data.Get<CalculatorMapping[]>(ComponentSaveCode.CALCULATOR_MAPPINGS, new CalculatorMapping[0]);
             var accessProfileEntries = data.Get<SimAccessProfileEntry[]>(ComponentSaveCode.PROFILE, new SimAccessProfileEntry[0]);
-
-            var excelMappings = data.Get<ExcelComponentMapping[]>(ComponentSaveCode.MAPPINGS_TO_EXCEL_TOOLS, new ExcelComponentMapping[0]);
 
             var chat = data.Get<SimChatItem[]>(ChatItemSaveCode.CONVERSATION, new SimChatItem[0]);
 
@@ -675,10 +767,10 @@ namespace SIMULTAN.Serializer.CODXF
             {
                 if (instanceType == SimInstanceType.AttributesFace)
                 {
-                    var propagationParameter = containedParameters.FirstOrDefault(x => x.TaxonomyEntry.Name == ReservedParameters.RP_INST_PROPAGATE);
+                    var propagationParameter = containedParameters.FirstOrDefault(x => x.NameTaxonomyEntry.Name == ReservedParameters.RP_INST_PROPAGATE) as SimDoubleParameter;
                     if (propagationParameter != null)
                     {
-                        propagationParameter.ValueCurrent = 1.0;
+                        propagationParameter.Value = 1.0;
                     }
 
                     //Reset instance parameters for propagating params
@@ -693,7 +785,7 @@ namespace SIMULTAN.Serializer.CODXF
                             {
                                 if (instance.LoadingParameterValuesPersistent[i].id.LocalId == param.Id.LocalId ||
                                     (instance.LoadingParameterValuesPersistent[i].id == SimId.Empty &&
-                                     instance.LoadingParameterValuesPersistent[i].parameterName == param.TaxonomyEntry.Name))
+                                     instance.LoadingParameterValuesPersistent[i].parameterName == param.NameTaxonomyEntry.Name))
                                 {
                                     instance.LoadingParameterValuesPersistent.RemoveAt(i);
                                     i--;
@@ -703,17 +795,19 @@ namespace SIMULTAN.Serializer.CODXF
                     }
                 }
             }
+
+
             if (info.FileVersion < 11)
             {
                 //Instance propagation parameter
-                var propagationParameter = containedParameters.FirstOrDefault(x => x.TaxonomyEntry.Name == ReservedParameters.RP_INST_PROPAGATE);
+                var propagationParameter = containedParameters.FirstOrDefault(x => x.NameTaxonomyEntry.Name == ReservedParameters.RP_INST_PROPAGATE);
                 if (propagationParameter != null)
                 {
                     foreach (var instance in instances)
                     {
-                        instance.PropagateParameterChanges = propagationParameter.ValueCurrent != 0;
+                        instance.PropagateParameterChanges = ((SimDoubleParameter)propagationParameter).Value != 0;
                     }
-                    containedParameters = containedParameters.Where(x => x != propagationParameter).ToArray();
+                    containedParameters = containedParameters.Where(x => x != propagationParameter).ToList();
                 }
             }
             if (info.FileVersion < 12) //Split slot because it could contain an extension text
@@ -721,15 +815,79 @@ namespace SIMULTAN.Serializer.CODXF
                 currentSlot = SimDefaultSlots.SplitExtensionSlot(currentSlot).slot;
             }
 
+            SimTaxonomyEntryReference currentSlotTaxRef;
+            if (info.FileVersion < 16)
+            {
+                currentSlotTaxRef = new SimPlaceholderTaxonomyEntryReference(currentSlot);
+            }
+            else
+            {
+                currentSlotTaxRef = new SimTaxonomyEntryReference(currentSlotTaxId);
+            }
+
+            //Remove automatically generated components
+            if (info.FileVersion <= 16
+                || info.FileVersion == 17 //ONLY FOR DEVELOPMENT
+                )
+            {
+                if (instanceType == SimInstanceType.Entity3D)
+                {
+                    for (int i = 0; i < containedComponents.Count; ++i)
+                    {
+                        if (containedComponents[i].Item2.InstanceType == SimInstanceType.GeometricSurface ||
+                            containedComponents[i].Item2.InstanceType == SimInstanceType.GeometricVolume)
+                        {
+                            if (RemoveAutogeneratedContent(containedComponents[i].Item2)) //Nothing to preserve, remove everything
+                            {
+                                containedComponents.RemoveAt(i);
+                                i--;
+                            }
+                        }
+                    }
+                }
+                else if (instanceType == SimInstanceType.AttributesFace || instanceType == SimInstanceType.AttributesEdge
+                    || instanceType == SimInstanceType.AttributesPoint)
+                {
+                    var defaultTaxonomy = info.ProjectData.Taxonomies.FirstOrDefault(x => x.Key == ReservedParameterKeys.RP_TAXONOMY_KEY);
+                    HashSet<SimId> keepParameterTaxonomyIds = new HashSet<SimId>();
+                    if (defaultTaxonomy != null)
+                    {
+                        foreach (var key in faceParametersToKeep)
+                        {
+                            var entry = defaultTaxonomy.GetTaxonomyEntryByKey(key);
+                            if (entry != null)
+                            {
+                                keepParameterTaxonomyIds.Add(entry.Id);
+                            }
+                        }
+                    }
+
+                    for (int i = containedParameters.Count - 1; i >= 0; --i)
+                    {
+
+                        if (containedParameters[i].IsAutomaticallyGenerated &&
+                            containedParameters[i].NameTaxonomyEntry.TaxonomyEntryReference != null)
+                        {
+                            SimTaxonomyEntry tempEntry = info.ProjectData.IdGenerator.GetById<SimTaxonomyEntry>(containedParameters[i].NameTaxonomyEntry.TaxonomyEntryReference.TaxonomyEntryId);
+                            if ((tempEntry == null || tempEntry.Taxonomy == defaultTaxonomy) &&
+                                !keepParameterTaxonomyIds.Contains(containedParameters[i].NameTaxonomyEntry.TaxonomyEntryReference.TaxonomyEntryId))
+                            {
+                                containedParameters.RemoveAt(i);
+                            }
+                        }
+                    }
+                }
+            }
+
             try
             {
                 var component = new SimComponent(info.GlobalId, localId, name, description,
                     isAutogenerated,
                     new SimAccessProfile(accessProfileEntries),
-                    new SimSlotBase(currentSlot), containedComponents,
+                    currentSlotTaxRef, containedComponents,
                     references, containedParameters,
                     calculations, instanceType, instances,
-                    mappings, excelMappings,
+                    mappings,
                     chat, visibility, color,
                     sorting);
                 return (slot, component);
@@ -747,12 +905,22 @@ namespace SIMULTAN.Serializer.CODXF
         private static void WriteComponentReference(SimComponentReference reference, DXFStreamWriter writer)
         {
             writer.Write(ParamStructCommonSaveCode.STRING_VALUE, reference.Slot);
+            // not writing global Id of taxonomy entry yet cause it is not needed now and may bloat the file
+            writer.Write(ComponentSaveCode.SLOT_TAXONOMY_ENTRY_ID, reference.Slot.SlotBase.TaxonomyEntryId.LocalId);
             writer.Write(ParamStructCommonSaveCode.X_VALUE, reference.TargetId.LocalId);
             writer.WriteGlobalId(ParamStructCommonSaveCode.Y_VALUE, reference.TargetId.GlobalId, reference.Owner.Id.GlobalId);
         }
         private static SimComponentReference ParseComponentReference(DXFParserResultSet data, DXFParserInfo info)
         {
-            var slot = data.Get<SimSlot>(ParamStructCommonSaveCode.STRING_VALUE, SimSlot.Invalid);
+            SimSlot slot;
+            if (info.FileVersion < 16)
+            {
+                slot = data.Get<SimSlot>(ParamStructCommonSaveCode.STRING_VALUE, SimSlot.Invalid);
+            }
+            else
+            {
+                slot = data.GetSlot(ParamStructCommonSaveCode.STRING_VALUE, ComponentSaveCode.SLOT_TAXONOMY_ENTRY_PROJECT_ID, ComponentSaveCode.SLOT_TAXONOMY_ENTRY_ID, info.GlobalId);
+            }
 
             var refId = data.GetSimId(ParamStructCommonSaveCode.Y_VALUE, ParamStructCommonSaveCode.X_VALUE, info.GlobalId);
             refId = info.TranslateId(typeof(SimComponent), refId);
@@ -770,8 +938,61 @@ namespace SIMULTAN.Serializer.CODXF
                     refId.GlobalId, refId.LocalId, e.Message, e.StackTrace, slot
                     ));
                 return null;
-            }            
+            }
         }
+
+
+        private static bool RemoveAutogeneratedContent(SimComponent component)
+        {
+            bool onlyAutogenContent = true;
+
+            for (int i = component.Parameters.Count - 1; i >= 0; --i)
+            {
+                if (component.Parameters[i].IsAutomaticallyGenerated)
+                {
+                    component.Parameters.RemoveAt(i);
+                }
+                else
+                    onlyAutogenContent = false;
+            }
+
+
+            for (int i = component.Components.Count - 1; i >= 0; --i)
+            {
+                var comp = component.Components[i].Component;
+                if (comp != null)
+                {
+                    if (comp.InstanceType == SimInstanceType.GeometricSurface || comp.InstanceType == SimInstanceType.GeometricVolume)
+                    {
+                        var canRemove = RemoveAutogeneratedContent(comp);
+                        if (!canRemove)
+                        {
+                            onlyAutogenContent = false;
+                        }
+                        else
+                            component.Components.RemoveAt(i);
+                    }
+                    else
+                        onlyAutogenContent = false;
+                }
+            }
+
+            component.Instances.Clear();
+            component.ReferencedComponents.Clear();
+
+            component.InstanceType = SimInstanceType.None;
+            component.IsAutomaticallyGenerated = false;
+
+            //Assets aren't removed because that's a lot of work
+
+            return onlyAutogenContent;
+        }
+
+        private static List<string> faceParametersToKeep = new List<string>
+        {
+            ReservedParameterKeys.RP_MATERIAL_COMPOSITE_D_IN,
+            ReservedParameterKeys.RP_MATERIAL_COMPOSITE_D_OUT,
+        };
 
         #endregion
 
@@ -782,7 +1003,151 @@ namespace SIMULTAN.Serializer.CODXF
         /// </summary>
         /// <param name="parameter">The parameter to serialize</param>
         /// <param name="writer">The writer into which the data should be written</param>
-        internal static void WriteParameter(SimParameter parameter, DXFStreamWriter writer)
+        internal static void WriteParameter(SimBaseParameter parameter, DXFStreamWriter writer)
+        {
+            if (parameter is SimDoubleParameter doubleParam)
+            {
+                WriteDoubleParameter(doubleParam, writer);
+            }
+            if (parameter is SimIntegerParameter intParam)
+            {
+                WriteIntegerParameter(intParam, writer);
+            }
+            if (parameter is SimStringParameter strParam)
+            {
+                WriteStringParameter(strParam, writer);
+            }
+            if (parameter is SimBoolParameter boolParamm)
+            {
+                WriteBoolParameter(boolParamm, writer);
+            }
+            if (parameter is SimEnumParameter enumparam)
+            {
+                WriteEnumParameter(enumparam, writer);
+            }
+        }
+        private static void WriteEnumParameter(SimEnumParameter parameter, DXFStreamWriter writer)
+        {
+            if (parameter == null)
+                throw new ArgumentNullException(nameof(parameter));
+            if (writer == null)
+                throw new ArgumentNullException(nameof(writer));
+
+
+            writer.Write(ParamStructCommonSaveCode.ENTITY_START, ParamStructTypes.PARAMETER);
+            writer.Write(ParameterSaveCode.PARAMTYPE, ParameterType.Enum);
+            writer.Write(ParamStructCommonSaveCode.ENTITY_LOCAL_ID, parameter.Id.LocalId);
+
+            writer.Write(ParameterSaveCode.NAME, parameter.NameTaxonomyEntry.Name);
+            writer.Write(ParameterSaveCode.CATEGORY, parameter.Category);
+
+            if (parameter.NameTaxonomyEntry.HasTaxonomyEntry())
+            {
+                writer.Write(ParameterSaveCode.TAXONOMY_ENTRY_ID, parameter.NameTaxonomyEntry.TaxonomyEntryReference.TaxonomyEntryId.LocalId);
+            }
+
+            writer.Write(ParameterSaveCode.PROPAGATION, parameter.Propagation);
+            writer.Write(ParameterSaveCode.INSTANCE_PROPAGATION, parameter.InstancePropagationMode);
+
+            //  writer.Write(ParameterSaveCode.VALUE_CURRENT, parameter.Value);
+            writer.Write(ParameterSaveCode.VALUE_TEXT, parameter.Description);
+
+            writer.Write(ParameterSaveCode.ALLOWED_OPERATIONS, parameter.AllowedOperations);
+            writer.Write(ParameterSaveCode.IS_AUTOGENERATED, parameter.IsAutomaticallyGenerated);
+
+            if (parameter.Value != null)
+            {
+                writer.Write(ParameterSaveCode.ENUMPARAM_TAXONOMYENTRY_VALUE_LOCALID, parameter.Value.TaxonomyEntryId.LocalId);
+                writer.Write(ParameterSaveCode.ENUMPARAM_TAXOMYENTRY_VALUE_GLOBALID, parameter.Value.TaxonomyEntryId.GlobalId);
+            }
+            else
+            {
+                writer.Write(ParameterSaveCode.ENUMPARAM_TAXONOMYENTRY_VALUE_LOCALID, default(long));
+                writer.Write(ParameterSaveCode.ENUMPARAM_TAXOMYENTRY_VALUE_GLOBALID, Guid.Empty);
+            }
+
+            writer.Write(ParameterSaveCode.ENUMPARAM_PARENT_TAXONOMYENTRY_LOCALID, parameter.ParentTaxonomyEntryRef.TaxonomyEntryId.LocalId);
+            writer.Write(ParameterSaveCode.ENUMPARAM_PARENT_TAXONOMYENTRY_GLOBALID, parameter.ParentTaxonomyEntryRef.TaxonomyEntryId.GlobalId);
+
+            if (parameter.ValueSource != null)
+            {
+                WriteValueSource(parameter.ValueSource, writer);
+            }
+        }
+
+
+        private static void WriteBoolParameter(SimBoolParameter parameter, DXFStreamWriter writer)
+        {
+            if (parameter == null)
+                throw new ArgumentNullException(nameof(parameter));
+            if (writer == null)
+                throw new ArgumentNullException(nameof(writer));
+
+
+            writer.Write(ParamStructCommonSaveCode.ENTITY_START, ParamStructTypes.PARAMETER);
+            writer.Write(ParameterSaveCode.PARAMTYPE, ParameterType.Boolean);
+            writer.Write(ParamStructCommonSaveCode.ENTITY_LOCAL_ID, parameter.Id.LocalId);
+
+            writer.Write(ParameterSaveCode.NAME, parameter.NameTaxonomyEntry.Name);
+            writer.Write(ParameterSaveCode.CATEGORY, parameter.Category);
+
+            if (parameter.NameTaxonomyEntry.HasTaxonomyEntry())
+            {
+                writer.Write(ParameterSaveCode.TAXONOMY_ENTRY_ID, parameter.NameTaxonomyEntry.TaxonomyEntryReference.TaxonomyEntryId.LocalId);
+            }
+
+            writer.Write(ParameterSaveCode.PROPAGATION, parameter.Propagation);
+            writer.Write(ParameterSaveCode.INSTANCE_PROPAGATION, parameter.InstancePropagationMode);
+
+            writer.Write(ParameterSaveCode.VALUE_CURRENT, parameter.Value);
+            writer.Write(ParameterSaveCode.VALUE_TEXT, parameter.Description);
+
+            writer.Write(ParameterSaveCode.ALLOWED_OPERATIONS, parameter.AllowedOperations);
+            writer.Write(ParameterSaveCode.IS_AUTOGENERATED, parameter.IsAutomaticallyGenerated);
+
+            if (parameter.ValueSource != null)
+            {
+                WriteValueSource(parameter.ValueSource, writer);
+            }
+        }
+
+
+        private static void WriteStringParameter(SimStringParameter parameter, DXFStreamWriter writer)
+        {
+            if (parameter == null)
+                throw new ArgumentNullException(nameof(parameter));
+            if (writer == null)
+                throw new ArgumentNullException(nameof(writer));
+
+
+            writer.Write(ParamStructCommonSaveCode.ENTITY_START, ParamStructTypes.PARAMETER);
+            writer.Write(ParameterSaveCode.PARAMTYPE, ParameterType.String);
+            writer.Write(ParamStructCommonSaveCode.ENTITY_LOCAL_ID, parameter.Id.LocalId);
+
+            writer.Write(ParameterSaveCode.NAME, parameter.NameTaxonomyEntry.Name);
+            writer.Write(ParameterSaveCode.CATEGORY, parameter.Category);
+
+            if (parameter.NameTaxonomyEntry.HasTaxonomyEntry())
+            {
+                writer.Write(ParameterSaveCode.TAXONOMY_ENTRY_ID, parameter.NameTaxonomyEntry.TaxonomyEntryReference.TaxonomyEntryId.LocalId);
+            }
+
+            writer.Write(ParameterSaveCode.PROPAGATION, parameter.Propagation);
+            writer.Write(ParameterSaveCode.INSTANCE_PROPAGATION, parameter.InstancePropagationMode);
+
+            writer.Write(ParameterSaveCode.VALUE_CURRENT, parameter.Value);
+            writer.Write(ParameterSaveCode.VALUE_TEXT, parameter.Description);
+
+            writer.Write(ParameterSaveCode.ALLOWED_OPERATIONS, parameter.AllowedOperations);
+            writer.Write(ParameterSaveCode.IS_AUTOGENERATED, parameter.IsAutomaticallyGenerated);
+
+            if (parameter.ValueSource != null)
+            {
+                WriteValueSource(parameter.ValueSource, writer);
+            }
+        }
+
+        private static void WriteIntegerParameter(SimIntegerParameter parameter, DXFStreamWriter writer)
         {
             if (parameter == null)
                 throw new ArgumentNullException(nameof(parameter));
@@ -790,17 +1155,16 @@ namespace SIMULTAN.Serializer.CODXF
                 throw new ArgumentNullException(nameof(writer));
 
             writer.Write(ParamStructCommonSaveCode.ENTITY_START, ParamStructTypes.PARAMETER);
-            writer.Write(ParamStructCommonSaveCode.CLASS_NAME, typeof(SimParameter));
+            writer.Write(ParameterSaveCode.PARAMTYPE, ParameterType.Integer);
             writer.Write(ParamStructCommonSaveCode.ENTITY_LOCAL_ID, parameter.Id.LocalId);
 
-            writer.Write(ParameterSaveCode.NAME, parameter.TaxonomyEntry.Name);
+            writer.Write(ParameterSaveCode.NAME, parameter.NameTaxonomyEntry.Name);
             writer.Write(ParameterSaveCode.UNIT, parameter.Unit);
             writer.Write(ParameterSaveCode.CATEGORY, parameter.Category);
 
-            if (parameter.TaxonomyEntry.HasTaxonomyEntry()) {
-                writer.WriteGlobalId(ParameterSaveCode.TAXONOMY_PROJECT_ID, parameter.TaxonomyEntry.TaxonomyEntryReference.TaxonomyId.GlobalId, parameter.Id.GlobalId);
-                writer.Write(ParameterSaveCode.TAXONOMY_ID, parameter.TaxonomyEntry.TaxonomyEntryReference.TaxonomyId.LocalId); 
-                writer.Write(ParameterSaveCode.TAXONOMY_ENTRY_ID, parameter.TaxonomyEntry.TaxonomyEntryReference.TaxonomyEntryId.LocalId); 
+            if (parameter.NameTaxonomyEntry.HasTaxonomyEntry())
+            {
+                writer.Write(ParameterSaveCode.TAXONOMY_ENTRY_ID, parameter.NameTaxonomyEntry.TaxonomyEntryReference.TaxonomyEntryId.LocalId);
             }
 
             writer.Write(ParameterSaveCode.PROPAGATION, parameter.Propagation);
@@ -808,31 +1172,68 @@ namespace SIMULTAN.Serializer.CODXF
 
             writer.Write(ParameterSaveCode.VALUE_MIN, parameter.ValueMin);
             writer.Write(ParameterSaveCode.VALUE_MAX, parameter.ValueMax);
-            writer.Write(ParameterSaveCode.VALUE_CURRENT, parameter.ValueCurrent);
-            writer.Write(ParameterSaveCode.VALUE_TEXT, parameter.TextValue);
+            writer.Write(ParameterSaveCode.VALUE_CURRENT, parameter.Value);
+            writer.Write(ParameterSaveCode.VALUE_TEXT, parameter.Description);
 
             writer.Write(ParameterSaveCode.ALLOWED_OPERATIONS, parameter.AllowedOperations);
             writer.Write(ParameterSaveCode.IS_AUTOGENERATED, parameter.IsAutomaticallyGenerated);
 
-            if (parameter.MultiValuePointer != null)
+            if (parameter.ValueSource != null)
             {
-                WriteMultiValuePointer(parameter.MultiValuePointer, writer);
+                WriteValueSource(parameter.ValueSource, writer);
             }
         }
-        private static SimParameter ParseParameter(DXFParserResultSet data, DXFParserInfo info)
+
+        private static void WriteDoubleParameter(SimDoubleParameter parameter, DXFStreamWriter writer)
+        {
+            if (parameter == null)
+                throw new ArgumentNullException(nameof(parameter));
+            if (writer == null)
+                throw new ArgumentNullException(nameof(writer));
+
+
+            writer.Write(ParamStructCommonSaveCode.ENTITY_START, ParamStructTypes.PARAMETER);
+            writer.Write(ParameterSaveCode.PARAMTYPE, ParameterType.Double);
+            writer.Write(ParamStructCommonSaveCode.ENTITY_LOCAL_ID, parameter.Id.LocalId);
+
+            writer.Write(ParameterSaveCode.NAME, parameter.NameTaxonomyEntry.Name);
+            writer.Write(ParameterSaveCode.UNIT, parameter.Unit);
+            writer.Write(ParameterSaveCode.CATEGORY, parameter.Category);
+
+            if (parameter.NameTaxonomyEntry.HasTaxonomyEntry())
+            {
+                writer.Write(ParameterSaveCode.TAXONOMY_ENTRY_ID, parameter.NameTaxonomyEntry.TaxonomyEntryReference.TaxonomyEntryId.LocalId);
+            }
+
+            writer.Write(ParameterSaveCode.PROPAGATION, parameter.Propagation);
+            writer.Write(ParameterSaveCode.INSTANCE_PROPAGATION, parameter.InstancePropagationMode);
+
+            writer.Write(ParameterSaveCode.VALUE_MIN, parameter.ValueMin);
+            writer.Write(ParameterSaveCode.VALUE_MAX, parameter.ValueMax);
+            writer.Write(ParameterSaveCode.VALUE_CURRENT, parameter.Value);
+            writer.Write(ParameterSaveCode.VALUE_TEXT, parameter.Description);
+
+            writer.Write(ParameterSaveCode.ALLOWED_OPERATIONS, parameter.AllowedOperations);
+            writer.Write(ParameterSaveCode.IS_AUTOGENERATED, parameter.IsAutomaticallyGenerated);
+
+            if (parameter.ValueSource != null)
+            {
+                WriteValueSource(parameter.ValueSource, writer);
+            }
+        }
+
+
+
+        private static SimStringParameter ParseStringParameter(DXFParserResultSet data, DXFParserInfo info)
         {
             var localId = data.Get<long>(ParamStructCommonSaveCode.ENTITY_LOCAL_ID, 0);
             var name = data.Get<string>(ParameterSaveCode.NAME, "");
-            var unit = data.Get<string>(ParameterSaveCode.UNIT, "");
             var category = data.Get<SimCategory>(ParameterSaveCode.CATEGORY, SimCategory.None);
-            var taxonomyId = data.GetSimId(ParameterSaveCode.TAXONOMY_PROJECT_ID, ParameterSaveCode.TAXONOMY_ID, info.GlobalId);
             var taxonomyEntryId = data.GetSimId(ParameterSaveCode.TAXONOMY_PROJECT_ID, ParameterSaveCode.TAXONOMY_ENTRY_ID, info.GlobalId);
             var infoFlow = data.Get<SimInfoFlow>(ParameterSaveCode.PROPAGATION, SimInfoFlow.Input);
-            var instancePropagation = data.Get<SimParameterInstancePropagation>(ParameterSaveCode.INSTANCE_PROPAGATION, 
+            var instancePropagation = data.Get<SimParameterInstancePropagation>(ParameterSaveCode.INSTANCE_PROPAGATION,
                 SimParameterInstancePropagation.PropagateIfInstance);
-            var valueMin = data.Get<double>(ParameterSaveCode.VALUE_MIN, double.NegativeInfinity);
-            var valueMax = data.Get<double>(ParameterSaveCode.VALUE_MAX, double.NegativeInfinity);
-            var valueCurrent = data.Get<double>(ParameterSaveCode.VALUE_CURRENT, double.NegativeInfinity);
+            var valueCurrent = data.Get<string>(ParameterSaveCode.VALUE_CURRENT, "");
             var valueText = data.Get<string>(ParameterSaveCode.VALUE_TEXT, "");
             var operations = data.Get<SimParameterOperations>(ParameterSaveCode.ALLOWED_OPERATIONS, SimParameterOperations.All);
             var isAutogenerated = data.Get<bool>(ParameterSaveCode.IS_AUTOGENERATED, false);
@@ -840,18 +1241,18 @@ namespace SIMULTAN.Serializer.CODXF
             if (info.FileVersion <= 0)
                 operations |= SimParameterOperations.Move;
 
-            var newId = info.GenerateNewId(typeof(SimParameter), localId, out bool idExists);
+            var newId = info.GenerateNewId(typeof(SimBaseParameter), localId, out bool idExists);
 
             //Warning when Id is not unique
             if (idExists)
             {
-                var otherId = info.TranslateId(typeof(SimParameter), localId);
+                var otherId = info.TranslateId(typeof(SimBaseParameter), localId);
 
                 var originalParameter = info.ProjectData.ParameterLibraryManager.ParameterRecord.FirstOrDefault(
                             x => x.Id.LocalId == otherId);
                 if (originalParameter == null)
                 {
-                    originalParameter = info.ProjectData.IdGenerator.GetById<SimParameter>(
+                    originalParameter = info.ProjectData.IdGenerator.GetById<SimBaseParameter>(
                         new SimId(info.ProjectData.Owner, otherId)
                         );
                 }
@@ -859,7 +1260,7 @@ namespace SIMULTAN.Serializer.CODXF
                 info.Log(string.Format("Multiple Parameters with Id {0} found. Name=\"{1}\" Other Parameter Name=\"{2}\"" +
                     " New Id current: {3}, New Id original: {4}",
                     localId, name,
-                    originalParameter != null ? originalParameter.TaxonomyEntry.Name : "???",
+                    originalParameter != null ? originalParameter.NameTaxonomyEntry.Name : "???",
                     newId, originalParameter != null ? originalParameter.Id.LocalId : -1
                     ));
             }
@@ -868,16 +1269,173 @@ namespace SIMULTAN.Serializer.CODXF
 
             try
             {
-                var multiValuePointer = ParseMultiValuePointer(data, info);
+                var multiValuePointer = ParseValueSource(data, info);
 
-                SimParameter parameter = new SimParameter(localId, name, unit,
+                SimStringParameter parameter = new SimStringParameter(localId, name,
+                    category, infoFlow, valueCurrent, valueText, multiValuePointer,
+                    operations, instancePropagation, isAutogenerated);
+
+                if (taxonomyEntryId.LocalId != 0)
+                {
+                    var taxref = new SimTaxonomyEntryReference(taxonomyEntryId);
+                    parameter.NameTaxonomyEntry = new SimTaxonomyEntryOrString(taxref);
+                }
+
+                return parameter;
+            }
+            catch (Exception e)
+            {
+                info.Log(string.Format("Failed to load Parameter with Id={0}, Name=\"{1}\"\nException: {2}\nStackTrace:\n{3}",
+                    localId, name, e.Message, e.StackTrace
+                    ));
+            }
+
+            return null;
+        }
+
+
+        /// <summary>
+        /// Parses the saved <see cref="SimEnumParameter"/>
+        /// It´s parsing differs from he other <see cref="SimBaseParameter"/>:
+        /// the value is a <see cref="SimTaxonomyEntry"/> so we need to retrieve it by it´s ID
+        /// <see cref="ParameterSaveCode.ENUMPARAM_TAXONOMYENTRY_VALUE_LOCALID"/> and 
+        /// <see cref="ParameterSaveCode.ENUMPARAM_TAXONOMYENTRY_VALUE_LOCALID"/>
+        /// </summary>
+        /// <returns>Returns a <see cref="SimEnumParameter"/></returns>
+        private static SimEnumParameter ParseEnumParameter(DXFParserResultSet data, DXFParserInfo info)
+        {
+            var localId = data.Get<long>(ParamStructCommonSaveCode.ENTITY_LOCAL_ID, 0);
+            var name = data.Get<string>(ParameterSaveCode.NAME, "");
+            var category = data.Get<SimCategory>(ParameterSaveCode.CATEGORY, SimCategory.None);
+            var taxonomyEntryId = data.GetSimId(ParameterSaveCode.TAXONOMY_PROJECT_ID, ParameterSaveCode.TAXONOMY_ENTRY_ID, info.GlobalId);
+            var infoFlow = data.Get<SimInfoFlow>(ParameterSaveCode.PROPAGATION, SimInfoFlow.Input);
+            var instancePropagation = data.Get<SimParameterInstancePropagation>(ParameterSaveCode.INSTANCE_PROPAGATION,
+                SimParameterInstancePropagation.PropagateIfInstance);
+            var valueCurrent = data.Get<string>(ParameterSaveCode.VALUE_CURRENT, "");
+            var valueText = data.Get<string>(ParameterSaveCode.VALUE_TEXT, "");
+            var operations = data.Get<SimParameterOperations>(ParameterSaveCode.ALLOWED_OPERATIONS, SimParameterOperations.All);
+            var isAutogenerated = data.Get<bool>(ParameterSaveCode.IS_AUTOGENERATED, false);
+
+
+
+
+            var entryId = data.GetSimId(ParameterSaveCode.ENUMPARAM_TAXOMYENTRY_VALUE_GLOBALID, ParameterSaveCode.ENUMPARAM_TAXONOMYENTRY_VALUE_LOCALID, info.GlobalId);
+            var taxonomyId = data.GetSimId(ParameterSaveCode.ENUMPARAM_PARENT_TAXONOMYENTRY_GLOBALID, ParameterSaveCode.ENUMPARAM_PARENT_TAXONOMYENTRY_LOCALID, info.GlobalId);
+
+            var valueTaxonomyEntry = info.ProjectData.IdGenerator.GetById<SimTaxonomyEntry>(entryId);
+            var parentTaxonomyEntry = info.ProjectData.IdGenerator.GetById<SimTaxonomyEntry>(taxonomyId);
+
+            if (info.FileVersion <= 0)
+                operations |= SimParameterOperations.Move;
+
+            var newId = info.GenerateNewId(typeof(SimBaseParameter), localId, out bool idExists);
+
+            //Warning when Id is not unique
+            if (idExists)
+            {
+                var otherId = info.TranslateId(typeof(SimBaseParameter), localId);
+
+                var originalParameter = info.ProjectData.ParameterLibraryManager.ParameterRecord.FirstOrDefault(
+                            x => x.Id.LocalId == otherId);
+                if (originalParameter == null)
+                {
+                    originalParameter = info.ProjectData.IdGenerator.GetById<SimBaseParameter>(
+                        new SimId(info.ProjectData.Owner, otherId)
+                        );
+                }
+
+                info.Log(string.Format("Multiple Parameters with Id {0} found. Name=\"{1}\" Other Parameter Name=\"{2}\"" +
+                    " New Id current: {3}, New Id original: {4}",
+                    localId, name,
+                    originalParameter != null ? originalParameter.NameTaxonomyEntry.Name : "???",
+                    newId, originalParameter != null ? originalParameter.Id.LocalId : -1
+                    ));
+            }
+
+            localId = newId;
+
+            try
+            {
+                SimEnumParameter parameter = new SimEnumParameter(localId, name,
+                    category, infoFlow, parentTaxonomyEntry, valueTaxonomyEntry, valueText, null,
+                    operations, instancePropagation, isAutogenerated);
+
+                if (taxonomyEntryId.LocalId != 0)
+                {
+                    var taxref = new SimTaxonomyEntryReference(taxonomyEntryId);
+                    parameter.NameTaxonomyEntry = new SimTaxonomyEntryOrString(taxref);
+                }
+
+                return parameter;
+            }
+            catch (Exception e)
+            {
+                info.Log(string.Format("Failed to load Parameter with Id={0}, Name=\"{1}\"\nException: {2}\nStackTrace:\n{3}",
+                    localId, name, e.Message, e.StackTrace
+                    ));
+            }
+            return null;
+        }
+
+
+        private static SimIntegerParameter ParseIntParameter(DXFParserResultSet data, DXFParserInfo info)
+        {
+            var localId = data.Get<long>(ParamStructCommonSaveCode.ENTITY_LOCAL_ID, 0);
+            var name = data.Get<string>(ParameterSaveCode.NAME, "");
+            var unit = data.Get<string>(ParameterSaveCode.UNIT, "");
+            var category = data.Get<SimCategory>(ParameterSaveCode.CATEGORY, SimCategory.None);
+            var taxonomyEntryId = data.GetSimId(ParameterSaveCode.TAXONOMY_PROJECT_ID, ParameterSaveCode.TAXONOMY_ENTRY_ID, info.GlobalId);
+            var infoFlow = data.Get<SimInfoFlow>(ParameterSaveCode.PROPAGATION, SimInfoFlow.Input);
+            var instancePropagation = data.Get<SimParameterInstancePropagation>(ParameterSaveCode.INSTANCE_PROPAGATION,
+                SimParameterInstancePropagation.PropagateIfInstance);
+            var valueMin = data.Get<int>(ParameterSaveCode.VALUE_MIN, int.MinValue);
+            var valueMax = data.Get<int>(ParameterSaveCode.VALUE_MAX, int.MaxValue);
+            var valueCurrent = data.Get<int>(ParameterSaveCode.VALUE_CURRENT, int.MinValue);
+            var valueText = data.Get<string>(ParameterSaveCode.VALUE_TEXT, "");
+            var operations = data.Get<SimParameterOperations>(ParameterSaveCode.ALLOWED_OPERATIONS, SimParameterOperations.All);
+            var isAutogenerated = data.Get<bool>(ParameterSaveCode.IS_AUTOGENERATED, false);
+
+            if (info.FileVersion <= 0)
+                operations |= SimParameterOperations.Move;
+
+            var newId = info.GenerateNewId(typeof(SimBaseParameter), localId, out bool idExists);
+
+            //Warning when Id is not unique
+            if (idExists)
+            {
+                var otherId = info.TranslateId(typeof(SimBaseParameter), localId);
+
+                var originalParameter = info.ProjectData.ParameterLibraryManager.ParameterRecord.FirstOrDefault(
+                            x => x.Id.LocalId == otherId);
+                if (originalParameter == null)
+                {
+                    originalParameter = info.ProjectData.IdGenerator.GetById<SimBaseParameter>(
+                        new SimId(info.ProjectData.Owner, otherId)
+                        );
+                }
+
+                info.Log(string.Format("Multiple Parameters with Id {0} found. Name=\"{1}\" Other Parameter Name=\"{2}\"" +
+                    " New Id current: {3}, New Id original: {4}",
+                    localId, name,
+                    originalParameter != null ? originalParameter.NameTaxonomyEntry.Name : "???",
+                    newId, originalParameter != null ? originalParameter.Id.LocalId : -1
+                    ));
+            }
+
+            localId = newId;
+
+            try
+            {
+                var multiValuePointer = ParseValueSource(data, info);
+
+                SimIntegerParameter parameter = new SimIntegerParameter(localId, name, unit,
                     category, infoFlow, valueCurrent, valueMin, valueMax, valueText, multiValuePointer,
                     operations, instancePropagation, isAutogenerated);
 
-                if(taxonomyId.LocalId != 0 && taxonomyEntryId.LocalId != 0)
+                if (taxonomyEntryId.LocalId != 0)
                 {
-                    var taxref = new SimTaxonomyEntryReference(taxonomyEntryId, taxonomyId);
-                    parameter.TaxonomyEntry = new SimTaxonomyEntryOrString(taxref);
+                    var taxref = new SimTaxonomyEntryReference(taxonomyEntryId);
+                    parameter.NameTaxonomyEntry = new SimTaxonomyEntryOrString(taxref);
                 }
 
                 return parameter;
@@ -893,54 +1451,401 @@ namespace SIMULTAN.Serializer.CODXF
         }
 
         /// <summary>
+        /// Function for parsing the different value types. 
+        /// Uses the <see cref="ParameterType"/> to identify the different types saved.
+        /// For parsing <see cref="SimDoubleParameter"/> see <see cref="ParseDoubleParameter(DXFParserResultSet, DXFParserInfo)"/>
+        /// For parsing <see cref="SimIntegerParameter"/> see <see cref="ParseIntegerParameter(DXFParserResultSet, DXFParserInfo)"/>
+        /// For parsing <see cref="SimStringParameter"/> see <see cref="ParseStringParameter(DXFParserResultSet, DXFParserInfo)"/>
+        /// For parsing <see cref="SimBoolParameter"/> see <see cref="ParseBoolParameter(DXFParserResultSet, DXFParserInfo)"/>
+        /// For parsing <see cref="SimEnumParameter"/> see <see cref="ParseEnumParameter(DXFParserResultSet, DXFParserInfo)"/>
+        /// </summary>
+        /// <param name="data">The parser data</param>
+        /// <param name="info">Info of the parser</param>
+        /// <returns>Returns a parsed <see cref="SimBaseParameter"/></returns>
+        public static SimBaseParameter ParseBaseParameter(DXFParserResultSet data, DXFParserInfo info)
+        {
+            SimBaseParameter parsedParam = null;
+            var parameterType = ParameterType.Double;
+            if (info.FileVersion >= 19)
+            {
+                parameterType = data.Get<ParameterType>(ParameterSaveCode.PARAMTYPE, ParameterType.Double);
+            }
+
+            if (parameterType == ParameterType.Double)
+            {
+                parsedParam = ParseDoubleParameter(data, info);
+            }
+            else if (parameterType == ParameterType.Integer)
+            {
+                parsedParam = ParseIntegerParameter(data, info);
+            }
+            else if (parameterType == ParameterType.Boolean)
+            {
+                parsedParam = ParseBoolParameter(data, info);
+            }
+            else if (parameterType == ParameterType.String)
+            {
+                parsedParam = ParseStringParameter(data, info);
+            }
+            else if (parameterType == ParameterType.Enum)
+            {
+                parsedParam = ParseEnumParameter(data, info);
+            }
+
+            return parsedParam;
+        }
+
+
+        private static SimDoubleParameter ParseDoubleParameter(DXFParserResultSet data, DXFParserInfo info)
+        {
+            var localId = data.Get<long>(ParamStructCommonSaveCode.ENTITY_LOCAL_ID, 0);
+            var name = data.Get<string>(ParameterSaveCode.NAME, "");
+            var unit = data.Get<string>(ParameterSaveCode.UNIT, "");
+            var category = data.Get<SimCategory>(ParameterSaveCode.CATEGORY, SimCategory.None);
+            var taxonomyEntryId = data.GetSimId(ParameterSaveCode.TAXONOMY_PROJECT_ID, ParameterSaveCode.TAXONOMY_ENTRY_ID, info.GlobalId);
+            var infoFlow = data.Get<SimInfoFlow>(ParameterSaveCode.PROPAGATION, SimInfoFlow.Input);
+            var instancePropagation = data.Get<SimParameterInstancePropagation>(ParameterSaveCode.INSTANCE_PROPAGATION,
+                SimParameterInstancePropagation.PropagateIfInstance);
+
+
+            var stringMin = data.Get<string>(ParameterSaveCode.VALUE_MIN, "");
+            double valueMin = double.NegativeInfinity;
+            if (double.TryParse(stringMin, System.Globalization.NumberStyles.Any, CultureInfo.InvariantCulture, out var doubleMin))
+            {
+                valueMin = doubleMin;
+            }
+
+            var stringMax = data.Get<string>(ParameterSaveCode.VALUE_MAX, "");
+            double valueMax = double.PositiveInfinity;
+            if (double.TryParse(stringMax, System.Globalization.NumberStyles.Any, CultureInfo.InvariantCulture, out var doubleMax))
+            {
+                valueMax = doubleMax;
+            }
+
+            var stringValue = data.Get<string>(ParameterSaveCode.VALUE_CURRENT, "");
+            double value = double.NaN;
+            if (double.TryParse(stringValue, System.Globalization.NumberStyles.Any, CultureInfo.InvariantCulture, out var doubleValue))
+            {
+                value = doubleValue;
+            }
+            else if (stringValue == "-∞")
+            {
+                value = double.NegativeInfinity;
+            }
+            else if (stringValue == "∞")
+            {
+                value = double.PositiveInfinity;
+            }
+
+
+
+            var valueText = data.Get<string>(ParameterSaveCode.VALUE_TEXT, "");
+            var operations = data.Get<SimParameterOperations>(ParameterSaveCode.ALLOWED_OPERATIONS, SimParameterOperations.All);
+            var isAutogenerated = data.Get<bool>(ParameterSaveCode.IS_AUTOGENERATED, false);
+
+            if (info.FileVersion <= 0)
+                operations |= SimParameterOperations.Move;
+
+            var newId = info.GenerateNewId(typeof(SimBaseParameter), localId, out bool idExists);
+
+            //Warning when Id is not unique
+            if (idExists)
+            {
+                var otherId = info.TranslateId(typeof(SimBaseParameter), localId);
+
+                var originalParameter = info.ProjectData.ParameterLibraryManager.ParameterRecord.FirstOrDefault(
+                            x => x.Id.LocalId == otherId);
+                if (originalParameter == null)
+                {
+                    originalParameter = info.ProjectData.IdGenerator.GetById<SimBaseParameter>(
+                        new SimId(info.ProjectData.Owner, otherId)
+                        );
+                }
+
+                info.Log(string.Format("Multiple Parameters with Id {0} found. Name=\"{1}\" Other Parameter Name=\"{2}\"" +
+                    " New Id current: {3}, New Id original: {4}",
+                    localId, name,
+                    originalParameter != null ? originalParameter.NameTaxonomyEntry.Name : "???",
+                    newId, originalParameter != null ? originalParameter.Id.LocalId : -1
+                    ));
+            }
+
+            localId = newId;
+
+            try
+            {
+                var multiValuePointer = ParseValueSource(data, info);
+
+                var parameter = new SimDoubleParameter(localId, name, unit,
+                   category, infoFlow, value, valueMin, valueMax, valueText, multiValuePointer,
+                   operations, instancePropagation, isAutogenerated);
+
+                if (taxonomyEntryId.LocalId != 0)
+                {
+                    var taxref = new SimTaxonomyEntryReference(taxonomyEntryId);
+                    parameter.NameTaxonomyEntry = new SimTaxonomyEntryOrString(taxref);
+                }
+                return parameter;
+            }
+            catch (Exception e)
+            {
+                info.Log(string.Format("Failed to load Parameter with Id={0}, Name=\"{1}\"\nException: {2}\nStackTrace:\n{3}",
+                    localId, name, e.Message, e.StackTrace
+                    ));
+            }
+            return null;
+        }
+
+
+
+        private static SimIntegerParameter ParseIntegerParameter(DXFParserResultSet data, DXFParserInfo info)
+        {
+            var localId = data.Get<long>(ParamStructCommonSaveCode.ENTITY_LOCAL_ID, 0);
+            var name = data.Get<string>(ParameterSaveCode.NAME, "");
+            var unit = data.Get<string>(ParameterSaveCode.UNIT, "");
+            var category = data.Get<SimCategory>(ParameterSaveCode.CATEGORY, SimCategory.None);
+            var taxonomyEntryId = data.GetSimId(ParameterSaveCode.TAXONOMY_PROJECT_ID, ParameterSaveCode.TAXONOMY_ENTRY_ID, info.GlobalId);
+            var infoFlow = data.Get<SimInfoFlow>(ParameterSaveCode.PROPAGATION, SimInfoFlow.Input);
+            var instancePropagation = data.Get<SimParameterInstancePropagation>(ParameterSaveCode.INSTANCE_PROPAGATION,
+                SimParameterInstancePropagation.PropagateIfInstance);
+
+
+
+            var stringMin = data.Get<string>(ParameterSaveCode.VALUE_MIN, "");
+            int valueMin = int.MaxValue;
+            if (int.TryParse(stringMin, System.Globalization.NumberStyles.Any, CultureInfo.InvariantCulture, out var intMin))
+            {
+                valueMin = intMin;
+            }
+
+            var stringMax = data.Get<string>(ParameterSaveCode.VALUE_MAX, "");
+            int valueMax = int.MinValue;
+            if (int.TryParse(stringMax, System.Globalization.NumberStyles.Any, CultureInfo.InvariantCulture, out var intMax))
+            {
+                valueMax = intMax;
+            }
+
+            var stringValue = data.Get<string>(ParameterSaveCode.VALUE_CURRENT, "");
+            int value = int.MinValue;
+            if (int.TryParse(stringValue, System.Globalization.NumberStyles.Any, CultureInfo.InvariantCulture, out var intValue))
+            {
+                value = intValue;
+            }
+            var valueText = data.Get<string>(ParameterSaveCode.VALUE_TEXT, "");
+            var operations = data.Get<SimParameterOperations>(ParameterSaveCode.ALLOWED_OPERATIONS, SimParameterOperations.All);
+            var isAutogenerated = data.Get<bool>(ParameterSaveCode.IS_AUTOGENERATED, false);
+
+            if (info.FileVersion <= 0)
+                operations |= SimParameterOperations.Move;
+
+            var newId = info.GenerateNewId(typeof(SimBaseParameter), localId, out bool idExists);
+
+            //Warning when Id is not unique
+            if (idExists)
+            {
+                var otherId = info.TranslateId(typeof(SimBaseParameter), localId);
+
+                var originalParameter = info.ProjectData.ParameterLibraryManager.ParameterRecord.FirstOrDefault(
+                            x => x.Id.LocalId == otherId);
+                if (originalParameter == null)
+                {
+                    originalParameter = info.ProjectData.IdGenerator.GetById<SimBaseParameter>(
+                        new SimId(info.ProjectData.Owner, otherId)
+                        );
+                }
+
+                info.Log(string.Format("Multiple Parameters with Id {0} found. Name=\"{1}\" Other Parameter Name=\"{2}\"" +
+                    " New Id current: {3}, New Id original: {4}",
+                    localId, name,
+                    originalParameter != null ? originalParameter.NameTaxonomyEntry.Name : "???",
+                    newId, originalParameter != null ? originalParameter.Id.LocalId : -1
+                    ));
+            }
+            localId = newId;
+
+            try
+            {
+                var multiValuePointer = ParseValueSource(data, info);
+
+                var parameter = new SimIntegerParameter(localId, name, unit,
+                   category, infoFlow, value, valueMin, valueMax, valueText, multiValuePointer,
+                   operations, instancePropagation, isAutogenerated);
+
+                if (taxonomyEntryId.LocalId != 0)
+                {
+                    var taxref = new SimTaxonomyEntryReference(taxonomyEntryId);
+                    parameter.NameTaxonomyEntry = new SimTaxonomyEntryOrString(taxref);
+                }
+                return parameter;
+            }
+            catch (Exception e)
+            {
+                info.Log(string.Format("Failed to load Parameter with Id={0}, Name=\"{1}\"\nException: {2}\nStackTrace:\n{3}",
+                    localId, name, e.Message, e.StackTrace
+                    ));
+            }
+            return null;
+        }
+
+
+
+        private static SimBoolParameter ParseBoolParameter(DXFParserResultSet data, DXFParserInfo info)
+        {
+            var localId = data.Get<long>(ParamStructCommonSaveCode.ENTITY_LOCAL_ID, 0);
+            var name = data.Get<string>(ParameterSaveCode.NAME, "");
+            var category = data.Get<SimCategory>(ParameterSaveCode.CATEGORY, SimCategory.None);
+            var taxonomyEntryId = data.GetSimId(ParameterSaveCode.TAXONOMY_PROJECT_ID, ParameterSaveCode.TAXONOMY_ENTRY_ID, info.GlobalId);
+            var infoFlow = data.Get<SimInfoFlow>(ParameterSaveCode.PROPAGATION, SimInfoFlow.Input);
+            var instancePropagation = data.Get<SimParameterInstancePropagation>(ParameterSaveCode.INSTANCE_PROPAGATION,
+                SimParameterInstancePropagation.PropagateIfInstance);
+
+            var stringValue = data.Get<string>(ParameterSaveCode.VALUE_CURRENT, "1");
+            var value = stringValue == "1";
+
+            var valueText = data.Get<string>(ParameterSaveCode.VALUE_TEXT, "");
+            var operations = data.Get<SimParameterOperations>(ParameterSaveCode.ALLOWED_OPERATIONS, SimParameterOperations.All);
+            var isAutogenerated = data.Get<bool>(ParameterSaveCode.IS_AUTOGENERATED, false);
+
+            if (info.FileVersion <= 0)
+                operations |= SimParameterOperations.Move;
+
+            var newId = info.GenerateNewId(typeof(SimBaseParameter), localId, out bool idExists);
+
+            //Warning when Id is not unique
+            if (idExists)
+            {
+                var otherId = info.TranslateId(typeof(SimBaseParameter), localId);
+
+                var originalParameter = info.ProjectData.ParameterLibraryManager.ParameterRecord.FirstOrDefault(
+                            x => x.Id.LocalId == otherId);
+                if (originalParameter == null)
+                {
+                    originalParameter = info.ProjectData.IdGenerator.GetById<SimBaseParameter>(
+                        new SimId(info.ProjectData.Owner, otherId)
+                        );
+                }
+
+                info.Log(string.Format("Multiple Parameters with Id {0} found. Name=\"{1}\" Other Parameter Name=\"{2}\"" +
+                    " New Id current: {3}, New Id original: {4}",
+                    localId, name,
+                    originalParameter != null ? originalParameter.NameTaxonomyEntry.Name : "???",
+                    newId, originalParameter != null ? originalParameter.Id.LocalId : -1
+                    ));
+            }
+
+            localId = newId;
+
+            try
+            {
+                var multiValuePointer = ParseValueSource(data, info);
+
+                var parameter = new SimBoolParameter(localId, name,
+                   category, infoFlow, value, valueText, multiValuePointer,
+                   operations, instancePropagation, isAutogenerated);
+
+                if (taxonomyEntryId.LocalId != 0)
+                {
+                    var taxref = new SimTaxonomyEntryReference(taxonomyEntryId);
+                    parameter.NameTaxonomyEntry = new SimTaxonomyEntryOrString(taxref);
+                }
+                return parameter;
+            }
+            catch (Exception e)
+            {
+                info.Log(string.Format("Failed to load Parameter with Id={0}, Name=\"{1}\"\nException: {2}\nStackTrace:\n{3}",
+                    localId, name, e.Message, e.StackTrace
+                    ));
+            }
+            return null;
+        }
+
+
+
+
+        /// <summary>
         /// Writes a MultiValue pointer to the DXF stream
         /// </summary>
-        /// <param name="pointer">The MultiValue pointer to serialize</param>
+        /// <param name="valueSource">The MultiValue pointer to serialize</param>
         /// <param name="writer">The writer into which the data should be written</param>
-        internal static void WriteMultiValuePointer(SimMultiValuePointer pointer, DXFStreamWriter writer)
+        internal static void WriteValueSource(SimParameterValueSource valueSource, DXFStreamWriter writer)
         {
-            if (pointer == null)
-                throw new ArgumentNullException(nameof(pointer));
+            if (valueSource == null)
+                throw new ArgumentNullException(nameof(valueSource));
 
-            double xAxis = 0.0, yAxis = 0.0, zAxis = 0.0;
-            string graphName = String.Empty;
+            if (valueSource is SimMultiValueParameterSource mvp)
+            {
+                double xAxis = 0.0, yAxis = 0.0, zAxis = 0.0;
+                string graphName = String.Empty;
 
-            if (pointer is SimMultiValueBigTable.SimMultiValueBigTablePointer btptr)
-            {
-                xAxis = btptr.Column; yAxis = btptr.Row;
-            }
-            else if (pointer is SimMultiValueField3D.SimMultiValueField3DPointer fieldptr)
-            {
-                xAxis = fieldptr.AxisValueX; yAxis = fieldptr.AxisValueY; zAxis = fieldptr.AxisValueZ;
-            }
-            else if (pointer is SimMultiValueFunction.MultiValueFunctionPointer funcptr)
-            {
-                xAxis = funcptr.AxisValueX; yAxis = funcptr.AxisValueY; graphName = funcptr.GraphName;
-            }
-            else
-                throw new NotSupportedException("Unsupported MultiValue Type");
+                if (valueSource is SimMultiValueBigTableParameterSource btptr)
+                {
+                    xAxis = btptr.Column; yAxis = btptr.Row;
+                }
+                else if (valueSource is SimMultiValueField3DParameterSource fieldptr)
+                {
+                    xAxis = fieldptr.AxisValueX; yAxis = fieldptr.AxisValueY; zAxis = fieldptr.AxisValueZ;
+                }
+                else if (valueSource is SimMultiValueFunctionParameterSource funcptr)
+                {
+                    xAxis = funcptr.AxisValueX; yAxis = funcptr.AxisValueY; graphName = funcptr.GraphName;
+                }
+                else
+                    throw new NotSupportedException("Unsupported MultiValue Type");
 
-            writer.WriteGlobalId(MultiValueSaveCode.MVPTR_GLOBALID, pointer.ValueField.Id.GlobalId, pointer.TargetParameter.Id.GlobalId);
-            writer.Write(MultiValueSaveCode.MVPTR_LOCALID, pointer.ValueField.Id.LocalId);
-            writer.Write(MultiValueSaveCode.MVPTR_AXIS_X, xAxis);
-            writer.Write(MultiValueSaveCode.MVPTR_AXIS_Y, yAxis);
-            writer.Write(MultiValueSaveCode.MVPTR_AXIS_Z, zAxis);
-            writer.Write(MultiValueSaveCode.MVPTR_GRAPHNAME, graphName);
+                writer.WriteGlobalId(MultiValueSaveCode.MVSRC_GLOBALID, mvp.ValueField.Id.GlobalId, mvp.TargetParameter.Id.GlobalId);
+                writer.Write(MultiValueSaveCode.MVSRC_LOCALID, mvp.ValueField.Id.LocalId);
+                writer.Write(MultiValueSaveCode.MVSRC_AXIS_X, xAxis);
+                writer.Write(MultiValueSaveCode.MVSRC_AXIS_Y, yAxis);
+                writer.Write(MultiValueSaveCode.MVSRC_AXIS_Z, zAxis);
+                writer.Write(MultiValueSaveCode.MVSRC_GRAPHNAME, graphName);
+            }
+            else if (valueSource is SimGeometryParameterSource gps)
+            {
+                writer.Write(MultiValueSaveCode.GEOSRC_PROPERTY, gps.GeometryProperty);
+                writer.WriteArray(MultiValueSaveCode.GEOSRC_FILTER, gps.FilterTags,
+                    (taxref, w) =>
+                    {
+                        // don't write global id yet, may be too much bloat
+                        // w.Write<SimId>(MultiValueSaveCode.GEOSRC_FILTER_ENTRY_GLOBAL_ID, taxref.Target.GlobalID);
+                        w.Write<long>(MultiValueSaveCode.GEOSRC_FILTER_ENTRY_LOCAL_ID, taxref.Target.LocalID);
+                    });
+            }
         }
-        private static SimMultiValuePointer ParseMultiValuePointer(DXFParserResultSet data, DXFParserInfo info)
+
+        private static SimId ParseFilterTag(DXFParserResultSet result, DXFParserInfo info)
         {
-            var mvId = data.GetSimId(MultiValueSaveCode.MVPTR_GLOBALID, MultiValueSaveCode.MVPTR_LOCALID, info.GlobalId);
+            var taxId = result.GetSimId(MultiValueSaveCode.GEOSRC_FILTER_ENTRY_GLOBAL_ID, MultiValueSaveCode.GEOSRC_FILTER_ENTRY_LOCAL_ID, info.GlobalId);
+
+            if (taxId.LocalId == 0)
+                throw new Exception("Tag taxonomy entry local id cannot be zero");
+
+            return taxId;
+        }
+
+
+        private static SimParameterValueSource ParseValueSource(DXFParserResultSet data, DXFParserInfo info)
+        {
+            var mvId = data.GetSimId(MultiValueSaveCode.MVSRC_GLOBALID, MultiValueSaveCode.MVSRC_LOCALID, info.GlobalId);
             mvId = info.TranslateId(typeof(SimMultiValue), mvId);
 
             if (info.FileVersion < 12 && info.GlobalId == Guid.Empty)
                 mvId = new SimId(Guid.Empty, mvId.LocalId);
 
-            var xAxis = data.Get<double>(MultiValueSaveCode.MVPTR_AXIS_X, 0.0);
-            var yAxis = data.Get<double>(MultiValueSaveCode.MVPTR_AXIS_Y, 0.0);
-            var zAxis = data.Get<double>(MultiValueSaveCode.MVPTR_AXIS_Z, 0.0);
-            var graphName = data.Get<string>(MultiValueSaveCode.MVPTR_GRAPHNAME, string.Empty);
+            var xAxis = data.Get<double>(MultiValueSaveCode.MVSRC_AXIS_X, 0.0);
+            var yAxis = data.Get<double>(MultiValueSaveCode.MVSRC_AXIS_Y, 0.0);
+            var zAxis = data.Get<double>(MultiValueSaveCode.MVSRC_AXIS_Z, 0.0);
+            var graphName = data.Get<string>(MultiValueSaveCode.MVSRC_GRAPHNAME, string.Empty);
 
-            if (mvId != SimId.Empty)
+            var geoSourceProperty = data.Get<SimGeometrySourceProperty>(MultiValueSaveCode.GEOSRC_PROPERTY, SimGeometrySourceProperty.Invalid);
+            var geoSourceFilterIds = data.Get<SimId[]>(MultiValueSaveCode.GEOSRC_FILTER, new SimId[0]);
+
+            if (geoSourceProperty != SimGeometrySourceProperty.Invalid)
+            {
+                var source = new SimGeometryParameterSource(geoSourceProperty);
+                source.FilterTags.AddRange(geoSourceFilterIds.Select(x => new SimTaxonomyEntryReference(x)));
+                return source;
+            }
+            else if (mvId != SimId.Empty)
             {
                 var mv = info.ProjectData.IdGenerator.GetById<SimMultiValue>(mvId);
                 if (mv != null)
@@ -996,7 +1901,7 @@ namespace SIMULTAN.Serializer.CODXF
                             info.Log(string.Format("Column index out of bounds for ValueField {0}", table.Name));
                         }
 
-                        return new SimMultiValueBigTable.SimMultiValueBigTablePointer(table, row, column);
+                        return new SimMultiValueBigTableParameterSource(table, row, column);
                     }
                     else if (field is SimMultiValueFunction)
                     {
@@ -1010,7 +1915,7 @@ namespace SIMULTAN.Serializer.CODXF
                         }
                         var graph = function.Graphs[graphIdx];
 
-                        return new SimMultiValueFunction.MultiValueFunctionPointer(function,
+                        return new SimMultiValueFunctionParameterSource(function,
                             graph.Name, graph.Points[0].X, 0.0);
                     }
                     else if (field is SimMultiValueField3D)
@@ -1019,7 +1924,7 @@ namespace SIMULTAN.Serializer.CODXF
 
                         info.Log(String.Format("ValueField may be attached to a wrong location"));
 
-                        return new SimMultiValueField3D.SimMultiValueField3DPointer(table,
+                        return new SimMultiValueField3DParameterSource(table,
                             mvCellIndices[0], mvCellIndices[1], mvCellIndices[2]
                             );
                     }
@@ -1050,7 +1955,7 @@ namespace SIMULTAN.Serializer.CODXF
             writer.Write(CalculationSaveCode.NAME, calculation.Name);
             writer.Write(CalculationSaveCode.EXPRESSION, calculation.Expression);
 
-            writer.WriteArray(CalculationSaveCode.PARAMS_INPUT, calculation.InputParams, 
+            writer.WriteArray(CalculationSaveCode.PARAMS_INPUT, calculation.InputParams,
                 (param, iwriter) => WriteCalculationParameterReference(param, calculation, iwriter));
 
             writer.WriteArray(CalculationSaveCode.PARAMS_OUTPUT, calculation.ReturnParams,
@@ -1102,7 +2007,7 @@ namespace SIMULTAN.Serializer.CODXF
 
             var iterations = data.Get<int>(CalculationSaveCode.VECTOR_CALC_ITERATION_COUNT, 1);
             var overrideResults = data.Get<bool>(CalculationSaveCode.VECTOR_CALC_OVERRIDE, true);
-            var resultAggregation = data.Get<SimResultAggregationMethod>(CalculationSaveCode.VECTOR_CALC_AGGREGATION, 
+            var resultAggregation = data.Get<SimResultAggregationMethod>(CalculationSaveCode.VECTOR_CALC_AGGREGATION,
                 SimResultAggregationMethod.Average);
 
             Dictionary<string, CalculationParameterMetaData> parameterMetaData = new Dictionary<string, CalculationParameterMetaData>();
@@ -1219,8 +2124,8 @@ namespace SIMULTAN.Serializer.CODXF
 
             return null;
         }
-        
-        private static void WriteCalculationParameterReference(KeyValuePair<string, SimParameter> param, SimCalculation calculation,
+
+        private static void WriteCalculationParameterReference(KeyValuePair<string, SimDoubleParameter> param, SimCalculation calculation,
             DXFStreamWriter writer)
         {
             writer.Write(ParamStructCommonSaveCode.STRING_VALUE, param.Key);
@@ -1257,7 +2162,7 @@ namespace SIMULTAN.Serializer.CODXF
             }
 
             //Translate parameter Ids
-            id = info.TranslateId(typeof(SimParameter), id);
+            id = info.TranslateId(typeof(SimBaseParameter), id);
 
             return new KeyValuePair<string, SimId>(key, id);
         }
@@ -1278,7 +2183,7 @@ namespace SIMULTAN.Serializer.CODXF
             if (info.FileVersion <= 3)
             {
                 //Instead of the key, the id of the referenced parameter was stored
-                paramId = info.TranslateId(typeof(SimParameter), data.Get<long>(ParamStructCommonSaveCode.V5_VALUE, -1L));
+                paramId = info.TranslateId(typeof(SimBaseParameter), data.Get<long>(ParamStructCommonSaveCode.V5_VALUE, -1L));
             }
             else
                 key = data.Get<string>(ParamStructCommonSaveCode.V5_VALUE, string.Empty);
@@ -1315,14 +2220,14 @@ namespace SIMULTAN.Serializer.CODXF
             writer.Write(ParamStructCommonSaveCode.V6_VALUE, meta.RandomizeIsClamping);
             writer.Write(ParamStructCommonSaveCode.V7_VALUE, meta.RandomizeClampDeviation);
         }
-        private static (string key, long paramid, double mean, double deviation, DeviationModeType mode, bool isRandom, bool isClamping, double clampDeviation) 
+        private static (string key, long paramid, double mean, double deviation, DeviationModeType mode, bool isRandom, bool isClamping, double clampDeviation)
             ParseRandomization(DXFParserResultSet data, DXFParserInfo info)
         {
             string key = string.Empty;
             long paramid = -1;
 
             if (info.FileVersion <= 3)
-                paramid = info.TranslateId(typeof(SimParameter), data.Get<long>(ParamStructCommonSaveCode.V5_VALUE, -1L));
+                paramid = info.TranslateId(typeof(SimBaseParameter), data.Get<long>(ParamStructCommonSaveCode.V5_VALUE, -1L));
             else
                 key = data.Get<string>(ParamStructCommonSaveCode.V5_VALUE, string.Empty);
 
@@ -1401,19 +2306,37 @@ namespace SIMULTAN.Serializer.CODXF
                 writer.Write(ComponentInstanceSaveCode.INST_SIZE_TS_ADDEND, item.Addend);
             });
 
-            //Path
-            writer.WriteArray(ComponentInstanceSaveCode.INST_PATH, instance.InstancePath, (item, iwriter) => 
-            {
-                iwriter.Write(ParamStructCommonSaveCode.X_VALUE, item.X);
-                iwriter.Write(ParamStructCommonSaveCode.Y_VALUE, item.Y);
-                iwriter.Write(ParamStructCommonSaveCode.Z_VALUE, item.Z);
-            });
-
             //Parameters
             writer.WriteArray(ComponentInstanceSaveCode.INST_PARAMS, instance.InstanceParameterValuesPersistent, (item, iwriter) =>
             {
                 iwriter.Write(ComponentInstanceSaveCode.INST_PARAM_ID, item.Key.Id.LocalId);
-                iwriter.Write(ComponentInstanceSaveCode.INST_PARAM_VAL, item.Value);
+
+
+                switch (item.Key)
+                {
+                    case SimDoubleParameter dParam:
+                        iwriter.Write(ParameterSaveCode.PARAMTYPE, ParameterType.Double);
+                        iwriter.Write(ComponentInstanceSaveCode.INST_PARAM_VAL, ((double)item.Value));
+                        break;
+                    case SimIntegerParameter iParam:
+                        iwriter.Write(ParameterSaveCode.PARAMTYPE, ParameterType.Integer);
+                        iwriter.Write(ComponentInstanceSaveCode.INST_PARAM_VAL, (int)item.Value);
+                        break;
+                    case SimStringParameter sParam:
+                        iwriter.Write(ParameterSaveCode.PARAMTYPE, ParameterType.String);
+                        iwriter.Write(ComponentInstanceSaveCode.INST_PARAM_VAL, (string)item.Value);
+                        break;
+                    case SimBoolParameter bParam:
+                        iwriter.Write(ParameterSaveCode.PARAMTYPE, ParameterType.Boolean);
+                        iwriter.Write(ComponentInstanceSaveCode.INST_PARAM_VAL, (bool)item.Value);
+                        break;
+                    case SimEnumParameter eParam:
+                        iwriter.Write(ParameterSaveCode.PARAMTYPE, ParameterType.Enum);
+                        var value = ((SimTaxonomyEntryReference)item.Value) != null ? ((SimTaxonomyEntryReference)item.Value).Target.LocalID : long.MinValue;
+                        iwriter.Write(ComponentInstanceSaveCode.INST_PARAM_VAL, value);
+                        break;
+                }
+
             });
 
             writer.Write(ComponentInstanceSaveCode.INST_PROPAGATE_PARAM_CHANGES, instance.PropagateParameterChanges);
@@ -1424,6 +2347,7 @@ namespace SIMULTAN.Serializer.CODXF
             localId = info.TranslateId(typeof(SimComponentInstance), localId);
 
             var name = data.Get<string>(ComponentInstanceSaveCode.NAME, string.Empty);
+
             var instanceType = data.Get<SimInstanceType>(ComponentInstanceSaveCode.INSTANCE_TYPE, SimInstanceType.None);
 
             var isRealized = data.Get<bool>(ComponentInstanceSaveCode.STATE_ISREALIZED, false);
@@ -1497,9 +2421,12 @@ namespace SIMULTAN.Serializer.CODXF
                 sizes = new double[6];
             }
 
-            var sizeTransferDef = new SimInstanceSizeTransferDefinition(sizeTransferItems);
 
-            var parameters = data.Get<(SimId, string, double)[]>(ComponentInstanceSaveCode.INST_PARAMS, new (SimId, string, double)[0]);
+            var sizeTransferDef = new SimInstanceSizeTransferDefinition(sizeTransferItems);
+            var parameters = data.Get<(SimId, string, object)[]>((int)ComponentInstanceSaveCode.INST_PARAMS, new (SimId, string, object)[0]);
+
+
+
             bool propagate = data.Get<bool>(ComponentInstanceSaveCode.INST_PROPAGATE_PARAM_CHANGES, false);
 
             var path = data.Get<Point3D[]>(ComponentInstanceSaveCode.INST_PATH, new Point3D[0]);
@@ -1514,7 +2441,7 @@ namespace SIMULTAN.Serializer.CODXF
                     new SimInstanceState(isRealized, state),
                     placements, rotation,
                     new SimInstanceSize(new Vector3D(sizes[0], sizes[1], sizes[2]), new Vector3D(sizes[3], sizes[4], sizes[5])),
-                    sizeTransferDef, path, new List<(SimId, string, double)>(parameters), propagate);
+                    sizeTransferDef, path, new List<(SimId, string, object)>(parameters), propagate);
             }
             catch (Exception e)
             {
@@ -1537,13 +2464,14 @@ namespace SIMULTAN.Serializer.CODXF
                 writer.Write(ParamStructCommonSaveCode.CLASS_NAME, typeof(SimInstancePlacementGeometry));
                 writer.Write(ComponentInstanceSaveCode.GEOM_REF_FILE, gp.FileId);
                 writer.Write(ComponentInstanceSaveCode.GEOM_REF_ID, gp.GeometryId);
+                writer.Write(ComponentInstanceSaveCode.PLACEMENT_STATE, gp.State);
             }
             else if (placement is SimInstancePlacementNetwork np)
             {
                 writer.Write(ParamStructCommonSaveCode.ENTITY_START, ParamStructTypes.INSTANCE_PLACEMENT_NETWORK);
                 writer.Write(ParamStructCommonSaveCode.CLASS_NAME, typeof(SimInstancePlacementNetwork));
                 writer.Write(ComponentInstanceSaveCode.INST_NETWORKELEMENT_ID, np.NetworkElement.ID.LocalId);
-                writer.WriteGlobalId(ComponentInstanceSaveCode.INST_NETWORKELEMENT_LOCATION, np.NetworkElement.ID.GlobalId, 
+                writer.WriteGlobalId(ComponentInstanceSaveCode.INST_NETWORKELEMENT_LOCATION, np.NetworkElement.ID.GlobalId,
                     np.Instance.Id.GlobalId);
             }
             else if (placement is SimInstancePlacementSimNetwork snp)
@@ -1599,10 +2527,11 @@ namespace SIMULTAN.Serializer.CODXF
         {
             var fileKey = data.Get<int>(ComponentInstanceSaveCode.GEOM_REF_FILE, -1);
             var geometryId = data.Get<ulong>(ComponentInstanceSaveCode.GEOM_REF_ID, 0U);
+            var state = data.Get<SimInstancePlacementState>(ComponentInstanceSaveCode.PLACEMENT_STATE, SimInstancePlacementState.Valid);
 
             try
             {
-                return new SimInstancePlacementGeometry(fileKey, geometryId);
+                return new SimInstancePlacementGeometry(fileKey, geometryId, state);
             }
             catch (Exception e)
             {
@@ -1706,13 +2635,13 @@ namespace SIMULTAN.Serializer.CODXF
             //Parameter id translation
             for (int i = 0; i < inputParameters.Length; ++i)
             {
-                inputParameters[i] = (info.TranslateId(typeof(SimParameter), inputParameters[i].Item1),
-                    info.TranslateId(typeof(SimParameter), inputParameters[i].Item2));
+                inputParameters[i] = (info.TranslateId(typeof(SimBaseParameter), inputParameters[i].Item1),
+                    info.TranslateId(typeof(SimBaseParameter), inputParameters[i].Item2));
             }
             for (int i = 0; i < outputParameters.Length; ++i)
             {
-                outputParameters[i] = (info.TranslateId(typeof(SimParameter), outputParameters[i].Item1),
-                    info.TranslateId(typeof(SimParameter), outputParameters[i].Item2));
+                outputParameters[i] = (info.TranslateId(typeof(SimBaseParameter), outputParameters[i].Item1),
+                    info.TranslateId(typeof(SimBaseParameter), outputParameters[i].Item2));
             }
 
             return new CalculatorMapping(name, calculatorId, inputParameters, outputParameters);
@@ -1740,7 +2669,7 @@ namespace SIMULTAN.Serializer.CODXF
             var dataId = data.GetSimId(dataGlobalIdCode, dataLocalIdCode, info.GlobalId);
             var calculatorId = data.GetSimId(calculatorGlobalIdCode, calculatorLocalIdCode, info.GlobalId);
 
-            return (dataId, calculatorId);   
+            return (dataId, calculatorId);
         }
 
         #endregion
@@ -1785,59 +2714,6 @@ namespace SIMULTAN.Serializer.CODXF
 
             return null;
         }
-
-        #endregion
-
-        #region Excel Component Mapping
-
-        /// <summary>
-        /// Writes a excel mapping to the DXF stream
-        /// </summary>
-        /// <param name="mapping">The excel mapping to serialize</param>
-        /// <param name="writer">The writer into which the data should be written</param>
-        internal static void WriteExcelComponentMapping(ExcelComponentMapping mapping, DXFStreamWriter writer)
-        {
-            writer.Write(ParamStructCommonSaveCode.ENTITY_START, ParamStructTypes.EXCEL_MAPPING);
-            writer.Write(ParamStructCommonSaveCode.CLASS_NAME, typeof(ExcelComponentMapping));
-
-            writer.WriteArray(ExcelMappingSaveCode.MAP_PATH, mapping.Path, (item, iwriter) =>
-            {
-                iwriter.Write(ParamStructCommonSaveCode.X_VALUE, item);
-                iwriter.Write(ParamStructCommonSaveCode.Y_VALUE, Guid.Empty); //Needs to be changed when global ids are supported
-            });
-
-            writer.Write(ExcelMappingSaveCode.MAP_TOOL_NAME, mapping.ToolName);
-            writer.Write(ExcelMappingSaveCode.MAP_RULE_NAME, mapping.RuleName);
-            writer.Write(ExcelMappingSaveCode.MAP_RULE_INDEX, mapping.RuleIndexInTool);
-        }
-
-        private static ExcelComponentMapping ParseExcelComponentMapping(DXFParserResultSet data, DXFParserInfo info)
-        {
-            var path = data.Get<SimId[]>(ExcelMappingSaveCode.MAP_PATH, new SimId[0]);
-            var toolName = data.Get<string>(ExcelMappingSaveCode.MAP_TOOL_NAME, string.Empty);
-            var ruleName = data.Get<string>(ExcelMappingSaveCode.MAP_RULE_NAME, string.Empty);
-            var ruleIndex = data.Get<int>(ExcelMappingSaveCode.MAP_RULE_INDEX, -1);
-
-            try
-            {
-                return new ExcelComponentMapping(path.Select(x => x.LocalId), toolName, ruleName, ruleIndex);
-            }
-            catch (Exception e)
-            {
-                info.Log(string.Format("Failed to load ExcelMapping with ToolName={0}, RuleName=\"{1}\"\nException: {2}\nStackTrace:\n{3}",
-                    toolName, ruleName, e.Message, e.StackTrace
-                    ));
-            }
-
-            return null;
-        }
-        private static SimId ParseExcelMappingPathItem(DXFParserResultSet data, DXFParserInfo info)
-        {
-            var id = data.GetSimId(ParamStructCommonSaveCode.Y_VALUE, ParamStructCommonSaveCode.X_VALUE, info.GlobalId);
-            id = info.TranslateId(typeof(SimComponent), id);
-            return id;
-        }
-
 
         #endregion
 

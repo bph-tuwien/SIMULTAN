@@ -2,8 +2,8 @@
 using SIMULTAN.Data.Geometry;
 using SIMULTAN.Projects;
 using SIMULTAN.Tests.Geometry.EventData;
-using System.Windows.Media.Media3D;
 using SIMULTAN.Utils;
+using System.Windows.Media.Media3D;
 
 namespace SIMULTAN.Tests.Geometry.BaseGeometries
 {
@@ -20,31 +20,5 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
             return (edge, new BaseGeometryEventData(edge));
         }
 
-
-        [TestMethod]
-        public void Parent()
-        {
-            ServicesProvider serviceProvider = new ServicesProvider();
-            var projectData = new ExtendedProjectData();
-
-            var data = GeometryModelHelper.EmptyModelWithEvents();
-            projectData.GeometryModels.AddGeometryModel(data.model);
-            var v0 = VertexWithEvents(new Vertex(data.layer, "Vertex {0}", new Point3D(0, 0, 0))); // Lang.GEO_VERTEX_DEFAULTNAME
-            var v1 = new Vertex(data.layer, "Vertex {0}", new Point3D(0, 2, 0)); // Lang.GEO_VERTEX_DEFAULTNAME
-            var v2 = new Vertex(data.layer, "Vertex {0}", new Point3D(0, 2, 2)); // Lang.GEO_VERTEX_DEFAULTNAME
-
-            var e0 = EdgeWithEvents(new Edge(data.layer, "Edge {0}", new Vertex[] { v1, v2 })); // Lang.GEO_EDGE_DEFAULTNAME
-
-            v0.v.Parent = new GeometryReference(e0.edge, projectData.GeometryModels);
-
-            Assert.AreEqual(e0.edge, v0.v.Parent.Target);
-            Assert.AreEqual(nameof(BaseGeometry.Parent), v0.eventData.PropertyChangedData[0]);
-            Assert.AreEqual(0, v0.eventData.GeometryChangedCount);
-            Assert.AreEqual(0, v0.eventData.TopologyChangedCount);
-
-            Assert.AreEqual(0, e0.eventData.PropertyChangedData.Count);
-            Assert.AreEqual(0, e0.eventData.GeometryChangedCount);
-            Assert.AreEqual(0, e0.eventData.TopologyChangedCount);
-        }
     }
 }

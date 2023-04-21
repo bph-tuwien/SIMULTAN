@@ -1,21 +1,21 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
+using SIMULTAN.Data;
+using SIMULTAN.Data.Taxonomy;
+using SIMULTAN.Projects;
 using SIMULTAN.Serializer.DXF;
 using SIMULTAN.Serializer.TXDXF;
-using SIMULTAN.Data.Taxonomy;
-using SIMULTAN.Data;
-using System.IO;
-using SIMULTAN.Projects;
-using System.Text;
-using SIMULTAN.Tests.Utils;
-using SIMULTAN.Tests.Util;
 using SIMULTAN.Tests.Properties;
+using SIMULTAN.Tests.Util;
+using System;
+using System.IO;
 using System.Linq;
+using System.Text;
+using SIMULTAN.Tests.TestUtils;
 
 namespace SIMULTAN.Tests.IO
 {
     [TestClass]
-    public class SimTaxonomyDxfTests 
+    public class SimTaxonomyDxfTests
     {
         private static string Taxonomy1Key = "TaxKey 1";
         private static string Taxonomy1Name = "Taxonomy 1";
@@ -40,7 +40,7 @@ namespace SIMULTAN.Tests.IO
             var projectData = new ExtendedProjectData();
             projectData.SetCallingLocation(new DummyReferenceLocation(Guid.NewGuid()));
 
-            var tax = new SimTaxonomy(Taxonomy1Key, Taxonomy1Name, Description) { IsReadonly = true};
+            var tax = new SimTaxonomy(Taxonomy1Key, Taxonomy1Name, Description) { IsReadonly = true };
             projectData.Taxonomies.Add(tax);
             var tax2 = new SimTaxonomy(Taxonomy2Key, Taxonomy2Name, null);
             projectData.Taxonomies.Add(tax2);
@@ -50,7 +50,7 @@ namespace SIMULTAN.Tests.IO
             {
                 using (DXFStreamWriter writer = new DXFStreamWriter(stream, true))
                 {
-                    SimTaxonomyDxfIO.Write(writer, new SimTaxonomy[] { tax, tax2}, projectData);
+                    SimTaxonomyDxfIO.Write(writer, new SimTaxonomy[] { tax, tax2 }, projectData);
                 }
 
                 stream.Flush();
@@ -60,7 +60,7 @@ namespace SIMULTAN.Tests.IO
                 exportedString = Encoding.UTF8.GetString(array);
             }
 
-            AssertUtil.AreEqualMultiline(Resources.DXFSerializer_TXDXF_Empty, exportedString);
+            AssertUtil.AreEqualMultiline(Resources.DXFSerializer_TXDXF_WriteEmpty, exportedString);
         }
 
         [TestMethod]
@@ -71,7 +71,7 @@ namespace SIMULTAN.Tests.IO
 
             Assert.AreEqual(0, projectData.Taxonomies.Count);
 
-            using(DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_TXDXF_Empty)))
+            using (DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_TXDXF_WriteEmpty)))
             {
                 SimTaxonomyDxfIO.Read(reader, new DXFParserInfo(projectData.Taxonomies.CalledFromLocation.GlobalID, projectData));
             }
@@ -84,12 +84,14 @@ namespace SIMULTAN.Tests.IO
             Assert.AreEqual(true, tax.IsReadonly);
             Assert.AreEqual(projectData.Taxonomies.CalledFromLocation.GlobalID, tax.GlobalID);
             Assert.AreEqual(Taxonomy1LocalID, tax.LocalID);
+            Assert.AreEqual(tax, projectData.IdGenerator.GetById<SimTaxonomy>(tax.Id));
             tax = projectData.Taxonomies[1];
             Assert.AreEqual(Taxonomy2Key, tax.Key);
             Assert.AreEqual(Taxonomy2Name, tax.Name);
             Assert.AreEqual(false, tax.IsReadonly);
             Assert.AreEqual(projectData.Taxonomies.CalledFromLocation.GlobalID, tax.GlobalID);
             Assert.AreEqual(Taxonomy2LocalID, tax.LocalID);
+            Assert.AreEqual(tax, projectData.IdGenerator.GetById<SimTaxonomy>(tax.Id));
         }
 
         [TestMethod]
@@ -116,7 +118,7 @@ namespace SIMULTAN.Tests.IO
             {
                 using (DXFStreamWriter writer = new DXFStreamWriter(stream, true))
                 {
-                    SimTaxonomyDxfIO.Write(writer, new SimTaxonomy[] { tax, tax2}, projectData);
+                    SimTaxonomyDxfIO.Write(writer, new SimTaxonomy[] { tax, tax2 }, projectData);
                 }
 
                 stream.Flush();
@@ -126,7 +128,7 @@ namespace SIMULTAN.Tests.IO
                 exportedString = Encoding.UTF8.GetString(array);
             }
 
-            AssertUtil.AreEqualMultiline(Resources.DXFSerializer_TXDXF_Entries, exportedString);
+            AssertUtil.AreEqualMultiline(Resources.DXFSerializer_TXDXF_WriteEntries, exportedString);
         }
 
         [TestMethod]
@@ -135,7 +137,7 @@ namespace SIMULTAN.Tests.IO
             var projectData = new ExtendedProjectData();
             projectData.SetCallingLocation(new DummyReferenceLocation(Guid.NewGuid()));
 
-            using(DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_TXDXF_Entries)))
+            using (DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_TXDXF_WriteEntries)))
             {
                 SimTaxonomyDxfIO.Read(reader, new DXFParserInfo(projectData.Taxonomies.CalledFromLocation.GlobalID, projectData));
             }
@@ -147,6 +149,7 @@ namespace SIMULTAN.Tests.IO
             Assert.AreEqual(Taxonomy1Name, tax.Name);
             Assert.AreEqual(projectData.Taxonomies.CalledFromLocation.GlobalID, tax.GlobalID);
             Assert.AreEqual(Taxonomy1LocalID, tax.LocalID);
+            Assert.AreEqual(tax, projectData.IdGenerator.GetById<SimTaxonomy>(tax.Id));
 
             Assert.AreEqual(1, tax.Entries.Count);
             var entry = tax.Entries[0];
@@ -154,6 +157,7 @@ namespace SIMULTAN.Tests.IO
             Assert.AreEqual(TaxonomyEntry1Name, entry.Name);
             Assert.AreEqual(projectData.Taxonomies.CalledFromLocation.GlobalID, entry.GlobalID);
             Assert.AreEqual(TaxonomyEntry1LocalID, entry.LocalID);
+            Assert.AreEqual(entry, projectData.IdGenerator.GetById<SimTaxonomyEntry>(entry.Id));
 
             Assert.AreEqual(2, entry.Children.Count);
             var entry2 = entry.Children[0];
@@ -161,6 +165,7 @@ namespace SIMULTAN.Tests.IO
             Assert.AreEqual(TaxonomyEntry2Name, entry2.Name);
             Assert.AreEqual(projectData.Taxonomies.CalledFromLocation.GlobalID, entry2.GlobalID);
             Assert.AreEqual(TaxonomyEntry2LocalID, entry2.LocalID);
+            Assert.AreEqual(entry2, projectData.IdGenerator.GetById<SimTaxonomyEntry>(entry2.Id));
             Assert.AreEqual(0, entry2.Children.Count);
             entry2 = entry.Children[1];
             Assert.AreEqual(TaxonomyEntry3Key, entry2.Key);
@@ -168,12 +173,14 @@ namespace SIMULTAN.Tests.IO
             Assert.AreEqual(projectData.Taxonomies.CalledFromLocation.GlobalID, entry2.GlobalID);
             Assert.AreEqual(TaxonomyEntry3LocalID, entry2.LocalID);
             Assert.AreEqual(0, entry2.Children.Count);
+            Assert.AreEqual(entry2, projectData.IdGenerator.GetById<SimTaxonomyEntry>(entry2.Id));
 
             tax = projectData.Taxonomies[1];
             Assert.AreEqual(Taxonomy2Key, tax.Key);
             Assert.AreEqual(Taxonomy2Name, tax.Name);
             Assert.AreEqual(projectData.Taxonomies.CalledFromLocation.GlobalID, tax.GlobalID);
             Assert.AreEqual(Taxonomy2LocalID, tax.LocalID);
+            Assert.AreEqual(tax, projectData.IdGenerator.GetById<SimTaxonomy>(tax.Id));
         }
     }
 }

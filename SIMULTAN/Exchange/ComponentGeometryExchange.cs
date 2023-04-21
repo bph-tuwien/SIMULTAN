@@ -2,9 +2,12 @@
 using SIMULTAN.Data.Components;
 using SIMULTAN.Data.FlowNetworks;
 using SIMULTAN.Data.Geometry;
+using SIMULTAN.Data.SimNetworks;
 using SIMULTAN.Data.SitePlanner;
+using SIMULTAN.Data.Taxonomy;
 using SIMULTAN.Exchange.GeometryConnectors;
 using SIMULTAN.Exchange.NetworkConnectors;
+using SIMULTAN.Exchange.SimNetworkConnectors;
 using SIMULTAN.Exchange.SitePlannerConnectors;
 using SIMULTAN.Projects;
 using SIMULTAN.Serializer.SimGeo;
@@ -23,7 +26,7 @@ namespace SIMULTAN.Exchange
     public class ComponentGeometryExchange : IOffsetQueryable
     {
         /// <summary>
-        /// Supresses the <see cref="GeometryInvalidated"/> event when set to False.
+        /// Suppresses the <see cref="GeometryInvalidated"/> event when set to False.
         /// The default value is True
         /// </summary>
         internal bool EnableNotifyGeometryInvalidated
@@ -62,6 +65,10 @@ namespace SIMULTAN.Exchange
         private Dictionary<GeometryModel, GeometryModelConnector> geometryModelConnectors = new Dictionary<GeometryModel, GeometryModelConnector>();
         private Dictionary<GeometryModel, NetworkGeometryModelConnector> networkModelConnectors = new Dictionary<GeometryModel, NetworkGeometryModelConnector>();
         private Dictionary<SitePlannerProject, SitePlannerProjectConnector> siteplannerConnectors = new Dictionary<SitePlannerProject, SitePlannerProjectConnector>();
+        /// <summary>
+        /// Stores the existing connectors between SimNetwork and Geometry
+        /// </summary>
+        public Dictionary<GeometryModel, SimNetworkGeometryModelConnector> SimNetworkModelConnectors = new Dictionary<GeometryModel, SimNetworkGeometryModelConnector>();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ComponentGeometryExchange"/>
@@ -97,7 +104,16 @@ namespace SIMULTAN.Exchange
             {
                 networkModelConnectors.Add(model, new NetworkGeometryModelConnector(model, network, this));
             }
+
+            //Check if this model is associated with a SimNetwork
+            var simNetwork = ProjectData.SimNetworks.FirstOrDefault(x => x.IndexOfGeometricRepFile == model.File.Key);
+            if (simNetwork != null)
+            {
+                SimNetworkModelConnectors.Add(model, new SimNetworkGeometryModelConnector(model, simNetwork, this));
+            }
         }
+
+
         /// <summary>
         /// Removes a <see cref="GeometryModel"/> from the Exchange, e.g., when the Model gets closed
         /// </summary>
@@ -114,6 +130,12 @@ namespace SIMULTAN.Exchange
                 networkConnector.Dispose();
                 networkModelConnectors.Remove(model);
             }
+            if (SimNetworkModelConnectors.TryGetValue(model, out var simNetworkConnector))
+            {
+                simNetworkConnector.Dispose();
+                SimNetworkModelConnectors.Remove(model);
+
+            }
 
             model.Exchange = null;
         }
@@ -127,21 +149,6 @@ namespace SIMULTAN.Exchange
         {
             var connector = this.geometryModelConnectors.FirstOrDefault(x => x.Value.GeometryModel.File.Key == placement.FileId);
             return connector.Key.Geometry.GeometryFromId(placement.GeometryId);
-        }
-
-        /// <summary>
-        /// Called when the name of a BaseGeometry has changed
-        /// </summary>
-        /// <param name="geometry">The geometry in which the name has changed</param>
-        internal void OnGeometryNameChanged(BaseGeometry geometry)
-        {
-            if (geometry == null)
-                throw new ArgumentNullException(nameof(geometry));
-            if (geometry.ModelGeometry == null || geometry.ModelGeometry.Model == null)
-                throw new ArgumentException("Geometry is not part of a GeometryModel");
-
-            if (this.geometryModelConnectors.TryGetValue(geometry.ModelGeometry.Model, out var connector))
-                connector.OnGeometryNameChanged(geometry);
         }
 
         #endregion
@@ -252,7 +259,7 @@ namespace SIMULTAN.Exchange
         /// Notifies the exchange that the value of a parameter has changed
         /// </summary>
         /// <param name="parameter">The modified parameter</param>
-        internal void OnParameterValueChanged(SimParameter parameter)
+        internal void OnParameterValueChanged(SimBaseParameter parameter)
         {
             if (parameter.Component != null)
             {
@@ -273,7 +280,7 @@ namespace SIMULTAN.Exchange
         /// </summary>
         /// <param name="parameter">The modified parameter</param>
         /// <param name="instance">The instance in which the value has changed</param>
-        public void OnParameterValueChanged(SimParameter parameter, SimComponentInstance instance)
+        public void OnParameterValueChanged(SimBaseParameter parameter, SimComponentInstance instance)
         {
             var affectedGeometry = OnParameterValueChangedInternal(parameter, instance);
 
@@ -281,7 +288,83 @@ namespace SIMULTAN.Exchange
                 NotifyGeometryInvalidated(affectedGeometry);
         }
 
-        private List<BaseGeometry> OnParameterValueChangedInternal(SimParameter parameter, SimComponentInstance instance)
+        /// <summary>
+        /// Call this when some filter of the parameter source changed (filter on the source or on the resource entry) to update the connectors.
+        /// </summary>
+        /// <param name="source">The parameter source related to the change</param>
+        public void OnParameterSourceFilterChanged(SimGeometryParameterSource source)
+        {
+            foreach (var instance in source.TargetParameter.Component.Instances)
+            {
+                foreach (var placement in instance.Placements.OfType<SimInstancePlacementGeometry>())
+                {
+                    var resource = ProjectData.AssetManager.GetResource(placement.FileId) as ResourceFileEntry;
+
+                    if (resource != null)
+                    {
+                        if (ProjectData.GeometryModels.TryGetGeometryModel(resource, out var gm, false))
+                        {
+                            if (this.geometryModelConnectors.TryGetValue(gm, out var connector))
+                            {
+                                connector.OnParameterSourceFilterChanged(source);
+                            }
+                            // only update while not restoring references
+                            else if (!ProjectData.AssetManager.IsRestoringReferences && !ProjectData.Components.IsRestoringReferences)
+                            {
+                                instance.InstanceParameterValuesPersistent[source.TargetParameter] = Double.NaN;
+                                if (source.TargetParameter is SimDoubleParameter dParam)
+                                {
+                                    dParam.Value = double.NaN;
+                                }
+                                if (source.TargetParameter is SimIntegerParameter iParam)
+                                {
+                                    iParam.Value = default(int);
+                                }
+                                if (source.TargetParameter is SimBoolParameter bParam)
+                                {
+                                    bParam.Value = default(bool);
+                                }
+                                if (source.TargetParameter is SimStringParameter sParam)
+                                {
+                                    sParam.Value = default(string);
+                                }
+                                if (source.TargetParameter is SimEnumParameter eParam)
+                                {
+                                    eParam.Value = default(SimTaxonomyEntryReference);
+                                }
+
+                            }
+                        }
+                        else if (!ProjectData.AssetManager.IsRestoringReferences && !ProjectData.Components.IsRestoringReferences)
+                        {
+                            instance.InstanceParameterValuesPersistent[source.TargetParameter] = Double.NaN;
+                            if (source.TargetParameter is SimDoubleParameter dParam)
+                            {
+                                dParam.Value = double.NaN;
+                            }
+                            if (source.TargetParameter is SimIntegerParameter iParam)
+                            {
+                                iParam.Value = default(int);
+                            }
+                            if (source.TargetParameter is SimBoolParameter bParam)
+                            {
+                                bParam.Value = default(bool);
+                            }
+                            if (source.TargetParameter is SimStringParameter sParam)
+                            {
+                                sParam.Value = default(string);
+                            }
+                            if (source.TargetParameter is SimEnumParameter eParam)
+                            {
+                                eParam.Value = default(SimTaxonomyEntryReference);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        private List<BaseGeometry> OnParameterValueChangedInternal(SimBaseParameter parameter, SimComponentInstance instance)
         {
             List<BaseGeometry> affectedGeometry = new List<BaseGeometry>();
 
@@ -324,7 +407,7 @@ namespace SIMULTAN.Exchange
         /// </summary>
         /// <param name="parameters">The modified parameters</param>
         /// <param name="instance">The instance in which the value has changed</param>
-        public void OnParameterValueChanged(IEnumerable<SimParameter> parameters, SimComponentInstance instance)
+        public void OnParameterValueChanged(IEnumerable<SimBaseParameter> parameters, SimComponentInstance instance)
         {
             HashSet<BaseGeometry> affectedGeometry = new HashSet<BaseGeometry>();
 
@@ -336,6 +419,49 @@ namespace SIMULTAN.Exchange
 
             if (affectedGeometry.Count > 0)
                 NotifyGeometryInvalidated(affectedGeometry);
+        }
+
+        #endregion
+
+        #region Parameter Value Source
+
+        internal void OnParameterSourceAdded(SimGeometryParameterSource source)
+        {
+            foreach (var instance in source.TargetParameter.Component.Instances)
+            {
+                foreach (var placement in instance.Placements.OfType<SimInstancePlacementGeometry>())
+                {
+                    var resource = ProjectData.AssetManager.GetResource(placement.FileId) as ResourceFileEntry;
+
+                    if (resource != null)
+                    {
+                        if (ProjectData.GeometryModels.TryGetGeometryModel(resource, out var gm, false))
+                        {
+                            if (this.geometryModelConnectors.TryGetValue(gm, out var connector))
+                                connector.OnParameterSourceAdded(source, placement);
+                        }
+                    }
+                }
+            }
+        }
+        internal void OnParameterSourceRemoved(SimGeometryParameterSource source)
+        {
+            foreach (var instance in source.TargetParameter.Component.Instances)
+            {
+                foreach (var placement in instance.Placements.OfType<SimInstancePlacementGeometry>())
+                {
+                    var resource = ProjectData.AssetManager.GetResource(placement.FileId) as ResourceFileEntry;
+
+                    if (resource != null)
+                    {
+                        if (ProjectData.GeometryModels.TryGetGeometryModel(resource, out var gm, false))
+                        {
+                            if (this.geometryModelConnectors.TryGetValue(gm, out var connector))
+                                connector.OnParameterSourceRemoved(source, placement);
+                        }
+                    }
+                }
+            }
         }
 
         #endregion
@@ -702,7 +828,7 @@ namespace SIMULTAN.Exchange
 
             //Load geometry file
             GeometryModelData geometryData = new GeometryModelData();
-            GeometryModel gm = new GeometryModel(Guid.NewGuid(), targetFile.Name, asset, OperationPermission.DefaultNetworkPermissions, geometryData);
+            GeometryModel gm = new GeometryModel(targetFile.Name, asset, OperationPermission.DefaultNetworkPermissions, geometryData);
 
             //Get an owning resource to the model
             //Also calls AddGeometryModel in this class
@@ -716,6 +842,43 @@ namespace SIMULTAN.Exchange
             return gm;
         }
 
+
+        /// <summary>
+        /// Converts a SimNetwork into a GeometryModel
+        /// </summary>
+        /// <param name="network">The SimNetwork</param>
+        /// <param name="targetFile">The location where the geometry model file should be created</param>
+        /// <returns>The geometry model</returns>
+        public GeometryModel ConvertSimNetwork(SimNetwork network, FileInfo targetFile)
+        {
+            if (network == null)
+                throw new ArgumentNullException(nameof(network));
+            if (network.IndexOfGeometricRepFile != -1)
+                throw new ArgumentException("SimNetwork already has a geometric representation");
+
+            //Create empty asset
+            var asset = ((ExtendedProjectData)ProjectData).Project.AddEmptyResource(targetFile);
+
+
+            //Add reference to network
+            network.IndexOfGeometricRepFile = asset.Key;
+
+
+            //Load geometry file
+            GeometryModelData geometryData = new GeometryModelData();
+            GeometryModel gm = new GeometryModel(targetFile.Name, asset, OperationPermission.DefaultSimNetworkPermissions, geometryData);
+
+            //Get an owning resource to the model
+            //Also calls AddGeometryModel in this class
+            //Don't forget to free the reference after adding it to the GeometryViewer
+            ProjectData.GeometryModels.AddGeometryModel(gm);
+
+            //Save empty model
+            if (!SimGeoIO.Save(gm, gm.File, SimGeoIO.WriteMode.Plaintext))
+                return null;
+
+            return gm;
+        }
         #endregion
 
 
@@ -747,14 +910,16 @@ namespace SIMULTAN.Exchange
             {
                 if (pl.Instance.InstanceType == SimInstanceType.AttributesFace)
                 {
-                    var dinParameter = pl.Instance.Component.Parameters.FirstOrDefault(x => x.TaxonomyEntry.TaxonomyEntryReference.Target.Key == ReservedParameterKeys.RP_MATERIAL_COMPOSITE_D_IN);
-                    var doutParameter = pl.Instance.Component.Parameters.FirstOrDefault(x => x.TaxonomyEntry.TaxonomyEntryReference.Target.Key == ReservedParameterKeys.RP_MATERIAL_COMPOSITE_D_OUT);
+                    var dinParameter = pl.Instance.Component.Parameters.FirstOrDefault(
+                        x => x.NameTaxonomyEntry.HasTaxonomyEntry() && x.NameTaxonomyEntry.TaxonomyEntryReference.Target.Key == ReservedParameterKeys.RP_MATERIAL_COMPOSITE_D_IN);
+                    var doutParameter = pl.Instance.Component.Parameters.FirstOrDefault(
+                        x => x.NameTaxonomyEntry.HasTaxonomyEntry() && x.NameTaxonomyEntry.TaxonomyEntryReference.Target.Key == ReservedParameterKeys.RP_MATERIAL_COMPOSITE_D_OUT);
 
                     //Check if parameters exist
                     if (dinParameter != null)
-                        inner = pl.Instance.InstanceParameterValuesPersistent[dinParameter];
+                        inner = Convert.ToDouble(pl.Instance.InstanceParameterValuesPersistent[dinParameter]);
                     if (doutParameter != null)
-                        outer = pl.Instance.InstanceParameterValuesPersistent[doutParameter];
+                        outer = Convert.ToDouble(pl.Instance.InstanceParameterValuesPersistent[doutParameter]);
                 }
             }
 

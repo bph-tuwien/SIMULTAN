@@ -1,7 +1,7 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SIMULTAN.Data.Components;
 using SIMULTAN.Projects;
-using SIMULTAN.Tests.Utils;
+using SIMULTAN.Tests.TestUtils;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -144,6 +144,29 @@ namespace SIMULTAN.Tests.Mapping
             Assert.IsTrue(testData.dataComp.CalculatorMappings.Contains(testMapping));
             Assert.IsTrue(testData.calcComp.MappedToBy.Contains(testData.dataComp));
         }
+
+
+
+        [TestMethod]
+        public void CreateMappingToInvalidInput()
+        {
+            LoadProject(testProject);
+            var testData = TestData(projectData);
+
+
+            Assert.ThrowsException<ArgumentNullException>(() => { testData.dataComp.CreateMappingTo(null, testData.calcComp); });
+            Assert.ThrowsException<ArgumentNullException>(() => { testData.dataComp.CreateMappingTo("TestMapping", null); });
+
+            var testMapping = testData.dataComp.CreateMappingTo("TestMapping1", testData.calcComp);
+            Assert.AreEqual("TestMapping1", testMapping.Name);
+            Assert.AreEqual(testData.calcComp, testMapping.Calculator);
+            Assert.AreEqual(0, testMapping.InputMapping.Count);
+            Assert.AreEqual(0, testMapping.OutputMapping.Count);
+            Assert.IsTrue(testData.dataComp.CalculatorMappings.Contains(testMapping));
+            Assert.IsTrue(testData.calcComp.MappedToBy.Contains(testData.dataComp));
+        }
+
+
         [TestMethod]
         public void CreateMappingToWithMappings()
         {
@@ -172,14 +195,31 @@ namespace SIMULTAN.Tests.Mapping
 
             var testMapping = testData.dataComp.CreateMappingTo("TestMapping1", testData.calcComp);
 
+            testData.dataComp.RemoveMapping(testMapping);
+
+            Assert.IsFalse(testData.dataComp.CalculatorMappings.Contains(testMapping));
+            Assert.IsFalse(testData.calcComp.MappedToBy.Contains(testData.dataComp));
+        }
+
+        private WeakReference RemoveMappingMemoryLeak_Action()
+        {
+            var testData = TestData(projectData);
+
+            var testMapping = testData.dataComp.CreateMappingTo("TestMapping1", testData.calcComp);
+
             WeakReference testMappingRef = new WeakReference(testMapping);
             Assert.IsTrue(testMappingRef.IsAlive);
 
             testData.dataComp.RemoveMapping(testMapping);
 
-            Assert.IsFalse(testData.dataComp.CalculatorMappings.Contains(testMapping));
-            Assert.IsFalse(testData.calcComp.MappedToBy.Contains(testData.dataComp));
-            testMapping = null;
+            return testMappingRef;
+        }
+        [TestMethod]
+        public void RemoveMappingMemoryLeak()
+        {
+            LoadProject(testProject);
+
+            var testMappingRef = RemoveMappingMemoryLeak_Action();
 
             GC.Collect();
             GC.WaitForPendingFinalizers();
@@ -187,10 +227,23 @@ namespace SIMULTAN.Tests.Mapping
 
             Assert.IsFalse(testMappingRef.IsAlive);
         }
+
         [TestMethod]
         public void RemoveMappingTo()
         {
             LoadProject(testProject);
+            var testData = TestData(projectData);
+
+            var testMapping = testData.dataComp.CreateMappingTo("TestMapping1", testData.calcComp);
+
+            testData.dataComp.RemoveMappingTo(testData.calcComp);
+
+            Assert.IsFalse(testData.dataComp.CalculatorMappings.Contains(testMapping));
+            Assert.IsFalse(testData.calcComp.MappedToBy.Contains(testData.dataComp));
+        }
+
+        private WeakReference RemoveMappingToMemoryLeak_Action()
+        {
             var testData = TestData(projectData);
 
             var testMapping = testData.dataComp.CreateMappingTo("TestMapping1", testData.calcComp);
@@ -200,9 +253,14 @@ namespace SIMULTAN.Tests.Mapping
 
             testData.dataComp.RemoveMappingTo(testData.calcComp);
 
-            Assert.IsFalse(testData.dataComp.CalculatorMappings.Contains(testMapping));
-            Assert.IsFalse(testData.calcComp.MappedToBy.Contains(testData.dataComp));
-            testMapping = null;
+            return testMappingRef;
+        }
+        [TestMethod]
+        public void RemoveMappingToMemoryLeak()
+        {
+            LoadProject(testProject);
+
+            var testMappingRef = RemoveMappingToMemoryLeak_Action();
 
             GC.Collect();
             GC.WaitForPendingFinalizers();
@@ -221,21 +279,21 @@ namespace SIMULTAN.Tests.Mapping
 
             var data2Comp = projectData.Components.First(x => x.Name == "Data2");
 
-            Dictionary<SimParameter, SimParameter> paramMapping = new Dictionary<SimParameter, SimParameter>();
-            foreach (var param in testData.dataComp.Parameters)
+            Dictionary<SimDoubleParameter, SimDoubleParameter> paramMapping = new Dictionary<SimDoubleParameter, SimDoubleParameter>();
+            foreach (var param in testData.dataComp.Parameters.OfType<SimDoubleParameter>())
             {
-                paramMapping.Add(param, data2Comp.Parameters.First(x => x.TaxonomyEntry.Name == param.TaxonomyEntry.Name));
+                paramMapping.Add(param, data2Comp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == param.NameTaxonomyEntry.Name));
             }
 
             string[] testNames = new string[] { "a", "b" };
             for (int i = 0; i < testMapping.InputMapping.Count; ++i)
             {
                 Assert.AreEqual(testData.dataComp, testMapping.InputMapping[i].DataParameter.Component);
-                Assert.AreEqual(testNames[i], testMapping.InputMapping[i].DataParameter.TaxonomyEntry.Name);
+                Assert.AreEqual(testNames[i], testMapping.InputMapping[i].DataParameter.NameTaxonomyEntry.Name);
             }
             Assert.AreEqual(1, testMapping.OutputMapping.Count);
             Assert.AreEqual(testData.dataComp, testMapping.OutputMapping[0].DataParameter.Component);
-            Assert.AreEqual("result", testMapping.OutputMapping[0].DataParameter.TaxonomyEntry.Name);
+            Assert.AreEqual("result", testMapping.OutputMapping[0].DataParameter.NameTaxonomyEntry.Name);
 
             var exchangedMapping = testMapping.ExchangeDataParameter(paramMapping);
 
@@ -243,11 +301,11 @@ namespace SIMULTAN.Tests.Mapping
             {
                 var mapping = exchangedMapping.InputMapping[i];
                 Assert.AreEqual(data2Comp, mapping.DataParameter.Component);
-                Assert.AreEqual(testNames[i], mapping.DataParameter.TaxonomyEntry.Name);
+                Assert.AreEqual(testNames[i], mapping.DataParameter.NameTaxonomyEntry.Name);
             }
             Assert.AreEqual(1, exchangedMapping.OutputMapping.Count);
             Assert.AreEqual(data2Comp, exchangedMapping.OutputMapping[0].DataParameter.Component);
-            Assert.AreEqual("result", exchangedMapping.OutputMapping[0].DataParameter.TaxonomyEntry.Name);
+            Assert.AreEqual("result", exchangedMapping.OutputMapping[0].DataParameter.NameTaxonomyEntry.Name);
         }
 
 
@@ -288,7 +346,7 @@ namespace SIMULTAN.Tests.Mapping
             });
 
             var invalidParam = projectData.Components.First(x => x.Name == "Other")
-                .Parameters.First(x => x.TaxonomyEntry.Name == "Output_NotValid");
+                .Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "Output_NotValid");
 
             Assert.ThrowsException<ArgumentException>(() =>
             {
@@ -337,7 +395,7 @@ namespace SIMULTAN.Tests.Mapping
             });
 
             var invalidParam = projectData.Components.First(x => x.Name == "Other")
-                .Parameters.First(x => x.TaxonomyEntry.Name == "Output_NotValid");
+                .Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "Output_NotValid");
 
             Assert.ThrowsException<ArgumentException>(() =>
             {
@@ -357,12 +415,12 @@ namespace SIMULTAN.Tests.Mapping
             var dataComp = projectData.Components.First(x => x.Name == "SimpleData");
             var calcComp = projectData.Components.First(x => x.Name == "SimpleCalc");
 
-            var resultParam = dataComp.Parameters.First(x => x.TaxonomyEntry.Name == "result");
-            Assert.AreEqual(0.0, resultParam.ValueCurrent);
+            var resultParam = dataComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "result");
+            Assert.AreEqual(0.0, resultParam.Value);
 
             dataComp.EvaluateAllMappings();
 
-            Assert.AreEqual(6.0, resultParam.ValueCurrent);
+            Assert.AreEqual(6.0, resultParam.Value);
         }
         [TestMethod]
         public void SimpleCalculationTestWithSubTree()
@@ -373,12 +431,12 @@ namespace SIMULTAN.Tests.Mapping
             var calcComp = projectData.Components.First(x => x.Name == "SimpleCalc");
 
             var resultParam = dataComp.Components.First(x => x.Component != null && x.Component.Name == "SubResult").Component
-                .Parameters.First(x => x.TaxonomyEntry.Name == "result");
-            Assert.AreEqual(0.0, resultParam.ValueCurrent);
+                .Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "result");
+            Assert.AreEqual(0.0, resultParam.Value);
 
             dataComp.EvaluateAllMappings();
 
-            Assert.AreEqual(9.0, resultParam.ValueCurrent);
+            Assert.AreEqual(9.0, resultParam.Value);
         }
         [TestMethod]
         public void ComplexCalculationTest()
@@ -389,12 +447,12 @@ namespace SIMULTAN.Tests.Mapping
             var calcComp = projectData.Components.First(x => x.Name == "ComplexCalc");
 
             var resultParam = dataComp.Components.First(x => x.Component != null && x.Component.Name == "SubResult").Component
-                .Parameters.First(x => x.TaxonomyEntry.Name == "result");
-            Assert.AreEqual(0.0, resultParam.ValueCurrent);
+                .Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "result");
+            Assert.AreEqual(0.0, resultParam.Value);
 
             dataComp.EvaluateAllMappings();
 
-            Assert.AreEqual(40.0, resultParam.ValueCurrent);
+            Assert.AreEqual(40.0, resultParam.Value);
         }
 
 
@@ -435,12 +493,12 @@ namespace SIMULTAN.Tests.Mapping
 
             var inputMapping = new List<CalculatorMapping.MappingParameterTuple>
             {
-                new CalculatorMapping.MappingParameterTuple(dataComp.Parameters.First(x => x.TaxonomyEntry.Name == "a"), calcComp.Parameters.First(x => x.TaxonomyEntry.Name == "a")),
-                new CalculatorMapping.MappingParameterTuple(dataComp.Parameters.First(x => x.TaxonomyEntry.Name == "b"), calcComp.Parameters.First(x => x.TaxonomyEntry.Name == "b")),
+                new CalculatorMapping.MappingParameterTuple(dataComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "a"), calcComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "a")),
+                new CalculatorMapping.MappingParameterTuple(dataComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "b"), calcComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "b")),
             };
             var outputMapping = new List<CalculatorMapping.MappingParameterTuple>
             {
-                new CalculatorMapping.MappingParameterTuple(dataComp.Parameters.First(x => x.TaxonomyEntry.Name == "result"), calcComp.Parameters.First(x => x.TaxonomyEntry.Name == "result")),
+                new CalculatorMapping.MappingParameterTuple(dataComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "result"), calcComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "result")),
             };
 
             return (

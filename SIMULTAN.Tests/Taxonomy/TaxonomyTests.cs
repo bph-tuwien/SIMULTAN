@@ -2,11 +2,12 @@
 using SIMULTAN.Data;
 using SIMULTAN.Data.Components;
 using SIMULTAN.Data.Taxonomy;
-using SIMULTAN.Tests.Utils;
+using SIMULTAN.Tests.TestUtils;
 using SIMULTAN.Utils;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace SIMULTAN.Tests.Taxonomy
 {
@@ -28,7 +29,7 @@ namespace SIMULTAN.Tests.Taxonomy
                     this.counter = counter;
                 }
 
-                public void OnIsBeingDeleted()
+                public void OnIsBeingDeleted(SimTaxonomyEntry caller)
                 {
                     counter.OnIsBeingDeleted(reference.Target);
                 }
@@ -53,7 +54,13 @@ namespace SIMULTAN.Tests.Taxonomy
                 count++;
                 Callers.Add(sender);
             }
-            public void Reset ()
+
+            public void OnDeleteAction()
+            {
+                OnIsBeingDeleted(null);
+            }
+
+            public void Reset()
             {
                 count = 0;
                 Callers.Clear();
@@ -76,7 +83,7 @@ namespace SIMULTAN.Tests.Taxonomy
         private static string TaxonomyEntryName3 = "TestTaxonomyEntry3";
         private static string TaxonomyEntryDescription3 = "TestTaxonomyEntry3";
 
-        private void OnTaxonomyEntryIsBeingDeleted_ShouldNotHappen()
+        private void OnTaxonomyEntryIsBeingDeleted_ShouldNotHappen(SimTaxonomyEntry caller)
         {
             Assert.Fail();
         }
@@ -85,13 +92,48 @@ namespace SIMULTAN.Tests.Taxonomy
         /// Check if all reserved parameter taxonomies can be found
         /// </summary>
         [TestMethod]
-        public void DefaultTaxonomiesCorrectlyLoadedTest()
+        public void DefaultParameterTaxonomiesCorrectlyLoadedTest()
         {
             LoadProject(emptyProject);
 
             ReservedParameterKeys.NameToKeyLookup.Values.ForEach(x =>
             {
-                if(ReservedParameterKeys.GetReservedTaxonomyEntry(projectData.Taxonomies, x) == null)
+                if (projectData.Taxonomies.GetReservedParameter(x) == null)
+                {
+                    Assert.Fail();
+                }
+            });
+        }
+
+        /// <summary>
+        /// Check if all reserved slot taxonomies can be found
+        /// </summary>
+        [TestMethod]
+        public void DefaultSlotTaxonomiesCorrectlyLoadedTest()
+        {
+            LoadProject(emptyProject);
+
+            SimDefaultSlotKeys.AllSlots.ForEach(x =>
+            {
+                if (projectData.Taxonomies.GetDefaultSlot(x) == null)
+                {
+                    Assert.Fail();
+                }
+            });
+        }
+
+        /// <summary>
+        /// Check if all reserved slot taxonomies can be found via the lookup
+        /// </summary>
+        [TestMethod]
+        public void DefaultSlotLookupTaxonomiesCorrectlyLoadedTest()
+        {
+            LoadProject(emptyProject);
+
+            SimDefaultSlots.AllSlots.ForEach(x =>
+            {
+                var key = SimDefaultSlotKeys.BaseToKeyLookup[x];
+                if (projectData.Taxonomies.GetDefaultSlot(key) == null)
                 {
                     Assert.Fail();
                 }
@@ -111,12 +153,12 @@ namespace SIMULTAN.Tests.Taxonomy
             Assert.IsNull(taxonomy.Factory);
             Assert.IsNotNull(taxonomy.Entries);
             Assert.AreEqual(0, taxonomy.Entries.Count);
-            // we have one because of the default taxonomy
-            Assert.AreEqual(1, projectData.Taxonomies.Count);
+            // we have two because of the default taxonomies
+            Assert.AreEqual(2, projectData.Taxonomies.Count);
 
             projectData.Taxonomies.Add(taxonomy);
 
-            Assert.AreEqual(2, projectData.Taxonomies.Count);
+            Assert.AreEqual(3, projectData.Taxonomies.Count);
             Assert.IsTrue(projectData.Taxonomies.Contains(taxonomy));
 
             Assert.AreEqual(project, taxonomy.Id.Location);
@@ -363,7 +405,7 @@ namespace SIMULTAN.Tests.Taxonomy
             projectData.Taxonomies.Add(taxonomy);
 
             // check if properly added
-            Assert.AreEqual(2, projectData.Taxonomies.Count);
+            Assert.AreEqual(3, projectData.Taxonomies.Count);
             Assert.IsTrue(projectData.Taxonomies.Contains(taxonomy));
 
             Assert.AreEqual(project, taxonomy.Id.Location);
@@ -376,7 +418,7 @@ namespace SIMULTAN.Tests.Taxonomy
 
             projectData.Taxonomies.Remove(taxonomy);
 
-            Assert.AreEqual(1, projectData.Taxonomies.Count);
+            Assert.AreEqual(2, projectData.Taxonomies.Count);
 
             Assert.AreEqual(localId, taxonomy.Id.LocalId);
             Assert.IsNull(taxonomy.Id.Location);
@@ -646,5 +688,88 @@ namespace SIMULTAN.Tests.Taxonomy
             taxonomyEntry2.RemoveDeleteReference(reference2);
             taxonomyEntry3.RemoveDeleteReference(reference3);
         }
+
+        [TestMethod]
+        public void EntryReferenceAlwaysNeedsTarget()
+        {
+            Assert.ThrowsException<ArgumentNullException>(() => new SimTaxonomyEntryReference((SimTaxonomyEntry)null));
+        }
+
+        private (WeakReference, WeakReference, WeakReference, WeakReference) DeleterMemoryLeakTest_Action()
+        {
+            var taxonomy = new SimTaxonomy(TaxonomyName);
+            var entry1 = new SimTaxonomyEntry(TaxonomyEntryKey, TaxonomyEntryName);
+            var entry2 = new SimTaxonomyEntry(TaxonomyEntryKey2, TaxonomyEntryName2);
+            var entry3 = new SimTaxonomyEntry(TaxonomyEntryKey3, TaxonomyEntryName3);
+            taxonomy.Entries.Add(entry1);
+            entry1.Children.Add(entry2);
+            entry2.Children.Add(entry3);
+            projectData.Taxonomies.Add(taxonomy);
+
+            var ref1 = new SimTaxonomyEntryReference(entry1);
+            var ref2 = new SimTaxonomyEntryReference(entry2);
+            var ref3 = new SimTaxonomyEntryReference(entry3);
+            // Add some delete actions cause they are saved in the entries
+            ref1.SetDeleteAction((SimTaxonomyEntry caller) => { Console.WriteLine(caller.Name); });
+            ref2.SetDeleteAction((SimTaxonomyEntry caller) => { Console.WriteLine(caller.Name); });
+            ref3.SetDeleteAction((SimTaxonomyEntry caller) => { Console.WriteLine(caller.Name); });
+
+            var wref1 = new WeakReference(entry1);
+            var wref2 = new WeakReference(entry2);
+            var wref3 = new WeakReference(entry3);
+            var wrefT = new WeakReference(taxonomy);
+            return (wref1, wref2, wref3, wrefT);
+        }
+        private void DeleterMemoryLeakTest_RemoveEntry2()
+        {
+            var taxonomy = projectData.Taxonomies.First(x => x.Name == TaxonomyName);
+            var entry1 = taxonomy.GetTaxonomyEntryByKey(TaxonomyEntryKey);
+            var entry2 = taxonomy.GetTaxonomyEntryByKey(TaxonomyEntryKey2);
+            entry1.Children.Remove(entry2);
+        }
+        private void DeleterMemoryLeakTest_RemoveTaxonomy()
+        {
+            var taxonomy = projectData.Taxonomies.First(x => x.Name == TaxonomyName);
+            projectData.Taxonomies.Remove(taxonomy);
+        }
+        [TestMethod]
+        public void DeleterMemoryLeakTest()
+        {
+            LoadProject(emptyProject);
+
+            var (wref1, wref2, wref3, wrefT) = DeleterMemoryLeakTest_Action();
+
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+
+            Assert.IsTrue(wref1.IsAlive);
+            Assert.IsTrue(wref2.IsAlive);
+            Assert.IsTrue(wref3.IsAlive);
+            Assert.IsTrue(wrefT.IsAlive);
+
+            DeleterMemoryLeakTest_RemoveEntry2();
+
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+
+            Assert.IsTrue(wref1.IsAlive);
+            Assert.IsFalse(wref2.IsAlive);
+            Assert.IsFalse(wref3.IsAlive);
+            Assert.IsTrue(wrefT.IsAlive);
+
+            DeleterMemoryLeakTest_RemoveTaxonomy();
+
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+
+            Assert.IsFalse(wref1.IsAlive);
+            Assert.IsFalse(wref2.IsAlive);
+            Assert.IsFalse(wref3.IsAlive);
+            Assert.IsFalse(wrefT.IsAlive);
+        }
+
     }
 }

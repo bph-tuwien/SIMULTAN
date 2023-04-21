@@ -46,6 +46,13 @@ namespace SIMULTAN.Serializer.DXF
         /// </summary>
         /// <param name="code">The code of the count entry</param>
         /// <param name="elementCode">The code for the data elements</param>
+        internal DXFArrayEntryParserElement(ResourceSaveCode code, ResourceSaveCode elementCode)
+            : this((int)code, (int)elementCode) { }
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DXFArrayEntryParserElement{T}"/> class
+        /// </summary>
+        /// <param name="code">The code of the count entry</param>
+        /// <param name="elementCode">The code for the data elements</param>
         internal DXFArrayEntryParserElement(MultiValueSaveCode code, ParamStructCommonSaveCode elementCode)
             : this((int)code, (int)elementCode) { }
         /// <summary>
@@ -82,6 +89,13 @@ namespace SIMULTAN.Serializer.DXF
         /// <param name="code">The code of the count entry</param>
         /// <param name="elementCode">The code for the data elements</param>
         internal DXFArrayEntryParserElement(UserComponentListSaveCode code, ParamStructCommonSaveCode elementCode)
+            : this((int)code, (int)elementCode) { }
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DXFArrayEntryParserElement{T}"/> class
+        /// </summary>
+        /// <param name="code">The code of the count entry</param>
+        /// <param name="elementCode">The code for the data elements</param>
+        internal DXFArrayEntryParserElement(DataMappingSaveCode code, ParamStructCommonSaveCode elementCode)
             : this((int)code, (int)elementCode) { }
 
         /// <inheritdoc />

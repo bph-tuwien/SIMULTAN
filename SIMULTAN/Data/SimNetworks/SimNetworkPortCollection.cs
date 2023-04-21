@@ -11,12 +11,15 @@ namespace SIMULTAN.Data.SimNetworks
         /// </summary>
         public class SimNetworkPortCollection : ObservableCollection<SimNetworkPort>
         {
-            private BaseSimNetworkElement parentElement;
+            /// <summary>
+            /// The parent element (either a SimNetwork or a SimNetworkBlock)
+            /// </summary>
+            internal BaseSimNetworkElement parentElement { get; set; }
 
             /// <summary>
             /// Initializes a new SimNetworkPortCollection
             /// </summary>
-            /// <param name="parentElement">The BaseSimNetworkElement which containes the ports</param>
+            /// <param name="parentElement">The BaseSimNetworkElement which contains the ports</param>
             public SimNetworkPortCollection(BaseSimNetworkElement parentElement)
             {
                 if (parentElement == null) { throw new ArgumentNullException(nameof(parentElement)); }

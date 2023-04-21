@@ -1,6 +1,4 @@
-﻿using SIMULTAN;
-using SIMULTAN.Data;
-using SIMULTAN.Data.Components;
+﻿using SIMULTAN.Data.Components;
 using SIMULTAN.Data.MultiValues;
 using SIMULTAN.Exceptions;
 using System;
@@ -11,47 +9,10 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SIMULTAN.Excel
 {
     //Needs to be completely refactored.
-
-
-    #region PARSER HELPERS
-    public class ComponentExcelRecord
-    {
-        public SimComponent Data { get; private set; }
-        public int Key { get; private set; }
-        public int ParentKey { get; private set; }
-        public ComponentExcelRecord(SimComponent _data, int _key, int _parent_key)
-        {
-            this.Data = _data;
-            this.Key = _key;
-            this.ParentKey = _parent_key;
-        }
-    }
-    public class ParameterExcelRecord
-    {
-        public SimParameter Data { get; private set; }
-        public int Key { get; private set; }
-        public int ParentKey { get; private set; }
-        public ParameterExcelRecord(SimParameter _data, int _key, int _parent_key)
-        {
-            this.Data = _data;
-            this.Key = _key;
-            this.ParentKey = _parent_key;
-        }
-        public override string ToString()
-        {
-            string output = "ExcelRecord[";
-            output += (this.Data == null) ? string.Empty : this.Data.ToString();
-            output += " key: " + this.Key + " parent: " + this.ParentKey;
-            return output;
-        }
-    }
-    #endregion
 
     public class ExcelStandardImporter
     {
@@ -91,7 +52,7 @@ namespace SIMULTAN.Excel
 
             List<List<string>> raw_record = this.ImportFromFile(file, ExcelStandardImporter.TABLE_NAME, nr_rows_to_read);
             List<string> names, units;
-            List<List<double>> values;
+            List<List<object>> values;
             ExcelStandardImporter.ParseData(raw_record, ExcelStandardImporter.MAX_NR_TABLE_ENTRIES,
                 out names, out units, out values);
 
@@ -139,7 +100,7 @@ namespace SIMULTAN.Excel
             List<List<string>> raw_record = this.ImportFromFile(file, ExcelStandardImporter.TABLE_NAME, nr_rows_to_read);
 
             List<string> names, units;
-            List<List<double>> values;
+            List<List<object>> values;
             List<string> row_names;
             ExcelStandardImporter.ParseDataNamedRows(raw_record, ExcelStandardImporter.MAX_NR_TABLE_ENTRIES,
                 out names, out units, out values, out row_names);
@@ -211,7 +172,7 @@ namespace SIMULTAN.Excel
                             }
                             // -------------------------------------------------------------------------- //
                             var oleExcelCommand = oleExcelConnection.CreateCommand();
-                            var range = ExcelUtils.TranslateRange(1, maxRowCount, chunk * 255 + 1, 255);
+                            var range = TranslateRange(1, maxRowCount, chunk * 255 + 1, 255);
                             oleExcelCommand.CommandText = "Select * From [" + sSheetName + range.range_start + ":" + range.range_end + "]";
                             oleExcelCommand.CommandType = CommandType.Text;
                             Console.WriteLine("Execute Reader for chunk {0} at {1}", chunk, DateTime.Now);
@@ -281,11 +242,11 @@ namespace SIMULTAN.Excel
         #region INTERPRET DATA
 
         internal static void ParseData(List<List<string>> _excel_strings, int _nr_data_rows,
-                            out List<string> names, out List<string> units, out List<List<double>> values)
+                            out List<string> names, out List<string> units, out List<List<object>> values)
         {
             names = new List<string>();
             units = new List<string>();
-            values = new List<List<double>>();
+            values = new List<List<object>>();
 
             if (_excel_strings == null || _excel_strings.Count < 3 || _nr_data_rows < 1) return;
 
@@ -306,22 +267,48 @@ namespace SIMULTAN.Excel
                 else if (i > 2)
                 {
                     List<string> row_vals_str = row.Skip(ExcelStandardImporter.COL_OFFSET).Where(x => !string.IsNullOrEmpty(x)).ToList();
-                    List<double> row_vals = new List<double>();
+                    List<object> row_vals = new List<object>();
                     foreach (string val_candidate in row_vals_str)
                     {
-                        double value = double.NaN;
                         bool success = false;
-                        if (val_candidate.Contains('.'))
-                            success = double.TryParse(val_candidate,
-                                NumberStyles.Float, ExcelStandardImporter.FORMAT_NEUTRAL, out value);
-                        else if (val_candidate.StartsWith("#"))
-                            success = true; // added 28.10.2019 for error messages in Excel (e.g. #DIV/0!, #REF!, etc.)
-                        else
-                            success = double.TryParse(val_candidate,
-                                NumberStyles.Float, ExcelStandardImporter.FORMAT_DE, out value);
 
+                        if (val_candidate.Contains('.'))
+                        {
+                            success = double.TryParse(val_candidate,
+                                NumberStyles.Float, ExcelStandardImporter.FORMAT_NEUTRAL, out var dnvalue);
+                            if (success)
+                            {
+                                row_vals.Add(dnvalue);
+                                continue;
+                            }
+                        }
+
+                        success = double.TryParse(val_candidate,
+                            NumberStyles.Float, ExcelStandardImporter.FORMAT_DE, out var dvalue);
                         if (success)
-                            row_vals.Add(value);
+                        {
+                            row_vals.Add(dvalue);
+                            continue;
+                        }
+
+                        success = int.TryParse(val_candidate, NumberStyles.Integer, ExcelStandardImporter.FORMAT_NEUTRAL, out var ivalue);
+                        if (success)
+                        {
+                            row_vals.Add(ivalue);
+                            continue;
+                        }
+
+                        success = bool.TryParse(val_candidate, out var bvalue);
+                        if (success)
+                        {
+                            row_vals.Add(bvalue);
+                            continue;
+                        }
+
+                        if (string.IsNullOrEmpty(val_candidate))
+                            row_vals.Add(null);
+                        else
+                            row_vals.Add(val_candidate); //String
                     }
                     if (row_vals_str.Count > 0 && row_vals.Count == row_vals_str.Count)
                         values.Add(row_vals);
@@ -331,11 +318,11 @@ namespace SIMULTAN.Excel
 
 
         internal static void ParseDataNamedRows(List<List<string>> _excel_strings, int _nr_data_rows,
-                            out List<string> names, out List<string> units, out List<List<double>> values, out List<string> row_names)
+                            out List<string> names, out List<string> units, out List<List<object>> values, out List<string> row_names)
         {
             names = new List<string>();
             units = new List<string>();
-            values = new List<List<double>>();
+            values = new List<List<object>>();
             row_names = new List<string>();
 
             if (_excel_strings == null || _excel_strings.Count < 3 || _nr_data_rows < 1) return;
@@ -359,7 +346,7 @@ namespace SIMULTAN.Excel
                     List<string> row_str = row.Skip(ExcelStandardImporter.COL_OFFSET).Where(x => !string.IsNullOrEmpty(x)).ToList();
                     string row_name = (row_str.Count > 0) ? row_str[0] : "name";
                     List<string> row_vals_str = row_str.Skip(1).ToList();
-                    List<double> row_vals = new List<double>();
+                    List<object> row_vals = new List<object>();
                     foreach (string val_candidate in row_vals_str)
                     {
                         double value = double.NaN;
@@ -419,6 +406,125 @@ namespace SIMULTAN.Excel
         {
             if (IsFileLocked(file))
                 throw new FileInUseException(file);
+        }
+
+        internal static (string range_start, string range_end) TranslateRange(int _start_row, int _nr_rows, int _start_col, int _nr_cols)
+        {
+            string range_start = LettersFromAnyNr(_start_col) + _start_row.ToString();
+            string range_end = LettersFromAnyNr(_start_col + _nr_cols - 1) + (_start_row + _nr_rows - 1).ToString();
+            return (range_start, range_end);
+        }
+
+        internal static string LettersFromAnyNr(int _nr)
+        {
+            List<int> figures = new List<int>();
+            int figure = _nr;
+            while (figure > 26)
+            {
+                int figure_new = figure / 26;
+                int rest = figure % 26;
+                if (rest == 0)
+                    figure_new--;
+                figure = figure_new;
+                figures.Add(rest);
+            }
+            figures.Add(figure);
+            figures.Reverse();
+
+            if (figures.Count <= 1)
+                return LetterFromNr(figures[0]);
+            else
+                return figures.Select(x => LetterFromNr(x)).Aggregate((x, y) => x + y);
+        }
+
+
+
+        private static string LetterFromNr(int _nr)
+        {
+            string letter = "A";
+            switch (_nr)
+            {
+                case 1:
+                    letter = "A";
+                    break;
+                case 2:
+                    letter = "B";
+                    break;
+                case 3:
+                    letter = "C";
+                    break;
+                case 4:
+                    letter = "D";
+                    break;
+                case 5:
+                    letter = "E";
+                    break;
+                case 6:
+                    letter = "F";
+                    break;
+                case 7:
+                    letter = "G";
+                    break;
+                case 8:
+                    letter = "H";
+                    break;
+                case 9:
+                    letter = "I";
+                    break;
+                case 10:
+                    letter = "J";
+                    break;
+                case 11:
+                    letter = "K";
+                    break;
+                case 12:
+                    letter = "L";
+                    break;
+                case 13:
+                    letter = "M";
+                    break;
+                case 14:
+                    letter = "N";
+                    break;
+                case 15:
+                    letter = "O";
+                    break;
+                case 16:
+                    letter = "P";
+                    break;
+                case 17:
+                    letter = "Q";
+                    break;
+                case 18:
+                    letter = "R";
+                    break;
+                case 19:
+                    letter = "S";
+                    break;
+                case 20:
+                    letter = "T";
+                    break;
+                case 21:
+                    letter = "U";
+                    break;
+                case 22:
+                    letter = "V";
+                    break;
+                case 23:
+                    letter = "W";
+                    break;
+                case 24:
+                    letter = "X";
+                    break;
+                case 25:
+                    letter = "Y";
+                    break;
+                case 0:
+                case 26:
+                    letter = "Z";
+                    break;
+            }
+            return letter;
         }
 
         #endregion

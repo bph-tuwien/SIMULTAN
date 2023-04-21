@@ -5,8 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SIMULTAN.Exchange.SitePlannerConnectors
 {
@@ -113,7 +111,7 @@ namespace SIMULTAN.Exchange.SitePlannerConnectors
         {
             if (placement.FileId != this.Project.SitePlannerFile.Key)
                 throw new ArgumentException("Placement does not belong to this SitePlanner project");
-            
+
             missingBuildings.Remove(placement.GeometryId);
 
             if (connectors.TryGetValues(placement.GeometryId, out var cons))
@@ -130,7 +128,7 @@ namespace SIMULTAN.Exchange.SitePlannerConnectors
         /// <param name="placement">The placement in which the parameter has been changed</param>
         /// <param name="parameter">The modified parameter</param>
         /// <returns>Returns a list of all buildings that are affected by the change</returns>
-        internal IEnumerable<SitePlannerBuilding> OnParameterValueChanged(SimInstancePlacementGeometry placement, SimParameter parameter)
+        internal IEnumerable<SitePlannerBuilding> OnParameterValueChanged(SimInstancePlacementGeometry placement, SimBaseParameter parameter)
         {
             if (placement.FileId != this.Project.SitePlannerFile.Key)
                 throw new ArgumentException("Placement does not belong to this SitePlanner project");
@@ -197,7 +195,7 @@ namespace SIMULTAN.Exchange.SitePlannerConnectors
                     throw new NotSupportedException("Operation not supported");
             }
         }
-    
+
         /// <summary>
         /// Frees all resources of the connector and detaches all event handler
         /// </summary>

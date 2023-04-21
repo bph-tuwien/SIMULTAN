@@ -9,8 +9,6 @@ using System.Collections.Specialized;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Media.Media3D;
 
 namespace SIMULTAN.Exchange.NetworkConnectors
@@ -64,7 +62,6 @@ namespace SIMULTAN.Exchange.NetworkConnectors
             this.ModelConnector = modelConnector;
 
             this.Vertex.Name = this.Node.Name;
-            this.Vertex.PropertyChanged += this.Vertex_PropertyChanged;
 
             this.Node.RepresentationReference = new Data.GeometricReference(vertex.ModelGeometry.Model.File.Key, vertex.Id);
             this.Node.PropertyChanged += this.Node_PropertyChanged;
@@ -77,10 +74,8 @@ namespace SIMULTAN.Exchange.NetworkConnectors
             }
 
             UpdateProxyGeometry();
-            UpdateProxyTransformation();            
+            UpdateProxyTransformation();
 
-            UpdateInstancePath();
-            UpdateParentPlacement();
 
             UpdateColor();
         }
@@ -91,7 +86,6 @@ namespace SIMULTAN.Exchange.NetworkConnectors
         /// <inheritdoc />
         internal override void OnGeometryChanged()
         {
-            UpdateInstancePath();
             UpdateInstanceTransformation();
         }
         /// <inheritdoc />
@@ -102,23 +96,12 @@ namespace SIMULTAN.Exchange.NetworkConnectors
         /// <inheritdoc />
         internal override void ChangeBaseGeometry(BaseGeometry geometry)
         {
-            if (this.Vertex != null)
-                this.Vertex.PropertyChanged -= Vertex_PropertyChanged;
-
             this.Vertex = geometry as Vertex;
-
-            if (this.Vertex != null)
-                this.Vertex.PropertyChanged += Vertex_PropertyChanged;
-
-            UpdateInstancePath();
         }
         /// <inheritdoc />
         public override void Dispose()
         {
             base.Dispose();
-
-            if (Vertex != null)
-                Vertex.PropertyChanged -= Vertex_PropertyChanged;
 
             Node.PropertyChanged -= Node_PropertyChanged;
             if (nodeContent != null)
@@ -127,18 +110,7 @@ namespace SIMULTAN.Exchange.NetworkConnectors
                 nodeContent.PropertyChanged -= NodeContent_PropertyChanged;
             }
         }
-
         #endregion
-
-
-        private void Vertex_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
-        {
-            if (e.PropertyName == nameof(Vertex.Parent))
-            {
-                UpdateParentPlacement();
-                UpdateColor();
-            }
-        }
 
         private void Node_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
@@ -150,8 +122,6 @@ namespace SIMULTAN.Exchange.NetworkConnectors
                     ((INotifyCollectionChanged)nodeContent.Component.ReferencedAssets).CollectionChanged -= this.Assets_CollectionChanged;
                 }
 
-                UpdateInstancePath();
-                UpdateParentPlacement();
                 UpdateInstanceTransformation();
 
                 nodeContent = Node.Content;
@@ -184,56 +154,6 @@ namespace SIMULTAN.Exchange.NetworkConnectors
             UpdateProxyGeometry();
         }
 
-        private void UpdateInstancePath()
-        {
-            if (Node.Content != null)
-            {
-                using (AccessCheckingDisabler.Disable(Node.Content.Factory))
-                {
-                    Node.Content.InstancePath = new List<Point3D> { Vertex.Position };
-                }
-            }
-        }
-    
-        private void UpdateParentPlacement()
-        {
-            if (this.Node.Content != null)
-            {
-                if (this.Vertex.Parent != null)
-                {
-                    if (this.Vertex.Parent.IsLoaded)
-                    {
-                        var gmPlacement = (SimInstancePlacementGeometry)this.Node.Content.Placements.FirstOrDefault(x => x is SimInstancePlacementGeometry);
-                        if (gmPlacement == null)
-                        {
-                            this.Node.Content.Placements.Add(
-                                new SimInstancePlacementGeometry(this.Vertex.Parent.Target.ModelGeometry.Model.File.Key,
-                                                                 this.Vertex.Parent.Target.Id)
-                                );
-                        }
-                        else
-                        {
-                            //Make sure that placement points to the correct geometry
-                            gmPlacement.FileId = this.Vertex.Parent.Target.ModelGeometry.Model.File.Key;
-                            gmPlacement.GeometryId = this.Vertex.Parent.Target.Id;
-                        }
-                    }
-                }
-                else //Remove all geometry placements when no parent is available
-                {
-                    for (int i = 0; i < this.Node.Content.Placements.Count; i++)
-                    {
-                        var pi = this.Node.Content.Placements[i];
-                        if (pi is SimInstancePlacementGeometry)
-                        {
-                            this.Node.Content.Placements.RemoveAt(i);
-                            i--;
-                        }
-                    }
-                }
-            }
-        }
-    
 
         private void UpdateProxyGeometry()
         {
@@ -307,7 +227,7 @@ namespace SIMULTAN.Exchange.NetworkConnectors
             if (messages.Count > 0)
                 ModelConnector.Exchange.ProjectData.GeometryModels.OnImporterWarning(messages);
         }
-    
+
         private void UpdateProxyTransformation()
         {
             var proxy = Vertex.ProxyGeometries.FirstOrDefault();
@@ -332,7 +252,7 @@ namespace SIMULTAN.Exchange.NetworkConnectors
                 this.transformInProgress = false;
             }
         }
-    
+
         private void UpdateInstanceTransformation()
         {
             if (!transformInProgress && Node.Content != null)
@@ -352,17 +272,12 @@ namespace SIMULTAN.Exchange.NetworkConnectors
                 }
             }
         }
-    
+
         private void UpdateColor()
         {
             if (Node.Content == null)
             {
                 Vertex.Color.Color = NetworkColors.COL_EMPTY;
-                Vertex.Color.IsFromParent = false;
-            }
-            else if (Vertex.Parent == null)
-            {
-                Vertex.Color.Color = NetworkColors.COL_UNASSIGNED;
                 Vertex.Color.IsFromParent = false;
             }
             else

@@ -1,13 +1,9 @@
-﻿using SIMULTAN.Data;
-using SIMULTAN.Exceptions;
-using SIMULTAN.Projects;
-using SIMULTAN.Serializer.DXF;
+﻿using SIMULTAN.Exceptions;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace SIMULTAN.Serializer.DXF
 {
@@ -19,7 +15,7 @@ namespace SIMULTAN.Serializer.DXF
         /// <summary>
         /// The DXF file version
         /// </summary>
-        public static ulong CurrentFileFormatVersion { get => 14L; }
+        public static ulong CurrentFileFormatVersion { get => 21L; }
 
         internal static readonly string NEWLINE_PLACEHOLDER = "[NewLine]";
 
@@ -74,7 +70,17 @@ namespace SIMULTAN.Serializer.DXF
         /// <typeparam name="T">Type of the data entry</typeparam>
         /// <param name="code">The code</param>
         /// <param name="content">The value</param>
-        public void Write<T>(ExcelMappingSaveCode code, T content)
+        public void Write<T>(DataMappingSaveCode code, T content)
+        {
+            Write((int)code, content);
+        }
+        /// <summary>
+        /// Writes a code-value pair to the stream. This overload uses the <see cref="DXFDataConverter"/> to serialize the data
+        /// </summary>
+        /// <typeparam name="T">Type of the data entry</typeparam>
+        /// <param name="code">The code</param>
+        /// <param name="content">The value</param>
+        public void Write<T>(GeometryRelationSaveCode code, T content)
         {
             Write((int)code, content);
         }
@@ -328,6 +334,30 @@ namespace SIMULTAN.Serializer.DXF
         /// <param name="code">The code</param>
         /// <param name="collection">The collection to serialize</param>
         /// <param name="itemSerializer">A function that writes an item of the collection to the stream</param>
+        public void WriteArray<T>(GeometryRelationSaveCode code, IEnumerable<T> collection, Action<T, DXFStreamWriter> itemSerializer)
+        {
+            WriteArray((int)code, collection, itemSerializer);
+        }
+        /// <summary>
+        /// Writes an array to the stream. The first entry is the count, followed by the entries in the array.
+        /// Uses the <see cref="DXFDataConverter"/> to serialize the data
+        /// </summary>
+        /// <typeparam name="T">Type of the data entry</typeparam>
+        /// <param name="code">The code</param>
+        /// <param name="collection">The collection to serialize</param>
+        /// <param name="itemSerializer">A function that writes an item of the collection to the stream</param>
+        public void WriteArray<T>(ResourceSaveCode code, IEnumerable<T> collection, Action<T, DXFStreamWriter> itemSerializer)
+        {
+            WriteArray((int)code, collection, itemSerializer);
+        }
+        /// <summary>
+        /// Writes an array to the stream. The first entry is the count, followed by the entries in the array.
+        /// Uses the <see cref="DXFDataConverter"/> to serialize the data
+        /// </summary>
+        /// <typeparam name="T">Type of the data entry</typeparam>
+        /// <param name="code">The code</param>
+        /// <param name="collection">The collection to serialize</param>
+        /// <param name="itemSerializer">A function that writes an item of the collection to the stream</param>
         public void WriteArray<T>(ChatItemSaveCode code, IEnumerable<T> collection, Action<T, DXFStreamWriter> itemSerializer)
         {
             WriteArray((int)code, collection, itemSerializer);
@@ -340,7 +370,7 @@ namespace SIMULTAN.Serializer.DXF
         /// <param name="code">The code</param>
         /// <param name="collection">The collection to serialize</param>
         /// <param name="itemSerializer">A function that writes an item of the collection to the stream</param>
-        public void WriteArray<T>(ExcelMappingSaveCode code, IEnumerable<T> collection, Action<T, DXFStreamWriter> itemSerializer)
+        public void WriteArray<T>(DataMappingSaveCode code, IEnumerable<T> collection, Action<T, DXFStreamWriter> itemSerializer)
         {
             WriteArray((int)code, collection, itemSerializer);
         }
@@ -576,7 +606,7 @@ namespace SIMULTAN.Serializer.DXF
         /// <param name="code">The element code of the entity sequence</param>
         /// <param name="collection">The items to serialize</param>
         /// <param name="itemSerializer">Method to serialize entries in the collection</param>
-        public void WriteEntitySequence<T>(ExcelMappingSaveCode code, IEnumerable<T> collection, Action<T, DXFStreamWriter> itemSerializer)
+        public void WriteEntitySequence<T>(DataMappingSaveCode code, IEnumerable<T> collection, Action<T, DXFStreamWriter> itemSerializer)
         {
             WriteEntitySequence((int)code, collection, itemSerializer);
         }
@@ -769,7 +799,27 @@ namespace SIMULTAN.Serializer.DXF
         /// <param name="code">The DXF code</param>
         /// <param name="globalId">The id to serialize</param>
         /// <param name="currentProject">The current project</param>
+        public void WriteGlobalId(DataMappingSaveCode code, Guid globalId, Guid currentProject)
+        {
+            WriteGlobalId((int)code, globalId, currentProject);
+        }
+        /// <summary>
+        /// Writes a global id GUID to the stream. Writes <see cref="Guid.Empty"/> when the id is the same as the current project's global id.
+        /// </summary>
+        /// <param name="code">The DXF code</param>
+        /// <param name="globalId">The id to serialize</param>
+        /// <param name="currentProject">The current project</param>
         public void WriteGlobalId(ComponentInstanceSaveCode code, Guid globalId, Guid currentProject)
+        {
+            WriteGlobalId((int)code, globalId, currentProject);
+        }
+        /// <summary>
+        /// Writes a global id GUID to the stream. Writes <see cref="Guid.Empty"/> when the id is the same as the current project's global id.
+        /// </summary>
+        /// <param name="code">The DXF code</param>
+        /// <param name="globalId">The id to serialize</param>
+        /// <param name="currentProject">The current project</param>
+        public void WriteGlobalId(GeometryRelationSaveCode code, Guid globalId, Guid currentProject)
         {
             WriteGlobalId((int)code, globalId, currentProject);
         }

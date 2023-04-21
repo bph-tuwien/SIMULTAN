@@ -7,7 +7,7 @@ using SIMULTAN.Serializer;
 using SIMULTAN.Serializer.DXF;
 using SIMULTAN.Tests.Properties;
 using SIMULTAN.Tests.Util;
-using SIMULTAN.Tests.Utils;
+using SIMULTAN.Tests.TestUtils;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -17,220 +17,1646 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media.Media3D;
+using SIMULTAN.DataMapping;
+using System.Text.RegularExpressions;
+using SIMULTAN.Data.Taxonomy;
 
 namespace SIMULTAN.Tests.IO
 {
     [TestClass]
     public class ExcelDxfTests
     {
-        private List<ExcelMappingNode> CreateInputRules()
+        private static void CreateTestProjectData(ProjectData projectData)
         {
-            ExcelMappingNode rootRule = new ExcelMappingNode(null, "Sheet A", new System.Windows.Point(1, 2), "Root Rule",
-                MappingSubject.Component, new Dictionary<string, Type> { { "IsBoundInNetwork", typeof(bool) } },
-                ExcelMappingRange.SingleValue, true,
-                new List<(string, object)> {
-                    ("Name", "NameFilterText"),
-                    ("InstanceState", new InstanceStateFilter(SimInstanceType.GeometricSurface, true))
-                },
-                new System.Windows.Point(3, 4), 20, 4, TraversalStrategy.SUBTREE_AND_REFERENCES, true, 1
-                )
-            {
-                PrependContentToChildren = false,
-            };
+            projectData.Components.StartLoading();
 
-            ExcelMappingNode childRule1 = new ExcelMappingNode(null, "Sheet A", new System.Windows.Point(1, 2), "Child Rule 1",
-                MappingSubject.Parameter, new Dictionary<string, Type> { { "Name", typeof(string) } },
-                ExcelMappingRange.SingleValue, true,
-                new List<(string, object)> { },
-                new System.Windows.Point(3, 4), 20, 4, TraversalStrategy.SUBTREE_AND_REFERENCES, true, 1
-                )
-            {
-                PrependContentToChildren = true,
-            };
-            childRule1.Parent = rootRule;
-            ExcelMappingNode childRule2 = new ExcelMappingNode(null, "Sheet A", new System.Windows.Point(1, 2), "Child Rule 2",
-                MappingSubject.Parameter, new Dictionary<string, Type> { { "Name", typeof(string) } },
-                ExcelMappingRange.SingleValue, true,
-                new List<(string, object)> { },
-                new System.Windows.Point(3, 4), 20, 4, TraversalStrategy.SUBTREE_AND_REFERENCES, true, 1
-                )
-            {
-                PrependContentToChildren = true,
-            };
-            childRule2.Parent = rootRule;
-
-            return new List<ExcelMappingNode> { rootRule };
-        }
-
-        private List<KeyValuePair<ExcelMappedData, Type>> CreateRangeOutputRules()
-        {
-            return new List<KeyValuePair<ExcelMappedData, Type>>
-            {
-                new KeyValuePair<ExcelMappedData, Type>(new ExcelMappedData("Sheet A", new Point4D(1, 2, 3, 4)), typeof(double))
-            };
-        }
-
-        private List<ExcelUnmappingRule> CreateUnmappingRules()
-        {
+            //Project
             SimComponent component = new SimComponent()
             {
-                Id = new Data.SimId(Guid.Empty, 123)
+                Name = "ParameterHost",
             };
-            SimParameter parameter = new SimParameter("Param", "Unit", 1234.56)
+
+            SimDoubleParameter parameter = new SimDoubleParameter("Param", "unit", 3.4)
             {
-                Id = new Data.SimId(Guid.Empty, 124)
+                Id = new SimId(projectData.Components.CalledFromLocation.GlobalID, 8899)
+            };
+            component.Parameters.Add(parameter);
+            projectData.Components.Add(component);
+
+            projectData.Components.EndLoading();
+        }
+
+        private static SimDataMappingTool CreateTestTool(ProjectData projectData)
+        {
+            CreateTestProjectData(projectData);
+
+            projectData.DataMappingTools.StartLoading();
+
+            var parameter = projectData.Components.First(x => x.Name == "ParameterHost")
+                .Parameters.First(x => x.NameTaxonomyEntry.Name == "Param");
+
+            //Tool
+            var rule = new SimDataMappingRuleComponent("SheetA")
+            {
+                Name = "Demo Rule",
+                OffsetParent = new Utils.IntIndex2D(1, 2),
+                OffsetConsecutive = new Utils.IntIndex2D(3, 4),
+                MaxMatches = 99,
+                MaxDepth = 101,
+                MappingDirection = SimDataMappingDirection.Vertical,
+                ReferencePoint = SimDataMappingReferencePoint.TopRight,
+                TraversalStrategy = SimDataMappingRuleTraversalStrategy.References,
+            };
+            rule.Properties.Add(SimDataMappingComponentMappingProperties.Name);
+            rule.Properties.Add(SimDataMappingComponentMappingProperties.Slot);
+            rule.Properties.Add(SimDataMappingComponentMappingProperties.Id);
+
+            rule.Filter.Add(new SimDataMappingFilterComponent(SimDataMappingComponentFilterProperties.Name, "filtername"));
+            rule.Filter.Add(new SimDataMappingFilterComponent(SimDataMappingComponentFilterProperties.Slot,
+                new SimSlot(new SimTaxonomyEntry(new SimId(5566)), "exten")));
+            rule.Filter.Add(new SimDataMappingFilterComponent(SimDataMappingComponentFilterProperties.InstanceIsRealized, true));
+            rule.Filter.Add(new SimDataMappingFilterComponent(SimDataMappingComponentFilterProperties.InstanceType, SimInstanceType.AttributesFace));
+
+            var childRule1 = new SimDataMappingRuleComponent("SheetB")
+            {
+                Name = "Child Rule 1",
+            };
+            childRule1.Properties.Add(SimDataMappingComponentMappingProperties.Name);
+            childRule1.Filter.Add(new SimDataMappingFilterComponent(SimDataMappingComponentFilterProperties.Name, "child filter value"));
+
+            var childRule2 = new SimDataMappingRuleComponent("SheetB")
+            {
+                Name = "Child Rule 2",
+            };
+            childRule2.Properties.Add(SimDataMappingComponentMappingProperties.Id);
+            childRule2.Filter.Add(new SimDataMappingFilterComponent(SimDataMappingComponentFilterProperties.Name, "child filter value"));
+
+            var parameterRule = new SimDataMappingRuleParameter("SheetB")
+            {
+                Name = "Parameter Rule 1",
+            };
+            parameterRule.Properties.Add(SimDataMappingParameterMappingProperties.Value);
+            parameterRule.Filter.Add(new SimDataMappingFilterParameter(SimDataMappingParameterFilterProperties.Unit, "m/c"));
+
+            rule.Rules.Add(childRule1);
+            rule.Rules.Add(childRule2);
+            rule.Rules.Add(parameterRule);
+
+            var readRule1 = new SimDataMappingReadRule()
+            {
+                SheetName = "SheetA",
+                Range = new Utils.RowColumnRange(4, 3, 6, 5),
+                Parameter = null,
+            };
+            var readRule2 = new SimDataMappingReadRule()
+            {
+                SheetName = "SheetB",
+                Range = new Utils.RowColumnRange(40, 30, 60, 50),
+                Parameter = parameter,
+            };
+
+            SimDataMappingTool tool = new SimDataMappingTool("Custom Tool")
+            {
+                Id = new SimId(7788),
+                MacroName = "Module1.MyCode"
+            };
+            tool.Rules.Add(rule);
+            tool.ReadRules.Add(readRule1);
+            tool.ReadRules.Add(readRule2);
+
+            projectData.DataMappingTools.Add(tool);
+            projectData.DataMappingTools.EndLoading();
+
+            return tool;
+        }
+
+        private static void CheckTestTool(SimDataMappingTool tool, ProjectData projectData)
+        {
+            Assert.IsNotNull(tool);
+
+            Assert.AreEqual("Custom Tool", tool.Name);
+            Assert.AreEqual("Module1.MyCode", tool.MacroName);
+            Assert.AreEqual(7788, tool.Id.LocalId);
+            Assert.AreEqual(1, tool.Rules.Count);
+
+            var rule = tool.Rules[0];
+            Assert.AreEqual("Demo Rule", rule.Name);
+            Assert.AreEqual("SheetA", rule.SheetName);
+            Assert.AreEqual(1, rule.OffsetParent.X);
+            Assert.AreEqual(2, rule.OffsetParent.Y);
+            Assert.AreEqual(3, rule.OffsetConsecutive.X);
+            Assert.AreEqual(4, rule.OffsetConsecutive.Y);
+            Assert.AreEqual(99, rule.MaxMatches);
+            Assert.AreEqual(101, rule.MaxDepth);
+            Assert.AreEqual(SimDataMappingDirection.Vertical, rule.MappingDirection);
+            Assert.AreEqual(SimDataMappingReferencePoint.TopRight, rule.ReferencePoint);
+            Assert.AreEqual(SimDataMappingRuleTraversalStrategy.References, rule.TraversalStrategy);
+
+            Assert.AreEqual(3, rule.Properties.Count);
+            Assert.AreEqual(SimDataMappingComponentMappingProperties.Name, rule.Properties[0]);
+            Assert.AreEqual(SimDataMappingComponentMappingProperties.Slot, rule.Properties[1]);
+            Assert.AreEqual(SimDataMappingComponentMappingProperties.Id, rule.Properties[2]);
+
+            Assert.AreEqual(4, rule.Filter.Count);
+            Assert.AreEqual(SimDataMappingComponentFilterProperties.Name, rule.Filter[0].Property);
+            Assert.AreEqual("filtername", rule.Filter[0].Value);
+            Assert.AreEqual(SimDataMappingComponentFilterProperties.Slot, rule.Filter[1].Property);
+            Assert.IsTrue(rule.Filter[1].Value is SimSlot);
+            var taxEntry = projectData.IdGenerator.GetById<SimTaxonomyEntry>(
+                new SimId(projectData.Taxonomies.CalledFromLocation.GlobalID, 5566));
+            Assert.AreEqual(taxEntry, ((SimSlot)rule.Filter[1].Value).SlotBase.Target);
+            Assert.AreEqual("exten", ((SimSlot)rule.Filter[1].Value).SlotExtension);
+            Assert.AreEqual(SimDataMappingComponentFilterProperties.InstanceIsRealized, rule.Filter[2].Property);
+            Assert.AreEqual(true, rule.Filter[2].Value);
+            Assert.AreEqual(SimDataMappingComponentFilterProperties.InstanceType, rule.Filter[3].Property);
+            Assert.AreEqual(SimInstanceType.AttributesFace, rule.Filter[3].Value);
+
+            //Children
+            Assert.AreEqual(3, rule.Rules.Count);
+            Assert.IsTrue(rule.Rules[0] is SimDataMappingRuleComponent);
+            Assert.AreEqual("Child Rule 1", rule.Rules[0].Name);
+            Assert.IsTrue(rule.Rules[1] is SimDataMappingRuleComponent);
+            Assert.AreEqual("Child Rule 2", rule.Rules[1].Name);
+            Assert.IsTrue(rule.Rules[2] is SimDataMappingRuleParameter);
+            Assert.AreEqual("Parameter Rule 1", rule.Rules[2].Name);
+
+            //Read rules
+            Assert.AreEqual(2, tool.ReadRules.Count);
+            var rrule = tool.ReadRules[0];
+            Assert.AreEqual("SheetA", rrule.SheetName);
+            Assert.AreEqual(null, rrule.Parameter);
+            Assert.AreEqual(3, rrule.Range.ColumnStart);
+            Assert.AreEqual(4, rrule.Range.RowStart);
+            Assert.AreEqual(5, rrule.Range.ColumnCount);
+            Assert.AreEqual(6, rrule.Range.RowCount);
+
+            rrule = tool.ReadRules[1];
+            var parameter = projectData.Components.First(x => x.Name == "ParameterHost")
+                .Parameters.First(x => x.NameTaxonomyEntry.Name == "Param");
+            Assert.AreEqual("SheetB", rrule.SheetName);
+            Assert.AreEqual(parameter, rrule.Parameter);
+            Assert.AreEqual(30, rrule.Range.ColumnStart);
+            Assert.AreEqual(40, rrule.Range.RowStart);
+            Assert.AreEqual(50, rrule.Range.ColumnCount);
+            Assert.AreEqual(60, rrule.Range.RowCount);
+        }
+
+        #region Data Mapping Tool
+
+        [TestMethod]
+        public void WriteDataMappingTool()
+        {
+            var guid = Guid.NewGuid();
+            ExtendedProjectData projectData = new ExtendedProjectData();
+            projectData.SetCallingLocation(new DummyReferenceLocation(guid));
+
+            var tool = CreateTestTool(projectData);
+
+            string exportedString = null;
+            using (MemoryStream stream = new MemoryStream())
+            {
+                using (DXFStreamWriter writer = new DXFStreamWriter(stream, true))
+                {
+                    ExcelDxfIO.WriteDataMappingTool(tool, writer);
+                }
+
+                stream.Flush();
+                stream.Position = 0;
+
+                var array = stream.ToArray();
+                exportedString = Encoding.UTF8.GetString(array);
+            }
+
+            AssertUtil.AreEqualMultiline(Resources.DXFSerializer_ETDXF_WriteDataMappingTool, exportedString);
+        }
+
+        [TestMethod]
+        public void WriteDataMappingToolMappings()
+        {
+            var guid = Guid.NewGuid();
+            var otherGuid = Guid.Parse("da7d8f7c-8eec-423b-b127-9d6e17f52522");
+
+            ExtendedProjectData projectData = new ExtendedProjectData();
+            projectData.SetCallingLocation(new DummyReferenceLocation(guid));
+
+            var costTax = TaxonomyUtils.GetDefaultTaxonomies().GetDefaultSlot(SimDefaultSlotKeys.Cost);
+
+            SimComponent childComponent = new SimComponent()
+            {
+                CurrentSlot = new SimTaxonomyEntryReference(costTax),
+                Id = new SimId(guid, 9997),
+            };
+
+            SimComponent rootComponent = new SimComponent()
+            {
+                CurrentSlot = new SimTaxonomyEntryReference(costTax),
+                Id = new SimId(guid, 9998),
+            };
+            rootComponent.Components.Add(new SimChildComponentEntry(new SimSlot(costTax, "0"), childComponent));
+
+            projectData.Components.StartLoading();
+            projectData.Components.Add(rootComponent);
+            projectData.Components.EndLoading();
+
+            var tool = CreateTestTool(projectData);
+            tool.Rules.AddMapping(tool.Rules.First(), rootComponent);
+            tool.Rules.AddMapping(tool.Rules.First(), childComponent);
+
+            string exportedString = null;
+            using (MemoryStream stream = new MemoryStream())
+            {
+                using (DXFStreamWriter writer = new DXFStreamWriter(stream, true))
+                {
+                    ExcelDxfIO.WriteDataMappingTool(tool, writer);
+                }
+
+                stream.Flush();
+                stream.Position = 0;
+
+                var array = stream.ToArray();
+                exportedString = Encoding.UTF8.GetString(array);
+            }
+
+            AssertUtil.AreEqualMultiline(Resources.DXFSerializer_ETDXF_WriteDataMappingToolMappings, exportedString);
+        }
+
+        [TestMethod]
+        public void ReadDataMappingToolV21()
+        {
+            Guid guid = Guid.NewGuid();
+            Guid otherguid = new Guid("98478ed1-d3f4-4873-95b6-412e5e23aac5");
+
+            ExtendedProjectData projectData = new ExtendedProjectData();
+            projectData.SetCallingLocation(new DummyReferenceLocation(guid));
+
+            CreateTestProjectData(projectData);
+
+            var demoTax = new SimTaxonomy("demotax");
+            var taxEntry = new SimTaxonomyEntry(new SimId(5566)) { Key = "demokey" };
+            projectData.Taxonomies.StartLoading();
+            demoTax.Entries.Add(taxEntry);
+            projectData.Taxonomies.Add(demoTax);
+            projectData.Taxonomies.StopLoading();
+
+            SimDataMappingTool tool = null;
+
+            using (DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_ETDXF_ReadDMToolV21)))
+            {
+                var info = new DXFParserInfo(guid, projectData);
+                info.FileVersion = 21;
+
+                reader.Read();
+
+                tool = ExcelDxfIO.DataMappingToolEntityElement.Parse(reader, info);
+            }
+
+            HierarchicalProject.LoadDefaultTaxonomies(projectData);
+            projectData.Components.RestoreDefaultTaxonomyReferences();
+
+            CheckTestTool(tool, projectData);
+        }
+
+        [TestMethod]
+        public void ReadDataMappingToolMappingsV21()
+        {
+            var guid = Guid.NewGuid();
+            var otherGuid = Guid.Parse("da7d8f7c-8eec-423b-b127-9d6e17f52522");
+
+            ExtendedProjectData projectData = new ExtendedProjectData();
+            projectData.SetCallingLocation(new DummyReferenceLocation(guid));
+
+            var costTax = TaxonomyUtils.GetDefaultTaxonomies().GetDefaultSlot(SimDefaultSlotKeys.Cost);
+
+            SimComponent childComponent = new SimComponent()
+            {
+                CurrentSlot = new SimTaxonomyEntryReference(costTax),
+                Id = new SimId(guid, 9997),
+            };
+
+            SimComponent rootComponent = new SimComponent()
+            {
+                CurrentSlot = new SimTaxonomyEntryReference(costTax),
+                Id = new SimId(guid, 9998),
+            };
+            rootComponent.Components.Add(new SimChildComponentEntry(new SimSlot(costTax, "0"), childComponent));
+
+            projectData.Components.StartLoading();
+            projectData.Components.Add(rootComponent);
+            projectData.Components.EndLoading();
+
+            SimDataMappingTool tool = null;
+
+            using (DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_ETDXF_ReadDMToolMappingsV21)))
+            {
+                var info = new DXFParserInfo(guid, projectData);
+                info.FileVersion = 21;
+
+                reader.Read();
+
+                tool = ExcelDxfIO.DataMappingToolEntityElement.Parse(reader, info);
+            }
+
+            HierarchicalProject.LoadDefaultTaxonomies(projectData);
+            projectData.Components.RestoreDefaultTaxonomyReferences();
+
+            var mappings = tool.Rules.GetMappings(tool.Rules.First());
+            Assert.IsNotNull(mappings);
+            Assert.AreEqual(2, mappings.Count());
+            Assert.IsTrue(mappings.Contains(rootComponent));
+            Assert.IsTrue(mappings.Contains(childComponent));
+        }
+
+        #endregion
+
+        #region Data Mapping Rule
+
+        [TestMethod]
+        public void WriteDataMappingRuleComponent()
+        {
+            var rule = new SimDataMappingRuleComponent("SheetA")
+            {
+                Name = "Demo Rule",
+                OffsetParent = new Utils.IntIndex2D(1, 2),
+                OffsetConsecutive = new Utils.IntIndex2D(3, 4),
+                MaxMatches = 99,
+                MaxDepth = 101,
+                MappingDirection = SimDataMappingDirection.Vertical,
+                ReferencePoint = SimDataMappingReferencePoint.TopRight,
+                TraversalStrategy = SimDataMappingRuleTraversalStrategy.References,
+            };
+            rule.Properties.Add(SimDataMappingComponentMappingProperties.Name);
+            rule.Properties.Add(SimDataMappingComponentMappingProperties.Slot);
+            rule.Properties.Add(SimDataMappingComponentMappingProperties.Id);
+
+            rule.Filter.Add(new SimDataMappingFilterComponent(SimDataMappingComponentFilterProperties.Name, "filtername"));
+            rule.Filter.Add(new SimDataMappingFilterComponent(SimDataMappingComponentFilterProperties.Slot,
+                new SimSlot(new SimTaxonomyEntry(new SimId(5566)), "exten")));
+            rule.Filter.Add(new SimDataMappingFilterComponent(SimDataMappingComponentFilterProperties.InstanceIsRealized, true));
+            rule.Filter.Add(new SimDataMappingFilterComponent(SimDataMappingComponentFilterProperties.InstanceType, SimInstanceType.AttributesFace));
+
+            SimDataMappingTool tool = new SimDataMappingTool("tool");
+            tool.Rules.Add(rule);
+
+            string exportedString = null;
+            using (MemoryStream stream = new MemoryStream())
+            {
+                using (DXFStreamWriter writer = new DXFStreamWriter(stream, true))
+                {
+                    ExcelDxfIO.WriteDataMappingRule(rule, writer);
+                }
+
+                stream.Flush();
+                stream.Position = 0;
+
+                var array = stream.ToArray();
+                exportedString = Encoding.UTF8.GetString(array);
+            }
+
+            AssertUtil.AreEqualMultiline(Resources.DXFSerializer_ETDXF_WriteDMRuleComponent, exportedString);
+        }
+
+        [TestMethod]
+        public void WriteDataMappingRuleComponentChildren()
+        {
+            var rule = new SimDataMappingRuleComponent("SheetA")
+            {
+                Name = "Demo Rule",
+                OffsetParent = new Utils.IntIndex2D(1, 2),
+                OffsetConsecutive = new Utils.IntIndex2D(3, 4),
+                MaxMatches = 99,
+                MaxDepth = 101,
+                MappingDirection = SimDataMappingDirection.Vertical,
+                ReferencePoint = SimDataMappingReferencePoint.TopRight,
+                TraversalStrategy = SimDataMappingRuleTraversalStrategy.References,
+            };
+            rule.Properties.Add(SimDataMappingComponentMappingProperties.Name);
+            rule.Properties.Add(SimDataMappingComponentMappingProperties.Slot);
+            rule.Properties.Add(SimDataMappingComponentMappingProperties.Id);
+
+            rule.Filter.Add(new SimDataMappingFilterComponent(SimDataMappingComponentFilterProperties.Name, "filtername"));
+            rule.Filter.Add(new SimDataMappingFilterComponent(SimDataMappingComponentFilterProperties.Slot,
+                new SimSlot(new SimTaxonomyEntry(new SimId(5566)), "exten")));
+            rule.Filter.Add(new SimDataMappingFilterComponent(SimDataMappingComponentFilterProperties.InstanceIsRealized, true));
+            rule.Filter.Add(new SimDataMappingFilterComponent(SimDataMappingComponentFilterProperties.InstanceType, SimInstanceType.AttributesFace));
+
+            var childRule1 = new SimDataMappingRuleComponent("SheetB")
+            {
+                Name = "Child Rule 1",
+            };
+            childRule1.Properties.Add(SimDataMappingComponentMappingProperties.Name);
+            childRule1.Filter.Add(new SimDataMappingFilterComponent(SimDataMappingComponentFilterProperties.Name, "child filter value"));
+
+            var childRule2 = new SimDataMappingRuleComponent("SheetB")
+            {
+                Name = "Child Rule 2",
+            };
+            childRule2.Properties.Add(SimDataMappingComponentMappingProperties.Id);
+            childRule2.Filter.Add(new SimDataMappingFilterComponent(SimDataMappingComponentFilterProperties.Name, "child filter value"));
+
+            rule.Rules.Add(childRule1);
+            rule.Rules.Add(childRule2);
+
+            SimDataMappingTool tool = new SimDataMappingTool("tool");
+            tool.Rules.Add(rule);
+
+            string exportedString = null;
+            using (MemoryStream stream = new MemoryStream())
+            {
+                using (DXFStreamWriter writer = new DXFStreamWriter(stream, true))
+                {
+                    ExcelDxfIO.WriteDataMappingRule(rule, writer);
+                }
+
+                stream.Flush();
+                stream.Position = 0;
+
+                var array = stream.ToArray();
+                exportedString = Encoding.UTF8.GetString(array);
+            }
+
+            AssertUtil.AreEqualMultiline(Resources.DXFSerializer_ETDXF_WriteDMRuleComponentChildren, exportedString);
+        }
+
+        [TestMethod]
+        public void ReadDataMappingRuleComponentV21()
+        {
+            Guid guid = Guid.NewGuid();
+            Guid otherguid = new Guid("98478ed1-d3f4-4873-95b6-412e5e23aac5");
+
+            ExtendedProjectData projectData = new ExtendedProjectData();
+            projectData.SetCallingLocation(new DummyReferenceLocation(guid));
+
+            var demoTax = new SimTaxonomy("demotax");
+            var taxEntry = new SimTaxonomyEntry(new SimId(5566)) { Key = "demokey" };
+            projectData.Taxonomies.StartLoading();
+            demoTax.Entries.Add(taxEntry);
+            projectData.Taxonomies.Add(demoTax);
+            projectData.Taxonomies.StopLoading();
+
+            SimDataMappingRuleComponent rule = null;
+
+            using (DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_ETDXF_ReadDMRuleComponentV21)))
+            {
+                var info = new DXFParserInfo(guid, projectData);
+                info.FileVersion = 21;
+
+                reader.Read();
+
+                (rule, _) = ExcelDxfIO.ComponentRuleEntityElement.Parse(reader, info);
+            }
+
+            HierarchicalProject.LoadDefaultTaxonomies(projectData);
+            projectData.Components.RestoreDefaultTaxonomyReferences();
+
+            Assert.IsNotNull(rule);
+
+            Assert.AreEqual("Demo Rule", rule.Name);
+            Assert.AreEqual("SheetA", rule.SheetName);
+            Assert.AreEqual(1, rule.OffsetParent.X);
+            Assert.AreEqual(2, rule.OffsetParent.Y);
+            Assert.AreEqual(3, rule.OffsetConsecutive.X);
+            Assert.AreEqual(4, rule.OffsetConsecutive.Y);
+            Assert.AreEqual(99, rule.MaxMatches);
+            Assert.AreEqual(101, rule.MaxDepth);
+            Assert.AreEqual(SimDataMappingDirection.Vertical, rule.MappingDirection);
+            Assert.AreEqual(SimDataMappingReferencePoint.TopRight, rule.ReferencePoint);
+            Assert.AreEqual(SimDataMappingRuleTraversalStrategy.References, rule.TraversalStrategy);
+
+            Assert.AreEqual(3, rule.Properties.Count);
+            Assert.AreEqual(SimDataMappingComponentMappingProperties.Name, rule.Properties[0]);
+            Assert.AreEqual(SimDataMappingComponentMappingProperties.Slot, rule.Properties[1]);
+            Assert.AreEqual(SimDataMappingComponentMappingProperties.Id, rule.Properties[2]);
+
+            Assert.AreEqual(4, rule.Filter.Count);
+            Assert.AreEqual(SimDataMappingComponentFilterProperties.Name, rule.Filter[0].Property);
+            Assert.AreEqual("filtername", rule.Filter[0].Value);
+            Assert.AreEqual(SimDataMappingComponentFilterProperties.Slot, rule.Filter[1].Property);
+            Assert.IsTrue(rule.Filter[1].Value is SimSlot);
+            Assert.AreEqual(taxEntry, ((SimSlot)rule.Filter[1].Value).SlotBase.Target);
+            Assert.AreEqual("exten", ((SimSlot)rule.Filter[1].Value).SlotExtension);
+            Assert.AreEqual(SimDataMappingComponentFilterProperties.InstanceIsRealized, rule.Filter[2].Property);
+            Assert.AreEqual(true, rule.Filter[2].Value);
+            Assert.AreEqual(SimDataMappingComponentFilterProperties.InstanceType, rule.Filter[3].Property);
+            Assert.AreEqual(SimInstanceType.AttributesFace, rule.Filter[3].Value);
+        }
+
+        [TestMethod]
+        public void ReadDataMappingRuleComponentChildrenV21()
+        {
+            Guid guid = Guid.NewGuid();
+            Guid otherguid = new Guid("98478ed1-d3f4-4873-95b6-412e5e23aac5");
+
+            ExtendedProjectData projectData = new ExtendedProjectData();
+            projectData.SetCallingLocation(new DummyReferenceLocation(guid));
+
+            var demoTax = new SimTaxonomy("demotax");
+            var taxEntry = new SimTaxonomyEntry(new SimId(5566)) { Key = "demokey" };
+            projectData.Taxonomies.StartLoading();
+            demoTax.Entries.Add(taxEntry);
+            projectData.Taxonomies.Add(demoTax);
+            projectData.Taxonomies.StopLoading();
+
+            SimDataMappingRuleComponent rule = null;
+
+            using (DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_ETDXF_ReadDMRuleChildrenV21)))
+            {
+                var info = new DXFParserInfo(guid, projectData);
+                info.FileVersion = 21;
+
+                reader.Read();
+
+                (rule, _) = ExcelDxfIO.ComponentRuleEntityElement.Parse(reader, info);
+            }
+
+            HierarchicalProject.LoadDefaultTaxonomies(projectData);
+            projectData.Components.RestoreDefaultTaxonomyReferences();
+
+            Assert.IsNotNull(rule);
+
+            Assert.AreEqual("Demo Rule", rule.Name);
+            Assert.AreEqual("SheetA", rule.SheetName);
+            Assert.AreEqual(1, rule.OffsetParent.X);
+            Assert.AreEqual(2, rule.OffsetParent.Y);
+            Assert.AreEqual(3, rule.OffsetConsecutive.X);
+            Assert.AreEqual(4, rule.OffsetConsecutive.Y);
+            Assert.AreEqual(99, rule.MaxMatches);
+            Assert.AreEqual(101, rule.MaxDepth);
+            Assert.AreEqual(SimDataMappingDirection.Vertical, rule.MappingDirection);
+            Assert.AreEqual(SimDataMappingReferencePoint.TopRight, rule.ReferencePoint);
+            Assert.AreEqual(SimDataMappingRuleTraversalStrategy.References, rule.TraversalStrategy);
+
+            Assert.AreEqual(3, rule.Properties.Count);
+            Assert.AreEqual(SimDataMappingComponentMappingProperties.Name, rule.Properties[0]);
+            Assert.AreEqual(SimDataMappingComponentMappingProperties.Slot, rule.Properties[1]);
+            Assert.AreEqual(SimDataMappingComponentMappingProperties.Id, rule.Properties[2]);
+
+            Assert.AreEqual(4, rule.Filter.Count);
+            Assert.AreEqual(SimDataMappingComponentFilterProperties.Name, rule.Filter[0].Property);
+            Assert.AreEqual("filtername", rule.Filter[0].Value);
+            Assert.AreEqual(SimDataMappingComponentFilterProperties.Slot, rule.Filter[1].Property);
+            Assert.IsTrue(rule.Filter[1].Value is SimSlot);
+            Assert.AreEqual(taxEntry, ((SimSlot)rule.Filter[1].Value).SlotBase.Target);
+            Assert.AreEqual("exten", ((SimSlot)rule.Filter[1].Value).SlotExtension);
+            Assert.AreEqual(SimDataMappingComponentFilterProperties.InstanceIsRealized, rule.Filter[2].Property);
+            Assert.AreEqual(true, rule.Filter[2].Value);
+            Assert.AreEqual(SimDataMappingComponentFilterProperties.InstanceType, rule.Filter[3].Property);
+            Assert.AreEqual(SimInstanceType.AttributesFace, rule.Filter[3].Value);
+
+            //Children
+            Assert.AreEqual(2, rule.Rules.Count);
+            Assert.IsTrue(rule.Rules[0] is SimDataMappingRuleComponent);
+            Assert.AreEqual("Child Rule 1", rule.Rules[0].Name);
+            Assert.IsTrue(rule.Rules[1] is SimDataMappingRuleComponent);
+            Assert.AreEqual("Child Rule 2", rule.Rules[1].Name);
+        }
+
+
+        [TestMethod]
+        public void WriteDataMappingRuleParameter()
+        {
+            var rule = new SimDataMappingRuleParameter("SheetA")
+            {
+                Name = "Demo Rule",
+                OffsetParent = new Utils.IntIndex2D(1, 2),
+                OffsetConsecutive = new Utils.IntIndex2D(3, 4),
+                MaxMatches = 99,
+                MaxDepth = 101,
+                MappingDirection = SimDataMappingDirection.Vertical,
+                ReferencePoint = SimDataMappingReferencePoint.TopRight,
+                ParameterRange = SimDataMappingParameterRange.Table,
+            };
+            rule.Properties.Add(SimDataMappingParameterMappingProperties.Name);
+            rule.Properties.Add(SimDataMappingParameterMappingProperties.Id);
+            rule.Properties.Add(SimDataMappingParameterMappingProperties.Value);
+            rule.Properties.Add(SimDataMappingParameterMappingProperties.Description);
+            rule.Properties.Add(SimDataMappingParameterMappingProperties.Unit);
+            rule.Properties.Add(SimDataMappingParameterMappingProperties.Min);
+            rule.Properties.Add(SimDataMappingParameterMappingProperties.Max);
+
+            rule.Filter.Add(new SimDataMappingFilterParameter(SimDataMappingParameterFilterProperties.Name, "filter name"));
+            rule.Filter.Add(new SimDataMappingFilterParameter(SimDataMappingParameterFilterProperties.Unit, "m/c"));
+            rule.Filter.Add(new SimDataMappingFilterParameter(SimDataMappingParameterFilterProperties.Propagation, SimInfoFlow.Mixed));
+            rule.Filter.Add(new SimDataMappingFilterParameter(SimDataMappingParameterFilterProperties.Category, SimCategory.Humidity | SimCategory.Air));
+
+            string exportedString = null;
+            using (MemoryStream stream = new MemoryStream())
+            {
+                using (DXFStreamWriter writer = new DXFStreamWriter(stream, true))
+                {
+                    ExcelDxfIO.WriteDataMappingRule(rule, writer);
+                }
+
+                stream.Flush();
+                stream.Position = 0;
+
+                var array = stream.ToArray();
+                exportedString = Encoding.UTF8.GetString(array);
+            }
+
+            AssertUtil.AreEqualMultiline(Resources.DXFSerializer_ETDXF_WriteDMRuleParameter, exportedString);
+        }
+
+        [TestMethod]
+        public void ReadDataMappingRuleParameterV21()
+        {
+            Guid guid = Guid.NewGuid();
+
+            ExtendedProjectData projectData = new ExtendedProjectData();
+            projectData.SetCallingLocation(new DummyReferenceLocation(guid));
+
+            SimDataMappingRuleParameter rule = null;
+
+            using (DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_ETDXF_ReadDMRuleParameterV21)))
+            {
+                var info = new DXFParserInfo(guid, projectData);
+                info.FileVersion = 21;
+
+                reader.Read();
+
+                rule = ExcelDxfIO.ParameterRuleEntityElement.Parse(reader, info);
+            }
+
+            HierarchicalProject.LoadDefaultTaxonomies(projectData);
+            projectData.Components.RestoreDefaultTaxonomyReferences();
+
+            Assert.IsNotNull(rule);
+
+            Assert.AreEqual("Demo Rule", rule.Name);
+            Assert.AreEqual("SheetA", rule.SheetName);
+            Assert.AreEqual(1, rule.OffsetParent.X);
+            Assert.AreEqual(2, rule.OffsetParent.Y);
+            Assert.AreEqual(3, rule.OffsetConsecutive.X);
+            Assert.AreEqual(4, rule.OffsetConsecutive.Y);
+            Assert.AreEqual(99, rule.MaxMatches);
+            Assert.AreEqual(101, rule.MaxDepth);
+            Assert.AreEqual(SimDataMappingDirection.Vertical, rule.MappingDirection);
+            Assert.AreEqual(SimDataMappingReferencePoint.TopRight, rule.ReferencePoint);
+            Assert.AreEqual(SimDataMappingParameterRange.Table, rule.ParameterRange);
+
+            Assert.AreEqual(7, rule.Properties.Count);
+            Assert.AreEqual(SimDataMappingParameterMappingProperties.Name, rule.Properties[0]);
+            Assert.AreEqual(SimDataMappingParameterMappingProperties.Id, rule.Properties[1]);
+            Assert.AreEqual(SimDataMappingParameterMappingProperties.Value, rule.Properties[2]);
+            Assert.AreEqual(SimDataMappingParameterMappingProperties.Description, rule.Properties[3]);
+            Assert.AreEqual(SimDataMappingParameterMappingProperties.Unit, rule.Properties[4]);
+            Assert.AreEqual(SimDataMappingParameterMappingProperties.Min, rule.Properties[5]);
+            Assert.AreEqual(SimDataMappingParameterMappingProperties.Max, rule.Properties[6]);
+
+            Assert.AreEqual(4, rule.Filter.Count);
+            Assert.AreEqual(SimDataMappingParameterFilterProperties.Name, rule.Filter[0].Property);
+            Assert.AreEqual("filter name", rule.Filter[0].Value);
+            Assert.AreEqual(SimDataMappingParameterFilterProperties.Unit, rule.Filter[1].Property);
+            Assert.AreEqual("m/c", rule.Filter[1].Value);
+            Assert.AreEqual(SimDataMappingParameterFilterProperties.Propagation, rule.Filter[2].Property);
+            Assert.AreEqual(SimInfoFlow.Mixed, rule.Filter[2].Value);
+            Assert.AreEqual(SimDataMappingParameterFilterProperties.Category, rule.Filter[3].Property);
+            Assert.AreEqual(SimCategory.Humidity | SimCategory.Air, rule.Filter[3].Value);
+        }
+
+
+        [TestMethod]
+        public void WriteDataMappingRuleInstance()
+        {
+            var rule = new SimDataMappingRuleInstance("SheetA")
+            {
+                Name = "Demo Rule",
+                OffsetParent = new Utils.IntIndex2D(1, 2),
+                OffsetConsecutive = new Utils.IntIndex2D(3, 4),
+                MaxMatches = 99,
+                MaxDepth = 101,
+                MappingDirection = SimDataMappingDirection.Vertical,
+                ReferencePoint = SimDataMappingReferencePoint.TopRight,
+            };
+            rule.Properties.Add(SimDataMappingInstanceMappingProperties.Name);
+            rule.Properties.Add(SimDataMappingInstanceMappingProperties.Id);
+
+            rule.Filter.Add(new SimDataMappingFilterInstance(SimDataMappingInstanceFilterProperties.Name, "filter name"));
+            rule.Filter.Add(new SimDataMappingFilterInstance(SimDataMappingInstanceFilterProperties.InstanceType, SimInstanceType.AttributesFace));
+
+            string exportedString = null;
+            using (MemoryStream stream = new MemoryStream())
+            {
+                using (DXFStreamWriter writer = new DXFStreamWriter(stream, true))
+                {
+                    ExcelDxfIO.WriteDataMappingRule(rule, writer);
+                }
+
+                stream.Flush();
+                stream.Position = 0;
+
+                var array = stream.ToArray();
+                exportedString = Encoding.UTF8.GetString(array);
+            }
+
+            AssertUtil.AreEqualMultiline(Resources.DXFSerializer_ETDXF_WriteDMRuleInstance, exportedString);
+        }
+
+        [TestMethod]
+        public void WriteDataMappingRuleInstanceChildren()
+        {
+            var rule = new SimDataMappingRuleInstance("SheetA")
+            {
+                Name = "Demo Rule",
+                OffsetParent = new Utils.IntIndex2D(1, 2),
+                OffsetConsecutive = new Utils.IntIndex2D(3, 4),
+                MaxMatches = 99,
+                MaxDepth = 101,
+                MappingDirection = SimDataMappingDirection.Vertical,
+                ReferencePoint = SimDataMappingReferencePoint.TopRight,
+            };
+            rule.Properties.Add(SimDataMappingInstanceMappingProperties.Name);
+            rule.Properties.Add(SimDataMappingInstanceMappingProperties.Id);
+
+            rule.Filter.Add(new SimDataMappingFilterInstance(SimDataMappingInstanceFilterProperties.Name, "filter name"));
+            rule.Filter.Add(new SimDataMappingFilterInstance(SimDataMappingInstanceFilterProperties.InstanceType, SimInstanceType.AttributesFace));
+
+            var childRule1 = new SimDataMappingRuleComponent("SheetB")
+            {
+                Name = "Child Component Rule"
+            };
+            childRule1.Properties.Add(SimDataMappingComponentMappingProperties.Name);
+            childRule1.Filter.Add(new SimDataMappingFilterComponent(SimDataMappingComponentFilterProperties.Name, new Regex("a.*")));
+
+            var childRule2 = new SimDataMappingRuleParameter("SheetB")
+            {
+                Name = "Child Parameter Rule"
+            };
+            childRule2.Properties.Add(SimDataMappingParameterMappingProperties.Value);
+            childRule2.Filter.Add(new SimDataMappingFilterParameter(SimDataMappingParameterFilterProperties.Unit, "m/c"));
+
+            rule.Rules.Add(childRule1);
+            rule.Rules.Add(childRule2);
+
+            string exportedString = null;
+            using (MemoryStream stream = new MemoryStream())
+            {
+                using (DXFStreamWriter writer = new DXFStreamWriter(stream, true))
+                {
+                    ExcelDxfIO.WriteDataMappingRule(rule, writer);
+                }
+
+                stream.Flush();
+                stream.Position = 0;
+
+                var array = stream.ToArray();
+                exportedString = Encoding.UTF8.GetString(array);
+            }
+
+            AssertUtil.AreEqualMultiline(Resources.DXFSerializer_ETDXF_WriteDMRuleInstanceChildren, exportedString);
+        }
+
+        [TestMethod]
+        public void ReadDataMappingRuleInstanceV21()
+        {
+            Guid guid = Guid.NewGuid();
+            Guid otherguid = new Guid("98478ed1-d3f4-4873-95b6-412e5e23aac5");
+
+            ExtendedProjectData projectData = new ExtendedProjectData();
+            projectData.SetCallingLocation(new DummyReferenceLocation(guid));
+
+            SimDataMappingRuleInstance rule = null;
+
+            using (DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_ETDXF_ReadDMRuleInstanceV21)))
+            {
+                var info = new DXFParserInfo(guid, projectData);
+                info.FileVersion = 21;
+
+                reader.Read();
+
+                rule = ExcelDxfIO.InstanceRuleEntityElement.Parse(reader, info);
+            }
+
+            HierarchicalProject.LoadDefaultTaxonomies(projectData);
+            projectData.Components.RestoreDefaultTaxonomyReferences();
+
+            Assert.IsNotNull(rule);
+
+            Assert.AreEqual("Demo Rule", rule.Name);
+            Assert.AreEqual("SheetA", rule.SheetName);
+            Assert.AreEqual(1, rule.OffsetParent.X);
+            Assert.AreEqual(2, rule.OffsetParent.Y);
+            Assert.AreEqual(3, rule.OffsetConsecutive.X);
+            Assert.AreEqual(4, rule.OffsetConsecutive.Y);
+            Assert.AreEqual(99, rule.MaxMatches);
+            Assert.AreEqual(101, rule.MaxDepth);
+            Assert.AreEqual(SimDataMappingDirection.Vertical, rule.MappingDirection);
+            Assert.AreEqual(SimDataMappingReferencePoint.TopRight, rule.ReferencePoint);
+
+            Assert.AreEqual(2, rule.Properties.Count);
+            Assert.AreEqual(SimDataMappingInstanceMappingProperties.Name, rule.Properties[0]);
+            Assert.AreEqual(SimDataMappingInstanceMappingProperties.Id, rule.Properties[1]);
+
+            Assert.AreEqual(2, rule.Filter.Count);
+            Assert.AreEqual(SimDataMappingInstanceFilterProperties.Name, rule.Filter[0].Property);
+            Assert.AreEqual("filter name", rule.Filter[0].Value);
+            Assert.AreEqual(SimDataMappingInstanceFilterProperties.InstanceType, rule.Filter[1].Property);
+            Assert.AreEqual(SimInstanceType.AttributesFace, rule.Filter[1].Value);
+        }
+
+        [TestMethod]
+        public void ReadDataMappingRuleInstanceChildrenV21()
+        {
+            Guid guid = Guid.NewGuid();
+            Guid otherguid = new Guid("98478ed1-d3f4-4873-95b6-412e5e23aac5");
+
+            ExtendedProjectData projectData = new ExtendedProjectData();
+            projectData.SetCallingLocation(new DummyReferenceLocation(guid));
+
+            SimDataMappingRuleInstance rule = null;
+
+            using (DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_ETDXF_ReadDMRuleInstanceChildrenV21)))
+            {
+                var info = new DXFParserInfo(guid, projectData);
+                info.FileVersion = 21;
+
+                reader.Read();
+
+                rule = ExcelDxfIO.InstanceRuleEntityElement.Parse(reader, info);
+            }
+
+            HierarchicalProject.LoadDefaultTaxonomies(projectData);
+            projectData.Components.RestoreDefaultTaxonomyReferences();
+
+            Assert.IsNotNull(rule);
+
+            Assert.AreEqual("Demo Rule", rule.Name);
+            Assert.AreEqual("SheetA", rule.SheetName);
+            Assert.AreEqual(1, rule.OffsetParent.X);
+            Assert.AreEqual(2, rule.OffsetParent.Y);
+            Assert.AreEqual(3, rule.OffsetConsecutive.X);
+            Assert.AreEqual(4, rule.OffsetConsecutive.Y);
+            Assert.AreEqual(99, rule.MaxMatches);
+            Assert.AreEqual(101, rule.MaxDepth);
+            Assert.AreEqual(SimDataMappingDirection.Vertical, rule.MappingDirection);
+            Assert.AreEqual(SimDataMappingReferencePoint.TopRight, rule.ReferencePoint);
+
+            Assert.AreEqual(2, rule.Properties.Count);
+            Assert.AreEqual(SimDataMappingInstanceMappingProperties.Name, rule.Properties[0]);
+            Assert.AreEqual(SimDataMappingInstanceMappingProperties.Id, rule.Properties[1]);
+
+            Assert.AreEqual(2, rule.Filter.Count);
+            Assert.AreEqual(SimDataMappingInstanceFilterProperties.Name, rule.Filter[0].Property);
+            Assert.AreEqual("filter name", rule.Filter[0].Value);
+            Assert.AreEqual(SimDataMappingInstanceFilterProperties.InstanceType, rule.Filter[1].Property);
+            Assert.AreEqual(SimInstanceType.AttributesFace, rule.Filter[1].Value);
+
+            //Children
+            Assert.AreEqual(2, rule.Rules.Count);
+            Assert.IsTrue(rule.Rules[0] is SimDataMappingRuleComponent);
+            Assert.IsTrue(rule.Rules[1] is SimDataMappingRuleParameter);
+        }
+
+
+        [TestMethod]
+        public void WriteDataMappingRuleFace()
+        {
+            var rule = new SimDataMappingRuleFace("SheetA")
+            {
+                Name = "Demo Rule",
+                OffsetParent = new Utils.IntIndex2D(1, 2),
+                OffsetConsecutive = new Utils.IntIndex2D(3, 4),
+                MaxMatches = 99,
+                MaxDepth = 101,
+                MappingDirection = SimDataMappingDirection.Vertical,
+                ReferencePoint = SimDataMappingReferencePoint.TopRight,
+            };
+            rule.Properties.Add(SimDataMappingFaceMappingProperties.Name);
+            rule.Properties.Add(SimDataMappingFaceMappingProperties.Id);
+            rule.Properties.Add(SimDataMappingFaceMappingProperties.Area);
+            rule.Properties.Add(SimDataMappingFaceMappingProperties.Incline);
+            rule.Properties.Add(SimDataMappingFaceMappingProperties.Orientation);
+
+            rule.Filter.Add(new SimDataMappingFilterFace(SimDataMappingFaceFilterProperties.Name, "filter name"));
+            rule.Filter.Add(new SimDataMappingFilterFace(SimDataMappingFaceFilterProperties.FaceType, SimDataMappingFaceType.FloorOrCeiling));
+            rule.Filter.Add(new SimDataMappingFilterFace(SimDataMappingFaceFilterProperties.FileKey, 33));
+
+            string exportedString = null;
+            using (MemoryStream stream = new MemoryStream())
+            {
+                using (DXFStreamWriter writer = new DXFStreamWriter(stream, true))
+                {
+                    ExcelDxfIO.WriteDataMappingRule(rule, writer);
+                }
+
+                stream.Flush();
+                stream.Position = 0;
+
+                var array = stream.ToArray();
+                exportedString = Encoding.UTF8.GetString(array);
+            }
+
+            AssertUtil.AreEqualMultiline(Resources.DXFSerializer_ETDXF_WriteDMRuleFace, exportedString);
+        }
+
+        [TestMethod]
+        public void WriteDataMappingRuleFaceChildren()
+        {
+            var rule = new SimDataMappingRuleFace("SheetA")
+            {
+                Name = "Demo Rule",
+                OffsetParent = new Utils.IntIndex2D(1, 2),
+                OffsetConsecutive = new Utils.IntIndex2D(3, 4),
+                MaxMatches = 99,
+                MaxDepth = 101,
+                MappingDirection = SimDataMappingDirection.Vertical,
+                ReferencePoint = SimDataMappingReferencePoint.TopRight,
+            };
+            rule.Properties.Add(SimDataMappingFaceMappingProperties.Name);
+            rule.Properties.Add(SimDataMappingFaceMappingProperties.Id);
+            rule.Properties.Add(SimDataMappingFaceMappingProperties.Area);
+            rule.Properties.Add(SimDataMappingFaceMappingProperties.Incline);
+            rule.Properties.Add(SimDataMappingFaceMappingProperties.Orientation);
+
+            rule.Filter.Add(new SimDataMappingFilterFace(SimDataMappingFaceFilterProperties.Name, "filter name"));
+            rule.Filter.Add(new SimDataMappingFilterFace(SimDataMappingFaceFilterProperties.FaceType, SimDataMappingFaceType.FloorOrCeiling));
+            rule.Filter.Add(new SimDataMappingFilterFace(SimDataMappingFaceFilterProperties.FileKey, 33));
+
+            var childRule1 = new SimDataMappingRuleComponent("SheetB")
+            {
+                Name = "Child Component Rule"
+            };
+            childRule1.Properties.Add(SimDataMappingComponentMappingProperties.Name);
+            childRule1.Filter.Add(new SimDataMappingFilterComponent(SimDataMappingComponentFilterProperties.Name, new Regex("a.*")));
+
+            var childRule2 = new SimDataMappingRuleInstance("SheetB")
+            {
+                Name = "Child Instance Rule"
+            };
+            childRule2.Properties.Add(SimDataMappingInstanceMappingProperties.Name);
+            childRule2.Filter.Add(new SimDataMappingFilterInstance(SimDataMappingInstanceFilterProperties.Name, new Regex("b.*")));
+
+            var childRule3 = new SimDataMappingRuleFace("SheetB")
+            {
+                Name = "Child Face Rule"
+            };
+            childRule3.Properties.Add(SimDataMappingFaceMappingProperties.Name);
+            childRule3.Filter.Add(new SimDataMappingFilterFace(SimDataMappingFaceFilterProperties.Name, new Regex("c.*")));
+
+            rule.Rules.Add(childRule1);
+            rule.Rules.Add(childRule2);
+            rule.Rules.Add(childRule3);
+
+            string exportedString = null;
+            using (MemoryStream stream = new MemoryStream())
+            {
+                using (DXFStreamWriter writer = new DXFStreamWriter(stream, true))
+                {
+                    ExcelDxfIO.WriteDataMappingRule(rule, writer);
+                }
+
+                stream.Flush();
+                stream.Position = 0;
+
+                var array = stream.ToArray();
+                exportedString = Encoding.UTF8.GetString(array);
+            }
+
+            AssertUtil.AreEqualMultiline(Resources.DXFSerializer_ETDXF_WriteDMRuleFaceChildren, exportedString);
+        }
+
+        [TestMethod]
+        public void ReadDataMappingRuleFaceV21()
+        {
+            Guid guid = Guid.NewGuid();
+            Guid otherguid = new Guid("98478ed1-d3f4-4873-95b6-412e5e23aac5");
+
+            ExtendedProjectData projectData = new ExtendedProjectData();
+            projectData.SetCallingLocation(new DummyReferenceLocation(guid));
+
+            SimDataMappingRuleFace rule = null;
+
+            using (DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_ETDXF_ReadDMRuleFaceV21)))
+            {
+                var info = new DXFParserInfo(guid, projectData);
+                info.FileVersion = 21;
+
+                reader.Read();
+
+                rule = ExcelDxfIO.FaceRuleEntityElement.Parse(reader, info);
+            }
+
+            HierarchicalProject.LoadDefaultTaxonomies(projectData);
+            projectData.Components.RestoreDefaultTaxonomyReferences();
+
+            Assert.IsNotNull(rule);
+
+            Assert.AreEqual("Demo Rule", rule.Name);
+            Assert.AreEqual("SheetA", rule.SheetName);
+            Assert.AreEqual(1, rule.OffsetParent.X);
+            Assert.AreEqual(2, rule.OffsetParent.Y);
+            Assert.AreEqual(3, rule.OffsetConsecutive.X);
+            Assert.AreEqual(4, rule.OffsetConsecutive.Y);
+            Assert.AreEqual(99, rule.MaxMatches);
+            Assert.AreEqual(101, rule.MaxDepth);
+            Assert.AreEqual(SimDataMappingDirection.Vertical, rule.MappingDirection);
+            Assert.AreEqual(SimDataMappingReferencePoint.TopRight, rule.ReferencePoint);
+
+            Assert.AreEqual(5, rule.Properties.Count);
+            Assert.AreEqual(SimDataMappingFaceMappingProperties.Name, rule.Properties[0]);
+            Assert.AreEqual(SimDataMappingFaceMappingProperties.Id, rule.Properties[1]);
+            Assert.AreEqual(SimDataMappingFaceMappingProperties.Area, rule.Properties[2]);
+            Assert.AreEqual(SimDataMappingFaceMappingProperties.Incline, rule.Properties[3]);
+            Assert.AreEqual(SimDataMappingFaceMappingProperties.Orientation, rule.Properties[4]);
+
+            Assert.AreEqual(3, rule.Filter.Count);
+            Assert.AreEqual(SimDataMappingFaceFilterProperties.Name, rule.Filter[0].Property);
+            Assert.AreEqual("filter name", rule.Filter[0].Value);
+            Assert.AreEqual(SimDataMappingFaceFilterProperties.FaceType, rule.Filter[1].Property);
+            Assert.AreEqual(SimDataMappingFaceType.FloorOrCeiling, rule.Filter[1].Value);
+            Assert.AreEqual(SimDataMappingFaceFilterProperties.FileKey, rule.Filter[2].Property);
+            Assert.AreEqual(33, rule.Filter[2].Value);
+        }
+
+        [TestMethod]
+        public void ReadDataMappingRuleFaceChildrenV21()
+        {
+            Guid guid = Guid.NewGuid();
+            Guid otherguid = new Guid("98478ed1-d3f4-4873-95b6-412e5e23aac5");
+
+            ExtendedProjectData projectData = new ExtendedProjectData();
+            projectData.SetCallingLocation(new DummyReferenceLocation(guid));
+
+            SimDataMappingRuleFace rule = null;
+
+            using (DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_ETDXF_ReadDMRuleFaceChildrenV21)))
+            {
+                var info = new DXFParserInfo(guid, projectData);
+                info.FileVersion = 21;
+
+                reader.Read();
+
+                rule = ExcelDxfIO.FaceRuleEntityElement.Parse(reader, info);
+            }
+
+            HierarchicalProject.LoadDefaultTaxonomies(projectData);
+            projectData.Components.RestoreDefaultTaxonomyReferences();
+
+            Assert.IsNotNull(rule);
+
+            Assert.AreEqual("Demo Rule", rule.Name);
+            Assert.AreEqual("SheetA", rule.SheetName);
+            Assert.AreEqual(1, rule.OffsetParent.X);
+            Assert.AreEqual(2, rule.OffsetParent.Y);
+            Assert.AreEqual(3, rule.OffsetConsecutive.X);
+            Assert.AreEqual(4, rule.OffsetConsecutive.Y);
+            Assert.AreEqual(99, rule.MaxMatches);
+            Assert.AreEqual(101, rule.MaxDepth);
+            Assert.AreEqual(SimDataMappingDirection.Vertical, rule.MappingDirection);
+            Assert.AreEqual(SimDataMappingReferencePoint.TopRight, rule.ReferencePoint);
+
+            Assert.AreEqual(5, rule.Properties.Count);
+            Assert.AreEqual(SimDataMappingFaceMappingProperties.Name, rule.Properties[0]);
+            Assert.AreEqual(SimDataMappingFaceMappingProperties.Id, rule.Properties[1]);
+            Assert.AreEqual(SimDataMappingFaceMappingProperties.Area, rule.Properties[2]);
+            Assert.AreEqual(SimDataMappingFaceMappingProperties.Incline, rule.Properties[3]);
+            Assert.AreEqual(SimDataMappingFaceMappingProperties.Orientation, rule.Properties[4]);
+
+            Assert.AreEqual(3, rule.Filter.Count);
+            Assert.AreEqual(SimDataMappingFaceFilterProperties.Name, rule.Filter[0].Property);
+            Assert.AreEqual("filter name", rule.Filter[0].Value);
+            Assert.AreEqual(SimDataMappingFaceFilterProperties.FaceType, rule.Filter[1].Property);
+            Assert.AreEqual(SimDataMappingFaceType.FloorOrCeiling, rule.Filter[1].Value);
+            Assert.AreEqual(SimDataMappingFaceFilterProperties.FileKey, rule.Filter[2].Property);
+            Assert.AreEqual(33, rule.Filter[2].Value);
+
+            //Children
+            Assert.AreEqual(3, rule.Rules.Count);
+            Assert.IsTrue(rule.Rules[0] is SimDataMappingRuleComponent);
+            Assert.IsTrue(rule.Rules[1] is SimDataMappingRuleInstance);
+            Assert.IsTrue(rule.Rules[2] is SimDataMappingRuleFace);
+        }
+
+
+        [TestMethod]
+        public void WriteDataMappingRuleVolume()
+        {
+            var rule = new SimDataMappingRuleVolume("SheetA")
+            {
+                Name = "Demo Rule",
+                OffsetParent = new Utils.IntIndex2D(1, 2),
+                OffsetConsecutive = new Utils.IntIndex2D(3, 4),
+                MaxMatches = 99,
+                MaxDepth = 101,
+                MappingDirection = SimDataMappingDirection.Vertical,
+                ReferencePoint = SimDataMappingReferencePoint.TopRight,
+            };
+            rule.Properties.Add(SimDataMappingVolumeMappingProperties.Name);
+            rule.Properties.Add(SimDataMappingVolumeMappingProperties.Id);
+            rule.Properties.Add(SimDataMappingVolumeMappingProperties.Volume);
+            rule.Properties.Add(SimDataMappingVolumeMappingProperties.FloorArea);
+            rule.Properties.Add(SimDataMappingVolumeMappingProperties.Height);
+            rule.Properties.Add(SimDataMappingVolumeMappingProperties.CeilingElevation);
+            rule.Properties.Add(SimDataMappingVolumeMappingProperties.FloorElevation);
+
+            rule.Filter.Add(new SimDataMappingFilterVolume(SimDataMappingVolumeFilterProperties.Name, "filter name"));
+            rule.Filter.Add(new SimDataMappingFilterVolume(SimDataMappingVolumeFilterProperties.FileKey, 33));
+
+            string exportedString = null;
+            using (MemoryStream stream = new MemoryStream())
+            {
+                using (DXFStreamWriter writer = new DXFStreamWriter(stream, true))
+                {
+                    ExcelDxfIO.WriteDataMappingRule(rule, writer);
+                }
+
+                stream.Flush();
+                stream.Position = 0;
+
+                var array = stream.ToArray();
+                exportedString = Encoding.UTF8.GetString(array);
+            }
+
+            AssertUtil.AreEqualMultiline(Resources.DXFSerializer_ETDXF_WriteDMRuleVolume, exportedString);
+        }
+
+        [TestMethod]
+        public void WriteDataMappingRuleVolumeChildren()
+        {
+            var rule = new SimDataMappingRuleVolume("SheetA")
+            {
+                Name = "Demo Rule",
+                OffsetParent = new Utils.IntIndex2D(1, 2),
+                OffsetConsecutive = new Utils.IntIndex2D(3, 4),
+                MaxMatches = 99,
+                MaxDepth = 101,
+                MappingDirection = SimDataMappingDirection.Vertical,
+                ReferencePoint = SimDataMappingReferencePoint.TopRight,
+            };
+            rule.Properties.Add(SimDataMappingVolumeMappingProperties.Name);
+            rule.Properties.Add(SimDataMappingVolumeMappingProperties.Id);
+            rule.Properties.Add(SimDataMappingVolumeMappingProperties.Volume);
+            rule.Properties.Add(SimDataMappingVolumeMappingProperties.FloorArea);
+            rule.Properties.Add(SimDataMappingVolumeMappingProperties.Height);
+            rule.Properties.Add(SimDataMappingVolumeMappingProperties.CeilingElevation);
+            rule.Properties.Add(SimDataMappingVolumeMappingProperties.FloorElevation);
+
+            rule.Filter.Add(new SimDataMappingFilterVolume(SimDataMappingVolumeFilterProperties.Name, "filter name"));
+            rule.Filter.Add(new SimDataMappingFilterVolume(SimDataMappingVolumeFilterProperties.FileKey, 33));
+
+            var childRule1 = new SimDataMappingRuleComponent("SheetB")
+            {
+                Name = "Child Component Rule"
+            };
+            childRule1.Properties.Add(SimDataMappingComponentMappingProperties.Name);
+            childRule1.Filter.Add(new SimDataMappingFilterComponent(SimDataMappingComponentFilterProperties.Name, new Regex("a.*")));
+
+            var childRule2 = new SimDataMappingRuleInstance("SheetB")
+            {
+                Name = "Child Instance Rule"
+            };
+            childRule2.Properties.Add(SimDataMappingInstanceMappingProperties.Name);
+            childRule2.Filter.Add(new SimDataMappingFilterInstance(SimDataMappingInstanceFilterProperties.Name, new Regex("b.*")));
+
+            var childRule3 = new SimDataMappingRuleFace("SheetB")
+            {
+                Name = "Child Face Rule"
+            };
+            childRule3.Properties.Add(SimDataMappingFaceMappingProperties.Name);
+            childRule3.Filter.Add(new SimDataMappingFilterFace(SimDataMappingFaceFilterProperties.Name, new Regex("c.*")));
+
+            rule.Rules.Add(childRule1);
+            rule.Rules.Add(childRule2);
+            rule.Rules.Add(childRule3);
+
+            string exportedString = null;
+            using (MemoryStream stream = new MemoryStream())
+            {
+                using (DXFStreamWriter writer = new DXFStreamWriter(stream, true))
+                {
+                    ExcelDxfIO.WriteDataMappingRule(rule, writer);
+                }
+
+                stream.Flush();
+                stream.Position = 0;
+
+                var array = stream.ToArray();
+                exportedString = Encoding.UTF8.GetString(array);
+            }
+
+            AssertUtil.AreEqualMultiline(Resources.DXFSerializer_ETDXF_WriteDMRuleVolumeChildren, exportedString);
+        }
+
+        [TestMethod]
+        public void ReadDataMappingRuleVolumeV21()
+        {
+            Guid guid = Guid.NewGuid();
+            Guid otherguid = new Guid("98478ed1-d3f4-4873-95b6-412e5e23aac5");
+
+            ExtendedProjectData projectData = new ExtendedProjectData();
+            projectData.SetCallingLocation(new DummyReferenceLocation(guid));
+
+            SimDataMappingRuleVolume rule = null;
+
+            using (DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_ETDXF_ReadDMRuleVolumeV21)))
+            {
+                var info = new DXFParserInfo(guid, projectData);
+                info.FileVersion = 21;
+
+                reader.Read();
+
+                rule = ExcelDxfIO.VolumeRuleEntityElement.Parse(reader, info);
+            }
+
+            HierarchicalProject.LoadDefaultTaxonomies(projectData);
+            projectData.Components.RestoreDefaultTaxonomyReferences();
+
+            Assert.IsNotNull(rule);
+
+            Assert.AreEqual("Demo Rule", rule.Name);
+            Assert.AreEqual("SheetA", rule.SheetName);
+            Assert.AreEqual(1, rule.OffsetParent.X);
+            Assert.AreEqual(2, rule.OffsetParent.Y);
+            Assert.AreEqual(3, rule.OffsetConsecutive.X);
+            Assert.AreEqual(4, rule.OffsetConsecutive.Y);
+            Assert.AreEqual(99, rule.MaxMatches);
+            Assert.AreEqual(101, rule.MaxDepth);
+            Assert.AreEqual(SimDataMappingDirection.Vertical, rule.MappingDirection);
+            Assert.AreEqual(SimDataMappingReferencePoint.TopRight, rule.ReferencePoint);
+
+            Assert.AreEqual(7, rule.Properties.Count);
+            Assert.AreEqual(SimDataMappingVolumeMappingProperties.Name, rule.Properties[0]);
+            Assert.AreEqual(SimDataMappingVolumeMappingProperties.Id, rule.Properties[1]);
+            Assert.AreEqual(SimDataMappingVolumeMappingProperties.Volume, rule.Properties[2]);
+            Assert.AreEqual(SimDataMappingVolumeMappingProperties.FloorArea, rule.Properties[3]);
+            Assert.AreEqual(SimDataMappingVolumeMappingProperties.Height, rule.Properties[4]);
+            Assert.AreEqual(SimDataMappingVolumeMappingProperties.CeilingElevation, rule.Properties[5]);
+            Assert.AreEqual(SimDataMappingVolumeMappingProperties.FloorElevation, rule.Properties[6]);
+
+            Assert.AreEqual(2, rule.Filter.Count);
+            Assert.AreEqual(SimDataMappingVolumeFilterProperties.Name, rule.Filter[0].Property);
+            Assert.AreEqual("filter name", rule.Filter[0].Value);
+            Assert.AreEqual(SimDataMappingVolumeFilterProperties.FileKey, rule.Filter[1].Property);
+            Assert.AreEqual(33, rule.Filter[1].Value);
+        }
+
+        [TestMethod]
+        public void ReadDataMappingRuleVolumeChildrenV21()
+        {
+            Guid guid = Guid.NewGuid();
+            Guid otherguid = new Guid("98478ed1-d3f4-4873-95b6-412e5e23aac5");
+
+            ExtendedProjectData projectData = new ExtendedProjectData();
+            projectData.SetCallingLocation(new DummyReferenceLocation(guid));
+
+            SimDataMappingRuleVolume rule = null;
+
+            using (DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_ETDXF_ReadDMRuleVolumeChildrenV21)))
+            {
+                var info = new DXFParserInfo(guid, projectData);
+                info.FileVersion = 21;
+
+                reader.Read();
+
+                rule = ExcelDxfIO.VolumeRuleEntityElement.Parse(reader, info);
+            }
+
+            HierarchicalProject.LoadDefaultTaxonomies(projectData);
+            projectData.Components.RestoreDefaultTaxonomyReferences();
+
+            Assert.IsNotNull(rule);
+
+            Assert.AreEqual("Demo Rule", rule.Name);
+            Assert.AreEqual("SheetA", rule.SheetName);
+            Assert.AreEqual(1, rule.OffsetParent.X);
+            Assert.AreEqual(2, rule.OffsetParent.Y);
+            Assert.AreEqual(3, rule.OffsetConsecutive.X);
+            Assert.AreEqual(4, rule.OffsetConsecutive.Y);
+            Assert.AreEqual(99, rule.MaxMatches);
+            Assert.AreEqual(101, rule.MaxDepth);
+            Assert.AreEqual(SimDataMappingDirection.Vertical, rule.MappingDirection);
+            Assert.AreEqual(SimDataMappingReferencePoint.TopRight, rule.ReferencePoint);
+
+            Assert.AreEqual(7, rule.Properties.Count);
+            Assert.AreEqual(SimDataMappingVolumeMappingProperties.Name, rule.Properties[0]);
+            Assert.AreEqual(SimDataMappingVolumeMappingProperties.Id, rule.Properties[1]);
+            Assert.AreEqual(SimDataMappingVolumeMappingProperties.Volume, rule.Properties[2]);
+            Assert.AreEqual(SimDataMappingVolumeMappingProperties.FloorArea, rule.Properties[3]);
+            Assert.AreEqual(SimDataMappingVolumeMappingProperties.Height, rule.Properties[4]);
+            Assert.AreEqual(SimDataMappingVolumeMappingProperties.CeilingElevation, rule.Properties[5]);
+            Assert.AreEqual(SimDataMappingVolumeMappingProperties.FloorElevation, rule.Properties[6]);
+
+            Assert.AreEqual(2, rule.Filter.Count);
+            Assert.AreEqual(SimDataMappingVolumeFilterProperties.Name, rule.Filter[0].Property);
+            Assert.AreEqual("filter name", rule.Filter[0].Value);
+            Assert.AreEqual(SimDataMappingVolumeFilterProperties.FileKey, rule.Filter[1].Property);
+            Assert.AreEqual(33, rule.Filter[1].Value);
+
+            //Children
+            Assert.AreEqual(3, rule.Rules.Count);
+            Assert.IsTrue(rule.Rules[0] is SimDataMappingRuleComponent);
+            Assert.IsTrue(rule.Rules[1] is SimDataMappingRuleInstance);
+            Assert.IsTrue(rule.Rules[2] is SimDataMappingRuleFace);
+        }
+
+        #endregion
+
+        #region Data Mapping Read Rule
+
+        [TestMethod]
+        public void WriteDataMappingReadRule()
+        {
+            Guid guid = new Guid();
+            ExtendedProjectData projectData = new ExtendedProjectData();
+            projectData.SetCallingLocation(new DummyReferenceLocation(guid));
+
+            SimComponent component = new SimComponent();
+
+            SimDoubleParameter parameter = new SimDoubleParameter("Param", "unit", 3.4)
+            {
+                Id = new SimId(guid, 5566)
+            };
+            component.Parameters.Add(parameter);
+            projectData.Components.StartLoading();
+            projectData.Components.Add(component);
+            projectData.Components.EndLoading();
+
+
+            var rule = new SimDataMappingReadRule()
+            {
+                SheetName = "SheetA",
+                Range = new Utils.RowColumnRange(4,3,6,5),
+                Parameter = parameter,
+            };
+
+            SimDataMappingTool tool = new SimDataMappingTool("tool");
+            tool.ReadRules.Add(rule);
+            projectData.DataMappingTools.Add(tool);
+
+            string exportedString = null;
+            using (MemoryStream stream = new MemoryStream())
+            {
+                using (DXFStreamWriter writer = new DXFStreamWriter(stream, true))
+                {
+                    ExcelDxfIO.WriteReadRule(rule, writer);
+                }
+
+                stream.Flush();
+                stream.Position = 0;
+
+                var array = stream.ToArray();
+                exportedString = Encoding.UTF8.GetString(array);
+            }
+
+            AssertUtil.AreEqualMultiline(Resources.DXFSerializer_ETDXF_WriteDMReadRule, exportedString);
+        }
+
+        [TestMethod]
+        public void ReadDataMappingReadRuleV21()
+        {
+            Guid guid = new Guid();
+            ExtendedProjectData projectData = new ExtendedProjectData();
+            projectData.SetCallingLocation(new DummyReferenceLocation(guid));
+
+            SimComponent component = new SimComponent();
+
+            SimDoubleParameter parameter = new SimDoubleParameter("Param", "unit", 3.4)
+            {
+                Id = new SimId(guid, 5566)
             };
             component.Parameters.Add(parameter);
 
-            var unmappingRule = new ExcelUnmappingRule("Unmap Rule A", typeof(double),
-                new ExcelMappedData("Sheet X", new Point4D(1, 2, 3, 4)),
-                false,
-                new ObservableCollection<(string, object)>
-                {
-                    ("Name", "NameFilterText"),
-                    ("InstanceState", new InstanceStateFilter(SimInstanceType.GeometricSurface, true))
-                },
-                new ObservableCollection<(string, object)>
-                {
-                    ("Name", "ParamName")
-                },
-                124,
-                new Point(17, 18));
-            unmappingRule.TargetParameter = parameter;
+            projectData.Components.StartLoading();
+            projectData.Components.Add(component);
+            projectData.Components.EndLoading();
 
-            return new List<ExcelUnmappingRule>
+            SimDataMappingReadRule rule = null;
+
+            using (DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_ETDXF_ReadDMReadRuleV21)))
             {
-                unmappingRule
-            };
-        }
+                var info = new DXFParserInfo(guid, projectData);
+                info.FileVersion = 21;
 
-        private void CheckInputRules(IEnumerable<ExcelMappingNode> rules)
-        {
-            Assert.AreEqual(2, rules.Count());
-            var rule = rules.Skip(1).First(); //First one should be the empty rule
+                reader.Read();
 
-            //Root Component
-            Assert.AreEqual("Root Rule", rule.NodeName);
-            Assert.AreEqual("Sheet A", rule.SheetName);
-            Assert.AreEqual(new Point(1, 2), rule.OffsetFromParent);
-            Assert.AreEqual(MappingSubject.Component, rule.Subject);
-            Assert.AreEqual(1, rule.Properties.Count);
-            Assert.IsTrue(rule.Properties.ContainsKey("IsBoundInNetwork"));
-            Assert.AreEqual(typeof(bool), rule.Properties["IsBoundInNetwork"]);
-            Assert.AreEqual(ExcelMappingRange.SingleValue, rule.RangeOfValuesPerProperty);
-            Assert.AreEqual(true, rule.OrderHorizontally);
-            Assert.AreEqual(2, rule.PatternsToMatchInProperty.Count);
-            Assert.AreEqual("Name", rule.PatternsToMatchInProperty[0].propertyName);
-            Assert.AreEqual("NameFilterText", rule.PatternsToMatchInProperty[0].filter);
-            Assert.AreEqual("InstanceState", rule.PatternsToMatchInProperty[1].propertyName);
-            Assert.IsTrue(rule.PatternsToMatchInProperty[1].filter is InstanceStateFilter);
-            Assert.AreEqual(SimInstanceType.GeometricSurface, ((InstanceStateFilter)rule.PatternsToMatchInProperty[1].filter).Type);
-            Assert.AreEqual(true, ((InstanceStateFilter)rule.PatternsToMatchInProperty[1].filter).IsRealized);
-            Assert.AreEqual(new Point(3, 4), rule.OffsetBtwApplications);
-            Assert.AreEqual(20, rule.MaxElementsToMap);
-            Assert.AreEqual(4, rule.MaxHierarchyLevelsToTraverse);
-            Assert.AreEqual(TraversalStrategy.SUBTREE_AND_REFERENCES, rule.Strategy);
-            Assert.AreEqual(true, rule.NodeIsActive);
-            Assert.AreEqual(false, rule.PrependContentToChildren);
-            Assert.AreEqual(null, rule.Parent);
-            Assert.AreEqual(1, rule.Version);
-
-            Assert.AreEqual(2, rule.Children.Count);
-
-            //Child Rule 1
-            var child1 = rule.Children.ElementAt(0);
-            Assert.AreEqual("Child Rule 1", child1.NodeName);
-            Assert.AreEqual("Sheet A", child1.SheetName);
-            Assert.AreEqual(new Point(1, 2), child1.OffsetFromParent);
-            Assert.AreEqual(MappingSubject.Parameter, child1.Subject);
-            Assert.AreEqual(1, child1.Properties.Count);
-            Assert.IsTrue(child1.Properties.ContainsKey("TaxonomyEntry"));
-            Assert.AreEqual(typeof(string), child1.Properties["TaxonomyEntry"]);
-            Assert.AreEqual(ExcelMappingRange.SingleValue, child1.RangeOfValuesPerProperty);
-            Assert.AreEqual(true, child1.OrderHorizontally);
-            Assert.AreEqual(0, child1.PatternsToMatchInProperty.Count);
-            Assert.AreEqual(new Point(3, 4), child1.OffsetBtwApplications);
-            Assert.AreEqual(20, child1.MaxElementsToMap);
-            Assert.AreEqual(4, child1.MaxHierarchyLevelsToTraverse);
-            Assert.AreEqual(TraversalStrategy.SUBTREE_AND_REFERENCES, child1.Strategy);
-            Assert.AreEqual(true, child1.NodeIsActive);
-            Assert.AreEqual(true, child1.PrependContentToChildren);
-            Assert.AreEqual(rule, child1.Parent);
-            Assert.AreEqual(1, child1.Version);
-            Assert.AreEqual(0, child1.Children.Count);
-
-            var child2 = rule.Children.ElementAt(1);
-            Assert.AreEqual("Child Rule 2", child2.NodeName);
-            Assert.AreEqual("Sheet A", child2.SheetName);
-            Assert.AreEqual(new Point(1, 2), child2.OffsetFromParent);
-            Assert.AreEqual(MappingSubject.Parameter, child2.Subject);
-            Assert.AreEqual(1, child2.Properties.Count);
-            Assert.IsTrue(child2.Properties.ContainsKey("TaxonomyEntry"));
-            Assert.AreEqual(typeof(string), child2.Properties["TaxonomyEntry"]);
-            Assert.AreEqual(ExcelMappingRange.SingleValue, child2.RangeOfValuesPerProperty);
-            Assert.AreEqual(true, child2.OrderHorizontally);
-            Assert.AreEqual(0, child2.PatternsToMatchInProperty.Count);
-            Assert.AreEqual(new Point(3, 4), child2.OffsetBtwApplications);
-            Assert.AreEqual(20, child2.MaxElementsToMap);
-            Assert.AreEqual(4, child2.MaxHierarchyLevelsToTraverse);
-            Assert.AreEqual(TraversalStrategy.SUBTREE_AND_REFERENCES, child2.Strategy);
-            Assert.AreEqual(true, child2.NodeIsActive);
-            Assert.AreEqual(true, child2.PrependContentToChildren);
-            Assert.AreEqual(rule, child2.Parent);
-            Assert.AreEqual(1, child2.Version);
-            Assert.AreEqual(0, child2.Children.Count);
-        }
-
-        private void CheckOutputRangeRules(IEnumerable<KeyValuePair<ExcelMappedData, Type>> rules)
-        {
-            Assert.AreEqual(1, rules.Count());
-
-            var rule = rules.First();
-
-            //Root Component
-            Assert.IsNotNull(rule.Key);
-            Assert.IsNotNull(rule.Value);
-
-            Assert.AreEqual("Sheet A", rule.Key.SheetName);
-            Assert.AreEqual(1.0, rule.Key.Range.X);
-            Assert.AreEqual(2.0, rule.Key.Range.Y);
-            Assert.AreEqual(3.0, rule.Key.Range.Z);
-            Assert.AreEqual(4.0, rule.Key.Range.W);
-            Assert.AreEqual(typeof(double), rule.Value);
-        }
-
-        private void CheckOutputRules(IEnumerable<ExcelUnmappingRule> rules, bool checkParamId = true)
-        {
-            Assert.AreEqual(1, rules.Count());
-            var rule = rules.First();
-
-            Assert.AreEqual("Unmap Rule A", rule.NodeName);
-            Assert.AreEqual(typeof(double), rule.DataType);
-            Assert.AreEqual("Sheet X", rule.ExcelData.SheetName);
-            Assert.AreEqual(new Point4D(1, 2, 3, 4), rule.ExcelData.Range);
-            Assert.AreEqual(false, rule.UnmapByFilter);
-
-            Assert.AreEqual(2, rule.PatternsToMatchInPropertyOfComp.Count);
-            Assert.AreEqual("Name", rule.PatternsToMatchInPropertyOfComp[0].propertyName);
-            Assert.AreEqual("NameFilterText", rule.PatternsToMatchInPropertyOfComp[0].filter);
-            Assert.AreEqual("InstanceState", rule.PatternsToMatchInPropertyOfComp[1].propertyName);
-            Assert.IsTrue(rule.PatternsToMatchInPropertyOfComp[1].filter is InstanceStateFilter);
-            Assert.AreEqual(SimInstanceType.GeometricSurface, ((InstanceStateFilter)rule.PatternsToMatchInPropertyOfComp[1].filter).Type);
-            Assert.AreEqual(true, ((InstanceStateFilter)rule.PatternsToMatchInPropertyOfComp[1].filter).IsRealized);
-
-            Assert.AreEqual(1, rule.PatternsToMatchInPropertyOfParam.Count);
-            Assert.AreEqual("Name", rule.PatternsToMatchInPropertyOfParam[0].propertyName);
-            Assert.AreEqual("ParamName", rule.PatternsToMatchInPropertyOfParam[0].filter);
-
-            if (checkParamId)
-            {
-                Assert.AreEqual(124, rule.TargetParameterID);
-                Assert.AreEqual(null, rule.TargetParameter);
+                rule = ExcelDxfIO.DataMappingReadRuleEntityElement.Parse(reader, info);
             }
 
-            Assert.AreEqual(17.0, rule.TargetPointer.X);
-            Assert.AreEqual(18.0, rule.TargetPointer.Y);
+            Assert.IsNotNull(rule);
+            Assert.AreEqual(parameter, rule.Parameter);
+            Assert.AreEqual("SheetA", rule.SheetName);
+            Assert.AreEqual(3, rule.Range.ColumnStart);
+            Assert.AreEqual(4, rule.Range.RowStart);
+            Assert.AreEqual(5, rule.Range.ColumnCount);
+            Assert.AreEqual(6, rule.Range.RowCount);
         }
+
+        #endregion
+
+        #region Filter Value
+
+        [TestMethod]
+        public void FilterValueString()
+        {
+            string exportedString = null;
+            using (MemoryStream stream = new MemoryStream())
+            {
+                using (DXFStreamWriter writer = new DXFStreamWriter(stream, true))
+                {
+                    ExcelDxfIO.WriteFilterValue("stringvalue", writer);
+                }
+
+                stream.Flush();
+                stream.Position = 0;
+
+                var array = stream.ToArray();
+                exportedString = Encoding.UTF8.GetString(array);
+            }
+
+            AssertUtil.AreEqualMultiline(
+                "6017\r\n"+
+                "0\r\n" +
+                "6018\r\n" +
+                "stringvalue\r\n"
+                , exportedString);
+        }
+
+        [TestMethod]
+        public void FilterValueRegex()
+        {
+            string exportedString = null;
+            using (MemoryStream stream = new MemoryStream())
+            {
+                using (DXFStreamWriter writer = new DXFStreamWriter(stream, true))
+                {
+                    ExcelDxfIO.WriteFilterValue(new Regex(".*asdf.?"), writer);
+                }
+
+                stream.Flush();
+                stream.Position = 0;
+
+                var array = stream.ToArray();
+                exportedString = Encoding.UTF8.GetString(array);
+            }
+
+            AssertUtil.AreEqualMultiline(
+                "6017\r\n" +
+                "1\r\n" +
+                "6018\r\n" +
+                ".*asdf.?\r\n"
+                , exportedString);
+        }
+
+        [TestMethod]
+        public void FilterValueTaxonomyEntry()
+        {
+            string exportedString = null;
+            using (MemoryStream stream = new MemoryStream())
+            {
+                using (DXFStreamWriter writer = new DXFStreamWriter(stream, true))
+                {
+                    ExcelDxfIO.WriteFilterValue(new SimTaxonomyEntryReference(new SimTaxonomyEntry(new SimId(5566))), writer);
+                }
+
+                stream.Flush();
+                stream.Position = 0;
+
+                var array = stream.ToArray();
+                exportedString = Encoding.UTF8.GetString(array);
+            }
+
+            AssertUtil.AreEqualMultiline(
+                "6017\r\n" +
+                "2\r\n" +
+                "6018\r\n" +
+                "5566\r\n"
+                , exportedString);
+        }
+
+        [TestMethod]
+        public void FilterValueSlot()
+        {
+            string exportedString = null;
+            using (MemoryStream stream = new MemoryStream())
+            {
+                using (DXFStreamWriter writer = new DXFStreamWriter(stream, true))
+                {
+                    ExcelDxfIO.WriteFilterValue(
+                        new SimSlot(new SimTaxonomyEntry(new SimId(5566)), "exten")
+                        , writer); ;
+                }
+
+                stream.Flush();
+                stream.Position = 0;
+
+                var array = stream.ToArray();
+                exportedString = Encoding.UTF8.GetString(array);
+            }
+
+            AssertUtil.AreEqualMultiline(
+                "6017\r\n" +
+                "3\r\n" +
+                "6019\r\n" +
+                "exten\r\n" +
+                "6018\r\n" +
+                "5566\r\n"
+                , exportedString);
+        }
+
+        [TestMethod]
+        public void FilterValueSimInstanceType()
+        {
+            string exportedString = null;
+            using (MemoryStream stream = new MemoryStream())
+            {
+                using (DXFStreamWriter writer = new DXFStreamWriter(stream, true))
+                {
+                    ExcelDxfIO.WriteFilterValue(SimInstanceType.Entity3D, writer);
+                }
+
+                stream.Flush();
+                stream.Position = 0;
+
+                var array = stream.ToArray();
+                exportedString = Encoding.UTF8.GetString(array);
+            }
+
+            AssertUtil.AreEqualMultiline(
+                "6017\r\n" +
+                "4\r\n" +
+                "6018\r\n" +
+                "1\r\n"
+                , exportedString);
+        }
+
+        [TestMethod]
+        public void FilterValueBoolean()
+        {
+            string exportedString = null;
+            using (MemoryStream stream = new MemoryStream())
+            {
+                using (DXFStreamWriter writer = new DXFStreamWriter(stream, true))
+                {
+                    ExcelDxfIO.WriteFilterValue(true, writer);
+                }
+
+                stream.Flush();
+                stream.Position = 0;
+
+                var array = stream.ToArray();
+                exportedString = Encoding.UTF8.GetString(array);
+            }
+
+            AssertUtil.AreEqualMultiline(
+                "6017\r\n" +
+                "5\r\n" +
+                "6018\r\n" +
+                "1\r\n"
+                , exportedString);
+        }
+
+        [TestMethod]
+        public void FilterValueSimInfoFlow()
+        {
+            string exportedString = null;
+            using (MemoryStream stream = new MemoryStream())
+            {
+                using (DXFStreamWriter writer = new DXFStreamWriter(stream, true))
+                {
+                    ExcelDxfIO.WriteFilterValue(SimInfoFlow.FromExternal, writer);
+                }
+
+                stream.Flush();
+                stream.Position = 0;
+
+                var array = stream.ToArray();
+                exportedString = Encoding.UTF8.GetString(array);
+            }
+
+            AssertUtil.AreEqualMultiline(
+                "6017\r\n" +
+                "6\r\n" +
+                "6018\r\n" +
+                "6\r\n"
+                , exportedString);
+        }
+
+        [TestMethod]
+        public void FilterValueSimCategory()
+        {
+            string exportedString = null;
+            using (MemoryStream stream = new MemoryStream())
+            {
+                using (DXFStreamWriter writer = new DXFStreamWriter(stream, true))
+                {
+                    ExcelDxfIO.WriteFilterValue(SimCategory.Humidity | SimCategory.Air, writer);
+                }
+
+                stream.Flush();
+                stream.Position = 0;
+
+                var array = stream.ToArray();
+                exportedString = Encoding.UTF8.GetString(array);
+            }
+
+            AssertUtil.AreEqualMultiline(
+                "6017\r\n" +
+                "7\r\n" +
+                "6018\r\n" +
+                "192\r\n"
+                , exportedString);
+        }
+
+        #endregion
 
         #region File
 
@@ -243,10 +1669,7 @@ namespace SIMULTAN.Tests.IO
             ExtendedProjectData projectData = new ExtendedProjectData();
             projectData.SetCallingLocation(new DummyReferenceLocation(guid));
 
-            ExcelTool tool = new ExcelTool("Tool B", CreateInputRules(), CreateRangeOutputRules(),
-                CreateUnmappingRules(), "Macro Name");
-            projectData.ExcelToolMappingManager.RegisteredTools.Add(tool);
-
+            var tool = CreateTestTool(projectData);
 
             string exportedString = null;
             using (MemoryStream stream = new MemoryStream())
@@ -267,6 +1690,35 @@ namespace SIMULTAN.Tests.IO
         }
 
         [TestMethod]
+        public void ReadExcelFileV21()
+        {
+            Guid guid = Guid.NewGuid();
+            var otherGuid = Guid.Parse("da7d8f7c-8eec-423b-b127-9d6e17f52522");
+
+            ExtendedProjectData projectData = new ExtendedProjectData();
+            var location = new DummyReferenceLocation(guid);
+            projectData.SetCallingLocation(location);
+
+            CreateTestProjectData(projectData);
+
+            var demoTax = new SimTaxonomy("demotax");
+            var taxEntry = new SimTaxonomyEntry(new SimId(5566)) { Key = "demokey" };
+            projectData.Taxonomies.StartLoading();
+            demoTax.Entries.Add(taxEntry);
+            projectData.Taxonomies.Add(demoTax);
+            projectData.Taxonomies.StopLoading();
+
+            using (DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_ETDXF_ReadV21)))
+            {
+                var info = new DXFParserInfo(guid, projectData);
+                ExcelDxfIO.Read(reader, info, false);
+            }
+
+            Assert.AreEqual(1, projectData.DataMappingTools.Count);
+            CheckTestTool(projectData.DataMappingTools[0], projectData);
+        }
+
+        [TestMethod]
         public void ReadExcelFileV12()
         {
             Guid guid = Guid.NewGuid();
@@ -277,7 +1729,7 @@ namespace SIMULTAN.Tests.IO
             projectData.SetCallingLocation(location);
 
             var comp = new SimComponent();
-            var param = new SimParameter("A", "unit", 3.5) { Id = new SimId(location, 124) };
+            var param = new SimDoubleParameter("A", "unit", 3.5) { Id = new SimId(location, 124) };
             comp.Parameters.Add(param);
 
             projectData.Components.StartLoading();
@@ -287,21 +1739,10 @@ namespace SIMULTAN.Tests.IO
             using (DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_ETDXF_ReadV12)))
             {
                 var info = new DXFParserInfo(guid, projectData);
-                ExcelDxfIO.Read(reader, info);
+                ExcelDxfIO.Read(reader, info, false);
             }
 
-            Assert.AreEqual(1, projectData.ExcelToolMappingManager.RegisteredTools.Count);
-            var tool = projectData.ExcelToolMappingManager.RegisteredTools[0];
-
-            Assert.AreEqual("Tool B", tool.Name);
-            Assert.AreEqual("Macro Name", tool.MacroName);
-
-            CheckInputRules(tool.InputRules);
-            CheckOutputRangeRules(tool.OutputRangeRules);
-            CheckOutputRules(tool.OutputRules, false);
-
-            //Check parameter
-            Assert.AreEqual(param, tool.OutputRules[0].TargetParameter);
+            Assert.AreEqual(0, projectData.DataMappingTools.Count);
         }
 
         [TestMethod]
@@ -315,7 +1756,7 @@ namespace SIMULTAN.Tests.IO
             projectData.SetCallingLocation(location);
 
             var comp = new SimComponent();
-            var param = new SimParameter("A", "unit", 3.5) { Id = new SimId(location, 124) };
+            var param = new SimDoubleParameter("A", "unit", 3.5) { Id = new SimId(location, 124) };
             comp.Parameters.Add(param);
 
             projectData.Components.StartLoading();
@@ -326,21 +1767,10 @@ namespace SIMULTAN.Tests.IO
             {
                 var info = new DXFParserInfo(guid, projectData);
                 info.FileVersion = 11;
-                ExcelDxfIO.Read(reader, info);
+                ExcelDxfIO.Read(reader, info, false);
             }
 
-            Assert.AreEqual(1, projectData.ExcelToolMappingManager.RegisteredTools.Count);
-            var tool = projectData.ExcelToolMappingManager.RegisteredTools[0];
-
-            Assert.AreEqual("Tool B", tool.Name);
-            Assert.AreEqual("Macro Name", tool.MacroName);
-
-            CheckInputRules(tool.InputRules);
-            CheckOutputRangeRules(tool.OutputRangeRules);
-            CheckOutputRules(tool.OutputRules, false);
-
-            //Check parameter
-            Assert.AreEqual(param, tool.OutputRules[0].TargetParameter);
+            Assert.AreEqual(0, projectData.DataMappingTools.Count);
         }
 
         [TestMethod]
@@ -354,7 +1784,7 @@ namespace SIMULTAN.Tests.IO
             projectData.SetCallingLocation(location);
 
             var comp = new SimComponent();
-            var param = new SimParameter("A", "unit", 3.5) { Id = new SimId(location, 124) };
+            var param = new SimDoubleParameter("A", "unit", 3.5) { Id = new SimId(location, 124) };
             comp.Parameters.Add(param);
 
             projectData.Components.StartLoading();
@@ -365,21 +1795,10 @@ namespace SIMULTAN.Tests.IO
             {
                 var info = new DXFParserInfo(guid, projectData);
                 info.FileVersion = 6;
-                ExcelDxfIO.Read(reader, info);
+                ExcelDxfIO.Read(reader, info, false);
             }
 
-            Assert.AreEqual(1, projectData.ExcelToolMappingManager.RegisteredTools.Count);
-            var tool = projectData.ExcelToolMappingManager.RegisteredTools[0];
-
-            Assert.AreEqual("Tool B", tool.Name);
-            Assert.AreEqual("Macro Name", tool.MacroName);
-
-            CheckInputRules(tool.InputRules);
-            CheckOutputRangeRules(tool.OutputRangeRules);
-            CheckOutputRules(tool.OutputRules, false);
-
-            //Check parameter
-            Assert.AreEqual(param, tool.OutputRules[0].TargetParameter);
+            Assert.AreEqual(0, projectData.DataMappingTools.Count);
         }
 
         [TestMethod]
@@ -393,7 +1812,7 @@ namespace SIMULTAN.Tests.IO
             projectData.SetCallingLocation(location);
 
             var comp = new SimComponent();
-            var param = new SimParameter("A", "unit", 3.5) { Id = new SimId(location, 1076741824) };
+            var param = new SimDoubleParameter("A", "unit", 3.5) { Id = new SimId(location, 1076741824) };
             comp.Parameters.Add(param);
 
             projectData.Components.StartLoading();
@@ -404,568 +1823,10 @@ namespace SIMULTAN.Tests.IO
             {
                 var info = new DXFParserInfo(guid, projectData);
                 info.FileVersion = 4;
-                ExcelDxfIO.Read(reader, info);
+                ExcelDxfIO.Read(reader, info, false);
             }
 
-            Assert.AreEqual(1, projectData.ExcelToolMappingManager.RegisteredTools.Count);
-            var tool = projectData.ExcelToolMappingManager.RegisteredTools[0];
-
-            Assert.AreEqual("Tool B", tool.Name);
-            Assert.AreEqual("Macro Name", tool.MacroName);
-
-            CheckInputRules(tool.InputRules);
-            CheckOutputRangeRules(tool.OutputRangeRules);
-            CheckOutputRules(tool.OutputRules, false);
-
-            //Check parameter
-            Assert.AreEqual(param, tool.OutputRules[0].TargetParameter);
-        }
-
-        #endregion
-
-        #region Tool
-
-        [TestMethod]
-        public void WriteExcelTool()
-        {
-            ExcelTool tool = new ExcelTool("Tool B", CreateInputRules(), CreateRangeOutputRules(),
-                CreateUnmappingRules(), "Macro Name");
-
-            string exportedString = null;
-            using (MemoryStream stream = new MemoryStream())
-            {
-                using (DXFStreamWriter writer = new DXFStreamWriter(stream, true))
-                {
-                    ExcelDxfIO.WriteExcelTool(tool, writer);
-                }
-
-                stream.Flush();
-                stream.Position = 0;
-
-                var array = stream.ToArray();
-                exportedString = Encoding.UTF8.GetString(array);
-            }
-
-            AssertUtil.AreEqualMultiline(Properties.Resources.DXFSerializer_ETDXF_WriteTool, exportedString);
-        }
-
-        [TestMethod]
-        public void ReadExcelToolV12()
-        {
-            Guid guid = Guid.NewGuid();
-            Guid otherguid = new Guid("98478ed1-d3f4-4873-95b6-412e5e23aac5");
-
-            ExtendedProjectData projectData = new ExtendedProjectData();
-            projectData.SetCallingLocation(new DummyReferenceLocation(guid));
-
-            ExcelTool tool = null;
-
-            using (DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_ETDXF_ReadToolV12)))
-            {
-                var info = new DXFParserInfo(guid, projectData);
-                info.FileVersion = 12;
-
-                reader.Read();
-
-                tool = ExcelDxfIO.ExcelToolEntityElement.Parse(reader, info);
-            }
-
-            Assert.IsNotNull(tool);
-            Assert.AreEqual("Tool B", tool.Name);
-            Assert.AreEqual("Macro Name", tool.MacroName);
-
-            CheckInputRules(tool.InputRules);
-            CheckOutputRangeRules(tool.OutputRangeRules);
-            CheckOutputRules(tool.OutputRules);
-        }
-
-        [TestMethod]
-        public void ReadExcelToolV11()
-        {
-            Guid guid = Guid.NewGuid();
-            Guid otherguid = new Guid("98478ed1-d3f4-4873-95b6-412e5e23aac5");
-
-            ExtendedProjectData projectData = new ExtendedProjectData();
-            projectData.SetCallingLocation(new DummyReferenceLocation(guid));
-
-            ExcelTool tool = null;
-
-            using (DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_ETDXF_ReadToolV11)))
-            {
-                var info = new DXFParserInfo(guid, projectData);
-                info.FileVersion = 11;
-
-                reader.Read();
-
-                tool = ExcelDxfIO.ExcelToolEntityElement.Parse(reader, info);
-            }
-
-            Assert.IsNotNull(tool);
-            Assert.AreEqual("Tool B", tool.Name);
-            Assert.AreEqual("Macro Name", tool.MacroName);
-
-            CheckInputRules(tool.InputRules);
-            CheckOutputRangeRules(tool.OutputRangeRules);
-            CheckOutputRules(tool.OutputRules);
-        }
-
-        [TestMethod]
-        public void ReadExcelToolV6()
-        {
-            Guid guid = Guid.NewGuid();
-            Guid otherguid = new Guid("98478ed1-d3f4-4873-95b6-412e5e23aac5");
-
-            ExtendedProjectData projectData = new ExtendedProjectData();
-            projectData.SetCallingLocation(new DummyReferenceLocation(guid));
-
-            ExcelTool tool = null;
-
-            using (DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_ETDXF_ReadToolV6)))
-            {
-                var info = new DXFParserInfo(guid, projectData);
-                info.FileVersion = 6;
-
-                reader.Read();
-
-                tool = ExcelDxfIO.ExcelToolEntityElement.Parse(reader, info);
-            }
-
-            Assert.IsNotNull(tool);
-            Assert.AreEqual("Tool B", tool.Name);
-            Assert.AreEqual("Macro Name", tool.MacroName);
-
-            CheckInputRules(tool.InputRules);
-            CheckOutputRangeRules(tool.OutputRangeRules);
-            CheckOutputRules(tool.OutputRules);
-        }
-
-        [TestMethod]
-        public void ReadExcelToolV4()
-        {
-            Guid guid = Guid.NewGuid();
-            Guid otherguid = new Guid("98478ed1-d3f4-4873-95b6-412e5e23aac5");
-
-            ExtendedProjectData projectData = new ExtendedProjectData();
-            projectData.SetCallingLocation(new DummyReferenceLocation(guid));
-
-            ExcelTool tool = null;
-
-            using (DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_ETDXF_ReadToolV4)))
-            {
-                var info = new DXFParserInfo(guid, projectData);
-                info.FileVersion = 4;
-
-                reader.Read();
-
-                tool = ExcelDxfIO.ExcelToolEntityElement.Parse(reader, info);
-            }
-
-            Assert.IsNotNull(tool);
-            Assert.AreEqual("Tool B", tool.Name);
-            Assert.AreEqual("Macro Name", tool.MacroName);
-
-            CheckInputRules(tool.InputRules);
-            CheckOutputRangeRules(tool.OutputRangeRules);
-
-            Assert.AreEqual(1, tool.OutputRules.Count);
-            var outputRule = tool.OutputRules.First();
-            Assert.AreEqual("Unmap Rule A", outputRule.NodeName);
-            Assert.AreEqual(typeof(double), outputRule.DataType);
-            Assert.AreEqual("Sheet X", outputRule.ExcelData.SheetName);
-            Assert.AreEqual(new Point4D(1, 2, 3, 4), outputRule.ExcelData.Range);
-            Assert.AreEqual(false, outputRule.UnmapByFilter);
-
-            Assert.AreEqual(2, outputRule.PatternsToMatchInPropertyOfComp.Count);
-            Assert.AreEqual("Name", outputRule.PatternsToMatchInPropertyOfComp[0].propertyName);
-            Assert.AreEqual("NameFilterText", outputRule.PatternsToMatchInPropertyOfComp[0].filter);
-            Assert.AreEqual("InstanceState", outputRule.PatternsToMatchInPropertyOfComp[1].propertyName);
-            Assert.IsTrue(outputRule.PatternsToMatchInPropertyOfComp[1].filter is InstanceStateFilter);
-            Assert.AreEqual(SimInstanceType.GeometricSurface, ((InstanceStateFilter)outputRule.PatternsToMatchInPropertyOfComp[1].filter).Type);
-            Assert.AreEqual(true, ((InstanceStateFilter)outputRule.PatternsToMatchInPropertyOfComp[1].filter).IsRealized);
-
-            Assert.AreEqual(1, outputRule.PatternsToMatchInPropertyOfParam.Count);
-            Assert.AreEqual("Name", outputRule.PatternsToMatchInPropertyOfParam[0].propertyName);
-            Assert.AreEqual("ParamName", outputRule.PatternsToMatchInPropertyOfParam[0].filter);
-
-            Assert.AreEqual(1076741824, outputRule.TargetParameterID);
-            Assert.AreEqual(null, outputRule.TargetParameter);
-
-            Assert.AreEqual(17.0, outputRule.TargetPointer.X);
-            Assert.AreEqual(18.0, outputRule.TargetPointer.Y);
-        }
-
-        #endregion
-
-        #region Rules
-
-        [TestMethod]
-        public void WriteExcelRule()
-        {
-            var rootRule = CreateInputRules()[0];
-
-            string exportedString = null;
-            using (MemoryStream stream = new MemoryStream())
-            {
-                using (DXFStreamWriter writer = new DXFStreamWriter(stream, true))
-                {
-                    ExcelDxfIO.WriteExcelRule(rootRule, writer);
-                }
-
-                stream.Flush();
-                stream.Position = 0;
-
-                var array = stream.ToArray();
-                exportedString = Encoding.UTF8.GetString(array);
-            }
-
-            AssertUtil.AreEqualMultiline(Properties.Resources.DXFSerializer_ETDXF_WriteRule, exportedString);
-        }
-
-        [TestMethod]
-        public void ReadExcelRuleV12()
-        {
-            Guid guid = Guid.NewGuid();
-            Guid otherguid = new Guid("98478ed1-d3f4-4873-95b6-412e5e23aac5");
-
-            ExtendedProjectData projectData = new ExtendedProjectData();
-            projectData.SetCallingLocation(new DummyReferenceLocation(guid));
-
-            ExcelMappingNode rule = null;
-
-            using (DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_ETDXF_ReadRuleV12)))
-            {
-                var info = new DXFParserInfo(guid, projectData);
-                info.FileVersion = 12;
-
-                reader.Read();
-
-                rule = ExcelDxfIO.ExcelRuleEntityElement.Parse(reader, info);
-            }
-
-            Assert.IsNotNull(rule);
-
-            CheckInputRules(new ExcelMappingNode[] { null, rule }); //Null because tools have an empty first rule
-        }
-
-        [TestMethod]
-        public void ReadExcelRuleV11()
-        {
-            Guid guid = Guid.NewGuid();
-            Guid otherguid = new Guid("98478ed1-d3f4-4873-95b6-412e5e23aac5");
-
-            ExtendedProjectData projectData = new ExtendedProjectData();
-            projectData.SetCallingLocation(new DummyReferenceLocation(guid));
-
-            ExcelMappingNode rule = null;
-
-            using (DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_ETDXF_ReadRuleV11)))
-            {
-                var info = new DXFParserInfo(guid, projectData);
-                info.FileVersion = 11;
-
-                reader.Read();
-
-                rule = ExcelDxfIO.ExcelRuleEntityElement.Parse(reader, info);
-            }
-
-            Assert.IsNotNull(rule);
-
-            CheckInputRules(new ExcelMappingNode[] { null, rule }); //Null because tools have an empty first rule
-        }
-
-        [TestMethod]
-        public void ReadExcelRuleV6()
-        {
-            Guid guid = Guid.NewGuid();
-            Guid otherguid = new Guid("98478ed1-d3f4-4873-95b6-412e5e23aac5");
-
-            ExtendedProjectData projectData = new ExtendedProjectData();
-            projectData.SetCallingLocation(new DummyReferenceLocation(guid));
-
-            ExcelMappingNode rule = null;
-
-            using (DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_ETDXF_ReadRuleV6)))
-            {
-                var info = new DXFParserInfo(guid, projectData);
-                info.FileVersion = 6;
-
-                reader.Read();
-
-                rule = ExcelDxfIO.ExcelRuleEntityElement.Parse(reader, info);
-            }
-
-            Assert.IsNotNull(rule);
-
-            CheckInputRules(new ExcelMappingNode[] { null, rule }); //Null because tools have an empty first rule
-        }
-
-        #endregion
-
-        #region Range Unmapping Rules
-
-        [TestMethod]
-        public void WriteExcelRangeUnmappingRule()
-        {
-            var mappedData = CreateRangeOutputRules()[0];
-
-            string exportedString = null;
-            using (MemoryStream stream = new MemoryStream())
-            {
-                using (DXFStreamWriter writer = new DXFStreamWriter(stream, true))
-                {
-                    ExcelDxfIO.WriteRangeUnmappingRule(mappedData, writer);
-                }
-
-                stream.Flush();
-                stream.Position = 0;
-
-                var array = stream.ToArray();
-                exportedString = Encoding.UTF8.GetString(array);
-            }
-
-            AssertUtil.AreEqualMultiline(Properties.Resources.DXFSerializer_ETDXF_WriteRangeUnmappingRule, exportedString);
-        }
-
-        [TestMethod]
-        public void ReadExcelRangeUnmappingRuleV12()
-        {
-            Guid guid = Guid.NewGuid();
-            Guid otherguid = new Guid("98478ed1-d3f4-4873-95b6-412e5e23aac5");
-
-            ExtendedProjectData projectData = new ExtendedProjectData();
-            projectData.SetCallingLocation(new DummyReferenceLocation(guid));
-
-            (ExcelMappedData data, Type type) rule = (null, null);
-
-            using (DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_ETDXF_ReadRangeUnmappingRuleV12)))
-            {
-                var info = new DXFParserInfo(guid, projectData);
-                info.FileVersion = 12;
-
-                reader.Read();
-
-                rule = ExcelDxfIO.ExcelRangeUnmappingRuleEntityElement.Parse(reader, info);
-            }
-
-            Assert.IsNotNull(rule);
-
-            CheckOutputRangeRules(new KeyValuePair<ExcelMappedData, Type>[] { new KeyValuePair<ExcelMappedData, Type>(rule.data, rule.type) });
-        }
-
-        [TestMethod]
-        public void ReadExcelRangeUnmappingRuleV11()
-        {
-            Guid guid = Guid.NewGuid();
-            Guid otherguid = new Guid("98478ed1-d3f4-4873-95b6-412e5e23aac5");
-
-            ExtendedProjectData projectData = new ExtendedProjectData();
-            projectData.SetCallingLocation(new DummyReferenceLocation(guid));
-
-            (ExcelMappedData data, Type type) rule = (null, null);
-
-            using (DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_ETDXF_ReadRangeUnmappingRuleV11)))
-            {
-                var info = new DXFParserInfo(guid, projectData);
-                info.FileVersion = 11;
-
-                reader.Read();
-
-                rule = ExcelDxfIO.ExcelRangeUnmappingRuleEntityElement.Parse(reader, info);
-            }
-
-            Assert.IsNotNull(rule);
-
-            CheckOutputRangeRules(new KeyValuePair<ExcelMappedData, Type>[] { new KeyValuePair<ExcelMappedData, Type>(rule.data, rule.type) });
-        }
-
-        #endregion
-
-        #region Unmapping Rules
-
-        [TestMethod]
-        public void WriteExcelUnmappingRule()
-        {
-            var unmappingRule = CreateUnmappingRules()[0];
-
-            string exportedString = null;
-            using (MemoryStream stream = new MemoryStream())
-            {
-                using (DXFStreamWriter writer = new DXFStreamWriter(stream, true))
-                {
-                    ExcelDxfIO.WriteUnmappingRule(unmappingRule, writer);
-                }
-
-                stream.Flush();
-                stream.Position = 0;
-
-                var array = stream.ToArray();
-                exportedString = Encoding.UTF8.GetString(array);
-            }
-
-            AssertUtil.AreEqualMultiline(Properties.Resources.DXFSerializer_ETDXF_WriteUnmappingRule, exportedString);
-        }
-
-        [TestMethod]
-        public void ReadExcelUnmappingRuleV12()
-        {
-            Guid guid = Guid.NewGuid();
-            Guid otherguid = new Guid("98478ed1-d3f4-4873-95b6-412e5e23aac5");
-
-            ExtendedProjectData projectData = new ExtendedProjectData();
-            projectData.SetCallingLocation(new DummyReferenceLocation(guid));
-
-            ExcelUnmappingRule rule = null;
-
-            using (DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_ETDXF_ReadUnmappingRuleV12)))
-            {
-                var info = new DXFParserInfo(guid, projectData);
-                info.FileVersion = 12;
-
-                reader.Read();
-
-                rule = ExcelDxfIO.ExcelUnmappingRuleEntityElement.Parse(reader, info);
-            }
-
-            Assert.IsNotNull(rule);
-
-            CheckOutputRules(new ExcelUnmappingRule[] { rule });
-        }
-
-        [TestMethod]
-        public void ReadExcelUnmappingRuleV11()
-        {
-            Guid guid = Guid.NewGuid();
-            Guid otherguid = new Guid("98478ed1-d3f4-4873-95b6-412e5e23aac5");
-
-            ExtendedProjectData projectData = new ExtendedProjectData();
-            projectData.SetCallingLocation(new DummyReferenceLocation(guid));
-
-            ExcelUnmappingRule rule = null;
-
-            using (DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_ETDXF_ReadUnmappingRuleV11)))
-            {
-                var info = new DXFParserInfo(guid, projectData);
-                info.FileVersion = 11;
-
-                reader.Read();
-
-                rule = ExcelDxfIO.ExcelUnmappingRuleEntityElement.Parse(reader, info);
-            }
-
-            Assert.IsNotNull(rule);
-
-            CheckOutputRules(new ExcelUnmappingRule[] { rule });
-        }
-
-        [TestMethod]
-        public void ReadExcelUnmappingRuleV4()
-        {
-            Guid guid = Guid.NewGuid();
-            Guid otherguid = new Guid("98478ed1-d3f4-4873-95b6-412e5e23aac5");
-
-            ExtendedProjectData projectData = new ExtendedProjectData();
-            projectData.SetCallingLocation(new DummyReferenceLocation(guid));
-
-            ExcelUnmappingRule rule = null;
-
-            using (DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_ETDXF_ReadUnmappingRuleV4)))
-            {
-                var info = new DXFParserInfo(guid, projectData);
-                info.FileVersion = 4;
-
-                reader.Read();
-
-                rule = ExcelDxfIO.ExcelUnmappingRuleEntityElement.Parse(reader, info);
-            }
-
-            Assert.IsNotNull(rule);
-
-            Assert.AreEqual("Unmap Rule A", rule.NodeName);
-            Assert.AreEqual(typeof(double), rule.DataType);
-            Assert.AreEqual("Sheet X", rule.ExcelData.SheetName);
-            Assert.AreEqual(new Point4D(1, 2, 3, 4), rule.ExcelData.Range);
-            Assert.AreEqual(false, rule.UnmapByFilter);
-
-            Assert.AreEqual(2, rule.PatternsToMatchInPropertyOfComp.Count);
-            Assert.AreEqual("Name", rule.PatternsToMatchInPropertyOfComp[0].propertyName);
-            Assert.AreEqual("NameFilterText", rule.PatternsToMatchInPropertyOfComp[0].filter);
-            Assert.AreEqual("InstanceState", rule.PatternsToMatchInPropertyOfComp[1].propertyName);
-            Assert.IsTrue(rule.PatternsToMatchInPropertyOfComp[1].filter is InstanceStateFilter);
-            Assert.AreEqual(SimInstanceType.GeometricSurface, ((InstanceStateFilter)rule.PatternsToMatchInPropertyOfComp[1].filter).Type);
-            Assert.AreEqual(true, ((InstanceStateFilter)rule.PatternsToMatchInPropertyOfComp[1].filter).IsRealized);
-
-            Assert.AreEqual(1, rule.PatternsToMatchInPropertyOfParam.Count);
-            Assert.AreEqual("Name", rule.PatternsToMatchInPropertyOfParam[0].propertyName);
-            Assert.AreEqual("ParamName", rule.PatternsToMatchInPropertyOfParam[0].filter);
-
-            Assert.AreEqual(1076741824, rule.TargetParameterID);
-            Assert.AreEqual(null, rule.TargetParameter);
-
-            Assert.AreEqual(17.0, rule.TargetPointer.X);
-            Assert.AreEqual(18.0, rule.TargetPointer.Y);
-        }
-
-        #endregion
-
-        #region Filter
-
-        [TestMethod]
-        public void StringFilterTest()
-        {
-            var filterText = ExcelDxfIO.SerializeFilterObject("Text");
-            Assert.AreEqual("Text_|_System.String", filterText);
-        }
-
-        [TestMethod]
-        public void Int32FilterTest()
-        {
-            var filterText = ExcelDxfIO.SerializeFilterObject((int)64);
-            Assert.AreEqual("64_|_System.Int32", filterText);
-        }
-
-        [TestMethod]
-        public void Int64FilterTest()
-        {
-            var filterText = ExcelDxfIO.SerializeFilterObject((long)64);
-            Assert.AreEqual("64_|_System.Int64", filterText);
-        }
-
-        [TestMethod]
-        public void DoubleFilterTest()
-        {
-            var filterText = ExcelDxfIO.SerializeFilterObject((double)17.3);
-            Assert.AreEqual("17.30000000_|_System.Double", filterText);
-        }
-
-        [TestMethod]
-        public void BoolFilterTest()
-        {
-            var filterText = ExcelDxfIO.SerializeFilterObject(true);
-            Assert.AreEqual("True_|_System.Boolean", filterText);
-
-            filterText = ExcelDxfIO.SerializeFilterObject(false);
-            Assert.AreEqual("False_|_System.Boolean", filterText);
-        }
-
-        [TestMethod]
-        public void SimCategoryFilterTest()
-        {
-            var filterText = ExcelDxfIO.SerializeFilterObject(SimCategory.Air);
-            Assert.AreEqual("Air_|_ParameterStructure.Component.Category", filterText);
-        }
-
-        [TestMethod]
-        public void SimInfoFlowFilterTest()
-        {
-            var filterText = ExcelDxfIO.SerializeFilterObject(SimInfoFlow.Mixed);
-            Assert.AreEqual("Mixed_|_ParameterStructure.Component.InfoFlow", filterText);
-        }
-
-        [TestMethod]
-        public void InstanceStateFilterTest()
-        {
-            var filterText = ExcelDxfIO.SerializeFilterObject(new InstanceStateFilter(SimInstanceType.GeometricSurface, true));
-            Assert.AreEqual("1602_|_DESCRIBES_2DorLESS_|_1609_|_1_|_ParameterStructure.Instances.InstanceState", filterText);
+            Assert.AreEqual(0, projectData.DataMappingTools.Count);
         }
 
         #endregion

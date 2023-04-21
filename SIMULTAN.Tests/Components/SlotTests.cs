@@ -1,68 +1,14 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SIMULTAN.Data.Components;
+using SIMULTAN.Data.Taxonomy;
+using SIMULTAN.Tests.TestUtils;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SIMULTAN.Tests.Components
 {
     [TestClass]
     public class SlotTests
     {
-        #region Slot Base
-
-        [TestMethod]
-        public void SlotBaseCtor()
-        {
-            SimSlotBase sb = new SimSlotBase();
-            Assert.AreEqual(null, sb.Base);
-
-            Assert.ThrowsException<ArgumentNullException>(() => { new SimSlotBase(null); });
-            Assert.ThrowsException<ArgumentException>(() => { new SimSlotBase("asdf"); });
-
-            sb = new SimSlotBase(SimDefaultSlots.Cost);
-            Assert.AreEqual(SimDefaultSlots.Cost, sb.Base);
-        }
-
-        [TestMethod]
-        public void SlotBaseInvalid()
-        {
-            var sb = SimSlotBase.Invalid;
-
-            Assert.AreEqual(null, sb.Base);
-        }
-
-        [TestMethod]
-        public void SlotBaseEquals()
-        {
-            var sb1 = new SimSlotBase(SimDefaultSlots.Areas);
-            var sb2 = new SimSlotBase(SimDefaultSlots.Areas);
-            var sb3 = new SimSlotBase(SimDefaultSlots.Cost);
-
-            Assert.IsTrue(sb1 == sb2);
-            Assert.IsFalse(sb1 == sb3);
-
-            sb1 = new SimSlotBase();
-            Assert.IsTrue(SimSlotBase.Invalid == sb1);
-        }
-
-        [TestMethod]
-        public void SlotBaseNotEquals()
-        {
-            var sb1 = new SimSlotBase(SimDefaultSlots.Areas);
-            var sb2 = new SimSlotBase(SimDefaultSlots.Areas);
-            var sb3 = new SimSlotBase(SimDefaultSlots.Cost);
-
-            Assert.IsFalse(sb1 != sb2);
-            Assert.IsTrue(sb1 != sb3);
-
-            sb1 = new SimSlotBase();
-            Assert.IsFalse(SimSlotBase.Invalid != sb1);
-        }
-
-        #endregion
 
         #region Slot
 
@@ -71,46 +17,55 @@ namespace SIMULTAN.Tests.Components
         {
             //Default ctor
             SimSlot slot = new SimSlot();
-            Assert.AreEqual(null, slot.SlotBase.Base);
+            Assert.AreEqual(null, slot.SlotBase);
             Assert.AreEqual(null, slot.SlotExtension);
 
             //Invalid base slot
-            Assert.ThrowsException<ArgumentException>(() => { new SimSlot("asdf", ""); });
+            Assert.ThrowsException<ArgumentNullException>(() => { new SimSlot((SimTaxonomyEntryReference)null, ""); });
+
+            var taxonomies = TaxonomyUtils.GetDefaultTaxonomies();
+            var costTax = taxonomies.GetDefaultSlot(SimDefaultSlotKeys.Cost);
 
             //Working
-            slot = new SimSlot(SimDefaultSlots.Cost, "3");
-            Assert.AreEqual(new SimSlotBase(SimDefaultSlots.Cost), slot.SlotBase);
+            slot = new SimSlot(costTax, "3");
+            Assert.AreEqual(costTax, slot.SlotBase.Target);
             Assert.AreEqual("3", slot.SlotExtension);
 
             //Extension null
-            slot = new SimSlot(SimDefaultSlots.Cost, null);
-            Assert.AreEqual(new SimSlotBase(SimDefaultSlots.Cost), slot.SlotBase);
+            slot = new SimSlot(costTax, null);
+            Assert.AreEqual(costTax, slot.SlotBase.Target);
             Assert.AreEqual("", slot.SlotExtension);
         }
 
         [TestMethod]
         public void CtorCopy()
         {
-            SimSlot slot = new SimSlot(new SimSlot(SimDefaultSlots.Cost, "4"));
-            Assert.AreEqual(new SimSlotBase(SimDefaultSlots.Cost), slot.SlotBase);
+            var slotEntry = TaxonomyUtils.GetDefaultSlot(SimDefaultSlotKeys.Cost);
+            SimSlot baseSlot = new SimSlot(slotEntry, "4");
+            SimSlot slot = new SimSlot(baseSlot);
+            Assert.AreEqual(slotEntry, slot.SlotBase.Target);
             Assert.AreEqual("4", slot.SlotExtension);
+            Assert.IsFalse(object.ReferenceEquals(baseSlot.SlotBase, slot.SlotBase)); // should create new reference
         }
 
         [TestMethod]
         public void SlotInvalid()
         {
             SimSlot s = SimSlot.Invalid;
-            Assert.AreEqual(SimSlotBase.Invalid, s.SlotBase);
+            Assert.AreEqual(null, s.SlotBase);
             Assert.AreEqual(null, s.SlotExtension);
         }
 
         [TestMethod]
         public void SlotEquals()
         {
-            SimSlot a = new SimSlot(SimDefaultSlots.Cost, "4");
-            SimSlot b = new SimSlot(SimDefaultSlots.Cost, "4");
-            SimSlot c = new SimSlot(SimDefaultSlots.Distributer, "4");
-            SimSlot d = new SimSlot(SimDefaultSlots.Cost, "9");
+            var taxonomies = TaxonomyUtils.GetDefaultTaxonomies();
+            var costTax = taxonomies.GetDefaultSlot(SimDefaultSlotKeys.Cost);
+            var distributerTax = taxonomies.GetDefaultSlot(SimDefaultSlotKeys.Distribution);
+            SimSlot a = new SimSlot(costTax, "4");
+            SimSlot b = new SimSlot(costTax, "4");
+            SimSlot c = new SimSlot(distributerTax, "4");
+            SimSlot d = new SimSlot(costTax, "9");
 
             Assert.IsTrue(a == b);
             Assert.IsFalse(a == c);
@@ -120,10 +75,13 @@ namespace SIMULTAN.Tests.Components
         [TestMethod]
         public void SlotNotEquals()
         {
-            SimSlot a = new SimSlot(SimDefaultSlots.Cost, "4");
-            SimSlot b = new SimSlot(SimDefaultSlots.Cost, "4");
-            SimSlot c = new SimSlot(SimDefaultSlots.Distributer, "4");
-            SimSlot d = new SimSlot(SimDefaultSlots.Cost, "9");
+            var taxonomies = TaxonomyUtils.GetDefaultTaxonomies();
+            var costTax = taxonomies.GetDefaultSlot(SimDefaultSlotKeys.Cost);
+            var distributerTax = taxonomies.GetDefaultSlot(SimDefaultSlotKeys.Distribution);
+            SimSlot a = new SimSlot(costTax, "4");
+            SimSlot b = new SimSlot(costTax, "4");
+            SimSlot c = new SimSlot(distributerTax, "4");
+            SimSlot d = new SimSlot(costTax, "9");
 
             Assert.IsFalse(a != b);
             Assert.IsTrue(a != c);
@@ -133,25 +91,9 @@ namespace SIMULTAN.Tests.Components
         [TestMethod]
         public void ToSerializerString()
         {
-            SimSlot slot = new SimSlot(SimDefaultSlots.Composite, "17");
+            SimSlot slot = new SimSlot(TaxonomyUtils.GetDefaultSlot(SimDefaultSlotKeys.Composite), "17");
 
             Assert.AreEqual("Aufbau_017", slot.ToSerializerString());
-        }
-
-        [TestMethod]
-        public void FromSerializerString()
-        {
-            Assert.ThrowsException<ArgumentException>(() => SimSlot.FromSerializerString((string)null));
-            Assert.ThrowsException<ArgumentException>(() => SimSlot.FromSerializerString(""));
-            Assert.ThrowsException<ArgumentException>(() => SimSlot.FromSerializerString("asdf_02"));
-
-            var slot = SimSlot.FromSerializerString(SimDefaultSlots.Cost + "_03");
-            Assert.AreEqual(new SimSlotBase(SimDefaultSlots.Cost), slot.SlotBase);
-            Assert.AreEqual("3", slot.SlotExtension);
-
-            slot = SimSlot.FromSerializerString(SimDefaultSlots.Cost);
-            Assert.AreEqual(new SimSlotBase(SimDefaultSlots.Cost), slot.SlotBase);
-            Assert.AreEqual("", slot.SlotExtension);
         }
 
         #endregion

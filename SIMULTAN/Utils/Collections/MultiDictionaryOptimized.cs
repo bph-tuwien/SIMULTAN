@@ -21,7 +21,7 @@ namespace SIMULTAN.Utils.Collections
         /// <summary>
         /// Initializes a new instance of the <see cref="MultiDictionary{TKey, TValue}"/> class
         /// </summary>
-        public MultiDictionaryOptimized() 
+        public MultiDictionaryOptimized()
         {
             this.dictionary = new Dictionary<TKey, object>();
         }
@@ -32,7 +32,7 @@ namespace SIMULTAN.Utils.Collections
         /// <param name="original">The initial data for the dictionary</param>
         public MultiDictionaryOptimized(MultiDictionaryOptimized<TKey, TValue> original)
         {
-            dictionary = new Dictionary<TKey, object>(original.dictionary);            
+            dictionary = new Dictionary<TKey, object>(original.dictionary);
         }
 
         /// <summary>
@@ -90,7 +90,7 @@ namespace SIMULTAN.Utils.Collections
         {
             return dictionary.Remove(key);
         }
-    
+
         /// <summary>
         /// Returns the values associated with a key. Throws an exception when the key is not found
         /// </summary>

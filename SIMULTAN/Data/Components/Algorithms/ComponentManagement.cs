@@ -1,4 +1,5 @@
-﻿using SIMULTAN.Data.Users;
+﻿using SIMULTAN.Data.Taxonomy;
+using SIMULTAN.Data.Users;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -21,18 +22,18 @@ namespace SIMULTAN.Data.Components
 		/// Returns a list of available slots
 		/// </summary>
         /// <param name="component">The component</param>
-		/// <param name="availableSlotsWithoutExtension">The slot types which are available to choose from (slots without extension)</param>
+		/// <param name="availableSlotTaxonomyEntries">The slot types which are available to choose from (slots without extension)</param>
 		/// <returns>An unused slot (slot with extension)</returns>
-        public static SimSlot FindAvailableReferenceSlot(this SimComponent component, List<SimSlotBase> availableSlotsWithoutExtension)
+        public static SimSlot FindAvailableReferenceSlot(this SimComponent component, List<SimTaxonomyEntry> availableSlotTaxonomyEntries)
         {
             var alreadyUsedSlots = component.ReferencedComponents.Select(x => x.Slot).ToHashSet();
 
             int i = 0;
             while (true)
             {
-                foreach (var avSlot in availableSlotsWithoutExtension)
+                foreach (var avSlot in availableSlotTaxonomyEntries)
                 {
-                    var slotWithExtension = new SimSlot(avSlot, i.ToString());
+                    var slotWithExtension = new SimSlot(new SimTaxonomyEntryReference(avSlot), i.ToString());
                     if (!alreadyUsedSlots.Contains(slotWithExtension))
                         return slotWithExtension;
                 }

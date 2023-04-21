@@ -45,7 +45,7 @@ namespace SIMULTAN.Serializer.DXF
                 reader.Dispose();
             }
         }
-    
+
         /// <summary>
         /// Reads a new key-value pair from the stream
         /// </summary>

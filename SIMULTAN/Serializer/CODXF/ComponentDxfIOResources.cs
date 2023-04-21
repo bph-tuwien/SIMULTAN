@@ -1,8 +1,10 @@
 ﻿using SIMULTAN.Data;
 using SIMULTAN.Data.Assets;
 using SIMULTAN.Data.Components;
+using SIMULTAN.Data.Taxonomy;
 using SIMULTAN.Data.Users;
 using SIMULTAN.Serializer.DXF;
+using SIMULTAN.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -31,6 +33,12 @@ namespace SIMULTAN.Serializer.CODXF
                         new DXFSingleEntryParserElement<int>(ResourceSaveCode.RESOURCE_KEY),
                         new DXFSingleEntryParserElement<string>(ResourceSaveCode.RESOURCE_RELATIVE_PATH),
                         new DXFSingleEntryParserElement<SimComponentVisibility>(ResourceSaveCode.RESOURCE_VISIBILITY),
+                        new DXFStructArrayEntryParserElement<SimId>(ResourceSaveCode.RESOURCE_TAGS, ParseTag,
+                            new DXFEntryParserElement[]
+                            {
+                                new DXFSingleEntryParserElement<Guid>(ResourceSaveCode.RESOURCE_TAGS_ENTRY_GLOBAL_ID) { IsOptional = true },
+                                new DXFSingleEntryParserElement<long>(ResourceSaveCode.RESOURCE_TAGS_ENTRY_LOCAL_ID),
+                            }) { MinVersion = 16 },
                     }));
 
         /// <summary>
@@ -46,6 +54,12 @@ namespace SIMULTAN.Serializer.CODXF
                         new DXFSingleEntryParserElement<int>(ResourceSaveCode.RESOURCE_KEY),
                         new DXFSingleEntryParserElement<string>(ResourceSaveCode.RESOURCE_RELATIVE_PATH),
                         new DXFSingleEntryParserElement<SimComponentVisibility>(ResourceSaveCode.RESOURCE_VISIBILITY),
+                        new DXFStructArrayEntryParserElement<SimId>(ResourceSaveCode.RESOURCE_TAGS, ParseTag,
+                            new DXFEntryParserElement[]
+                            {
+                                new DXFSingleEntryParserElement<Guid>(ResourceSaveCode.RESOURCE_TAGS_ENTRY_GLOBAL_ID) { IsOptional = true },
+                                new DXFSingleEntryParserElement<long>(ResourceSaveCode.RESOURCE_TAGS_ENTRY_LOCAL_ID),
+                            }) { MinVersion = 16 },
                     }));
 
 
@@ -62,6 +76,12 @@ namespace SIMULTAN.Serializer.CODXF
                         new DXFSingleEntryParserElement<int>(ResourceSaveCode.RESOURCE_KEY),
                         new DXFSingleEntryParserElement<string>(ResourceSaveCode.RESOURCE_RELATIVE_PATH),
                         new DXFSingleEntryParserElement<SimComponentVisibility>(ResourceSaveCode.RESOURCE_VISIBILITY),
+                        new DXFStructArrayEntryParserElement<SimId>(ResourceSaveCode.RESOURCE_TAGS, ParseTag,
+                            new DXFEntryParserElement[]
+                            {
+                                new DXFSingleEntryParserElement<Guid>(ResourceSaveCode.RESOURCE_TAGS_ENTRY_GLOBAL_ID) { IsOptional = true },
+                                new DXFSingleEntryParserElement<long>(ResourceSaveCode.RESOURCE_TAGS_ENTRY_LOCAL_ID),
+                            }) { MinVersion = 16 },
                         new DXFEntitySequenceEntryParserElement<ResourceEntry>(ResourceSaveCode.RESOURCE_CHILDREN,
                             new DXFEntityParserElementBase<ResourceEntry>[]
                             {
@@ -139,7 +159,7 @@ namespace SIMULTAN.Serializer.CODXF
                             {
                                 DocumentAssetEntityElement,
                                 GeometricAssetEntityElement
-                            })                        
+                            })
                     }));
 
         /// <summary>
@@ -248,6 +268,24 @@ namespace SIMULTAN.Serializer.CODXF
             writer.Write(ResourceSaveCode.RESOURCE_KEY, resource.Key);
             writer.Write(ResourceSaveCode.RESOURCE_RELATIVE_PATH, resource.CurrentRelativePath);
             writer.Write(ResourceSaveCode.RESOURCE_VISIBILITY, resource.Visibility);
+            writer.WriteArray(ResourceSaveCode.RESOURCE_TAGS, resource.Tags, WriteTag);
+        }
+
+        private static void WriteTag(SimTaxonomyEntryReference taxref, DXFStreamWriter writer)
+        {
+            // dont write for now, may be too much bloat
+            //writer.Write<Guid>(ResourceSaveCode.RESOURCE_TAGS_ENTRY_GLOBAL_ID, taxref.Target.GlobalID);
+            writer.Write<long>(ResourceSaveCode.RESOURCE_TAGS_ENTRY_LOCAL_ID, taxref.Target.LocalID);
+        }
+
+        private static SimId ParseTag(DXFParserResultSet result, DXFParserInfo info)
+        {
+            var taxId = result.GetSimId(ResourceSaveCode.RESOURCE_TAGS_ENTRY_GLOBAL_ID, ResourceSaveCode.RESOURCE_TAGS_ENTRY_LOCAL_ID, info.GlobalId);
+
+            if (taxId.LocalId == 0)
+                throw new Exception("Tag taxonomy entry local id cannot be zero");
+
+            return taxId;
         }
 
         #endregion
@@ -283,9 +321,11 @@ namespace SIMULTAN.Serializer.CODXF
             var key = data.Get<int>(ResourceSaveCode.RESOURCE_KEY, -1);
             var relPath = data.Get<string>(ResourceSaveCode.RESOURCE_RELATIVE_PATH, AssetManager.PATH_NOT_FOUND);
             var visibility = data.Get<SimComponentVisibility>(ResourceSaveCode.RESOURCE_VISIBILITY, SimComponentVisibility.AlwaysVisible);
+            var tagIds = data.Get<SimId[]>(ResourceSaveCode.RESOURCE_TAGS, new SimId[] { });
             var children = data.Get<ResourceEntry[]>(ResourceSaveCode.RESOURCE_CHILDREN, new ResourceEntry[0]);
 
             var dir = info.ProjectData.AssetManager.ParseResourceDirectoryEntry(user, relPath, key, visibility);
+            dir.Tags.AddRange(tagIds.Select(x => new SimTaxonomyEntryReference(x)));
 
             dir.Children.SuppressNotification = true;
             foreach (var child in children)
@@ -325,8 +365,10 @@ namespace SIMULTAN.Serializer.CODXF
             var key = data.Get<int>(ResourceSaveCode.RESOURCE_KEY, -1);
             var relPath = data.Get<string>(ResourceSaveCode.RESOURCE_RELATIVE_PATH, AssetManager.PATH_NOT_FOUND);
             var visibility = data.Get<SimComponentVisibility>(ResourceSaveCode.RESOURCE_VISIBILITY, SimComponentVisibility.AlwaysVisible);
+            var tagIds = data.Get<SimId[]>(ResourceSaveCode.RESOURCE_TAGS, new SimId[] { });
 
             var file = info.ProjectData.AssetManager.ParseContainedResourceFileEntry(user, relPath, key, visibility);
+            file.Tags.AddRange(tagIds.Select(x => new SimTaxonomyEntryReference(x)));
             return file;
         }
 
@@ -357,8 +399,10 @@ namespace SIMULTAN.Serializer.CODXF
             var key = data.Get<int>(ResourceSaveCode.RESOURCE_KEY, -1);
             var relPath = data.Get<string>(ResourceSaveCode.RESOURCE_RELATIVE_PATH, AssetManager.PATH_NOT_FOUND);
             var visibility = data.Get<SimComponentVisibility>(ResourceSaveCode.RESOURCE_VISIBILITY, SimComponentVisibility.AlwaysVisible);
+            var tagIds = data.Get<SimId[]>(ResourceSaveCode.RESOURCE_TAGS, new SimId[] { });
 
             var file = info.ProjectData.AssetManager.ParseLinkedResourceFileEntry(user, relPath, key, visibility);
+            file.Tags.AddRange(tagIds.Select(x => new SimTaxonomyEntryReference(x)));
             return file;
         }
 

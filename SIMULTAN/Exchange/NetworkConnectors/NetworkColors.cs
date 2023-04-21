@@ -17,10 +17,6 @@ namespace SIMULTAN.Exchange.NetworkConnectors
         /// </summary>
         public static readonly Color COL_EMPTY = (Color)ColorConverter.ConvertFromString("#FF404040");
         /// <summary>
-        /// The color of an unassigned network element representation.
-        /// </summary>
-        public static readonly Color COL_UNASSIGNED = (Color)ColorConverter.ConvertFromString("#FFA0A0A0");
-        /// <summary>
         /// The default color of a network element representation.
         /// </summary>
         public static readonly Color COL_NEUTRAL = (Color)ColorConverter.ConvertFromString("#FFffffff");

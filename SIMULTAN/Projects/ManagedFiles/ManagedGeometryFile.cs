@@ -1,8 +1,6 @@
 ﻿using SIMULTAN.Data.Components;
 using SIMULTAN.Serializer.Projects;
-using SIMULTAN.Serializer.SimGeo;
 using System.IO;
-using System.Windows;
 
 namespace SIMULTAN.Projects.ManagedFiles
 {
@@ -44,6 +42,7 @@ namespace SIMULTAN.Projects.ManagedFiles
         {
             base.OnDeleted(_resource_id);
             ProjectData.NetworkManager.DisconnectAllInstances(_resource_id);
+            ProjectData.SimNetworks.DisconnectAllInstances(_resource_id);
             ProjectData.Components.OnGeometryResourceDeleted(_resource_id);
         }
 

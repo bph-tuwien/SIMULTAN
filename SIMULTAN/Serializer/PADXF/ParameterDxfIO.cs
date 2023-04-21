@@ -6,8 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SIMULTAN.Serializer.PADXF
 {
@@ -18,11 +16,11 @@ namespace SIMULTAN.Serializer.PADXF
     {
         #region Syntax Section
 
-        internal static DXFSectionParserElement<SimParameter> ParameterSectionEntityElement =
-            new DXFSectionParserElement<SimParameter>(ParamStructTypes.ENTITY_SECTION,
-                new DXFEntityParserElementBase<SimParameter>[]
+        internal static DXFSectionParserElement<SimBaseParameter> BaseParameterSectionEntityElement =
+            new DXFSectionParserElement<SimBaseParameter>(ParamStructTypes.ENTITY_SECTION,
+                new DXFEntityParserElementBase<SimBaseParameter>[]
                 {
-                    ComponentDxfIOComponents.ParameterEntityElement
+                    ComponentDxfIOComponents.BaseParameterEntityElement
                 });
 
         #endregion
@@ -43,7 +41,7 @@ namespace SIMULTAN.Serializer.PADXF
         /// <param name="file">The target file</param>
         /// <param name="projectData">The project data to which the parameters belong</param>
         /// <param name="parameters">The parameters to export</param>
-        public static void Write(FileInfo file, ProjectData projectData, IEnumerable<SimParameter> parameters)
+        public static void Write(FileInfo file, ProjectData projectData, IEnumerable<SimBaseParameter> parameters)
         {
             if (file == null)
                 throw new ArgumentNullException(nameof(file));
@@ -61,7 +59,7 @@ namespace SIMULTAN.Serializer.PADXF
             }
         }
 
-        internal static void Write(DXFStreamWriter writer, ProjectData projectData, IEnumerable<SimParameter> parameters)
+        internal static void Write(DXFStreamWriter writer, ProjectData projectData, IEnumerable<SimBaseParameter> parameters)
         {
             //File header
             writer.WriteVersionSection();
@@ -102,7 +100,7 @@ namespace SIMULTAN.Serializer.PADXF
         internal static void Read(DXFStreamReader reader, DXFParserInfo parserInfo)
         {
             //Version section
-            if(CommonParserElements.VersionSectionElement.IsParsable(reader, parserInfo))
+            if (CommonParserElements.VersionSectionElement.IsParsable(reader, parserInfo))
             {
                 parserInfo = CommonParserElements.VersionSectionElement.Parse(reader, parserInfo).First();
             }
@@ -112,13 +110,14 @@ namespace SIMULTAN.Serializer.PADXF
             }
 
             //Data section
-            var parameters = ParameterSectionEntityElement.Parse(reader, parserInfo);
+            var parameters = BaseParameterSectionEntityElement.Parse(reader, parserInfo);
 
             foreach (var parameter in parameters.Where(x => x != null))
             {
                 parserInfo.ProjectData.ParameterLibraryManager.ParameterRecord.Add(parameter);
                 parameter.RestoreReferences(parserInfo.ProjectData.IdGenerator);
             }
+
 
             //EOF
             EOFParserElement.Element.Parse(reader);

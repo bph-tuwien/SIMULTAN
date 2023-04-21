@@ -1,7 +1,7 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SIMULTAN.Data.Components;
 using SIMULTAN.Data.Geometry;
-using SIMULTAN.Tests.Utils;
+using SIMULTAN.Tests.TestUtils;
 using SIMULTAN.Utils;
 using SIMULTAN.Utils.UndoRedo;
 using System.Collections.Generic;
@@ -137,8 +137,8 @@ namespace SIMULTAN.Tests.Geometry.Algorithms
 
             var mergeTracker = new ModelCleanupAlgorithms.MergeTracker<Edge>();
 
-            ModelCleanupAlgorithms.RemoveDuplicateVertices(geoCopy,0.1, ref vertexGrid, ref edgeGrid);
-            var removedCount = ModelCleanupAlgorithms.RemoveDuplicateEdges(geoCopy, ref edgeGrid,mergeTracker);
+            ModelCleanupAlgorithms.RemoveDuplicateVertices(geoCopy, 0.1, ref vertexGrid, ref edgeGrid);
+            var removedCount = ModelCleanupAlgorithms.RemoveDuplicateEdges(geoCopy, ref edgeGrid, mergeTracker);
             var merged = mergeTracker.AsList();
 
             Assert.AreEqual(3, removedCount);
@@ -227,7 +227,7 @@ namespace SIMULTAN.Tests.Geometry.Algorithms
 
             while (changed)
             {
-                count +=ModelCleanupAlgorithms.RemoveDuplicateVertices(geoCopy, 0.1, ref vertexGrid, ref edgeGrid);
+                count += ModelCleanupAlgorithms.RemoveDuplicateVertices(geoCopy, 0.1, ref vertexGrid, ref edgeGrid);
                 count += ModelCleanupAlgorithms.RemoveDuplicateEdges(geoCopy, ref edgeGrid);
                 var cc = ModelCleanupAlgorithms.RemoveDuplicateFaces(geoCopy, ref faceGrid, faceTracker);
                 count += cc;
@@ -322,7 +322,7 @@ namespace SIMULTAN.Tests.Geometry.Algorithms
 
             while (changed)
             {
-                count +=ModelCleanupAlgorithms.RemoveDuplicateVertices(geoCopy, 0.1, ref vertexGrid, ref edgeGrid);
+                count += ModelCleanupAlgorithms.RemoveDuplicateVertices(geoCopy, 0.1, ref vertexGrid, ref edgeGrid);
                 count += ModelCleanupAlgorithms.RemoveDuplicateEdges(geoCopy, ref edgeGrid);
 
                 changed = count > 0;
@@ -412,10 +412,10 @@ namespace SIMULTAN.Tests.Geometry.Algorithms
 
             while (changed)
             {
-                count +=ModelCleanupAlgorithms.RemoveDuplicateVertices(geoCopy, 0.1, ref vertexGrid, ref edgeGrid);
+                count += ModelCleanupAlgorithms.RemoveDuplicateVertices(geoCopy, 0.1, ref vertexGrid, ref edgeGrid);
                 count += ModelCleanupAlgorithms.RemoveDuplicateEdges(geoCopy, ref edgeGrid);
                 count += ModelCleanupAlgorithms.RemoveDuplicateFaces(geoCopy, ref faceGrid);
-                var cc = ModelCleanupAlgorithms.RemoveDuplicateVolumes(geoCopy, ref volumeGrid,mergeTracker);
+                var cc = ModelCleanupAlgorithms.RemoveDuplicateVolumes(geoCopy, ref volumeGrid, mergeTracker);
                 count += cc;
                 removedCount += cc;
 
@@ -457,10 +457,10 @@ namespace SIMULTAN.Tests.Geometry.Algorithms
             // first replace geometry
             DoReAssociation(geoCopy, gm, geometryToReassign, geometryToUnassign);
 
-            var ec1 = exchange.GetComponents(v1).Where(x=> x.IsAutomaticallyGenerated == false);
-            var ec2 = exchange.GetComponents(v2).Where(x=> x.IsAutomaticallyGenerated == false);
-            var ec3 = exchange.GetComponents(v3).Where(x=> x.IsAutomaticallyGenerated == false);
-            var ec4 = exchange.GetComponents(v4).Where(x=> x.IsAutomaticallyGenerated == false);
+            var ec1 = exchange.GetComponents(v1).Where(x => x.IsAutomaticallyGenerated == false);
+            var ec2 = exchange.GetComponents(v2).Where(x => x.IsAutomaticallyGenerated == false);
+            var ec3 = exchange.GetComponents(v3).Where(x => x.IsAutomaticallyGenerated == false);
+            var ec4 = exchange.GetComponents(v4).Where(x => x.IsAutomaticallyGenerated == false);
             Assert.AreEqual(3, ec1.Count());
             Assert.IsTrue(ec1.Contains(c1));
             Assert.IsTrue(ec1.Contains(c2));
@@ -608,7 +608,7 @@ namespace SIMULTAN.Tests.Geometry.Algorithms
                 Assert.IsTrue(ec.All(x => x == c1));
             }
         }
-        
+
         [TestMethod]
         public void TestFaceFaceSplitRestoresComponentAssociations()
         {
@@ -651,7 +651,7 @@ namespace SIMULTAN.Tests.Geometry.Algorithms
                 count = 0;
             }
 
-            var splitResult = ModelCleanupAlgorithms.SplitFaces(geoCopy, 0.1, ref vertexGrid, ref faceGrid,"error", "{0} ({1})", replacementTracker);
+            var splitResult = ModelCleanupAlgorithms.SplitFaces(geoCopy, 0.1, ref vertexGrid, ref faceGrid, "error", "{0} ({1})", replacementTracker);
 
             var replaced = replacementTracker.GetReplacements();
             Assert.IsTrue(splitResult.success);
@@ -699,11 +699,11 @@ namespace SIMULTAN.Tests.Geometry.Algorithms
             foreach (var face in geo.Faces)
             {
                 var comps = exchange.GetComponents(face).ToList();
-                if(comps.Count == 1)
+                if (comps.Count == 1)
                 {
                     Assert.IsTrue(comps[0] == c1 || comps[0] == c2);
                 }
-                else if(comps.Count == 2)
+                else if (comps.Count == 2)
                 {
                     Assert.IsTrue((comps[0] == c1 && comps[1] == c2) || (comps[0] == c2 && comps[1] == c1));
                 }

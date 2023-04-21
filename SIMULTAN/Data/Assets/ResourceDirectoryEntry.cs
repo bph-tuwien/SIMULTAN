@@ -35,7 +35,7 @@ namespace SIMULTAN.Data.Assets
             get { return directory.Name; }
             protected set
             {
-                
+
             }
         }
         /// <inheritdoc/>
