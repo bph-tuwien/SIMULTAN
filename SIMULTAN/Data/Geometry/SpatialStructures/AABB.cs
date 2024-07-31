@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Windows.Media.Media3D;
+using SIMULTAN.Data.SimMath;
 
 namespace SIMULTAN.Data.Geometry
 {
@@ -15,11 +15,11 @@ namespace SIMULTAN.Data.Geometry
         /// <summary>
         /// The minimum along each axis
         /// </summary>
-		public Point3D Min { get; set; }
+		public SimPoint3D Min { get; set; }
         /// <summary>
         /// The maximum along each axis
         /// </summary>
-		public Point3D Max { get; set; }
+		public SimPoint3D Max { get; set; }
 
         /// <summary>
         /// The BaseGeometry this box belongs to
@@ -32,7 +32,7 @@ namespace SIMULTAN.Data.Geometry
         /// <param name="min">The minimum position</param>
         /// <param name="max">The maximum position</param>
         /// <param name="content">The geometry this aabb contains</param>
-		public AABB(Point3D min, Point3D max, BaseGeometry content)
+		public AABB(SimPoint3D min, SimPoint3D max, BaseGeometry content)
         {
             if (min.X > max.X || min.Y > max.Y || min.Z > max.Z)
                 throw new ArgumentException("Minimum may not be larger than maximum");
@@ -46,14 +46,14 @@ namespace SIMULTAN.Data.Geometry
         /// <param name="face">The face for which the AABB should be calculated</param>
 		public AABB(Face face)
         {
-            Min = new Point3D(double.PositiveInfinity, double.PositiveInfinity, double.PositiveInfinity);
-            Max = new Point3D(double.NegativeInfinity, double.NegativeInfinity, double.NegativeInfinity);
+            Min = new SimPoint3D(double.PositiveInfinity, double.PositiveInfinity, double.PositiveInfinity);
+            Max = new SimPoint3D(double.NegativeInfinity, double.NegativeInfinity, double.NegativeInfinity);
 
             foreach (var v in face.Boundary.Edges.Select(x => x.StartVertex))
             {
                 var p = v.Position;
-                Min = new Point3D(Math.Min(Min.X, p.X), Math.Min(Min.Y, p.Y), Math.Min(Min.Z, p.Z));
-                Max = new Point3D(Math.Max(Max.X, p.X), Math.Max(Max.Y, p.Y), Math.Max(Max.Z, p.Z));
+                Min = new SimPoint3D(Math.Min(Min.X, p.X), Math.Min(Min.Y, p.Y), Math.Min(Min.Z, p.Z));
+                Max = new SimPoint3D(Math.Max(Max.X, p.X), Math.Max(Max.Y, p.Y), Math.Max(Max.Z, p.Z));
             }
 
             this.Content = face;
@@ -74,12 +74,12 @@ namespace SIMULTAN.Data.Geometry
         /// <param name="edge">The edge for which the AABB should be calculated</param>
 		public AABB(Edge edge)
         {
-            Min = new Point3D(
+            Min = new SimPoint3D(
                 Math.Min(edge.Vertices[0].Position.X, edge.Vertices[1].Position.X),
                 Math.Min(edge.Vertices[0].Position.Y, edge.Vertices[1].Position.Y),
                 Math.Min(edge.Vertices[0].Position.Z, edge.Vertices[1].Position.Z)
                 );
-            Max = new Point3D(
+            Max = new SimPoint3D(
                 Math.Max(edge.Vertices[0].Position.X, edge.Vertices[1].Position.X),
                 Math.Max(edge.Vertices[0].Position.Y, edge.Vertices[1].Position.Y),
                 Math.Max(edge.Vertices[0].Position.Z, edge.Vertices[1].Position.Z)
@@ -92,16 +92,16 @@ namespace SIMULTAN.Data.Geometry
         /// <param name="volume">The volume for which the AABB should be calculated</param>
 		public AABB(Volume volume)
         {
-            Min = new Point3D(double.PositiveInfinity, double.PositiveInfinity, double.PositiveInfinity);
-            Max = new Point3D(double.NegativeInfinity, double.NegativeInfinity, double.NegativeInfinity);
+            Min = new SimPoint3D(double.PositiveInfinity, double.PositiveInfinity, double.PositiveInfinity);
+            Max = new SimPoint3D(double.NegativeInfinity, double.NegativeInfinity, double.NegativeInfinity);
 
             foreach (var face in volume.Faces)
             {
                 foreach (var v in face.Face.Boundary.Edges.Select(x => x.StartVertex))
                 {
                     var p = v.Position;
-                    Min = new Point3D(Math.Min(Min.X, p.X), Math.Min(Min.Y, p.Y), Math.Min(Min.Z, p.Z));
-                    Max = new Point3D(Math.Max(Max.X, p.X), Math.Max(Max.Y, p.Y), Math.Max(Max.Z, p.Z));
+                    Min = new SimPoint3D(Math.Min(Min.X, p.X), Math.Min(Min.Y, p.Y), Math.Min(Min.Z, p.Z));
+                    Max = new SimPoint3D(Math.Max(Max.X, p.X), Math.Max(Max.Y, p.Y), Math.Max(Max.Z, p.Z));
                 }
             }
 
@@ -113,15 +113,15 @@ namespace SIMULTAN.Data.Geometry
         /// </summary>
         /// <param name="items">A list of AABBs which should be contained in the result</param>
         /// <returns>The minimum and maximum of all boxes</returns>
-		public static (Point3D min, Point3D max) Merge(IEnumerable<AABB> items)
+		public static (SimPoint3D min, SimPoint3D max) Merge(IEnumerable<AABB> items)
         {
-            Point3D min = new Point3D(double.PositiveInfinity, double.PositiveInfinity, double.PositiveInfinity);
-            Point3D max = new Point3D(double.NegativeInfinity, double.NegativeInfinity, double.NegativeInfinity);
+            SimPoint3D min = new SimPoint3D(double.PositiveInfinity, double.PositiveInfinity, double.PositiveInfinity);
+            SimPoint3D max = new SimPoint3D(double.NegativeInfinity, double.NegativeInfinity, double.NegativeInfinity);
 
             foreach (var item in items)
             {
-                min = new Point3D(Math.Min(min.X, item.Min.X), Math.Min(min.Y, item.Min.Y), Math.Min(min.Z, item.Min.Z));
-                max = new Point3D(Math.Max(max.X, item.Max.X), Math.Max(max.Y, item.Max.Y), Math.Max(max.Z, item.Max.Z));
+                min = new SimPoint3D(Math.Min(min.X, item.Min.X), Math.Min(min.Y, item.Min.Y), Math.Min(min.Z, item.Min.Z));
+                max = new SimPoint3D(Math.Max(max.X, item.Max.X), Math.Max(max.Y, item.Max.Y), Math.Max(max.Z, item.Max.Z));
             }
 
             return (min, max);

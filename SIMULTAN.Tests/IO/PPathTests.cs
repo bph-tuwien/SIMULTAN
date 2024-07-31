@@ -2,8 +2,9 @@
 using SIMULTAN.Projects;
 using SIMULTAN.Serializer.PPATH;
 using SIMULTAN.Tests.Properties;
-using SIMULTAN.Tests.Util;
 using SIMULTAN.Tests.TestUtils;
+using SIMULTAN.Tests.Util;
+using SIMULTAN.Utils.Files;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -59,12 +60,12 @@ namespace SIMULTAN.Tests.IO
         {
             string[] expected = new string[]
             {
-                @"F1\F2\D1.txt",
-                @"F1\F2\",
-                @"F1\D2.txt",
-                @"F1\",
-                @"F4\D4.txt",
-                @"F4\"
+                FileSystemNavigation.SanitizePath(@"F1\F2\D1.txt"),
+                FileSystemNavigation.SanitizePath(@"F1\F2\"),
+                FileSystemNavigation.SanitizePath(@"F1\D2.txt"),
+                FileSystemNavigation.SanitizePath(@"F1\"),
+                FileSystemNavigation.SanitizePath(@"F4\D4.txt"),
+                FileSystemNavigation.SanitizePath(@"F4\")
             };
 
             List<string> result = null;

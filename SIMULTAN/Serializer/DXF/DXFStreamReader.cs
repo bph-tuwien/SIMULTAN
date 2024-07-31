@@ -74,8 +74,8 @@ namespace SIMULTAN.Serializer.DXF
                 if (this.lastValue == null)
                     return (-1, null);
 
-                //Console.WriteLine(this.lastCode);
-                //Console.WriteLine(this.lastValue);
+                //Debug.WriteLine(this.lastCode);
+                //Debug.WriteLine(this.lastValue);
             }
 
             return (this.lastCode, this.lastValue);

@@ -1,4 +1,5 @@
 ﻿using SIMULTAN.Data.Components;
+using SIMULTAN.Data.SimMath;
 using SIMULTAN.Data.SimNetworks;
 using SIMULTAN.Data.Users;
 using SIMULTAN.Utils;
@@ -7,10 +8,10 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Windows;
-using System.Windows.Data;
 
 namespace SIMULTAN.Data.FlowNetworks
 {
@@ -262,21 +263,18 @@ namespace SIMULTAN.Data.FlowNetworks
 
         #region PROPERTIES (derived): all contained elements as Children
 
-        private CompositeCollection children;
+        private List<object> children;
         [Obsolete]
-        public CompositeCollection Children { get { return this.children; } }
+        public List<object> Children { get { return this.children; } }
 
         [Obsolete]
         public void UpdateChildrenContainer()
         {
             this.SetValidity();
-            this.children = new CompositeCollection
-            {
-                new CollectionContainer { Collection = this.contained_nodes.Values },
-                new CollectionContainer { Collection = this.contained_edges.Values },
-                new CollectionContainer { Collection = this.ContainedFlowNetworks.Values }
-            };
-
+            this.children = new List<object>();
+            children.AddRange(contained_nodes.Values);
+            children.AddRange(contained_edges.Values);
+            children.AddRange(ContainedFlowNetworks.Values);
             this.NotifyPropertyChanged(nameof(Children));
         }
 
@@ -390,7 +388,7 @@ namespace SIMULTAN.Data.FlowNetworks
 
         #region .CTOR
 
-        public SimFlowNetwork(IReferenceLocation _location, Point _position, string _name, string _description, SimUserRole _manager)
+        public SimFlowNetwork(IReferenceLocation _location, SimPoint _position, string _name, string _description, SimUserRole _manager)
             : base(_location, _position)
         {
             if (_name == null)
@@ -512,7 +510,7 @@ namespace SIMULTAN.Data.FlowNetworks
 
         #region PARSING .CTOR
 
-        internal SimFlowNetwork(Guid _location, long _id, string _name, string _description, bool _is_valid, Point _position,
+        internal SimFlowNetwork(Guid _location, long _id, string _name, string _description, bool _is_valid, SimPoint _position,
                             SimUserRole _manager, int _index_of_geometry_rep_file,
                             IEnumerable<SimFlowNetworkNode> _nodes, IEnumerable<SimFlowNetworkEdge> _edges,
                             IEnumerable<SimFlowNetwork> _subnetworks,
@@ -622,7 +620,7 @@ namespace SIMULTAN.Data.FlowNetworks
 
         #region METHODS: Info
 
-        public List<string> GetUniqueParamNamesInContent()
+        public List<string> GetUniqueParamNamesInContent(CultureInfo culture)
         {
             HashSet<SimComponent> content = new HashSet<SimComponent>();
             foreach (var entry in this.contained_nodes.Values)
@@ -631,15 +629,16 @@ namespace SIMULTAN.Data.FlowNetworks
                     content.Add(entry.Content.Component);
             }
 
-            return GetUniqueParameterNamesFor(content);
+            return GetUniqueParameterNamesFor(content, culture);
         }
         /// <summary>
         /// Extracts the unique parameter names of the parameters contained in the given 
         /// component list. Searches in their sub-components as well.
         /// </summary>
         /// <param name="_comps">list of arbitrary components</param>
+        /// <param name="culture">The culture for which the unique name should be generated</param>
         /// <returns>a list of unique strings or an empty list</returns>
-        private List<string> GetUniqueParameterNamesFor(IEnumerable<SimComponent> _comps)
+        private List<string> GetUniqueParameterNamesFor(IEnumerable<SimComponent> _comps, CultureInfo culture)
         {
             if (_comps == null)
                 throw new ArgumentNullException(nameof(_comps));
@@ -651,8 +650,8 @@ namespace SIMULTAN.Data.FlowNetworks
                 var ps = ComponentWalker.GetFlatParameters(c);
                 foreach (var p in ps)
                 {
-                    if (!names.Contains(p.NameTaxonomyEntry.Name))
-                        names.Add(p.NameTaxonomyEntry.Name);
+                    if (!names.Contains(p.NameTaxonomyEntry.GetLocalizedName(culture)))
+                        names.Add(p.NameTaxonomyEntry.GetLocalizedName(culture));
                 }
             }
             return names.ToList();
@@ -709,7 +708,7 @@ namespace SIMULTAN.Data.FlowNetworks
             return contents;
         }
 
-        internal override SimDoubleParameter GetFirstParamBySuffix(string _suffix, bool _in_flow_dir)
+        internal override SimDoubleParameter GetFirstParamBySuffix(string _suffix, bool _in_flow_dir, CultureInfo culture)
         {
             if (string.IsNullOrEmpty(_suffix)) return null;
 
@@ -727,11 +726,11 @@ namespace SIMULTAN.Data.FlowNetworks
 
             if (this.contained_nodes.ContainsKey(id))
             {
-                return this.contained_nodes[id].GetFirstParamBySuffix(_suffix, _in_flow_dir);
+                return this.contained_nodes[id].GetFirstParamBySuffix(_suffix, _in_flow_dir, culture);
             }
             else if (this.ContainedFlowNetworks.ContainsKey(id))
             {
-                return this.ContainedFlowNetworks[id].GetFirstParamBySuffix(_suffix, _in_flow_dir);
+                return this.ContainedFlowNetworks[id].GetFirstParamBySuffix(_suffix, _in_flow_dir, culture);
             }
 
             return null;
@@ -862,7 +861,7 @@ namespace SIMULTAN.Data.FlowNetworks
 
         #region METHODS: Add, Remove Nodes and Edges
 
-        public long AddNode(Point _pos)
+        public long AddNode(SimPoint _pos)
         {
             SimFlowNetworkNode node = new SimFlowNetworkNode(this.id.GlobalLocation, _pos);
             if (this.contained_nodes.ContainsKey(node.ID.LocalId)) return -1;
@@ -873,7 +872,7 @@ namespace SIMULTAN.Data.FlowNetworks
             return node.ID.LocalId;
         }
 
-        internal long AddFlowNetwork(Point _pos, string _name, string _description)
+        internal long AddFlowNetwork(SimPoint _pos, string _name, string _description)
         {
             SimFlowNetwork nw = new SimFlowNetwork(this.id.GlobalLocation, _pos, _name, _description, this.manager);
             if (this.ContainedFlowNetworks.ContainsKey(nw.ID.LocalId)) return -1;
@@ -881,8 +880,8 @@ namespace SIMULTAN.Data.FlowNetworks
             // set the content of the network
             if (!this.IsDirected)
                 nw.IsDirected = false;
-            long n1_id = nw.AddNode(new Point(_pos.X - 200, _pos.Y));
-            long n2_id = nw.AddNode(new Point(_pos.X + 200, _pos.Y));
+            long n1_id = nw.AddNode(new SimPoint(_pos.X - 200, _pos.Y));
+            long n2_id = nw.AddNode(new SimPoint(_pos.X + 200, _pos.Y));
             nw.node_start_id = n1_id;
             nw.node_end_id = n2_id;
             long e1 = nw.AddEdge(nw.contained_nodes[n1_id], nw.contained_nodes[n2_id]);
@@ -1070,8 +1069,8 @@ namespace SIMULTAN.Data.FlowNetworks
             SimFlowNetwork created = new SimFlowNetwork(this.id.GlobalLocation, _node.Position, _node.Name, _node.Description, this.manager);
             if (!this.IsDirected)
                 created.IsDirected = false;
-            long n1_id = created.AddNode(new Point(_node.Position.X - 200, _node.Position.Y));
-            long n2_id = created.AddNode(new Point(_node.Position.X + 200, _node.Position.Y));
+            long n1_id = created.AddNode(new SimPoint(_node.Position.X - 200, _node.Position.Y));
+            long n2_id = created.AddNode(new SimPoint(_node.Position.X + 200, _node.Position.Y));
             created.node_start_id = n1_id;
             created.node_end_id = n2_id;
             long e1 = created.AddEdge(created.contained_nodes[n1_id], created.contained_nodes[n2_id]);
@@ -1301,10 +1300,10 @@ namespace SIMULTAN.Data.FlowNetworks
         protected List<SimFlowNetworkNode> SortNodesInFlowDirectionUnfoldNW()
         {
             this.ResetNested();
-            //Console.WriteLine("------------------- START SORTING --------------------");
+            //Debug.WriteLine("------------------- START SORTING --------------------");
             List<SimFlowNetworkNode> sorted_all = this.SortNodesInFlowDirection();
-            //Console.WriteLine("---");
-            //sorted_all.ForEach(x => Console.WriteLine(x.ToConnectivityInfo()));
+            //Debug.WriteLine("---");
+            //sorted_all.ForEach(x => Debug.WriteLine(x.ToConnectivityInfo()));
             int nr_foldedNW = sorted_all.Count(x => x is SimFlowNetwork);
 
             // even if there are no nested networks, copy the edges to the appropriate lists
@@ -1346,12 +1345,12 @@ namespace SIMULTAN.Data.FlowNetworks
                 }
 
                 sorted_all = new List<SimFlowNetworkNode>(sorted_unfolded);
-                //Console.WriteLine("---");
-                //sorted_all.ForEach(x => Console.WriteLine(x.ToConnectivityInfo()));
+                //Debug.WriteLine("---");
+                //sorted_all.ForEach(x => Debug.WriteLine(x.ToConnectivityInfo()));
                 nr_foldedNW = sorted_all.Count(x => x is SimFlowNetwork);
             }
 
-            //Console.WriteLine("-------------------- END SORTING --------------------");
+            //Debug.WriteLine("-------------------- END SORTING --------------------");
             return sorted_all;
         }
 
@@ -1401,20 +1400,20 @@ namespace SIMULTAN.Data.FlowNetworks
 
         #region METHODS: Flow Calculation General
 
-        public void ResetAllContentInstances(Point _offse_parent)
+        public void ResetAllContentInstances(SimPoint _offse_parent)
         {
             if (!this.IsDirected) return;
 
-            Point offset = new Point();
+            SimPoint offset = new SimPoint();
             if (_offse_parent.X == 0 && _offse_parent.Y == 0)
             {
-                offset = new Point(this.Position.X, this.Position.Y);
+                offset = new SimPoint(this.Position.X, this.Position.Y);
             }
             else
             {
                 SimFlowNetworkNode first = this.SortAndGetFirstNode();
                 if (first != null)
-                    offset = new Point(_offse_parent.X - first.Position.X, _offse_parent.Y - first.Position.Y);
+                    offset = new SimPoint(_offse_parent.X - first.Position.X, _offse_parent.Y - first.Position.Y);
             }
 
             foreach (var entry in this.contained_nodes)
@@ -1434,7 +1433,7 @@ namespace SIMULTAN.Data.FlowNetworks
             }
         }
 
-        public void CalculateAllFlows(bool _in_flow_dir)
+        public void CalculateAllFlows(bool _in_flow_dir, CultureInfo culture)
         {
             if (!this.IsDirected) return;
 
@@ -1453,7 +1452,7 @@ namespace SIMULTAN.Data.FlowNetworks
             {
                 string node_conent_name = (n.Content == null) ? n.Name : n.Content.Name;
                 // Debug.WriteLine("Calculating Node: " + node_conent_name);
-                n.CalculateFlow(_in_flow_dir);
+                n.CalculateFlow(_in_flow_dir, culture);
             }
         }
 
@@ -1503,7 +1502,7 @@ namespace SIMULTAN.Data.FlowNetworks
             return sorted;
         }
 
-        public string CalculateFlowStep(List<SimFlowNetworkNode> _sorted_nodes, bool _in_flow_dir, int _step_index, bool _show_only_changes, out SimFlowNetworkNode _current_node)
+        public string CalculateFlowStep(List<SimFlowNetworkNode> _sorted_nodes, bool _in_flow_dir, int _step_index, bool _show_only_changes, out SimFlowNetworkNode _current_node, CultureInfo culture)
         {
             _current_node = null;
             if (!this.IsDirected) return null;
@@ -1530,18 +1529,18 @@ namespace SIMULTAN.Data.FlowNetworks
             var values_in_edges_prev_BEFORE = instances_in_edges_prev.Select(x => x.InstanceParameterValuesTemporary.GetRecords<SimDoubleParameter, double>()).ToList();
 
             // CALCULATE FLOW
-            _current_node.CalculateFlow(_in_flow_dir);
+            _current_node.CalculateFlow(_in_flow_dir, culture);
 
             // document state AFTER calculation step
             var values_in_edges_prev_AFTER = instances_in_edges_prev.Select(x => x.InstanceParameterValuesTemporary).ToList();
 
             // write the transitions
-            SimFlowNetwork.ParallelDictionariesToString(values_in_node_BEFORE, instance_in_node.InstanceParameterValuesTemporary, _show_only_changes, ref sb);
+            SimFlowNetwork.ParallelDictionariesToString(values_in_node_BEFORE, instance_in_node.InstanceParameterValuesTemporary, _show_only_changes, ref sb, culture);
             for (int i = 0; i < values_in_edges_prev_BEFORE.Count; i++)
             {
                 if (edges_prev != null && edges_prev.Count > i)
                     sb.AppendLine("E " + edges_prev[i].Name);
-                SimFlowNetwork.ParallelDictionariesToString(values_in_edges_prev_BEFORE[i], values_in_edges_prev_AFTER[i], _show_only_changes, ref sb);
+                SimFlowNetwork.ParallelDictionariesToString(values_in_edges_prev_BEFORE[i], values_in_edges_prev_AFTER[i], _show_only_changes, ref sb, culture);
             }
 
             return sb.ToString();
@@ -1549,7 +1548,7 @@ namespace SIMULTAN.Data.FlowNetworks
 
         private const double VALUE_TOLERANCE = 0.0001;
 
-        private static void ParallelDictionariesToString(List<KeyValuePair<SimDoubleParameter, double>> before, SimInstanceParameterCollection after, bool _show_only_differences, ref StringBuilder sb)
+        private static void ParallelDictionariesToString(List<KeyValuePair<SimDoubleParameter, double>> before, SimInstanceParameterCollection after, bool _show_only_differences, ref StringBuilder sb, CultureInfo culture)
         {
             if (sb == null)
                 sb = new StringBuilder();
@@ -1568,7 +1567,7 @@ namespace SIMULTAN.Data.FlowNetworks
                             continue;
                     }
 
-                    string line = "'" + beforeItem.Key.NameTaxonomyEntry.Name + "':";
+                    string line = "'" + beforeItem.Key.NameTaxonomyEntry.GetLocalizedName(culture) + "':";
                     line = line.PadRight(20, ' ') + "\t";
                     line += beforeItem.Value.ToString("F4") + " -> ";
                     line += ((double)afterItem).ToString("F4");

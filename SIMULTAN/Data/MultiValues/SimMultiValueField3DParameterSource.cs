@@ -1,7 +1,7 @@
 ﻿using SIMULTAN.Data.Components;
 using SIMULTAN.Utils;
 using System;
-using System.Windows.Media.Media3D;
+using SIMULTAN.Data.SimMath;
 using static SIMULTAN.Data.MultiValues.SimMultiValueField3D;
 
 namespace SIMULTAN.Data.MultiValues
@@ -86,11 +86,11 @@ namespace SIMULTAN.Data.MultiValues
 
 
 
-        private Point3D GetAxisLookupPosition()
+        private SimPoint3D GetAxisLookupPosition()
         {
             var pos = GetLookupPosition();
 
-            Point3D lookupPos = new Point3D(
+            SimPoint3D lookupPos = new SimPoint3D(
                 Field.AxisPositionFromValue(Axis.X, pos.X),
                 Field.AxisPositionFromValue(Axis.Y, pos.Y),
                 Field.AxisPositionFromValue(Axis.Z, pos.Z)
@@ -99,7 +99,7 @@ namespace SIMULTAN.Data.MultiValues
             return lookupPos;
         }
 
-        private Point3D GetLookupPosition()
+        private SimPoint3D GetLookupPosition()
         {
             double addX = 0.0, addY = 0.0, addZ = 0.0;
             var paramX = GetValuePointerParameter(ReservedParameters.MVT_OFFSET_X_FORMAT);
@@ -114,7 +114,7 @@ namespace SIMULTAN.Data.MultiValues
             if (paramZ != null && paramZ is SimDoubleParameter zDouble)
                 addZ = zDouble.Value;
 
-            Point3D lookupPos = new Point3D(
+            SimPoint3D lookupPos = new SimPoint3D(
                 axisValueX + addX,
                 axisValueY + addY,
                 axisValueZ + addZ

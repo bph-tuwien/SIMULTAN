@@ -7,7 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Windows.Media;
+using SIMULTAN.Data.SimMath;
 
 namespace SIMULTAN.Serializer.CODXF
 {
@@ -71,7 +71,7 @@ namespace SIMULTAN.Serializer.CODXF
                     if (nextEntityIsColor)
                     {
                         var colorEntry = Entries.FirstOrDefault(e => e.Code == (int)ComponentSaveCode.COLOR && e.MinVersion <= info.FileVersion && e.MaxVersion >= info.FileVersion)
-                            as DXFEntitySequenceEntryParserElement<Color>;
+                            as DXFEntitySequenceEntryParserElement<SimColor>;
                         if (colorEntry != null)
                             resultSet.Add((int)ComponentSaveCode.COLOR, colorEntry.ParseBody(reader, info, 1));
 

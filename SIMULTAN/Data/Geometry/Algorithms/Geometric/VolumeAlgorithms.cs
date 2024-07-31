@@ -1,10 +1,12 @@
-﻿using SIMULTAN;
+﻿using Assimp;
+using SIMULTAN;
+using SIMULTAN.Data.SimMath;
 using SIMULTAN.Utils;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Windows.Media.Media3D;
 
 namespace SIMULTAN.Data.Geometry
 {
@@ -13,6 +15,18 @@ namespace SIMULTAN.Data.Geometry
     /// </summary>
     public static class VolumeAlgorithms
     {
+
+        /// <summary>
+        /// Finds and returns all faces, their holes and hole faces.
+        /// Hole faces may be null if they do not have ones.
+        /// </summary>
+        /// <param name="volume">The volume</param>
+        /// <returns>All faces of holes that are in the volume.</returns>
+        private static List<(PFace parent, EdgeLoop hole, Face holeFace)> FindHoleFaces(Volume volume)
+        {
+            return volume.Faces.SelectMany(face => face.Face.Holes.Select(hole => (face, hole, hole.Faces.Find(b => b != face.Face)))).ToList();
+        }
+
         /// <summary>
         /// Finds a consistent orientation by adjusting PFace.Orientation
         /// </summary>
@@ -20,80 +34,181 @@ namespace SIMULTAN.Data.Geometry
         /// <returns>True when a consistent volume was found, False when no consistent volume is found</returns>
         public static bool FindConsistentOrientation(Volume volume)
         {
-            List<PFace> toProcess = new List<PFace>();
+            var toProcess = new Stack<PFace>();
+
+            // find all hole faces
+            var holes = FindHoleFaces(volume);
+            var holeLookup = holes.Select(x => x.hole).ToHashSet();
+            var holeFaces = holes.Where(x => x.holeFace != null).Select(x => x.holeFace).ToHashSet();
+            var edgeHoleLookup = holeLookup.SelectMany(hole => hole.Edges.Select(edge => (edge.Edge, hole)))
+                .GroupBy(x => x.Edge)
+                .ToDictionary(k => k.Key, k => k.Select(x => x.hole).ToList());
 
             var allVertices = volume.Faces.SelectMany(x => x.Face.Boundary.Edges.Select(pe => pe.StartVertex)).Distinct().Select(x => x.Position).ToList();
-            //Find a surface that has all other vertices in the same halfspace. The half-space where the vertices lie is then definined as inside.
+            //Find a surface that has all other vertices in the same halfspace. The half-space where the vertices lie is then defined as inside.
             foreach (var face in volume.Faces)
             {
-                var hs = FaceAlgorithms.Halfspace(face.Face, allVertices);
-
-                if (hs != GeometricOrientation.Undefined)
+                if (!holeFaces.Contains(face.Face)) // exclude holes
                 {
-                    face.Orientation = hs;
-                    toProcess.Add(face);
-                    break;
+                    var hs = FaceAlgorithms.Halfspace(face.Face, allVertices);
+
+                    if (hs != GeometricOrientation.Undefined)
+                    {
+                        face.Orientation = hs;
+                        toProcess.Push(face);
+                        break;
+                    }
                 }
             }
 
+            // TODO: What should happen if we cannot find a starting face to process? In some cases this is possible
 
-            //Build lookuptable for faces with same edges
-            Dictionary<Edge, List<PFace>> edgeFaceLookup = new Dictionary<Edge, List<PFace>>();
+            // Build lookup table for faces with same edges
+            // (no need to check for holes recursively cause the faces of the holes need to be in the volumes face list anyway)
+            var edgeFaceLookup = new Dictionary<Edge, (bool isHoleEdge, List<(PFace face, bool isHole)> faces)>();
             foreach (var face in volume.Faces)
             {
-                foreach (var pedge in face.Face.Boundary.Edges)
+                var isHole = holeLookup.Contains(face.Face.Boundary);
+                // the combined boundary of all holes except edges that are in multiple holes.
+                // We need to make sure to not include edge that are in multiple holes,
+                // otherwise the assumption of an edge only has two adjacent faces is wrong
+                var allHolesBoundary = face.Face.Holes.SelectMany(h => h.Edges.Select(x => x.Edge))
+                    .GroupBy(x => x).Where(x => x.Count() == 1).Select(x => x.Key);
+                foreach (var (pedge, isHoleEdge) in face.Face.Boundary.Edges.Select(x => (x.Edge, false))
+                    .Concat(allHolesBoundary.Select(x => (x, true)))) // only add hole edges once cause holes could share and edge
                 {
-                    if (edgeFaceLookup.TryGetValue(pedge.Edge, out var elist))
-                        elist.Add(face);
+                    if (edgeFaceLookup.TryGetValue(pedge, out var elist))
+                    {
+                        elist.faces.Add((face, isHole));
+                    }
                     else
-                        edgeFaceLookup.Add(pedge.Edge, new List<PFace> { face });
+                    {
+                        var list = new List<(PFace face, bool isHole)> { (face, isHole) };
+                        edgeFaceLookup.Add(pedge, (isHoleEdge, list));
+                    }
                 }
             }
 
+            // All edges must have two adjacent faces, otherwise it is not a closed volume
+            if (edgeFaceLookup.Values.Any(x => x.faces.Count != 2))
+            {
+                volume.Faces.ForEach(f => f.Orientation = GeometricOrientation.Undefined);
+                return false;
+            }
 
             HashSet<PFace> processedFaces = new HashSet<PFace>();
-
-            while (toProcess.Count > 0)
+            while (toProcess.Any())
             {
-                var currentFace = toProcess.Last();
-                toProcess.RemoveAt(toProcess.Count - 1);
+                var currentFace = toProcess.Pop();
 
-                if (!processedFaces.Contains(currentFace))
+                if (processedFaces.Add(currentFace))
                 {
-                    processedFaces.Add(currentFace);
-
-                    //Check adjacent triangles
-                    foreach (var e in currentFace.Face.Boundary.Edges)
+                    // Check adjacent faces
+                    foreach (var e in currentFace.Face.Boundary.Edges
+                        .Concat(currentFace.Face.Holes.SelectMany(x => x.Edges)))
                     {
-                        //var otherPFace = volume.Faces.FirstOrDefault(x => x != currentFace && x.Face.Boundary.Edges.Any(pe => pe.Edge == e.Edge));
-                        var otherPFace = edgeFaceLookup[e.Edge].FirstOrDefault(x => x != currentFace);
-
-                        if (otherPFace == null) //Error, abort. Happens when the volume is not closed
+                        if (!edgeFaceLookup.ContainsKey(e.Edge)) // can happen when geometry is inconsistent after cleanup
                         {
                             volume.Faces.ForEach(f => f.Orientation = GeometricOrientation.Undefined);
                             return false;
                         }
 
+                        var (isEdgeOfHole, otherFaces) = edgeFaceLookup[e.Edge];
+                        var (otherPFace, isHoleFace) = otherFaces.First(x => x.face != currentFace); // otherFaces always contains 2 faces
+
                         if (!processedFaces.Contains(otherPFace))
                         {
-                            if (otherPFace.Orientation == GeometricOrientation.Undefined)
+                            if (isHoleFace) // if the other face is the face of a hole, needs special handling cause it does not share edges with the containing face
                             {
-                                otherPFace.Orientation = GeometricOrientation.Forward;
+                                if (otherPFace.Orientation == GeometricOrientation.Undefined)
+                                    otherPFace.Orientation = GeometricOrientation.Forward;
+
+                                // compare face normal and hole face normal (which already contains the face orientation) to figure out the pface orientation
+                                // make sure we just have 1/-1 for numerical stability, hole and face need to be on sample plane anyway
+                                int dir = SimVector3D.DotProduct(currentFace.Face.Normal, otherPFace.Face.Normal) > 0 ? 1 : -1;
+
+                                if ((int)currentFace.Orientation != (int)otherPFace.Orientation * dir)
+                                {
+                                    otherPFace.Orientation = (GeometricOrientation)(-(int)(otherPFace.Orientation));
+                                }
+                            }
+                            else
+                            {
+                                if (otherPFace.Orientation == GeometricOrientation.Undefined)
+                                {
+                                    otherPFace.Orientation = GeometricOrientation.Forward;
+                                }
+
+                                var otherPEdge = otherPFace.Face.Boundary.Edges.FirstOrDefault(pe => pe.Edge == e.Edge);
+
+                                bool otherIsContainingFace = false; // determines if the otherPFace is the face containing the hole that the current pface is attached to
+                                if (otherPEdge == null) // cannot find if otherPFace is the face containing the hole (currentFace is the additional face attached to a hole (not the face of the hole))
+                                {
+                                    // find the edge in the hole boundary instead in that case
+                                    if (edgeHoleLookup.TryGetValue(e.Edge, out var boundary))
+                                    {
+                                        if (boundary.Count > 1) // found an edge that is in two holes, but in this case we should have found a hole face or it is inconsistent (hole face is missing)
+                                            return false;
+                                        otherIsContainingFace = true;
+                                        otherPEdge = boundary.First().Edges.FirstOrDefault(pe => pe.Edge == e.Edge);
+                                        if (otherPEdge == null)
+                                        {
+                                            return false;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        return false;
+                                    }
+                                }
+
+                                // if the current edge is a hole we need to calculate the hole orientation and use that instead of the containing face
+                                if (isEdgeOfHole)
+                                {
+                                    if (otherIsContainingFace) // currentFace is the face attached to a hole, e is a PEdge of the face adjacent to the hole
+                                    {
+                                        // Calculate current "virtual pface" orientation of an imaginary hole face.
+                                        var holeBoundary = edgeHoleLookup[e.Edge];
+                                        if (holeBoundary.Count > 1) // found an edge that is in two holes, but in this case we should have found a hole face or it is inconsistent (hole face is missing)
+                                            return false;
+                                        var normal = EdgeLoopAlgorithms.NormalCCW(holeBoundary.First());
+                                        int dir = SimVector3D.DotProduct(otherPFace.Face.Normal, normal) > 0 ? 1 : -1; // 1 if same dir as containing face -1 otherwise
+                                        var otherOrientation = (GeometricOrientation)(dir * (int)otherPFace.Orientation);
+                                        if ((int)otherOrientation * (int)otherPEdge.Orientation !=
+                                            (int)currentFace.Orientation * (int)currentFace.Face.Orientation * (int)e.Orientation)
+                                        {
+                                            otherPFace.Orientation = (GeometricOrientation)(-(int)(otherPFace.Orientation));
+                                        }
+                                    }
+                                    else // currentFace is face that contains the holes, e is an PEdge of the hole boundary
+                                    {
+                                        // Calculate current "virtual pface" orientation of an imaginary hole face.
+                                        // Hole face orientation is assumed forward (1) in CCW boundary normal direction
+                                        var normal = EdgeLoopAlgorithms.NormalCCW((EdgeLoop)e.Parent);
+                                        int dir = SimVector3D.DotProduct(currentFace.Face.Normal, normal) > 0 ? 1 : -1; // 1 if same dir as containing face -1 otherwise
+                                        var currentOrientation = (GeometricOrientation)(dir * (int)currentFace.Orientation);
+                                        if ((int)currentOrientation * (int)e.Orientation !=
+                                            (int)otherPFace.Orientation * (int)otherPFace.Face.Orientation * (int)otherPEdge.Orientation)
+                                        {
+                                            otherPFace.Orientation = (GeometricOrientation)(-(int)(otherPFace.Orientation));
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    //Orientation is fine when edge goes in the opposite direction in adjacent faces.
+                                    //Since faces also have orientation, this means different orientations when face orientation is similar
+                                    // and similar orientation when face orientations are the other way round.
+                                    if ((int)currentFace.Orientation * (int)currentFace.Face.Orientation * (int)e.Orientation ==
+                                        (int)otherPFace.Orientation * (int)otherPFace.Face.Orientation * (int)otherPEdge.Orientation)
+                                    {
+                                        //Not correct, turn around other pface
+                                        otherPFace.Orientation = (GeometricOrientation)(-(int)(otherPFace.Orientation));
+                                    }
+                                }
                             }
 
-                            var otherPEdge = otherPFace.Face.Boundary.Edges.First(pe => pe.Edge == e.Edge);
-
-                            //Orientation is fine when edge goes in the opposite direction in adjacent faces.
-                            //Since faces also have orientation, this means different orientations when face orientation is similar
-                            // and similar orientation when face orientations are the other way round.
-                            if ((int)currentFace.Orientation * (int)currentFace.Face.Orientation * (int)e.Orientation ==
-                                (int)otherPFace.Orientation * (int)otherPFace.Face.Orientation * (int)otherPEdge.Orientation)
-                            {
-                                //Not correct, turn around other pface
-                                otherPFace.Orientation = (GeometricOrientation)(-(int)(otherPFace.Orientation));
-                            }
-
-                            toProcess.Add(otherPFace);
+                            toProcess.Push(otherPFace);
                         }
                     }
                 }
@@ -114,11 +229,12 @@ namespace SIMULTAN.Data.Geometry
                 return Enumerable.Empty<Edge>();
 
             HashSet<Edge> unclosedEdges = new HashSet<Edge>();
-            HashSet<EdgeLoop> volumeFaceLoops = volume.Faces.Select(x => x.Face.Boundary).ToHashSet();
+            HashSet<EdgeLoop> volumeFaceLoops = volume.Faces.Select(x => x.Face.Boundary)
+                .Concat(volume.Faces.SelectMany(x => x.Face.Holes)).ToHashSet();
 
             foreach (var pface in volume.Faces)
             {
-                foreach (var pedge in pface.Face.Boundary.Edges)
+                foreach (var pedge in pface.Face.Boundary.Edges.Concat(pface.Face.Holes.SelectMany(x => x.Edges)))
                 {
                     if (pedge.Edge.PEdges.Where(x => x.Parent is EdgeLoop).Count(x => volumeFaceLoops.Contains((EdgeLoop)x.Parent)) != 2)
                     {
@@ -135,22 +251,22 @@ namespace SIMULTAN.Data.Geometry
         /// </summary>
         /// <param name="v">The volume</param>
         /// <returns>The center</returns>
-        public static Point3D Center(Volume v)
+        public static SimPoint3D Center(Volume v)
         {
             List<BaseGeometry> geom = new List<BaseGeometry>();
             ContainedGeometry(v, ref geom);
 
-            Vector3D center = new Vector3D(0, 0, 0);
+            SimVector3D center = new SimVector3D(0, 0, 0);
             int count = 0;
             foreach (var vert in geom.Distinct().Where(x => x is Vertex))
             {
-                center += (Vector3D)((Vertex)vert).Position;
+                center += (SimVector3D)((Vertex)vert).Position;
                 count++;
             }
 
             center /= count;
 
-            return (Point3D)center;
+            return (SimPoint3D)center;
         }
 
         /// <summary>
@@ -263,32 +379,7 @@ namespace SIMULTAN.Data.Geometry
             if (!vol.IsConsistentOriented)
                 return double.NaN;
 
-            double sumVol = 0;
-
-            //var d = vol.Faces[0].Face.Boundary.Edges[0].StartVertex.Position;
-            var d = new Point3D(10, 10, 10);
-
-            foreach (var face in vol.Faces)
-            {
-                (var pos, _, var ind) = FaceAlgorithms.TriangulateBoundary(face);
-
-                for (int i = 0; i < ind.Count; i += 3)
-                {
-                    var ind1 = ind[i + 1];
-                    var ind2 = ind[i + 2];
-
-                    if (face.Face.Orientation == GeometricOrientation.Backward)
-                    {
-                        ind1 = ind[i + 2];
-                        ind2 = ind[i + 1];
-                    }
-
-                    var tetraVol = Vector3D.DotProduct(pos[ind[i]] - d, Vector3D.CrossProduct(pos[ind1] - d, pos[ind2] - d));
-                    sumVol += tetraVol;
-                }
-            }
-
-            return Math.Abs(sumVol / 6.0);
+            return Math.Abs(SignedVolume(vol.Faces.Select(x => (x.Face, x.Orientation))));
         }
 
         /// <summary>
@@ -296,33 +387,145 @@ namespace SIMULTAN.Data.Geometry
         /// </summary>
         /// <param name="faces">List of faces. Must not be closed.</param>
         /// <returns>Signed volume from face list</returns>
-        public static double SignedVolume(List<(Face f, GeometricOrientation o)> faces)
+        public static double SignedVolume(IEnumerable<(Face f, GeometricOrientation o)> faces)
         {
             double sumVol = 0;
 
-            var d = new Point3D(0, 0, 0);
+            var d = new SimPoint3D(0, 0, 0);
+
+            var holeFaces = faces.SelectMany(face => face.f.Holes.Select(hole => hole.Faces.Find(b => b != face.f))).ToHashSet();
+
+            var faceLookup = faces.Select(x => x.f).ToHashSet();
 
             foreach (var face in faces)
             {
-                (var pos, _, var ind) = FaceAlgorithms.TriangulateBoundary(face.f, face.f.Orientation);
+                if (holeFaces.Contains(face.f)) // ignore hole faces, they don't count for the volume
+                    continue;
+
+                (var pos, _, var ind) = FaceAlgorithms.TriangulateBoundary(face.f, face.o);
 
                 for (int i = 0; i < ind.Count; i += 3)
                 {
                     var ind1 = ind[i + 1];
                     var ind2 = ind[i + 2];
 
-                    if (face.o == GeometricOrientation.Backward)
+                    if (face.f.Orientation == GeometricOrientation.Backward)
                     {
                         ind1 = ind[i + 2];
                         ind2 = ind[i + 1];
                     }
 
-                    var tetraVol = Vector3D.DotProduct(pos[ind[i]] - d, Vector3D.CrossProduct(pos[ind1] - d, pos[ind2] - d));
+                    var tetraVol = SimVector3D.DotProduct(pos[ind[i]] - d, SimVector3D.CrossProduct(pos[ind1] - d, pos[ind2] - d));
+                    sumVol += tetraVol;
+                }
+
+                foreach (var hole in face.f.Holes)
+                {
+                    var holeFace = hole.Faces.Find(x => x != face.f);
+
+                    // subtract the hole volume if it doesn't have a face or if the hole face is not in the volume
+                    if (holeFace == null || !faceLookup.Contains(holeFace))
+                    {
+                        var boundaryNormal = EdgeLoopAlgorithms.NormalCCW(hole);
+                        int dir = SimVector3D.DotProduct(face.f.Normal * (int)face.o, boundaryNormal) > 0 ? 1 : -1;
+
+                        (pos, _, ind) = FaceAlgorithms.TriangulateBoundary(hole.Edges.Select(x => x.StartVertex.Position).ToList(), face.f.Normal * (int)face.o);
+                        for (int i = 0; i < ind.Count; i += 3)
+                        {
+                            var ind1 = ind[i + 1];
+                            var ind2 = ind[i + 2];
+
+                            if (dir == -1) // flip if hole boundary points in other direction
+                            {
+                                ind1 = ind[i + 2];
+                                ind2 = ind[i + 1];
+                            }
+
+                            var tetraVol = SimVector3D.DotProduct(pos[ind[i]] - d, SimVector3D.CrossProduct(pos[ind1] - d, pos[ind2] - d));
+                            sumVol -= tetraVol;
+                        }
+                    }
+                }
+            }
+            return sumVol / 6.0;
+        }
+
+        private static double Volume(List<SimPoint3D> referenceFace, GeometricOrientation faceOrientation, GeometricOrientation pfaceOrientation,
+            List<SimPoint3D> offsetBoundary)
+        {
+            //Assumption: referenceFace and offsetBoundary have the same number of vertices
+            if (referenceFace.Count != offsetBoundary.Count)
+                return double.NaN;
+
+            double sumVol = 0;
+            var d = new SimPoint3D(0, 0, 0);
+
+            SimVector3D normal = EdgeLoopAlgorithms.NormalCCW(referenceFace) * (int)faceOrientation * (int)pfaceOrientation;
+
+            //Reference face
+            {
+                (var pos, _, var ind) = FaceAlgorithms.TriangulateBoundary(referenceFace, normal);
+
+                for (int i = 0; i < ind.Count; i += 3)
+                {
+                    var ind1 = ind[i + 1];
+                    var ind2 = ind[i + 2];
+
+                    if (faceOrientation == GeometricOrientation.Backward)
+                    {
+                        ind1 = ind[i + 2];
+                        ind2 = ind[i + 1];
+                    }
+
+                    var tetraVol = SimVector3D.DotProduct(pos[ind[i]] - d, SimVector3D.CrossProduct(pos[ind1] - d, pos[ind2] - d));
                     sumVol += tetraVol;
                 }
             }
 
-            return sumVol / 6.0;
+            //Offset face
+            {
+                (var pos, _, var ind) = FaceAlgorithms.TriangulateBoundary(offsetBoundary, normal);
+
+                for (int i = 0; i < ind.Count; i += 3)
+                {
+                    var ind1 = ind[i + 1];
+                    var ind2 = ind[i + 2];
+
+                    if (faceOrientation == GeometricOrientation.Forward)
+                    {
+                        ind1 = ind[i + 2];
+                        ind2 = ind[i + 1];
+                    }
+
+                    var tetraVol = SimVector3D.DotProduct(pos[ind[i]] - d, SimVector3D.CrossProduct(pos[ind1] - d, pos[ind2] - d));
+                    sumVol += tetraVol;
+                }
+            }
+
+            //Side faces
+            for (int i = 0; i < referenceFace.Count; i++)
+            {
+                var ind1 = i;
+                var ind2 = (i + 1) % referenceFace.Count;
+
+                var rv1 = referenceFace[ind1];
+                var rv2 = referenceFace[ind2];
+                var ov1 = offsetBoundary[ind1];
+                var ov2 = offsetBoundary[ind2];
+
+                if (faceOrientation == GeometricOrientation.Forward)
+                {
+                    (rv1, rv2) = (rv2, rv1);
+                    (ov1, ov2) = (ov2, ov1);
+                }
+
+                var tetraVol1 = SimVector3D.DotProduct(rv1 - d, SimVector3D.CrossProduct(rv2 - d, ov2 - d));
+                sumVol += tetraVol1;
+                var tetraVol2 = SimVector3D.DotProduct(rv1 - d, SimVector3D.CrossProduct(ov2 - d, ov1 - d));
+                sumVol += tetraVol2;
+            }
+
+            return Math.Abs(sumVol / 6.0);
         }
 
         /// <summary>
@@ -335,7 +538,6 @@ namespace SIMULTAN.Data.Geometry
             //General algorithm:
             //1. Calc volume of reference planes
             //2. Subtract area for each wall (by using the offset-face)
-
             var refVolume = Volume(vol);
 
             var netto = refVolume;
@@ -343,29 +545,51 @@ namespace SIMULTAN.Data.Geometry
 
             foreach (var pface in vol.Faces)
             {
-                var refArea = FaceAlgorithms.Area(pface.Face);
-                var nettoArea = refArea;
-                var nettoOffset = 0.0;
-                var bruttoArea = refArea;
-                var bruttoOffset = 0.0;
-
                 if (vol.ModelGeometry.OffsetModel.Faces.ContainsKey((pface.Face, pface.Orientation)))
                 {
                     var offsetFace1 = vol.ModelGeometry.OffsetModel.Faces[(pface.Face, pface.Orientation)];
                     var offsetFace2 = vol.ModelGeometry.OffsetModel.Faces[(pface.Face, (GeometricOrientation)(-(int)pface.Orientation))];
 
-                    nettoArea = EdgeLoopAlgorithms.Area(offsetFace1.Boundary);
-                    nettoOffset = offsetFace1.Offset;
-
-                    if (pface.Face.PFaces.Count < 2)
+                    //Boundary
                     {
-                        bruttoArea = EdgeLoopAlgorithms.Area(offsetFace2.Boundary);
-                        bruttoOffset = offsetFace2.Offset;
+                        var nettoVol = Volume(pface.Face.Boundary.Edges.Select(x => x.StartVertex.Position).ToList(),
+                            pface.Face.Orientation, pface.Orientation,
+                            offsetFace1.Boundary);
+
+                        netto -= nettoVol;
+
+                        if (pface.Face.PFaces.Count < 2)
+                        {
+                            var bruttoVol = Volume(offsetFace2.Boundary, pface.Face.Orientation, pface.Orientation,
+                                pface.Face.Boundary.Edges.Select(x => x.StartVertex.Position).ToList());
+                            brutto += bruttoVol;
+                        }
+                    }
+
+                    //Holes
+                    foreach (var hole in pface.Face.Holes)
+                    {
+                        var offsetFace1Hole = offsetFace1.Openings[hole];
+                        var offsetFace2Hole = offsetFace2.Openings[hole];
+
+                        var orient = (int)pface.Face.Orientation;
+                        if (SimVector3D.DotProduct(pface.Face.Normal, EdgeLoopAlgorithms.NormalCCW(hole)) > 0)
+                            orient *= -1;
+
+                        var nettoVol = Volume(hole.Edges.Select(x => x.StartVertex.Position).ToList(),
+                            (GeometricOrientation)orient, pface.Orientation,
+                            offsetFace1Hole);
+
+                        netto += nettoVol;
+
+                        if (pface.Face.PFaces.Count < 2)
+                        {
+                            var bruttoVol = Volume(offsetFace2Hole, (GeometricOrientation)orient, pface.Orientation,
+                                hole.Edges.Select(x => x.StartVertex.Position).ToList());
+                            brutto -= bruttoVol;
+                        }
                     }
                 }
-
-                netto -= (nettoOffset / 3.0) * (refArea + nettoArea + Math.Sqrt(refArea * nettoArea));
-                brutto += (bruttoOffset / 3.0) * (refArea + bruttoArea + Math.Sqrt(refArea * bruttoArea));
             }
 
             return (refVolume, brutto, netto);
@@ -517,13 +741,13 @@ namespace SIMULTAN.Data.Geometry
         /// <param name="volume">The volume</param>
         /// <param name="point">The point</param>
         /// <returns>True when the point lies inside the volume, otherwise False</returns>
-        public static bool IsInside(Volume volume, Point3D point)
+        public static bool IsInside(Volume volume, SimPoint3D point)
         {
             int count = 0;
 
             foreach (var pface in volume.Faces)
             {
-                if (FaceAlgorithms.IntersectsRay(pface.Face, point, new Vector3D(1, 0, 0)))
+                if (FaceAlgorithms.IntersectsRay(pface.Face, point, new SimVector3D(1, 0, 0)))
                     count++;
             }
 

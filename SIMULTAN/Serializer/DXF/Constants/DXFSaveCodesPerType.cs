@@ -47,6 +47,9 @@ namespace SIMULTAN.Serializer.DXF
         GEOM_REP_INDEX = 9516,
         SIMBLOCK_ISSTATIC = 9517,
         COLOR = 9518,
+        WIDTH = 9519,
+        HEIGHT = 9520,
+        CONTROL_POINTS = 9521,
     }
 
     /// <summary>
@@ -57,7 +60,7 @@ namespace SIMULTAN.Serializer.DXF
         NAME = 1401,
         DESCRIPTION = 1402,
         CATEGORY = 1403,                    // as string
-        CURRENT_SLOT = 1406,
+        MAIN_SLOT = 1406,
 
         CONTAINED_COMPONENTS = 1407,        // saved as DXF Entities
         CONTAINED_COMPONENT_SLOTS = 1408,   // saved as a sequence of strings
@@ -74,7 +77,7 @@ namespace SIMULTAN.Serializer.DXF
         VISIBILTY = 1419,                   // in projects
         COLOR = 1420,                       // for the new interface
         SORTING_TYPE = 1421,                 // for the sub-components
-
+        SLOTS = 1422,
         ACCESS_STATE = 1431,
         PROFILE = 1432,
 
@@ -94,6 +97,8 @@ namespace SIMULTAN.Serializer.DXF
         SYMBOL_ID = 1413,
         [SaveCodeNotInUse]
         REFERENCES_INTACT = 1417,           // in case references were removed and the user with writing access does not accept or agree
+
+
     }
 
     /// <summary>
@@ -391,6 +396,7 @@ namespace SIMULTAN.Serializer.DXF
         INST_PROPAGATE_PARAM_CHANGES = 1667,
         INST_PLACEMENTS = 1670,
         PLACEMENT_STATE = 1672,
+        PLACEMENT_INSTANCE_TYPE = 1673,
 
 
         [SaveCodeNotInUse]
@@ -506,11 +512,12 @@ namespace SIMULTAN.Serializer.DXF
 
 
         RULE_DIRECTION = 6014,
-        RULE_REFERENCEPOSITION = 6015,
+        RULE_REFERENCEPOSITIONPARENT = 6015,
         RULE_FILTER_PROPERTY = 6016,
         RULE_FILTER_TYPE = 6017,
         RULE_FILTER_VALUE = 6018,
         RULE_FILTER_VALUE2 = 6019,
+        RULE_REFERENCEPOSITIONCONSECUTIVE = 6027,
 
         TOOL_NAME = 6101,
         TOOL_MACRO_NAME = 6102,
@@ -765,6 +772,14 @@ namespace SIMULTAN.Serializer.DXF
         TAXONOMY_KEY = 22004,
         TAXONOMY_IS_READONLY = 22005,
         TAXONOMY_IS_DELETABLE = 22006,
+
+        TAXONOMY_SUPPORTED_LANGUAGES = 22100,
+        TAXONOMY_LANGUAGE = 22101,
+
+        TAXONOMY_LOCALIZATIONS = 22102,
+        TAXONOMY_LOCALIZATION_CULTURE = 22103,
+        TAXONOMY_LOCALIZATION_NAME = 22104,
+        TAXONOMY_LOCALIZATION_DESCRIPTION = 22105,
     }
 
     // [23001 - 24000]: Geometry Relations

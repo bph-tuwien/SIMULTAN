@@ -11,7 +11,7 @@ namespace SIMULTAN.Data.Geometry
     /// <summary>
     /// Represents a closed edge loop
     /// </summary>
-    [DebuggerDisplay("EdgeLoop: ID={Id}")]
+    [DebuggerDisplay("EdgeLoop ID={Id}, Name={Name}")]
     public class EdgeLoop : BaseEdgeContainer
     {
         /// <summary>
@@ -174,15 +174,8 @@ namespace SIMULTAN.Data.Geometry
         /// <inheritdoc/>
         public override bool RemoveFromModel()
         {
-            if (Id == 11075)
-                Console.WriteLine("Now");
-
             bool result = this.ModelGeometry.EdgeLoops.Remove(this);
-
-            if (ModelGeometry.HandleConsistency)
-            {
-                this.Edges.ForEach(x => x.Edge.PEdges.Remove(x));
-            }
+            this.Edges.ForEach(x => x.Edge.PEdges.Remove(x));
 
             return result;
         }

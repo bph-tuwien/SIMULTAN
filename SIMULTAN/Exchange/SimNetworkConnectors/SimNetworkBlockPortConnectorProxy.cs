@@ -1,7 +1,8 @@
 ﻿using SIMULTAN.Data.Geometry;
+using SIMULTAN.Data.SimMath;
 using SIMULTAN.Data.SimNetworks;
 using System;
-using System.Windows.Media;
+using System.Collections.Generic;
 
 namespace SIMULTAN.Exchange.SimNetworkConnectors
 {
@@ -16,14 +17,19 @@ namespace SIMULTAN.Exchange.SimNetworkConnectors
         /// The polyline
         /// </summary>
         internal Polyline ConnectorGeometry { get; private set; }
+
         /// <summary>
         /// The SimNetworkBlock
         /// </summary>
         internal BaseSimNetworkElement ParentElement { get; }
+
         /// <summary>
         /// The SimNetworkPort
         /// </summary>
         internal SimNetworkPort Port { get; }
+
+        /// <inheritdoc />
+        internal override IEnumerable<ISimNetworkElement> SimNetworkElement => new List<SimNetworkPort> { Port };
 
         /// <summary>
         /// The connector. If not null, the port is connected to an other. 
@@ -31,9 +37,6 @@ namespace SIMULTAN.Exchange.SimNetworkConnectors
         internal SimNetworkConnector Connector { get; private set; }
 
         /// <inheritdoc />
-
-
-
         internal override BaseGeometry Geometry => ConnectorGeometry;
 
 
@@ -79,18 +82,15 @@ namespace SIMULTAN.Exchange.SimNetworkConnectors
         /// <inheritdoc />
         internal override void OnGeometryChanged()
         {
-
         }
+
         /// <inheritdoc />
         internal override void ChangeBaseGeometry(BaseGeometry geometry)
         {
             ConnectorGeometry = geometry as Polyline;
         }
         /// <inheritdoc />
-        internal override void OnTopologyChanged()
-        {
-
-        }
+        internal override void OnTopologyChanged() { }
         /// <inheritdoc />
         public override void Dispose()
         {
@@ -120,7 +120,7 @@ namespace SIMULTAN.Exchange.SimNetworkConnectors
                     UpdateColor(ConnectorGeometry.Edges[i].StartVertex, this.Geometry.Color.Color, fromParent);
             }
         }
-        private void UpdateColor(BaseGeometry geo, Color color, bool fromParent)
+        private void UpdateColor(BaseGeometry geo, SimColor color, bool fromParent)
         {
             geo.Color.Color = color;
             geo.Color.IsFromParent = fromParent;

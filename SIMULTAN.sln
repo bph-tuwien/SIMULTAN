@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.2.32526.322
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SIMULTAN", "SIMULTAN\SIMULTAN.csproj", "{015D89D1-7B5E-4589-B6D9-7C0B9A85F3DB}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SIMULTAN", "SIMULTAN\SIMULTAN.csproj", "{015D89D1-7B5E-4589-B6D9-7C0B9A85F3DB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SIMULTAN.Tests", "SIMULTAN.Tests\SIMULTAN.Tests.csproj", "{A6B45407-273F-4039-BB39-59EED725F5C5}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SIMULTAN.Tests", "SIMULTAN.Tests\SIMULTAN.Tests.csproj", "{A6B45407-273F-4039-BB39-59EED725F5C5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

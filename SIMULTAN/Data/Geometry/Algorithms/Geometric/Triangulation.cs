@@ -1,8 +1,9 @@
-﻿using System;
+﻿using SIMULTAN.Data.SimMath;
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
-using System.Windows.Media.Media3D;
 
 namespace SIMULTAN.Data.Geometry
 {
@@ -23,9 +24,9 @@ namespace SIMULTAN.Data.Geometry
         /// <param name="holes">A list containing holes</param>
         /// <param name="positions">Returns the positions of the triangulated polygon</param>
         /// <param name="indices">Returns the indices of the triangulation</param>
-        /// <param name="reverse">When set to true all Point3D list are read back-to-front</param>
-        public static void PolygonComplexFill(List<Point3D> polygon, List<List<Point3D>> holes,
-            out List<Point3D> positions, out List<int> indices,
+        /// <param name="reverse">When set to true all SimPoint3D list are read back-to-front</param>
+        public static void PolygonComplexFill(List<SimPoint3D> polygon, List<List<SimPoint3D>> holes,
+            out List<SimPoint3D> positions, out List<int> indices,
             bool reverse = false)
         {
             positions = null;
@@ -42,18 +43,18 @@ namespace SIMULTAN.Data.Geometry
             }
 
             // reverse the winding direction of the polygon and holes
-            List<Point3D> polyIN = new List<Point3D>(polygon);
-            List<List<Point3D>> holesIN = null;
+            List<SimPoint3D> polyIN = new List<SimPoint3D>(polygon);
+            List<List<SimPoint3D>> holesIN = null;
             if (holes != null)
-                holesIN = new List<List<Point3D>>(holes);
+                holesIN = new List<List<SimPoint3D>>(holes);
 
             if (reverse)
             {
                 polyIN = ReversePolygon(polygon);
-                holesIN = new List<List<Point3D>>();
+                holesIN = new List<List<SimPoint3D>>();
                 if (holes != null)
                 {
-                    foreach (List<Point3D> hole in holes)
+                    foreach (List<SimPoint3D> hole in holes)
                     {
                         holesIN.Add(ReversePolygon(hole));
                     }
@@ -61,21 +62,21 @@ namespace SIMULTAN.Data.Geometry
             }
 
             // perform actual algorithm
-            List<List<Point3D>> simplePolys = DecomposeInSimplePolygons(polyIN, holesIN); // ........................................................
-            List<List<Point3D>> monotonePolys = new List<List<Point3D>>();
+            List<List<SimPoint3D>> simplePolys = DecomposeInSimplePolygons(polyIN, holesIN); // ........................................................
+            List<List<SimPoint3D>> monotonePolys = new List<List<SimPoint3D>>();
             //// debug
-            //List<List<Point3D>> mpolys = DecomposeInMonotonePolygons(simplePolys[9]);
+            //List<List<SimPoint3D>> mpolys = DecomposeInMonotonePolygons(simplePolys[9]);
             //monotonePolys.AddRange(mpolys);
             //// debug
-            foreach (List<Point3D> spoly in simplePolys)
+            foreach (List<SimPoint3D> spoly in simplePolys)
             {
-                List<List<Point3D>> mpolys = DecomposeInMonotonePolygons(spoly);
+                List<List<SimPoint3D>> mpolys = DecomposeInMonotonePolygons(spoly);
                 monotonePolys.AddRange(mpolys);
             }
 
-            List<(List<Point3D> positions, List<int> indices)> triangulation = new List<(List<Point3D>, List<int>)>();
+            List<(List<SimPoint3D> positions, List<int> indices)> triangulation = new List<(List<SimPoint3D>, List<int>)>();
             int counter = 0;
-            foreach (List<Point3D> mpoly in monotonePolys)
+            foreach (List<SimPoint3D> mpoly in monotonePolys)
             {
                 counter++;
                 var geometry = PolygonFillMonotone(mpoly, reverse);
@@ -90,7 +91,7 @@ namespace SIMULTAN.Data.Geometry
         }
 
 
-        private static bool PolygonIsConvexXZ(List<Point3D> _polygon)
+        private static bool PolygonIsConvexXZ(List<SimPoint3D> _polygon)
         {
             if (_polygon == null)
                 return false;
@@ -99,8 +100,8 @@ namespace SIMULTAN.Data.Geometry
             if (n < 3)
                 return false;
 
-            Vector3D v1 = _polygon[0] - _polygon[n - 1];
-            Vector3D v2 = _polygon[1] - _polygon[0];
+            SimVector3D v1 = _polygon[0] - _polygon[n - 1];
+            SimVector3D v2 = _polygon[1] - _polygon[0];
             double crossY_prev = v1.X * v2.Z - v1.Z * v2.X;
 
             for (int i = 2; i <= n; i++)
@@ -118,10 +119,10 @@ namespace SIMULTAN.Data.Geometry
             return true;
         }
 
-        private static (List<Point3D> positions, List<int> indices) PolygonFillSimpleOptimized(List<Point3D> polygon, bool reverse = false)
+        private static (List<SimPoint3D> positions, List<int> indices) PolygonFillSimpleOptimized(List<SimPoint3D> polygon, bool reverse = false)
         {
             // save positions
-            List<Point3D> positions = ExtractWellDefined(polygon);
+            List<SimPoint3D> positions = ExtractWellDefined(polygon);
 
             if (positions.Count < 3)
                 return (null, null);
@@ -147,13 +148,13 @@ namespace SIMULTAN.Data.Geometry
             return (positions, indices);
         }
 
-        private static List<Point3D> ExtractWellDefined(List<Point3D> polygon, double tolerance = GENERAL_CALC_TOLERANCE * 0.01)
+        private static List<SimPoint3D> ExtractWellDefined(List<SimPoint3D> polygon, double tolerance = GENERAL_CALC_TOLERANCE * 0.01)
         {
             var t2 = tolerance * tolerance;
 
             /*bool point_removed = true;
-			List<Point3D> poly_well_defined = new List<Point3D>(polygon);
-			List<Point3D> poly_well_defined_1 = new List<Point3D>();
+			List<SimPoint3D> poly_well_defined = new List<SimPoint3D>(polygon);
+			List<SimPoint3D> poly_well_defined_1 = new List<SimPoint3D>();
 			while (point_removed)
 			{
 				// check polygon
@@ -179,11 +180,11 @@ namespace SIMULTAN.Data.Geometry
 						if (i == index_to_remove) continue;
 						poly_well_defined_1.Add(poly_well_defined[i]);
 					}
-					poly_well_defined = new List<Point3D>(poly_well_defined_1);
+					poly_well_defined = new List<SimPoint3D>(poly_well_defined_1);
 				}				
 			}*/
 
-            List<Point3D> poly_well_defined = new List<Point3D>(polygon.Count);
+            List<SimPoint3D> poly_well_defined = new List<SimPoint3D>(polygon.Count);
             var n = polygon.Count;
             for (int i = 0; i < n; ++i)
             {
@@ -196,20 +197,20 @@ namespace SIMULTAN.Data.Geometry
                 var p1 = polygon[i];
                 var p2 = polygon[(i + 1) % n];
 
-                if (Vector3D.CrossProduct(p1 - p0, p2 - p0).LengthSquared > t2)
+                if (SimVector3D.CrossProduct(p1 - p0, p2 - p0).LengthSquared > t2)
                     poly_well_defined.Add(p1);
             }
 
             return poly_well_defined;
         }
 
-        private static List<Point3D> ReversePolygon(List<Point3D> _original)
+        private static List<SimPoint3D> ReversePolygon(List<SimPoint3D> _original)
         {
             if (_original == null)
                 return null;
 
             int n = _original.Count;
-            List<Point3D> reversed = new List<Point3D>(n) { _original[0] };
+            List<SimPoint3D> reversed = new List<SimPoint3D>(n) { _original[0] };
             for (int i = n - 1; i > 0; i--)
                 reversed.Add(_original[i]);
 
@@ -222,13 +223,13 @@ namespace SIMULTAN.Data.Geometry
         /// <param name="polygon">The original polygon</param>
         /// <param name="holes">A list of hole polygons</param>
         /// <returns></returns>
-        public static List<List<Point3D>> DecomposeInSimplePolygons(List<Point3D> polygon, List<List<Point3D>> holes)
+        public static List<List<SimPoint3D>> DecomposeInSimplePolygons(List<SimPoint3D> polygon, List<List<SimPoint3D>> holes)
         {
             if (polygon == null)
                 throw new ArgumentNullException(nameof(polygon));
 
             if (holes == null || holes.Count < 1)
-                return new List<List<Point3D>> { polygon };
+                return new List<List<SimPoint3D>> { polygon };
 
             // make sure the winding direction of the polygon and all contained holes is the same!
             var polygon_orient = CalculateIfPolygonClockWise(polygon, GENERAL_CALC_TOLERANCE);
@@ -245,7 +246,7 @@ namespace SIMULTAN.Data.Geometry
             var connectingLines = ConnectPolygonWContainedHolesTwice_Improved3(polygon, holes);
             int nrCL = connectingLines.Count;
             if (nrCL < 2)
-                return new List<List<Point3D>> { polygon };
+                return new List<List<SimPoint3D>> { polygon };
 
             // perform decomposition (no duplicates in the connecting lines)
             var splitting_paths = ExtractSplittingPathsFrom(connectingLines, nrH);
@@ -253,10 +254,10 @@ namespace SIMULTAN.Data.Geometry
             int d = splitting_paths.Count;
 
             // perform splitting
-            List<List<Point3D>> list_before_Split_polys = new List<List<Point3D>>();
+            List<List<SimPoint3D>> list_before_Split_polys = new List<List<SimPoint3D>>();
             List<List<ValueTuple<int, int>>> list_before_Split_inds = new List<List<ValueTuple<int, int>>>();
 
-            List<List<Point3D>> list_after_Split_polys = new List<List<Point3D>>();
+            List<List<SimPoint3D>> list_after_Split_polys = new List<List<SimPoint3D>>();
             List<List<ValueTuple<int, int>>> list_after_Split_inds = new List<List<ValueTuple<int, int>>>();
 
             list_before_Split_polys.Add(polygon);
@@ -268,7 +269,7 @@ namespace SIMULTAN.Data.Geometry
                 //int nrSuccessfulSplis = 0;
                 for (int k = 0; k < nrToSplit; k++)
                 {
-                    List<Point3D> polyA, polyB;
+                    List<SimPoint3D> polyA, polyB;
                     List<ValueTuple<int, int>> originalIndsA, originalIndsB;
                     bool inputValid;
                     SplitPolygonWHolesAlongPath(list_before_Split_polys[k], list_before_Split_inds[k],
@@ -291,9 +292,9 @@ namespace SIMULTAN.Data.Geometry
                     }
                 }
                 // swap lists
-                list_before_Split_polys = new List<List<Point3D>>(list_after_Split_polys);
+                list_before_Split_polys = new List<List<SimPoint3D>>(list_after_Split_polys);
                 list_before_Split_inds = new List<List<ValueTuple<int, int>>>(list_after_Split_inds);
-                list_after_Split_polys = new List<List<Point3D>>();
+                list_after_Split_polys = new List<List<SimPoint3D>>();
                 list_after_Split_inds = new List<List<ValueTuple<int, int>>>();
             }
 
@@ -301,7 +302,7 @@ namespace SIMULTAN.Data.Geometry
             return list_before_Split_polys;
         }
 
-        private static TriangulationOrientation CalculateIfPolygonClockWise(List<Point3D> _polygon, double _tolerance)
+        private static TriangulationOrientation CalculateIfPolygonClockWise(List<SimPoint3D> _polygon, double _tolerance)
         {
             if (_polygon == null || _polygon.Count < 3)
                 return TriangulationOrientation.Invalid;
@@ -315,7 +316,7 @@ namespace SIMULTAN.Data.Geometry
             return TriangulationOrientation.Invalid;
         }
 
-        private static double CalculatePolygonSignedArea(List<Point3D> _polygon)
+        private static double CalculatePolygonSignedArea(List<SimPoint3D> _polygon)
         {
             if (_polygon == null || _polygon.Count < 3)
                 return 0.0;
@@ -332,7 +333,7 @@ namespace SIMULTAN.Data.Geometry
         }
 
 
-        private static List<ValueTuple<int, int, int, int>> ConnectPolygonWContainedHolesTwice_Improved3(List<Point3D> polygon, List<List<Point3D>> holes)
+        private static List<ValueTuple<int, int, int, int>> ConnectPolygonWContainedHolesTwice_Improved3(List<SimPoint3D> polygon, List<List<SimPoint3D>> holes)
         {
             var connectingLines = new List<ValueTuple<int, int, int, int>>();
 
@@ -341,11 +342,11 @@ namespace SIMULTAN.Data.Geometry
             RemoveNearlyAlignedConnectingLines(connectingLines_original, polygon, holes);
 
             // 2. switch X and Z and ...
-            List<Point3D> poly_swapped = polygon.Select(x => new Point3D(x.Z, x.Y, x.X)).ToList();
-            List<List<Point3D>> holes_swapped = new List<List<Point3D>>();
-            foreach (List<Point3D> h in holes)
+            List<SimPoint3D> poly_swapped = polygon.Select(x => new SimPoint3D(x.Z, x.Y, x.X)).ToList();
+            List<List<SimPoint3D>> holes_swapped = new List<List<SimPoint3D>>();
+            foreach (List<SimPoint3D> h in holes)
             {
-                holes_swapped.Add(h.Select(x => new Point3D(x.Z, x.Y, x.X)).ToList());
+                holes_swapped.Add(h.Select(x => new SimPoint3D(x.Z, x.Y, x.X)).ToList());
             }
             var connectingLines_swapped = ConnectPolygonWContainedHoles(poly_swapped, holes_swapped);
             RemoveNearlyAlignedConnectingLines(connectingLines_swapped, polygon, holes);
@@ -366,27 +367,27 @@ namespace SIMULTAN.Data.Geometry
             RemoveNearlyAlignedConnectingLines(connectingLines_r60, polygon, holes);
 
             //// debug
-            //Console.WriteLine("---------------------------- original");
+            //Debug.WriteLine("---------------------------- original");
             //foreach (var cL in connectingLines_original)
             //{
             //    Print(cL);
             //}
-            //Console.WriteLine("---------------------------- swapped X and Z");
+            //Debug.WriteLine("---------------------------- swapped X and Z");
             //foreach (var cL in connectingLines_swapped)
             //{
             //    Print(cL);
             //}
-            //Console.WriteLine("---------------------------- rotated 30 deg");
+            //Debug.WriteLine("---------------------------- rotated 30 deg");
             //foreach (var cL in connectingLines_r30)
             //{
             //    Print(cL);
             //}
-            //Console.WriteLine("---------------------------- rotated 45 deg");
+            //Debug.WriteLine("---------------------------- rotated 45 deg");
             //foreach (var cL in connectingLines_r45)
             //{
             //    Print(cL);
             //}
-            //Console.WriteLine("---------------------------- rotated 60 deg");
+            //Debug.WriteLine("---------------------------- rotated 60 deg");
             //foreach (var cL in connectingLines_r60)
             //{
             //    Print(cL);
@@ -413,7 +414,7 @@ namespace SIMULTAN.Data.Geometry
             }
 
             //// debug
-            //Console.WriteLine("---------------------------- ALL");
+            //Debug.WriteLine("---------------------------- ALL");
             //foreach (var cL in all_clines)
             //{
             //    Print(cL);
@@ -437,11 +438,11 @@ namespace SIMULTAN.Data.Geometry
                     cycle_detector.AddConnectingLine(all_clines[s]);
 
                     // fill the connecting lines
-                    //Console.WriteLine(" ----------------------------- ADDING CONNECTION {0}", PrintString(all_clines[s]));
+                    //Debug.WriteLine(" ----------------------------- ADDING CONNECTION {0}", PrintString(all_clines[s]));
                     to_add.Add(all_clines[s]);
                     if (obsolete_connection.Item2 > -1)
                     {
-                        //Console.WriteLine(" >>>>>>>>>>>>>>>>>>>>>>>>>>> sacrificed connection {0}", PrintString(obsolete_connection));
+                        //Debug.WriteLine(" >>>>>>>>>>>>>>>>>>>>>>>>>>> sacrificed connection {0}", PrintString(obsolete_connection));
                         to_remove.Add(obsolete_connection);
                     }
                 }
@@ -543,7 +544,7 @@ namespace SIMULTAN.Data.Geometry
             return connectingLines;
         }
 
-        private static void InsertAdditionalConnectingLines(List<ValueTuple<int, int, int, int>> connecting_lines, List<Point3D> polygon, List<List<Point3D>> holes, int hole_index, List<int> indices_in_hole_to_avoid)
+        private static void InsertAdditionalConnectingLines(List<ValueTuple<int, int, int, int>> connecting_lines, List<SimPoint3D> polygon, List<List<SimPoint3D>> holes, int hole_index, List<int> indices_in_hole_to_avoid)
         {
             List<ValueTuple<int, int, int, int>> candidates = new List<(int, int, int, int)>();
             for (int h = 0; h < holes[hole_index].Count; h++)
@@ -587,7 +588,7 @@ namespace SIMULTAN.Data.Geometry
             }
         }
 
-        private static void InsertAdditionalConnectingLines(List<ValueTuple<int, int, int, int>> connecting_lines, List<Point3D> polygon, List<List<Point3D>> holes,
+        private static void InsertAdditionalConnectingLines(List<ValueTuple<int, int, int, int>> connecting_lines, List<SimPoint3D> polygon, List<List<SimPoint3D>> holes,
                                                         int hole_index1, int hole_index2, List<int> indices_in_hole_to_avoid_in1, List<int> indices_in_hole_to_avoid_in2)
         {
             List<ValueTuple<int, int, int, int>> candidates = new List<(int, int, int, int)>();
@@ -632,14 +633,14 @@ namespace SIMULTAN.Data.Geometry
             }
         }
 
-        private static void RemoveNearlyAlignedConnectingLines(List<ValueTuple<int, int, int, int>> connecting_lines, List<Point3D> polygon, List<List<Point3D>> holes,
+        private static void RemoveNearlyAlignedConnectingLines(List<ValueTuple<int, int, int, int>> connecting_lines, List<SimPoint3D> polygon, List<List<SimPoint3D>> holes,
                                                                 double tolerance_factor = GENERAL_CALC_TOLERANCE * 200)
         {
             List<ValueTuple<int, int, int, int>> to_remove = new List<(int, int, int, int)>();
             foreach (var cL in connecting_lines)
             {
-                Point3D p1 = (cL.Item1 == -1) ? polygon[cL.Item2] : holes[cL.Item1][cL.Item2];
-                Point3D p2 = (cL.Item3 == -1) ? polygon[cL.Item4] : holes[cL.Item3][cL.Item4];
+                SimPoint3D p1 = (cL.Item1 == -1) ? polygon[cL.Item2] : holes[cL.Item1][cL.Item2];
+                SimPoint3D p2 = (cL.Item3 == -1) ? polygon[cL.Item4] : holes[cL.Item3][cL.Item4];
 
                 bool polygon_overlap_detected = LineNearlyOverlapsWithPolygon(p1, p2, polygon, tolerance_factor);
                 if (polygon_overlap_detected)
@@ -664,29 +665,28 @@ namespace SIMULTAN.Data.Geometry
             }
         }
 
-        private static (List<Point3D> polygon_rotated, List<List<Point3D>> holes_rotated) Rotate(List<Point3D> polygon, List<List<Point3D>> holes, double angle_in_deg)
+        private static (List<SimPoint3D> polygon_rotated, List<List<SimPoint3D>> holes_rotated) Rotate(List<SimPoint3D> polygon, List<List<SimPoint3D>> holes, double angle_in_deg)
         {
-            Vector3D pcenter = new Vector3D(0, 0, 0);
+            SimVector3D pcenter = new SimVector3D(0, 0, 0);
             for (int i = 0; i < polygon.Count; i++)
             {
-                pcenter += (Vector3D)polygon[i];
+                pcenter += (SimVector3D)polygon[i];
             }
             pcenter /= polygon.Count;
 
-            Matrix3D matrixR = new Matrix3D();
+            SimMatrix3D matrixR = new SimMatrix3D();
             matrixR.Translate(-pcenter);
-            matrixR.Rotate(new Quaternion(new Vector3D(0, 1, 0), angle_in_deg));
+            matrixR.Rotate(new SimQuaternion(new SimVector3D(0, 1, 0), angle_in_deg));
             matrixR.Translate(pcenter);
-            MatrixTransform3D transform = new MatrixTransform3D(matrixR);
 
-            Point3D[] polyR = polygon.ToArray();
-            transform.Transform(polyR);
-            List<Point3D> polygon_rotated = polyR.ToList();
-            List<List<Point3D>> holes_rotated = new List<List<Point3D>>();
-            foreach (List<Point3D> h in holes)
+            SimPoint3D[] polyR = polygon.ToArray();
+            matrixR.Transform(polyR);
+            List<SimPoint3D> polygon_rotated = polyR.ToList();
+            List<List<SimPoint3D>> holes_rotated = new List<List<SimPoint3D>>();
+            foreach (List<SimPoint3D> h in holes)
             {
-                Point3D[] hR = h.ToArray();
-                transform.Transform(hR);
+                SimPoint3D[] hR = h.ToArray();
+                matrixR.Transform(hR);
                 holes_rotated.Add(hR.ToList());
             }
             return (polygon_rotated, holes_rotated);
@@ -694,7 +694,7 @@ namespace SIMULTAN.Data.Geometry
 
 
         //TODO: Check for simplifications
-        private static List<ValueTuple<int, int, int, int>> ConnectPolygonWContainedHoles(List<Point3D> polygon, List<List<Point3D>> holes)
+        private static List<ValueTuple<int, int, int, int>> ConnectPolygonWContainedHoles(List<SimPoint3D> polygon, List<List<SimPoint3D>> holes)
         {
             // Return value contains
             // [X]:-1 for polygon / otherwise hole index [Y]: index in polygon / hole, [Z]:hole index, [W]:index in hole
@@ -710,8 +710,8 @@ namespace SIMULTAN.Data.Geometry
             List<int> ind_connected_holes_RL = new List<int>();
 
             // order the vertices according to the X component
-            Point3DComparer point3Dcomp = new Point3DComparer();
-            SortedList<Point3D, int> vertices_ordered = new SortedList<Point3D, int>(point3Dcomp);
+            SimPoint3DComparer SimPoint3Dcomp = new SimPoint3DComparer();
+            SortedList<SimPoint3D, int> vertices_ordered = new SortedList<SimPoint3D, int>(SimPoint3Dcomp);
 
             var n = polygon.Count;
             for (int i = 0; i < n; i++)
@@ -734,7 +734,7 @@ namespace SIMULTAN.Data.Geometry
             var nrH = holes.Count;
             for (int j = 0; j < nrH; j++)
             {
-                List<Point3D> hole = holes[j];
+                List<SimPoint3D> hole = holes[j];
 
                 int h = hole.Count;
                 for (int i = 0; i < h; i++)
@@ -771,7 +771,7 @@ namespace SIMULTAN.Data.Geometry
                     continue;
 
                 // get information of the neighbor vertices in the hole
-                List<Point3D> hole = holes[ind_hole];
+                List<SimPoint3D> hole = holes[ind_hole];
                 int nHole = hole.Count;
                 int ind_in_hole = ind_current_alongX % 1000;
                 var prev = hole[(nHole + ind_in_hole - 1) % nHole];
@@ -798,26 +798,26 @@ namespace SIMULTAN.Data.Geometry
                             if (ind_prev_hole == -1)
                             {
                                 // check admissibility in the polygon
-                                //Console.WriteLine("testing diagonal -1:{0} - {1}:{2}", ind_prev_poly_alongX, ind_hole, ind_in_hole);
+                                //Debug.WriteLine("testing diagonal -1:{0} - {1}:{2}", ind_prev_poly_alongX, ind_hole, ind_in_hole);
                                 isAdmissible = LineIsValidInPolygonWHoles(polygon, holes, ind_prev_poly_alongX, ind_hole, ind_in_hole);
                             }
                             else
                             {
                                 // check admissiblity w regard to two holes contained in the polygon
-                                //Console.WriteLine("testing diagonal {0}:{1} - {2}:{3}", ind_prev_hole, ind_prev_in_hole, ind_hole, ind_in_hole);
+                                //Debug.WriteLine("testing diagonal {0}:{1} - {2}:{3}", ind_prev_hole, ind_prev_in_hole, ind_hole, ind_in_hole);
                                 isAdmissible = LineIsValidInPolygonWHoles(polygon, holes,
                                                                           ind_prev_hole, ind_prev_in_hole, ind_hole, ind_in_hole);
                             }
                             if (isAdmissible)
                             {
-                                //Console.WriteLine(">>>>>>>>>>>> YES");
+                                //Debug.WriteLine(">>>>>>>>>>>> YES");
                                 connectingLines_LR.Add(ValueTuple.Create(ind_prev_hole, ind_prev_in_hole, ind_hole, ind_in_hole));
                                 ind_connected_holes_LR.Add(ind_hole);
                                 break;
                             }
                             else
                             {
-                                //Console.WriteLine("NO");
+                                //Debug.WriteLine("NO");
                             }
                         }
                     }
@@ -840,7 +840,7 @@ namespace SIMULTAN.Data.Geometry
                     continue;
 
                 // get information of the neighbor vertices in the hole
-                List<Point3D> hole = holes[ind_hole];
+                List<SimPoint3D> hole = holes[ind_hole];
                 int nHole = hole.Count;
                 int ind_in_hole = ind_current_alongX % 1000;
                 var prev = hole[(nHole + ind_in_hole - 1) % nHole];
@@ -879,7 +879,7 @@ namespace SIMULTAN.Data.Geometry
                             if (isAdmissible)
                             {
                                 var p1 = holes[ind_hole][ind_in_hole];
-                                Point3D p2;
+                                SimPoint3D p2;
                                 if (ind_next_hole == -1)
                                     p2 = polygon[ind_next_poly_alongX];
                                 else
@@ -888,7 +888,7 @@ namespace SIMULTAN.Data.Geometry
                                 foreach (var entry in connectingLines_LR)
                                 {
                                     var q1 = holes[(int)entry.Item3][(int)entry.Item4];
-                                    Point3D q2;
+                                    SimPoint3D q2;
                                     if (entry.Item1 == -1)
                                         q2 = polygon[(int)entry.Item2];
                                     else
@@ -940,7 +940,7 @@ namespace SIMULTAN.Data.Geometry
             //List<ValueTuple<int, int, int, int>> to_remove = new List<(int, int, int, int)>();
             //for(int i = 0; i < connectingLines_optimized.Count; i++)
             //{
-            //    Point3D p1, p2;
+            //    SimPoint3D p1, p2;
             //    if (connectingLines_optimized[i].Item1 == -1)
             //        p1 = polygon[connectingLines_optimized[i].Item2];
             //    else
@@ -953,7 +953,7 @@ namespace SIMULTAN.Data.Geometry
 
             //    for (int j = i + 1; j < connectingLines_optimized.Count; j++)
             //    {
-            //        Point3D q1, q2;
+            //        SimPoint3D q1, q2;
             //        if (connectingLines_optimized[j].Item1 == -1)
             //            q1 = polygon[connectingLines_optimized[j].Item2];
             //        else
@@ -983,7 +983,7 @@ namespace SIMULTAN.Data.Geometry
         //- polygon.Count >= 3
         //- holes does not contain null
         //- all indices are within limits
-        private static bool LineIsValidInPolygonWHoles(List<Point3D> polygon, List<List<Point3D>> holes,
+        private static bool LineIsValidInPolygonWHoles(List<SimPoint3D> polygon, List<List<SimPoint3D>> holes,
                                                     int indPolygon, int indHole, int indInHole, bool when_aligned_check_for_overlap = false)
         {
             if (holes == null) //TODO Remove
@@ -1025,7 +1025,7 @@ namespace SIMULTAN.Data.Geometry
             return !intersectsSomething;
         }
 
-        private static bool LineIsValidInPolygonWHoles(List<Point3D> polygon, List<List<Point3D>> holes,
+        private static bool LineIsValidInPolygonWHoles(List<SimPoint3D> polygon, List<List<SimPoint3D>> holes,
                                                     int indHole1, int indInHole1, int indHole2, int indInHole2, bool when_aligned_check_for_overlap = false)
         {
             int n = polygon.Count;
@@ -1086,7 +1086,7 @@ namespace SIMULTAN.Data.Geometry
 
         }
 
-        private static bool LineIntersectsPolygon(Point3D p1, Point3D p2, List<Point3D> polygon, int exclIndices = -1, bool when_aligned_check_for_overlap = false)
+        private static bool LineIntersectsPolygon(SimPoint3D p1, SimPoint3D p2, List<SimPoint3D> polygon, int exclIndices = -1, bool when_aligned_check_for_overlap = false)
         {
             int n = polygon.Count;
 
@@ -1120,7 +1120,7 @@ namespace SIMULTAN.Data.Geometry
         }
 
 
-        private static bool LineWLineCollision3D(Point3D p1, Point3D p2, Point3D p3, Point3D p4, double _tolerance)
+        private static bool LineWLineCollision3D(SimPoint3D p1, SimPoint3D p2, SimPoint3D p3, SimPoint3D p4, double _tolerance)
         {
             var intersectionResult = LineToLineShortestLine3D(p1, p2, p3, p4);
             if (intersectionResult.isValid)
@@ -1147,18 +1147,18 @@ namespace SIMULTAN.Data.Geometry
             return false;
         }
 
-        private static (bool isValid, Point3D prA, Point3D prB) LineToLineShortestLine3D(Point3D p1, Point3D p2, Point3D p3, Point3D p4)
+        private static (bool isValid, SimPoint3D prA, SimPoint3D prB) LineToLineShortestLine3D(SimPoint3D p1, SimPoint3D p2, SimPoint3D p3, SimPoint3D p4)
         {
             // on the shortest line connecting line 1 (defined by _p1 and _p2)
             // and line 2 (defined by _p3 and _p4): prA lies on line 1, prB lies on line 2
 
-            Vector3D v21 = p2 - p1;
-            Vector3D v13 = p1 - p3;
-            Vector3D v43 = p4 - p3;
+            SimVector3D v21 = p2 - p1;
+            SimVector3D v13 = p1 - p3;
+            SimVector3D v43 = p4 - p3;
 
             // stop if the lines are not well defined (i.e. definingpoints too close to each other)
             if (v21.LengthSquared < LINEDISTCALC_TOLERANCE || v43.LengthSquared < LINEDISTCALC_TOLERANCE)
-                return (false, new Point3D(), new Point3D());
+                return (false, new SimPoint3D(), new SimPoint3D());
 
             //double d1343 = v13.X * (double)v43.X + v13.Y * (double)v43.Y + v13.Z * (double)v43.Z;
             //double d4321 = v43.X * (double)v21.X + v43.Y * (double)v21.Y + v43.Z * (double)v21.Z;
@@ -1175,7 +1175,7 @@ namespace SIMULTAN.Data.Geometry
 
             double denom = d2121 * d4343 - d4321 * d4321;
             if (Math.Abs(denom) < LINEDISTCALC_TOLERANCE)
-                return (false, new Point3D(), new Point3D());
+                return (false, new SimPoint3D(), new SimPoint3D());
 
             double numer = d1343 * d4321 - d1321 * d4343;
 
@@ -1185,11 +1185,11 @@ namespace SIMULTAN.Data.Geometry
             return (true, p1 + mua * v21, p3 + mub * v43);
         }
 
-        private static bool PointIsInsidePolygonXZ(List<Point3D> polygon, Point3D p)
+        private static bool PointIsInsidePolygonXZ(List<SimPoint3D> polygon, SimPoint3D p)
         {
             // source: http://conceptual-misfire.awardspace.com/point_in_polygon.htm
             // for polygons in the XZ- Plane (works with areas)
-            Point3D p1, p2;
+            SimPoint3D p1, p2;
             bool isInside = false;
 
             int n = polygon.Count;
@@ -1251,12 +1251,12 @@ namespace SIMULTAN.Data.Geometry
 
         private static (bool canInsert, ValueTuple<int, int, int, int> connection_to_remove) CanInsertConnectingLineInConnections(
             List<ValueTuple<int, int, int, int>> connecting_lines,
-            ValueTuple<int, int, int, int> line, List<Point3D> polygon, List<List<Point3D>> holes)
+            ValueTuple<int, int, int, int> line, List<SimPoint3D> polygon, List<List<SimPoint3D>> holes)
         {
             if (connecting_lines.Count == 0)
                 return (true, ValueTuple.Create(-1, -1, -1, -1));
 
-            Point3D q1, q2;
+            SimPoint3D q1, q2;
             if (line.Item1 == -1)
                 q1 = polygon[line.Item2];
             else
@@ -1294,7 +1294,7 @@ namespace SIMULTAN.Data.Geometry
                 //}
 
                 // 3. check for intersection
-                Point3D p1, p2;
+                SimPoint3D p1, p2;
                 if (connecting_lines[o].Item1 == -1)
                     p1 = polygon[connecting_lines[o].Item2];
                 else
@@ -1353,7 +1353,7 @@ namespace SIMULTAN.Data.Geometry
             return (admissible, ValueTuple.Create(-1, -1, -1, -1));
         }
 
-        private static Dictionary<int, List<int>> GetAllUnusedIndices(List<ValueTuple<int, int, int, int>> connecting_lines, List<Point3D> polygon, List<List<Point3D>> holes)
+        private static Dictionary<int, List<int>> GetAllUnusedIndices(List<ValueTuple<int, int, int, int>> connecting_lines, List<SimPoint3D> polygon, List<List<SimPoint3D>> holes)
         {
             //List<int> all_polygon_and_hole_indices = connecting_lines.SelectMany(v => new List<int> { (int)v.Item1, (int)v.Item3 }).GroupBy(a => a).Select(gr => gr.First()).ToList();
             List<int> all_polygon_and_hole_indices = Enumerable.Range(-1, holes.Count + 1).ToList();
@@ -1414,7 +1414,7 @@ namespace SIMULTAN.Data.Geometry
             return unused_indices;
         }
 
-        private static Dictionary<int, List<int>> GetAllIndicesUsedMoreThanOnce(List<ValueTuple<int, int, int, int>> connecting_lines, List<Point3D> polygon, List<List<Point3D>> holes)
+        private static Dictionary<int, List<int>> GetAllIndicesUsedMoreThanOnce(List<ValueTuple<int, int, int, int>> connecting_lines, List<SimPoint3D> polygon, List<List<SimPoint3D>> holes)
         {
             List<int> all_polygon_and_hole_indices = connecting_lines.SelectMany(v => new List<int> { v.Item1, v.Item3 }).GroupBy(a => a).Select(gr => gr.First()).ToList();
             Dictionary<int, List<int>> all_used_twice_or_more = new Dictionary<int, List<int>>();
@@ -1455,7 +1455,7 @@ namespace SIMULTAN.Data.Geometry
             while (holes_toSplit.Count > 0)
             {
                 ////debug++;
-                ////Console.WriteLine("{0} holes to split: {1}", debug, holes_toSplit.Count);
+                ////Debug.WriteLine("{0} holes to split: {1}", debug, holes_toSplit.Count);
                 // look for a connected path of connecting lines 
                 // that STARTS at the polygon, goes THROUGH a not yet split hole, and ENDS at the polygon
                 // or a hole that has been split already
@@ -1513,7 +1513,7 @@ namespace SIMULTAN.Data.Geometry
                 while (!reached_other_end && counter_iterations <= maxNrIter)
                 {
                     counter_iterations++;
-                    ////Console.WriteLine("for");
+                    ////Debug.WriteLine("for");
                     ////foreach (var sP in splitting_path)
                     ////{
                     ////    Print(sP);
@@ -1524,7 +1524,7 @@ namespace SIMULTAN.Data.Geometry
                         if (connectingLines_used[i])
                             continue;
 
-                        ////Console.WriteLine("testing {0}", PrintString(connecting_lines[i]));
+                        ////Debug.WriteLine("testing {0}", PrintString(connecting_lines[i]));
 
                         if (connecting_lines[i].Item1 == splitting_path[nrSP - 1].Item3 && connecting_lines[i].Item2 != splitting_path[nrSP - 1].Item4 &&
                             !holes_used_in_this_path.Contains(connecting_lines[i].Item3))
@@ -1592,12 +1592,12 @@ namespace SIMULTAN.Data.Geometry
                     }
                     if (!SplittingPathContainedIn(splitting_path, splitting_paths))
                     {
-                        ////Console.WriteLine("- - - - adding splitting path:");
+                        ////Debug.WriteLine("- - - - adding splitting path:");
                         ////foreach (var sp in splitting_path)
                         ////{
                         ////    Print(sp);
                         ////}
-                        ////Console.WriteLine("- - - - used connecting lines:");
+                        ////Debug.WriteLine("- - - - used connecting lines:");
                         ////for (int i = 0; i < connecting_lines.Count; i++)
                         ////{
                         ////    if (connectingLines_used[i])
@@ -1611,7 +1611,7 @@ namespace SIMULTAN.Data.Geometry
                 {
                     // roll-back
                     discarded_paths.Add(splitting_path);
-                    ////Console.WriteLine("DISCARDED PATH:");
+                    ////Debug.WriteLine("DISCARDED PATH:");
                     ////foreach (var pE in splitting_path)
                     ////{
                     ////    Print(pE);
@@ -1622,7 +1622,7 @@ namespace SIMULTAN.Data.Geometry
                     }
                     foreach (int entry in discarded_connectingLines_used_entries)
                     {
-                        ////Console.WriteLine("rollback on {0}", entry);
+                        ////Debug.WriteLine("rollback on {0}", entry);
                         connectingLines_used[entry] = false;
                     }
                 }
@@ -1695,15 +1695,15 @@ namespace SIMULTAN.Data.Geometry
             return indices;
         }
 
-        private static void SplitPolygonWHolesAlongPath(List<Point3D> polygon, List<ValueTuple<int, int>> polyIndices,
+        private static void SplitPolygonWHolesAlongPath(List<SimPoint3D> polygon, List<ValueTuple<int, int>> polyIndices,
                                                         List<ValueTuple<int, int, int, int>> splitting_path_ind, bool checkAdmissibility,
-                                                        List<Point3D> outer_polygon, List<List<Point3D>> holes,
-                                                    out List<Point3D> polyA, out List<Point3D> polyB,
+                                                        List<SimPoint3D> outer_polygon, List<List<SimPoint3D>> holes,
+                                                    out List<SimPoint3D> polyA, out List<SimPoint3D> polyB,
                                                     out List<ValueTuple<int, int>> originalIndsA, out List<ValueTuple<int, int>> originalIndsB,
                                                     out bool inputValid)
         {
-            polyA = new List<Point3D>();
-            polyB = new List<Point3D>();
+            polyA = new List<SimPoint3D>();
+            polyB = new List<SimPoint3D>();
             originalIndsA = new List<ValueTuple<int, int>>();
             originalIndsB = new List<ValueTuple<int, int>>();
             inputValid = false;
@@ -1768,22 +1768,22 @@ namespace SIMULTAN.Data.Geometry
 
                     if (!isAdmissible)
                     {
-                        polyA = new List<Point3D>(polygon);
+                        polyA = new List<SimPoint3D>(polygon);
                         originalIndsA = new List<ValueTuple<int, int>>(polyIndices);
                         return;
                     }
                 }
 
                 // check if the path lies within the polygon to be split
-                Point3D start = (ind1.Item1 == -1) ? outer_polygon[ind1.Item2] : holes[ind1.Item1][ind1.Item2];
-                Point3D end = (ind2.Item1 == -1) ? outer_polygon[ind2.Item2] : holes[ind2.Item1][ind2.Item2];
-                Point3D middle = new Point3D(start.X * 0.5 + end.X * 0.5, start.Y * 0.5 + end.Y * 0.5, start.Z * 0.5 + end.Z * 0.5);
+                SimPoint3D start = (ind1.Item1 == -1) ? outer_polygon[ind1.Item2] : holes[ind1.Item1][ind1.Item2];
+                SimPoint3D end = (ind2.Item1 == -1) ? outer_polygon[ind2.Item2] : holes[ind2.Item1][ind2.Item2];
+                SimPoint3D middle = new SimPoint3D(start.X * 0.5 + end.X * 0.5, start.Y * 0.5 + end.Y * 0.5, start.Z * 0.5 + end.Z * 0.5);
                 bool start_inside = PointIsInsidePolygonXZ(polygon, start);
                 bool end_inside = PointIsInsidePolygonXZ(polygon, end);
                 bool middle_inside = PointIsInsidePolygonXZ(polygon, middle);
                 if (!start_inside || !end_inside || !middle_inside)
                 {
-                    polyA = new List<Point3D>(polygon);
+                    polyA = new List<SimPoint3D>(polygon);
                     originalIndsA = new List<ValueTuple<int, int>>(polyIndices);
                     return;
                 }
@@ -1807,16 +1807,16 @@ namespace SIMULTAN.Data.Geometry
                         return;
                 }
 
-                List<Point3D> toSplit_chain;
+                List<SimPoint3D> toSplit_chain;
                 List<ValueTuple<int, int>> toSplit_chain_ind;
                 if (splittingOuterMost)
                 {
-                    toSplit_chain = new List<Point3D>(polygon);
+                    toSplit_chain = new List<SimPoint3D>(polygon);
                     toSplit_chain_ind = new List<ValueTuple<int, int>>(polyIndices);
                 }
                 else
                 {
-                    toSplit_chain = new List<Point3D>(holes[split_ind1.Item1]);
+                    toSplit_chain = new List<SimPoint3D>(holes[split_ind1.Item1]);
                     toSplit_chain_ind = GenerateDoubleIndices(split_ind1.Item1, 0, toSplit_chain.Count);
                 }
 
@@ -1824,9 +1824,9 @@ namespace SIMULTAN.Data.Geometry
                 int split_start_ind = toSplit_chain_ind.IndexOf(split_ind1);
                 int split_end_ind = toSplit_chain_ind.IndexOf(split_ind2);
 
-                List<Point3D> for_polyA = new List<Point3D>();
+                List<SimPoint3D> for_polyA = new List<SimPoint3D>();
                 List<ValueTuple<int, int>> for_originalIndsA = new List<ValueTuple<int, int>>();
-                List<Point3D> for_polyB = new List<Point3D>();
+                List<SimPoint3D> for_polyB = new List<SimPoint3D>();
                 List<ValueTuple<int, int>> for_originalIndsB = new List<ValueTuple<int, int>>();
 
                 int split_current_ind = split_start_ind;
@@ -1880,7 +1880,7 @@ namespace SIMULTAN.Data.Geometry
             inputValid = true;
         }
 
-        private static bool DiagonalIsAdmissible(List<Point3D> polygon, int startInd, int endInd)
+        private static bool DiagonalIsAdmissible(List<SimPoint3D> polygon, int startInd, int endInd)
         {
             // index out of bounds
             int n = polygon.Count;
@@ -1927,8 +1927,8 @@ namespace SIMULTAN.Data.Geometry
             // if inside  -> winding direction of both subpolygons the same as that of the big polygon
             // if outside -> winding directions of the subpolygons differ from each other
 
-            List<Point3D> subpoly1 = new List<Point3D>();
-            List<Point3D> subpoly2 = new List<Point3D>();
+            List<SimPoint3D> subpoly1 = new List<SimPoint3D>();
+            List<SimPoint3D> subpoly2 = new List<SimPoint3D>();
             for (int i = 0; i < n; i++)
             {
                 if (i <= minInd || i >= maxInd)
@@ -1946,7 +1946,7 @@ namespace SIMULTAN.Data.Geometry
             return (subpoly1_cw == subpoly2_cw);
         }
 
-        private static double DistV3Simple(Point3D v1, Point3D v2)
+        private static double DistV3Simple(SimPoint3D v1, SimPoint3D v2)
         {
             double dX = Math.Abs(v1.X - v2.X);
             double dY = 0; // Math.Abs(v1.Y - v2.Y); // ignore the y-coordinate
@@ -1956,14 +1956,14 @@ namespace SIMULTAN.Data.Geometry
             return dMax;
         }
 
-        private static (bool hasCollision, Point3D collisionPoint) LineWLineCollision3D_InclAtEnds(Point3D p1, Point3D p2, Point3D p3, Point3D p4,
+        private static (bool hasCollision, SimPoint3D collisionPoint) LineWLineCollision3D_InclAtEnds(SimPoint3D p1, SimPoint3D p2, SimPoint3D p3, SimPoint3D p4,
                                                 double tolerance)
         {
             var (success, prA, prB) = LineToLineShortestLine3D(p1, p2, p3, p4);
             if (success)
             {
                 // var dAB = (prB - prA).LengthSquared; // OLD: takes the y-coordinate into account                
-                var dAB = (new Point3D(prB.X, 0, prB.Z) - new Point3D(prA.X, 0, prA.Z)).LengthSquared; // NEW: ignores the y-coordinate
+                var dAB = (new SimPoint3D(prB.X, 0, prB.Z) - new SimPoint3D(prA.X, 0, prA.Z)).LengthSquared; // NEW: ignores the y-coordinate
                 if (dAB < tolerance)
                 {
                     var d12 = (p2 - p1).LengthSquared;
@@ -1984,15 +1984,15 @@ namespace SIMULTAN.Data.Geometry
                 }
 
             }
-            return (false, new Point3D());
+            return (false, new SimPoint3D());
         }
 
-        private static List<List<Point3D>> DecomposeInMonotonePolygons(List<Point3D> polygon)
+        private static List<List<SimPoint3D>> DecomposeInMonotonePolygons(List<SimPoint3D> polygon)
         {
             // order the vertices according to the X component
             int n = polygon.Count;
-            Point3DComparer pointComparer = new Point3DComparer();
-            SortedList<Point3D, int> vertices_ordered = new SortedList<Point3D, int>(pointComparer);
+            SimPoint3DComparer pointComparer = new SimPoint3DComparer();
+            SortedList<SimPoint3D, int> vertices_ordered = new SortedList<SimPoint3D, int>(pointComparer);
             for (int i = 0; i < n; i++)
             {
                 if (vertices_ordered.ContainsKey(polygon[i]))
@@ -2071,7 +2071,7 @@ namespace SIMULTAN.Data.Geometry
             int d = splitIndices.Count;
             if (d == 0)
             {
-                return new List<List<Point3D>> { polygon };
+                return new List<List<SimPoint3D>> { polygon };
             }
 
             // remove double split diagonal entries
@@ -2094,15 +2094,15 @@ namespace SIMULTAN.Data.Geometry
             d = splitIndices.Count;
 
             // perform the actual splitting of the polygon
-            List<Point3D> poly = new List<Point3D>(polygon);
+            List<SimPoint3D> poly = new List<SimPoint3D>(polygon);
             List<int> polyIndices = Enumerable.Range(0, n).ToList();
 
-            List<List<Point3D>> list_before_Split_polys = new List<List<Point3D>>();
+            List<List<SimPoint3D>> list_before_Split_polys = new List<List<SimPoint3D>>();
             list_before_Split_polys.Add(poly);
             List<List<int>> list_brefore_Split_inds = new List<List<int>>();
             list_brefore_Split_inds.Add(polyIndices);
 
-            List<List<Point3D>> list_after_Split_polys = new List<List<Point3D>>();
+            List<List<SimPoint3D>> list_after_Split_polys = new List<List<SimPoint3D>>();
             List<List<int>> list_after_Split_inds = new List<List<int>>();
 
             for (int j = 0; j < d; j++)
@@ -2110,7 +2110,7 @@ namespace SIMULTAN.Data.Geometry
                 int nrToSplit = list_before_Split_polys.Count;
                 for (int k = 0; k < nrToSplit; k++)
                 {
-                    List<Point3D> polyA, polyB;
+                    List<SimPoint3D> polyA, polyB;
                     List<int> originalIndsA, originalIndsB;
                     SplitPolygonAlongDiagonal(list_before_Split_polys[k], list_brefore_Split_inds[k],
                                               splitIndices[j].Item1, splitIndices[j].Item2, true,
@@ -2132,9 +2132,9 @@ namespace SIMULTAN.Data.Geometry
                     }
                 }
                 // swap lists
-                list_before_Split_polys = new List<List<Point3D>>(list_after_Split_polys);
+                list_before_Split_polys = new List<List<SimPoint3D>>(list_after_Split_polys);
                 list_brefore_Split_inds = new List<List<int>>(list_after_Split_inds);
-                list_after_Split_polys = new List<List<Point3D>>();
+                list_after_Split_polys = new List<List<SimPoint3D>>();
                 list_after_Split_inds = new List<List<int>>();
             }
 
@@ -2143,13 +2143,13 @@ namespace SIMULTAN.Data.Geometry
 
         }
 
-        private static void SplitPolygonAlongDiagonal(List<Point3D> polygon, List<int> polyIndices,
+        private static void SplitPolygonAlongDiagonal(List<SimPoint3D> polygon, List<int> polyIndices,
                                                      int ind1, int ind2, bool checkAdmissibility,
-                                                 out List<Point3D> polyA, out List<Point3D> polyB,
+                                                 out List<SimPoint3D> polyA, out List<SimPoint3D> polyB,
                                                  out List<int> originalIndsA, out List<int> originalIndsB)
         {
-            polyA = new List<Point3D>();
-            polyB = new List<Point3D>();
+            polyA = new List<SimPoint3D>();
+            polyB = new List<SimPoint3D>();
             originalIndsA = new List<int>();
             originalIndsB = new List<int>();
 
@@ -2162,7 +2162,7 @@ namespace SIMULTAN.Data.Geometry
             if (n < 4 || n != polyIndices.Count || test1 == -1 || test2 == -1 ||
                 minInd < 0 || maxInd < 0 || minInd == maxInd || minInd + 1 == maxInd)
             {
-                polyA = new List<Point3D>(polygon);
+                polyA = new List<SimPoint3D>(polygon);
                 originalIndsA = new List<int>(polyIndices);
                 return;
             }
@@ -2171,7 +2171,7 @@ namespace SIMULTAN.Data.Geometry
                 bool isAdmissible = DiagonalIsAdmissible(polygon, test1, test2);
                 if (!isAdmissible)
                 {
-                    polyA = new List<Point3D>(polygon);
+                    polyA = new List<SimPoint3D>(polygon);
                     originalIndsA = new List<int>(polyIndices);
                     return;
                 }
@@ -2194,7 +2194,7 @@ namespace SIMULTAN.Data.Geometry
             }
         }
 
-        private static (List<Point3D> positions, List<int> indices) PolygonFillMonotone(List<Point3D> polygon, bool reverse)
+        private static (List<SimPoint3D> positions, List<int> indices) PolygonFillMonotone(List<SimPoint3D> polygon, bool reverse)
         {
             // extract info about the polygon
             var orientation = CalculateIfPolygonClockWise(polygon, GENERAL_CALC_TOLERANCE);
@@ -2203,8 +2203,8 @@ namespace SIMULTAN.Data.Geometry
 
             // order the vertices according to the X component            
             int n = polygon.Count;
-            Point3DComparer pointComparer = new Point3DComparer(); //TODO: The same sorted list is created in multiple places
-            SortedList<Point3D, int> vertices_ordered = new SortedList<Point3D, int>(pointComparer);
+            SimPoint3DComparer pointComparer = new SimPoint3DComparer(); //TODO: The same sorted list is created in multiple places
+            SortedList<SimPoint3D, int> vertices_ordered = new SortedList<SimPoint3D, int>(pointComparer);
             for (int i = 0; i < n; i++)
             {
                 if (vertices_ordered.ContainsKey(polygon[i]))
@@ -2225,7 +2225,7 @@ namespace SIMULTAN.Data.Geometry
 
             if (n == 3)
             {
-                List<Point3D> tri = new List<Point3D>(vertices_ordered.Keys);
+                List<SimPoint3D> tri = new List<SimPoint3D>(vertices_ordered.Keys);
 
                 var orientation3 = CalculateIfPolygonClockWise(tri, GENERAL_CALC_TOLERANCE);
                 if (orientation3 == TriangulationOrientation.Invalid)
@@ -2251,12 +2251,12 @@ namespace SIMULTAN.Data.Geometry
             }
 
             // ALGORITHM
-            Stack<Point3D> to_process = new Stack<Point3D>();
+            Stack<SimPoint3D> to_process = new Stack<SimPoint3D>();
             // 1. push first 2 vertices onto stack
             to_process.Push(vertices_ordered.ElementAt(0).Key);
             to_process.Push(vertices_ordered.ElementAt(1).Key);
 
-            List<Point3D> positions = new List<Point3D>();
+            List<SimPoint3D> positions = new List<SimPoint3D>();
             List<int> indices = new List<int>();
 
             // 2. check the vertices moving along the X axis
@@ -2282,7 +2282,7 @@ namespace SIMULTAN.Data.Geometry
                         if (DiagonalIsAdmissible(polygon, current_Ind, before_last_on_stack_Ind))
                         {
                             // 4AA. add triangle
-                            var tr_isCW = CalculateIfPolygonClockWise(new List<Point3D> { current, last_on_stack, before_last_on_stack },
+                            var tr_isCW = CalculateIfPolygonClockWise(new List<SimPoint3D> { current, last_on_stack, before_last_on_stack },
                                 GENERAL_CALC_TOLERANCE);
 
                             if (tr_isCW == orientation)
@@ -2332,7 +2332,7 @@ namespace SIMULTAN.Data.Geometry
                         var before_last_on_stack = to_process.Peek();
 
                         // 4. add triangle   
-                        var tr_isCW = CalculateIfPolygonClockWise(new List<Point3D> { current, last_on_stack, before_last_on_stack },
+                        var tr_isCW = CalculateIfPolygonClockWise(new List<SimPoint3D> { current, last_on_stack, before_last_on_stack },
                             GENERAL_CALC_TOLERANCE);
 
                         if (tr_isCW == orientation)
@@ -2371,15 +2371,15 @@ namespace SIMULTAN.Data.Geometry
             return (positions, indices);
         }
 
-        private static (List<Point3D> positions, List<int> indices) CombineMeshes(
-            List<(List<Point3D> positions, List<int> indices)> meshGs
+        internal static (List<SimPoint3D> positions, List<int> indices) CombineMeshes(
+            List<(List<SimPoint3D> positions, List<int> indices)> meshGs
             )
         {
             int nrMeshes = meshGs.Count;
             if (nrMeshes == 1)
                 return meshGs[0];
 
-            List<Point3D> allPositions = new List<Point3D>();
+            List<SimPoint3D> allPositions = new List<SimPoint3D>();
             List<int> allIndices = new List<int>();
             int posOffset = 0;
 
@@ -2403,15 +2403,15 @@ namespace SIMULTAN.Data.Geometry
 
         #region Comparer
 
-        private class Point3DComparer : IComparer<Point3D>
+        private class SimPoint3DComparer : IComparer<SimPoint3D>
         {
             private double tolerance; // raster step
-            public Point3DComparer(double tolerance = 0.0)
+            public SimPoint3DComparer(double tolerance = 0.0)
             {
                 this.tolerance = tolerance;
             }
 
-            public int Compare(Point3D v1, Point3D v2)
+            public int Compare(SimPoint3D v1, SimPoint3D v2)
             {
                 // ADAPTED VERSION
                 bool sameX = Math.Abs(v1.X - v2.X) <= this.tolerance;
@@ -2446,20 +2446,20 @@ namespace SIMULTAN.Data.Geometry
 
         #region Alignment, Projection
 
-        private static bool LineAlignedWithPolygon(Point3D p1, Point3D p2, List<Point3D> polygon)
+        private static bool LineAlignedWithPolygon(SimPoint3D p1, SimPoint3D p2, List<SimPoint3D> polygon)
         {
-            Vector3D vL = p2 - p1;
+            SimVector3D vL = p2 - p1;
             vL.Normalize();
 
             int n = polygon.Count;
             for (int i = 0; i < n; i++)
             {
-                //Console.WriteLine("testing " + ToXZString(p1) + " and " + ToXZString(p2) + " on " + ToXZString(polygon[i]) + " and " + ToXZString(polygon[(i + 1) % n]));
-                Vector3D vP = polygon[(i + 1) % n] - polygon[i];
+                //Debug.WriteLine("testing " + ToXZString(p1) + " and " + ToXZString(p2) + " on " + ToXZString(polygon[i]) + " and " + ToXZString(polygon[(i + 1) % n]));
+                SimVector3D vP = polygon[(i + 1) % n] - polygon[i];
                 vP.Normalize();
 
-                //var debug = Vector3D.DotProduct(vL, vP);
-                var aligned = Math.Abs(Vector3D.DotProduct(vL, vP)) > (1 - GENERAL_CALC_TOLERANCE);
+                //var debug = SimVector3D.DotProduct(vL, vP);
+                var aligned = Math.Abs(SimVector3D.DotProduct(vL, vP)) > (1 - GENERAL_CALC_TOLERANCE);
                 if (aligned)
                 {
                     var p1_pr = NormalProject(p1, polygon[i], polygon[(i + 1) % n]);
@@ -2476,18 +2476,18 @@ namespace SIMULTAN.Data.Geometry
             return false;
         }
 
-        private static bool LineOverlapsWithPolygonAtEnds(Point3D p1, Point3D p2, List<Point3D> polygon, double overlap)
+        private static bool LineOverlapsWithPolygonAtEnds(SimPoint3D p1, SimPoint3D p2, List<SimPoint3D> polygon, double overlap)
         {
-            Vector3D vL = p2 - p1;
+            SimVector3D vL = p2 - p1;
             vL.Normalize();
 
             int n = polygon.Count;
             for (int i = 0; i < n; i++)
             {
-                Vector3D vP = polygon[(i + 1) % n] - polygon[i];
+                SimVector3D vP = polygon[(i + 1) % n] - polygon[i];
                 vP.Normalize();
 
-                var aligned = Math.Abs(Vector3D.DotProduct(vL, vP)) > (1 - GENERAL_CALC_TOLERANCE);
+                var aligned = Math.Abs(SimVector3D.DotProduct(vL, vP)) > (1 - GENERAL_CALC_TOLERANCE);
                 if (aligned)
                 {
                     var p1_pr = NormalProject(p1, polygon[i], polygon[(i + 1) % n]);
@@ -2498,8 +2498,8 @@ namespace SIMULTAN.Data.Geometry
                             p2_pr.distance < GENERAL_CALC_TOLERANCE * 10)
                         {
                             // check for overlap
-                            Point3D p1o = p1 + overlap * vL;
-                            Point3D p2o = p2 - overlap * vL;
+                            SimPoint3D p1o = p1 + overlap * vL;
+                            SimPoint3D p2o = p2 - overlap * vL;
                             var p1o_pr = NormalProject(p1o, polygon[i], polygon[(i + 1) % n]);
                             var p2o_pr = NormalProject(p2o, polygon[i], polygon[(i + 1) % n]);
                             if (p1o_pr.isInside || p2o_pr.isInside)
@@ -2512,19 +2512,19 @@ namespace SIMULTAN.Data.Geometry
             return false;
         }
 
-        private static bool LineNearlyOverlapsWithPolygon(Point3D p1, Point3D p2, List<Point3D> polygon, double tolerance_factor = GENERAL_CALC_TOLERANCE * 10)
+        private static bool LineNearlyOverlapsWithPolygon(SimPoint3D p1, SimPoint3D p2, List<SimPoint3D> polygon, double tolerance_factor = GENERAL_CALC_TOLERANCE * 10)
         {
-            Vector3D vL = p2 - p1;
+            SimVector3D vL = p2 - p1;
             double tolerance = vL.Length * tolerance_factor;
             vL.Normalize();
 
             int n = polygon.Count;
             for (int i = 0; i < n; i++)
             {
-                Vector3D vP = polygon[(i + 1) % n] - polygon[i];
+                SimVector3D vP = polygon[(i + 1) % n] - polygon[i];
                 vP.Normalize();
 
-                var aligned = Math.Abs(Vector3D.DotProduct(vL, vP)) > (1 - GENERAL_CALC_TOLERANCE);
+                var aligned = Math.Abs(SimVector3D.DotProduct(vL, vP)) > (1 - GENERAL_CALC_TOLERANCE);
                 if (aligned)
                 {
                     var p1_pr = NormalProject(p1, polygon[i], polygon[(i + 1) % n]);
@@ -2549,10 +2549,10 @@ namespace SIMULTAN.Data.Geometry
         }
 
 
-        private static (Point3D projection, double distance, bool isInside) NormalProject(Point3D p, Point3D q0, Point3D q1)
+        private static (SimPoint3D projection, double distance, bool isInside) NormalProject(SimPoint3D p, SimPoint3D q0, SimPoint3D q1)
         {
-            Vector3D v0 = q1 - q0;
-            Vector3D vP = p - q0;
+            SimVector3D v0 = q1 - q0;
+            SimVector3D vP = p - q0;
             if (v0.Length < GENERAL_CALC_TOLERANCE)
                 return (q0, Distance(p, q0), true);
 
@@ -2563,39 +2563,39 @@ namespace SIMULTAN.Data.Geometry
                 if (vP.Length < GENERAL_CALC_TOLERANCE)
                     return (q1, 0.0, true);
 
-                Vector3D e0 = q0 - q1;
-                Vector3D eP = p - q1;
+                SimVector3D e0 = q0 - q1;
+                SimVector3D eP = p - q1;
                 e0.Normalize();
                 eP.Normalize();
 
-                if (Math.Abs(Vector3D.DotProduct(e0, eP)) > (1 - GENERAL_CALC_TOLERANCE * 0.01))
+                if (Math.Abs(SimVector3D.DotProduct(e0, eP)) > (1 - GENERAL_CALC_TOLERANCE * 0.01))
                 {
                     //    return (p, 0.0, CollinearIsPointBetweenPoints(p, q0, q1));
                 }
 
                 // project vP onto v0
-                Point3D pPr = q1 + Vector3D.DotProduct(e0, eP) * vP.Length * e0;
+                SimPoint3D pPr = q1 + SimVector3D.DotProduct(e0, eP) * vP.Length * e0;
                 return (pPr, Distance(p, pPr), CollinearIsPointBetweenPoints(pPr, q0, q1));
             }
             else
             {
-                Vector3D e0 = q1 - q0;
-                Vector3D eP = p - q0;
+                SimVector3D e0 = q1 - q0;
+                SimVector3D eP = p - q0;
                 e0.Normalize();
                 eP.Normalize();
 
-                if (Math.Abs(Vector3D.DotProduct(e0, eP)) > (1 - GENERAL_CALC_TOLERANCE * 0.01))
+                if (Math.Abs(SimVector3D.DotProduct(e0, eP)) > (1 - GENERAL_CALC_TOLERANCE * 0.01))
                 {
                     //    return (p, 0.0, CollinearIsPointBetweenPoints(p, q0, q1));
                 }
 
                 // project vP onto v0
-                Point3D pPr = q0 + Vector3D.DotProduct(e0, eP) * vP.Length * e0;
+                SimPoint3D pPr = q0 + SimVector3D.DotProduct(e0, eP) * vP.Length * e0;
                 return (pPr, Distance(p, pPr), CollinearIsPointBetweenPoints(pPr, q0, q1));
             }
         }
 
-        private static bool CollinearIsPointBetweenPoints(Point3D p, Point3D q0, Point3D q1)
+        private static bool CollinearIsPointBetweenPoints(SimPoint3D p, SimPoint3D q0, SimPoint3D q1)
         {
             bool inside = (q0.X < q1.X) ? (q0.X <= p.X && p.X <= q1.X) : (q1.X <= p.X && p.X <= q0.X);
             inside &= (q0.Y < q1.Y) ? (q0.Y <= p.Y && p.Y <= q1.Y) : (q1.Y <= p.Y && p.Y <= q0.Y);
@@ -2603,26 +2603,26 @@ namespace SIMULTAN.Data.Geometry
             return inside;
         }
 
-        private static double Distance(Point3D p1, Point3D p2)
+        private static double Distance(SimPoint3D p1, SimPoint3D p2)
         {
-            Vector3D v = p2 - p1;
+            SimVector3D v = p2 - p1;
             return v.Length;
         }
 
-        private static (int, int) FindClosestHoles(List<List<Point3D>> holes, int index_of_hole)
+        private static (int, int) FindClosestHoles(List<List<SimPoint3D>> holes, int index_of_hole)
         {
-            Dictionary<int, Point3D> pivots = new Dictionary<int, Point3D>();
+            Dictionary<int, SimPoint3D> pivots = new Dictionary<int, SimPoint3D>();
             int counter = 0;
-            foreach (List<Point3D> hole in holes)
+            foreach (List<SimPoint3D> hole in holes)
             {
-                Vector3D center = new Vector3D(0, 0, 0);
+                SimVector3D center = new SimVector3D(0, 0, 0);
                 for (int i = 0; i < hole.Count; i++)
                 {
-                    center += (Vector3D)hole[i];
+                    center += (SimVector3D)hole[i];
                 }
                 center /= hole.Count;
 
-                pivots.Add(counter, (Point3D)center);
+                pivots.Add(counter, (SimPoint3D)center);
                 counter++;
             }
 
@@ -2765,19 +2765,19 @@ namespace SIMULTAN.Data.Geometry
                     continue;
 
                 var paths = entry.Value.BFSwCutoff(3);
-                //Console.WriteLine("paths of {0}", entry.Key);
+                //Debug.WriteLine("paths of {0}", entry.Key);
                 //foreach (var p in paths)
                 //{
                 //    foreach (int step in p)
                 //    {
-                //        Console.Write(">{0}", step.ToString());
+                //        Debug.Write(">{0}", step.ToString());
                 //    }
-                //    Console.WriteLine();
+                //    Debug.WriteLine();
                 //}
                 int common_element = FindFirstCommonElement(paths, entry.Key, INVALID_INDEX);
                 if (common_element != INVALID_INDEX)
                 {
-                    //Console.WriteLine("found common element {0}", common_element);
+                    //Debug.WriteLine("found common element {0}", common_element);
                     holes.Add(entry.Key, common_element);
                     found_single = true;
                 }
@@ -2927,11 +2927,11 @@ namespace SIMULTAN.Data.Geometry
             debug += "\t";
             if (verbose)
             {
-                Console.WriteLine(debug + "traversing node {0}", this.ToString());
-                Console.WriteLine(debug + "used stops:");
+                Debug.WriteLine(debug + "traversing node {0}", this.ToString());
+                Debug.WriteLine(debug + "used stops:");
                 foreach (var s in used_stops)
                 {
-                    Console.WriteLine(debug + "{0}:{1}>{2}", s.Item1, s.Item2, s.Item3);
+                    Debug.WriteLine(debug + "{0}:{1}>{2}", s.Item1, s.Item2, s.Item3);
                 }
             }
 
@@ -2953,11 +2953,11 @@ namespace SIMULTAN.Data.Geometry
                 counter++;
                 used_connections.Add(next.Key);
                 if (verbose)
-                    Console.WriteLine(debug + "traversing connection {0}:{1} - {2}:{3}", next.Key.Item1, next.Key.Item2, next.Key.Item3, next.Key.Item4);
+                    Debug.WriteLine(debug + "traversing connection {0}:{1} - {2}:{3}", next.Key.Item1, next.Key.Item2, next.Key.Item3, next.Key.Item4);
 
                 var stopA = ValueTuple.Create(next.Key.Item1, next.Key.Item2, 1); // 1 = out
                 if (verbose)
-                    Console.WriteLine(debug + "TESTING STOP {0}:{1}>{2}", stopA.Item1, stopA.Item2, stopA.Item3);
+                    Debug.WriteLine(debug + "TESTING STOP {0}:{1}>{2}", stopA.Item1, stopA.Item2, stopA.Item3);
                 if (stopA.Item1 == -1)
                     used_stops.Clear(); // no cycles via the outer polygon
 
@@ -2965,7 +2965,7 @@ namespace SIMULTAN.Data.Geometry
                 if (stopA.Item1 != -1 && used_stops.Contains(testA) && used_stops.IndexOf(testA) < used_stops.Count - 1)
                 {
                     if (verbose)
-                        Console.WriteLine(debug + "!!!");
+                        Debug.WriteLine(debug + "!!!");
                     found_cycle = true;
                     cause = next.Key;
                     break;
@@ -2975,7 +2975,7 @@ namespace SIMULTAN.Data.Geometry
 
                 var stopB = ValueTuple.Create(next.Key.Item3, next.Key.Item4, 2); // 2 = in
                 if (verbose)
-                    Console.WriteLine(debug + "TESTING STOP {0}:{1}>{2}", stopB.Item1, stopB.Item2, stopB.Item3);
+                    Debug.WriteLine(debug + "TESTING STOP {0}:{1}>{2}", stopB.Item1, stopB.Item2, stopB.Item3);
                 if (stopB.Item1 == -1)
                     used_stops.Clear(); // no cycles via the outer polygon
 
@@ -2983,7 +2983,7 @@ namespace SIMULTAN.Data.Geometry
                 if (stopB.Item1 != -1 && used_stops.Contains(testB) && used_stops.IndexOf(testB) < used_stops.Count - 1)
                 {
                     if (verbose)
-                        Console.WriteLine(debug + "!!!");
+                        Debug.WriteLine(debug + "!!!");
                     found_cycle = true;
                     cause = next.Key;
                     break;
@@ -3013,7 +3013,7 @@ namespace SIMULTAN.Data.Geometry
                 reached_end = true;
 
             if (verbose)
-                Console.WriteLine(debug + "result node {0}: reached_end = {1}, found_cycle = {2}", this.ToString(), reached_end, found_cycle);
+                Debug.WriteLine(debug + "result node {0}: reached_end = {1}, found_cycle = {2}", this.ToString(), reached_end, found_cycle);
             return (reached_end, found_cycle, cause);
         }
 

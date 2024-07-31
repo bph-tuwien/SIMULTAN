@@ -3,9 +3,11 @@ using SIMULTAN.Data.FlowNetworks;
 using SIMULTAN.Data.Taxonomy;
 using SIMULTAN.Data.Users;
 using SIMULTAN.Exceptions;
+using SIMULTAN.Projects;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 
 namespace SIMULTAN.Data.Components
 {
@@ -19,7 +21,7 @@ namespace SIMULTAN.Data.Components
 
         /// <summary>
         /// The component in this entry. When set to null, the entry is a placeholder for a component.
-        /// A component assigned to this property has to have a <see cref="SimComponent.CurrentSlot"/> matching the <see cref="Slot"/> base.
+        /// A component assigned to this property has to have a <see cref="SimComponent.Slots"/> matching the <see cref="Slot"/> base.
         /// </summary>
         public SimComponent Component
         {
@@ -28,7 +30,7 @@ namespace SIMULTAN.Data.Components
             {
                 if (component != value)
                 {
-                    if (value != null && (slot.SlotBase.Target != value.CurrentSlot.Target || slot.SlotBase.TaxonomyEntryId != value.CurrentSlot.TaxonomyEntryId))
+                    if (value != null && (!value.Slots.Any(t => t.Target == slot.SlotBase.Target)))
                         throw new ArgumentException("Slot does not match component.CurrentSlot");
 
                     //Check access
@@ -86,13 +88,22 @@ namespace SIMULTAN.Data.Components
                     if (slot.SlotBase != null)
                         slot.SlotBase.RemoveDeleteAction();
 
-                    this.slot = value;
+                    var oldSlot = slot;
+                    slot = value;
 
                     if (slot.SlotBase != null)
                         slot.SlotBase.SetDeleteAction(SlotBaseTaxonomyEntryDeleted);
 
-                    if (this.Component != null)
-                        this.Component.CurrentSlot = new Taxonomy.SimTaxonomyEntryReference(this.slot.SlotBase);
+                    if (this.Component != null && !this.Component.Slots.Any(t => t.TaxonomyEntryId == this.slot.SlotBase.TaxonomyEntryId))
+                    {
+                        this.Component.Slots.Add(new SimTaxonomyEntryReference(this.slot.SlotBase));
+                        if (oldSlot.SlotBase != null)
+                        {
+                            // remove old slot cause it was replaced
+                            Component.Slots.Remove(oldSlot.SlotBase);
+                        }
+                    }
+
 
                     NotifyPropertyChanged(nameof(Slot));
                 }
@@ -156,17 +167,18 @@ namespace SIMULTAN.Data.Components
         /// </summary>
         /// <param name="slot">The slot for this entry</param>
         /// <param name="component">The component stored in this entry. May be null.
-        /// When not null, the <see cref="SimComponent.CurrentSlot"/> has to match the slot parameters
+        /// When not null, one element of <see cref="SimComponent.Slots"/> has to match the slot parameters
         /// base</param>
         public SimChildComponentEntry(SimSlot slot, SimComponent component)
         {
-            if (component != null && (slot.SlotBase.Target != component.CurrentSlot.Target || slot.SlotBase.TaxonomyEntryId != component.CurrentSlot.TaxonomyEntryId))
+            if (component != null && (!component.Slots.Any(t => t.Target == slot.SlotBase.Target)))
                 throw new ArgumentException("Slot does not match component.CurrentSlot");
 
             this.Slot = slot;
-
             this.Component = component;
         }
+
+
         /// <summary>
         /// Initializes a new, empty instance of the ChildComponentEntry class
         /// </summary>
@@ -186,6 +198,7 @@ namespace SIMULTAN.Data.Components
             if (this.Parent == null)
                 throw new InvalidOperationException("May only be called on child component entries that do not have a parent");
 
+
             if (!(Slot.SlotBase is SimPlaceholderTaxonomyEntryReference))
             {
                 var entry = Parent.Factory.ProjectData.IdGenerator.GetById<SimTaxonomyEntry>(Slot.SlotBase.TaxonomyEntryId);
@@ -193,7 +206,6 @@ namespace SIMULTAN.Data.Components
                     throw new TaxonomyEntryNotFoundException(String.Format("Slot taxonomy entry with id {0} of component {1} could not be found", Slot.SlotBase.TaxonomyEntryId, component.ToString()));
                 Slot = new SimSlot(new SimTaxonomyEntryReference(entry), Slot.SlotExtension);
             }
-
             Component?.RestoreReferences(networkElements, assetManager);
         }
 
@@ -237,6 +249,7 @@ namespace SIMULTAN.Data.Components
             if (deleteComponent)
             {
                 factory.ProjectData.ComponentGeometryExchange.OnComponentRemoved(component);
+                factory.ProjectData.DataMappingTools.OnComponentRemoved(component);
                 factory.ProjectData.IdGenerator.Remove(component);
                 component.OnIsBeingDeleted();
             }
@@ -296,10 +309,11 @@ namespace SIMULTAN.Data.Components
 
         private void SlotBaseTaxonomyEntryDeleted(SimTaxonomyEntry caller)
         {
-            if (Parent != null && parent.Factory != null)
+            if (Parent != null && parent.Factory != null && Slot.SlotBase.Target == caller) // could have been changed by component taxonomy handling before
             {
-                var undefinedTax = Parent.GetDefaultSlotTaxonomyEntry(SimDefaultSlotKeys.Undefined);
-                Slot = new SimSlot(new SimTaxonomyEntryReference(undefinedTax), Slot.SlotExtension);
+                var candidate = Component?.Slots.FirstOrDefault(x => x.Target != Slot.SlotBase.Target)?.Target;
+                var newSlot = candidate ?? Parent.GetDefaultSlotTaxonomyEntry(SimDefaultSlotKeys.Undefined);
+                Slot = new SimSlot(new SimTaxonomyEntryReference(newSlot), Slot.SlotExtension);
             }
         }
     }

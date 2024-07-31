@@ -66,7 +66,7 @@ namespace SIMULTAN.Data.Components
             else
             {
                 // try to find a constant in System.Math
-                var systemMathConstants = typeof(System.Math).GetFields(BindingFlags.Public | BindingFlags.Static);
+                var systemMathConstants = typeof(Math).GetFields(BindingFlags.Public | BindingFlags.Static);
                 var constant = systemMathConstants.FirstOrDefault(c => c.Name == name);
                 if (constant != null)
                 {

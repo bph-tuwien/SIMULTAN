@@ -73,17 +73,17 @@ namespace SIMULTAN.DataMapping
     /// <summary>
     /// Mapping rule for <see cref="SimBaseParameter"/>
     /// </summary>
-    public class SimDataMappingRuleParameter : 
+    public class SimDataMappingRuleParameter :
         SimDataMappingRuleBase<SimDataMappingParameterMappingProperties, SimDataMappingFilterParameter>,
         ISimDataMappingComponentRuleChild, ISimDataMappingInstanceRuleChild
     {
         /// <summary>
         /// The value range that should be written. Only relevant when the parameter has a <see cref="SimMultiValueBigTable"/> attached
         /// </summary>
-        public SimDataMappingParameterRange ParameterRange 
-        { 
+        public SimDataMappingParameterRange ParameterRange
+        {
             get { return parameterRange; }
-            set 
+            set
             {
                 if (parameterRange != value)
                 {
@@ -132,67 +132,68 @@ namespace SIMULTAN.DataMapping
 
         private void HandleInstanceMatch(SimBaseParameter parameter, SimComponentInstance instance, SimTraversalState state, SimMappedData data)
         {
+            AdvanceReferencePoint(state);
+
             WriteProperties(state,
                 property => WriteInstanceMatchProperty(parameter, instance, property, state, data)
             );
-
-            AdvanceReferencePoint(state);
         }
 
         private void HandleMatch(SimBaseParameter parameter, SimTraversalState state, SimMappedData data)
         {
+            //Advance position for this rule
+            AdvanceReferencePoint(state);
+
             WriteProperties(state, 
                 property => WriteMatchProperty(parameter, property, state, data)
             );
-
-            AdvanceReferencePoint(state);
         }
-    
-        private void WriteMatchProperty(SimBaseParameter parameter, SimDataMappingParameterMappingProperties property, 
+
+        private void WriteMatchProperty(SimBaseParameter parameter, SimDataMappingParameterMappingProperties property,
             SimTraversalState state, SimMappedData data)
         {
             switch (property)
             {
                 case SimDataMappingParameterMappingProperties.Name:
-                    data.AddData(this.SheetName, state.CurrentPosition, parameter.NameTaxonomyEntry.Name);
+                    data.AddData(this.SheetName, state.CurrentPosition, parameter.NameTaxonomyEntry.TextOrKey, this);
                     break;
                 case SimDataMappingParameterMappingProperties.Id:
-                    data.AddData(this.SheetName, state.CurrentPosition, (int)parameter.Id.LocalId);
+                    data.AddData(this.SheetName, state.CurrentPosition, (int)parameter.Id.LocalId, this);
                     break;
                 case SimDataMappingParameterMappingProperties.Value:
                     if (parameter.ValueSource is SimMultiValueBigTableParameterSource tableSource)
                     {
-                        IntIndex2D startingPosition = state.CurrentPosition;
+                        RowColumnIndex startingPosition = state.CurrentPosition;
 
                         switch (this.ParameterRange)
                         {
                             case SimDataMappingParameterRange.SingleValue:
-                                data.AddData(this.SheetName, state.CurrentPosition, parameter.Value);
+                                data.AddData(this.SheetName, state.CurrentPosition, parameter.Value, this);
                                 break;
                             case SimDataMappingParameterRange.CurrentRow:
                                 for (int i = 0; i < tableSource.Table.ColumnHeaders.Count; ++i)
                                 {
-                                    data.AddData(this.SheetName, state.CurrentPosition, tableSource.Table[tableSource.Row, i]);
+                                    data.AddData(this.SheetName, state.CurrentPosition, tableSource.Table[tableSource.Row, i], this);
                                     if (i < tableSource.Table.ColumnHeaders.Count - 1)
-                                        state.CurrentPosition += new IntIndex2D(1, 0);                                        
+                                        state.CurrentPosition += new RowColumnIndex(0, 1);                                        
                                 }
 
                                 //Reset positioning
                                 if (this.MappingDirection == SimDataMappingDirection.Vertical) //Reset Column
-                                    state.CurrentPosition = new IntIndex2D(startingPosition.X, state.CurrentPosition.Y);
+                                    state.CurrentPosition = new RowColumnIndex(state.CurrentPosition.Row, startingPosition.Column);
 
                                 break;
                             case SimDataMappingParameterRange.CurrentColumn:
                                 for (int i = 0; i < tableSource.Table.RowHeaders.Count; ++i)
                                 {
-                                    data.AddData(this.SheetName, state.CurrentPosition, tableSource.Table[i, tableSource.Column]);
+                                    data.AddData(this.SheetName, state.CurrentPosition, tableSource.Table[i, tableSource.Column], this);
                                     if (i < tableSource.Table.RowHeaders.Count - 1)
-                                        state.CurrentPosition += new IntIndex2D(0, 1);
+                                        state.CurrentPosition += new RowColumnIndex(1, 0);
                                 }
 
                                 //Reset positioning
                                 if (this.MappingDirection == SimDataMappingDirection.Horizontal) //Reset Column
-                                    state.CurrentPosition = new IntIndex2D(state.CurrentPosition.X, startingPosition.Y);
+                                    state.CurrentPosition = new RowColumnIndex(startingPosition.Row, state.CurrentPosition.Column);
 
                                 break;
                             case SimDataMappingParameterRange.Table:
@@ -200,59 +201,59 @@ namespace SIMULTAN.DataMapping
                                 {
                                     for (int c = 0; c < tableSource.Table.ColumnHeaders.Count; ++c)
                                     {
-                                        data.AddData(this.SheetName, state.CurrentPosition, tableSource.Table[r, c]);
+                                        data.AddData(this.SheetName, state.CurrentPosition, tableSource.Table[r, c], this);
                                         if (c < tableSource.Table.ColumnHeaders.Count - 1)
-                                            state.CurrentPosition += new IntIndex2D(1, 0);
+                                            state.CurrentPosition += new RowColumnIndex(0, 1);
                                     }
 
                                     if (r < tableSource.Table.RowHeaders.Count - 1)
-                                        state.CurrentPosition = new IntIndex2D(startingPosition.X, state.CurrentPosition.Y + 1);
+                                        state.CurrentPosition = new RowColumnIndex(state.CurrentPosition.Row + 1, startingPosition.Column);
                                 }
 
                                 //Reset positioning
                                 if (this.MappingDirection == SimDataMappingDirection.Vertical) //Reset Column
-                                    state.CurrentPosition = new IntIndex2D(startingPosition.X, state.CurrentPosition.Y);
+                                    state.CurrentPosition = new RowColumnIndex(state.CurrentPosition.Row, startingPosition.Column);
                                 else if (this.MappingDirection == SimDataMappingDirection.Horizontal) //Reset Column
-                                    state.CurrentPosition = new IntIndex2D(state.CurrentPosition.X, startingPosition.Y);
+                                    state.CurrentPosition = new RowColumnIndex(startingPosition.Row, state.CurrentPosition.Column);
 
                                 break;
                         }
                     }
                     else //Always single value
-                        data.AddData(this.SheetName, state.CurrentPosition, parameter.Value);
+                        data.AddData(this.SheetName, state.CurrentPosition, parameter.Value, this);
 
                     break;
                 case SimDataMappingParameterMappingProperties.Description:
-                    data.AddData(this.SheetName, state.CurrentPosition, parameter.Description);
+                    data.AddData(this.SheetName, state.CurrentPosition, parameter.Description, this);
                     break;
                 case SimDataMappingParameterMappingProperties.Unit:
                     {
                         if (parameter is SimDoubleParameter dparam)
-                            data.AddData(this.SheetName, state.CurrentPosition, dparam.Unit);
+                            data.AddData(this.SheetName, state.CurrentPosition, dparam.Unit, this);
                         else if (parameter is SimIntegerParameter iparam)
-                            data.AddData(this.SheetName, state.CurrentPosition, iparam.Unit);
+                            data.AddData(this.SheetName, state.CurrentPosition, iparam.Unit, this);
                         else
-                            data.AddData(this.SheetName, state.CurrentPosition, null);
+                            data.AddData(this.SheetName, state.CurrentPosition, null, this);
                     }
                     break;
                 case SimDataMappingParameterMappingProperties.Min:
                     {
                         if (parameter is SimDoubleParameter dparam)
-                            data.AddData(this.SheetName, state.CurrentPosition, dparam.ValueMin);
+                            data.AddData(this.SheetName, state.CurrentPosition, dparam.ValueMin, this);
                         else if (parameter is SimIntegerParameter iparam)
-                            data.AddData(this.SheetName, state.CurrentPosition, iparam.ValueMin);
+                            data.AddData(this.SheetName, state.CurrentPosition, iparam.ValueMin, this);
                         else
-                            data.AddData(this.SheetName, state.CurrentPosition, null);
+                            data.AddData(this.SheetName, state.CurrentPosition, null, this);
                     }
                     break;
                 case SimDataMappingParameterMappingProperties.Max:
                     {
                         if (parameter is SimDoubleParameter dparam)
-                            data.AddData(this.SheetName, state.CurrentPosition, dparam.ValueMax);
+                            data.AddData(this.SheetName, state.CurrentPosition, dparam.ValueMax, this);
                         else if (parameter is SimIntegerParameter iparam)
-                            data.AddData(this.SheetName, state.CurrentPosition, iparam.ValueMax);
+                            data.AddData(this.SheetName, state.CurrentPosition, iparam.ValueMax, this);
                         else
-                            data.AddData(this.SheetName, state.CurrentPosition, null);
+                            data.AddData(this.SheetName, state.CurrentPosition, null, this);
                     }
                     break;
             }
@@ -263,7 +264,7 @@ namespace SIMULTAN.DataMapping
             switch (property)
             {
                 case SimDataMappingParameterMappingProperties.Value:
-                    data.AddData(this.SheetName, state.CurrentPosition, instance.InstanceParameterValuesPersistent[parameter]);
+                    data.AddData(this.SheetName, state.CurrentPosition, instance.InstanceParameterValuesPersistent[parameter], this);
                     break;
                 default:
                     WriteMatchProperty(parameter, property, state, data);
@@ -290,7 +291,7 @@ namespace SIMULTAN.DataMapping
                 OffsetParent = this.OffsetParent,
                 OffsetConsecutive = this.OffsetConsecutive,
                 MappingDirection = this.MappingDirection,
-                ReferencePoint = this.ReferencePoint,
+                ReferencePointParent = this.ReferencePointParent,
                 ParameterRange = this.ParameterRange,
             };
 

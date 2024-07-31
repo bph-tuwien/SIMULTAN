@@ -129,7 +129,7 @@ namespace SIMULTAN.Data.SimNetworks
                 item.ParentNetwork = null;
 
                 item.Factory = null;
-                item.OnIsDeleted();
+                item.NotifyIsDeleted();
             }
 
 

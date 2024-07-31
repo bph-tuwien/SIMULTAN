@@ -1,10 +1,13 @@
-﻿using MathNet.Numerics.LinearAlgebra;
+﻿using Assimp;
+using MathNet.Numerics.LinearAlgebra;
+using SIMULTAN.Data.SimMath;
 using SIMULTAN.Utils;
+using Sprache;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Windows;
-using System.Windows.Media.Media3D;
 
 namespace SIMULTAN.Data.Geometry
 {
@@ -64,12 +67,12 @@ namespace SIMULTAN.Data.Geometry
         /// </summary>
         /// <param name="points">Collection of 3D points to fit plane through</param>
         /// <returns></returns>
-        public static (Point3D center, Vector3D normal, double d) BestFittingPlane(IEnumerable<Point3D> points)
+        public static (SimPoint3D center, SimVector3D normal, double d) BestFittingPlane(IEnumerable<SimPoint3D> points)
         {
             //Calculate centroid
-            Vector3D center = new Vector3D(0, 0, 0);
+            SimVector3D center = new SimVector3D(0, 0, 0);
             foreach (var p in points)
-                center += (Vector3D)p;
+                center += (SimVector3D)p;
             center /= points.Count();
 
             //Move all vertices such that centroid = 0,0,0
@@ -99,11 +102,11 @@ namespace SIMULTAN.Data.Geometry
             }
 
             //Calculate plane
-            Vector3D n = new Vector3D(svd.U[0, smallestIdx], svd.U[1, smallestIdx], svd.U[2, smallestIdx]);
+            SimVector3D n = new SimVector3D(svd.U[0, smallestIdx], svd.U[1, smallestIdx], svd.U[2, smallestIdx]);
             n.Normalize();
-            double d = -Vector3D.DotProduct(n, center);
+            double d = -SimVector3D.DotProduct(n, center);
 
-            return ((Point3D)center, n, d);
+            return ((SimPoint3D)center, n, d);
         }
 
         /// <summary>
@@ -112,17 +115,20 @@ namespace SIMULTAN.Data.Geometry
         /// <param name="face">The final vector lies on the plane of this face</param>
         /// <param name="edge">The final vector is orthogonal to this edge</param>
         /// <returns>Normalized direction vector</returns>
-        public static Vector3D DirectionFromFaceAndEdge(Face face, PEdge edge)
+        public static SimVector3D DirectionFromFaceAndEdge(Face face, PEdge edge)
         {
-            RotateTransform3D rt = new RotateTransform3D(new AxisAngleRotation3D(face.Normal, 90));
-            Vector3D direction = EdgeAlgorithms.Direction(edge);
+            SimQuaternion rt = face.Normal.Length == 0.0 ? SimQuaternion.Identity : new SimQuaternion(face.Normal, 90);
+            SimMatrix3D rm = new SimMatrix3D();
+            rm.Rotate(rt);
 
-            Vector3D lineMiddlePoint = ((Vector3D)edge.Edge.Vertices[0].Position + (Vector3D)edge.Edge.Vertices[1].Position) / 2.0;
+            SimVector3D direction = EdgeAlgorithms.Direction(edge);
 
-            var result = rt.Transform(direction);
+            SimVector3D lineMiddlePoint = ((SimVector3D)edge.Edge.Vertices[0].Position + (SimVector3D)edge.Edge.Vertices[1].Position) / 2.0;
+
+            var result = rm.Transform(direction);
             result.Normalize();
 
-            if (FaceAlgorithms.Contains(face, (Point3D)(lineMiddlePoint + result * 0.01), 0.001, 0.01) != GeometricRelation.Contained)
+            if (FaceAlgorithms.Contains(face, (SimPoint3D)(lineMiddlePoint + result * 0.01), 0.001, 0.01) != GeometricRelation.Contained)
                 result *= -1;
 
             return result;
@@ -152,13 +158,16 @@ namespace SIMULTAN.Data.Geometry
                     connectedEdges.Add(edges.First(x => x.Vertices.Contains(edgeGroups[0][i]) && x.Vertices.Contains(edgeGroups[0][(i + 1)])));
                 }
 
-                model.StartBatchOperation();
-                var specialCaseEL = new EdgeLoop(edges[0].Layer, "{0}", connectedEdges);
-                Face specialCaseF = new Face(edges[0].Layer, "{0}", specialCaseEL);
-                addedGeometry.Add(specialCaseEL);
-                addedGeometry.Add(specialCaseF);
-                model.EndBatchOperation();
-                return addedGeometry;
+                if (EdgeAlgorithms.OrderLoop(connectedEdges).isLoop)
+                {
+                    model.StartBatchOperation();
+                    var specialCaseEL = new EdgeLoop(edges[0].Layer, "{0}", connectedEdges);
+                    Face specialCaseF = new Face(edges[0].Layer, "{0}", specialCaseEL);
+                    addedGeometry.Add(specialCaseEL);
+                    addedGeometry.Add(specialCaseF);
+                    model.EndBatchOperation();
+                    return addedGeometry;
+                }
             }
 
             return addedGeometry;
@@ -220,7 +229,7 @@ namespace SIMULTAN.Data.Geometry
                         var nextDirection = nextCandidate.Vertices.First(x => x != nextVertex).Position - nextVertex.Position;
 
                         //Calculate angle in range [-pi, pi]
-                        var angle = SignedAngle(new Vector(currentDirection.X, currentDirection.Z), new Vector(nextDirection.X, nextDirection.Z));
+                        var angle = SignedAngle(new SimVector(currentDirection.X, currentDirection.Z), new SimVector(nextDirection.X, nextDirection.Z));
 
                         if (angle < minAngle)
                         {
@@ -253,8 +262,8 @@ namespace SIMULTAN.Data.Geometry
                         edgeUsed[currentEdge] = 2;
                     else if (usedCount == 2)
                     {
-                        Console.Write("Failed: ");
-                        cycle.ForEach(x => Console.Write("{0}, ", x.Name));
+                        Debug.Write("Failed: ");
+                        cycle.ForEach(x => Debug.Write("{0}, ", x.Name));
                         throw new Exception(string.Format("Unable to detect faces around edge {0}", currentEdge.Name));
                     }
 
@@ -320,7 +329,7 @@ namespace SIMULTAN.Data.Geometry
         /// <param name="v1">vector 1</param>
         /// <param name="v2">vector 2</param>
         /// <returns>Signed angle between two 2D vectors in the range [-pi, pi].</returns>
-		public static double SignedAngle(Vector v1, Vector v2)
+		public static double SignedAngle(SimVector v1, SimVector v2)
         {
             var v1l = v1.Length;
             var v2l = v2.Length;
@@ -337,13 +346,20 @@ namespace SIMULTAN.Data.Geometry
             return angle;
         }
 
-        private static double SignedAngle(Vector3D v1, Vector3D v2, Vector3D vn)
+        /// <summary>
+        /// Computes the signed angle between two directions along a third direction
+        /// </summary>
+        /// <param name="v1">First direction</param>
+        /// <param name="v2">Second direction</param>
+        /// <param name="vn">Rotation Axis</param>
+        /// <returns>The signed angle</returns>
+        public static double SignedAngle(SimVector3D v1, SimVector3D v2, SimVector3D vn)
         {
             v1.Normalize();
             v2.Normalize();
-            double angle = Math.Acos(Vector3D.DotProduct(v1, v2));
-            Vector3D cross = Vector3D.CrossProduct(v1, v2);
-            if (Vector3D.DotProduct(vn, cross) < 0)
+            double angle = Math.Acos(SimVector3D.DotProduct(v1, v2));
+            SimVector3D cross = SimVector3D.CrossProduct(v1, v2);
+            if (SimVector3D.DotProduct(vn, cross) < 0)
             {
                 angle = -angle;
             }
@@ -363,6 +379,130 @@ namespace SIMULTAN.Data.Geometry
             var max = 360.0;
             var da = (a1 - a0) % max;
             return 2.0 * da % max - da;
+        }
+
+        /// <summary>
+        /// Finds all connected (share a vertex) edge loops and returns all the connected clusters.
+        /// </summary>
+        /// <param name="loops">The loops</param>
+        /// <returns>An array off all connected loops in the list</returns>
+        public static List<EdgeLoop>[] FindConnectedEdgeLoopGroups(IEnumerable<EdgeLoop> loops)
+        {
+            // find adjacent loops
+            var adjacentLoops = loops.SelectMany(loop => loop.Edges.SelectMany(edge => edge.Edge.Vertices.Select(v => (vertex: v, loop: loop))))
+                .GroupBy(x => x.vertex)
+                .Select(k => k.Select(x => x.loop).Distinct().ToList());
+
+            var allLoops = adjacentLoops.SelectMany(x => x).Distinct().ToList();
+
+            // create index lookup for adjacency matrix generation
+            var indexLookup = new Dictionary<EdgeLoop, int>();
+            var count = 0;
+            foreach (var loop in allLoops)
+            {
+                indexLookup.Add(loop, count++);
+            }
+
+            // build adjacency matrix
+            bool[,] adjacencies = new bool[count, count];
+            foreach (var connected in adjacentLoops)
+            {
+                for (int i = 0; i < connected.Count - 1; i++)
+                {
+                    for (int j = i + 1; j < connected.Count; j++)
+                    {
+                        int a = indexLookup[connected[i]];
+                        int b = indexLookup[connected[j]];
+                        adjacencies[a, b] = true;
+                        adjacencies[b, a] = true;
+                    }
+                }
+            }
+
+            var result = DetectAdjacencies(allLoops, adjacencies);
+
+            return result;
+        }
+
+        /// <summary>
+        /// Find all connected clusters of edges.
+        /// </summary>
+        /// <param name="edges">The edges</param>
+        /// <returns>Array of edge lists that are connected.</returns>
+        public static List<Edge>[] FindConnectedEdgeGroups(this IEnumerable<Edge> edges)
+        {
+
+            // lookup from each vertex to all connected edges
+            var vertexEdgeLookup = edges.SelectMany(x => x.Vertices.Select(v => (v, x))).GroupBy(x => x.v)
+                .ToDictionary(x => x.Key, x => x.Select(y => y.x).ToList());
+
+            var vertices = vertexEdgeLookup.Keys.ToList();
+            var count = vertices.Count;
+            var vertexIndices = vertices.Select((x, i) => (x, i)).ToDictionary(x => x.x, x => x.i);
+
+            // build adjacency of all connected vertices
+            var adjacencies = new bool[count, count];
+            for (int i = 0; i < count; i++)
+            {
+                foreach (var edge in vertexEdgeLookup[vertices[i]])
+                {
+                    foreach (var vertex in edge.Vertices)
+                    {
+                        var j = vertexIndices[vertex];
+                        adjacencies[i, j] = true;
+                        adjacencies[j, i] = true;
+                    }
+                }
+            }
+
+            // find connected vertex groups
+            var vertexGroups = DetectAdjacencies(vertices, adjacencies);
+            // find all edges of the vertex groups
+            return vertexGroups.Select(x => x.SelectMany(v => vertexEdgeLookup[v]).Distinct().ToList()).ToArray();
+        }
+
+        private static List<T>[] DetectAdjacencies<T>(List<T> allElements, bool[,] adjacencies)
+        {
+            // find connected elements (from https://stackoverflow.com/questions/8124626/finding-connected-components-of-adjacency-matrix-graph)
+            int count = allElements.Count;
+            int[] marks = new int[count];
+            int components = 0;
+            var queue = new Queue<int>();
+            for (int i = 0; i < count; i++)
+            {
+                if (marks[i] == 0)
+                {
+                    components++;
+                    queue.Enqueue(i);
+                    while (queue.Any())
+                    {
+                        var current = queue.Dequeue();
+                        marks[current] = components;
+                        for (int j = 0; j < count; j++)
+                        {
+                            if (adjacencies[current, j] && marks[j] == 0)
+                                queue.Enqueue(j);
+                        }
+                    }
+                }
+            }
+
+            // all with same component in marks belong to the same cluster
+            var result = new List<T>[components];
+            for (int i = 0; i < count; i++)
+            {
+                var current = marks[i] - 1;
+                if (result[current] == null)
+                {
+                    result[current] = new List<T>() { allElements[i] };
+                }
+                else
+                {
+                    result[current].Add(allElements[i]);
+                }
+            }
+
+            return result;
         }
 
         private static List<List<Vertex>> EdgeConnectedVertexGroups(List<Edge> edges)

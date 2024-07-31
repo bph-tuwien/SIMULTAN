@@ -1,8 +1,8 @@
-﻿using System;
+﻿using SIMULTAN.Data.SimMath;
+using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security;
-using System.Windows.Media.Media3D;
 
 namespace SIMULTAN.Utils
 {
@@ -48,8 +48,6 @@ namespace SIMULTAN.Utils
 
             IntPtr bstr1 = IntPtr.Zero;
             IntPtr bstr2 = IntPtr.Zero;
-
-            RuntimeHelpers.PrepareConstrainedRegions();
 
             try
             {
@@ -98,9 +96,9 @@ namespace SIMULTAN.Utils
         /// <param name="v2">The other vector</param>
         /// <param name="threshold">Threshold to test for collinearity</param>
         /// <returns>true if vectors are collinear, otherwise false</returns>
-        public static bool IsCollinear(this Vector3D v1, Vector3D v2, double threshold = 1e-3)
+        public static bool IsCollinear(this SimVector3D v1, SimVector3D v2, double threshold = 1e-3)
         {
-            return Math.Abs(Math.Abs(Vector3D.DotProduct(v1, v2)) - 1.0) < threshold;
+            return Math.Abs(Math.Abs(SimVector3D.DotProduct(v1, v2)) - 1.0) < threshold;
         }
 
         /// <summary>
@@ -108,9 +106,9 @@ namespace SIMULTAN.Utils
         /// </summary>
         /// <param name="m">This</param>
         /// <returns>A new matrix which is the transpose of this</returns>
-        public static Matrix3D Transpose(this Matrix3D m)
+        public static SimMatrix3D Transpose(this SimMatrix3D m)
         {
-            return new Matrix3D(
+            return new SimMatrix3D(
                     m.M11, m.M21, m.M31, m.OffsetX,
                     m.M12, m.M22, m.M32, m.OffsetY,
                     m.M13, m.M23, m.M33, m.OffsetZ,
@@ -138,9 +136,9 @@ namespace SIMULTAN.Utils
         /// <param name="z">z-axis, 3rd row</param>
         /// <param name="p">offset, 4th row</param>
         /// <returns>Matrix</returns>
-        public static Matrix3D MatrixFromAxes(Vector3D x, Vector3D y, Vector3D z, Point3D p)
+        public static SimMatrix3D MatrixFromAxes(SimVector3D x, SimVector3D y, SimVector3D z, SimPoint3D p)
         {
-            return new Matrix3D(x.X, x.Y, x.Z, 0.0,
+            return new SimMatrix3D(x.X, x.Y, x.Z, 0.0,
                                 y.X, y.Y, y.Z, 0.0,
                                 z.X, z.Y, z.Z, 0.0,
                                 p.X, p.Y, p.Z, 1.0);
@@ -180,7 +178,7 @@ namespace SIMULTAN.Utils
             if (value is double d)
                 return d;
             else if (value is int i)
-                return (double)i;
+                return i;
             else
                 return double.NaN;
         }

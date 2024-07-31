@@ -8,7 +8,7 @@ using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Windows.Media;
+using SIMULTAN.Data.SimMath;
 
 namespace SIMULTAN.Data.ValueMappings
 {
@@ -185,7 +185,7 @@ namespace SIMULTAN.Data.ValueMappings
         /// </param>
         /// <param name="timelineIndex">The currently selected timeline index. May be used by the <see cref="Prefilter"/></param>
         /// <returns>The final color of the mapping</returns>
-        public Color ApplyMapping(int objectIndex, int timelineIndex)
+        public SimColor ApplyMapping(int objectIndex, int timelineIndex)
         {
             IEnumerable<double> values = this.componentIndexUsage == SimComponentIndexUsage.Row ?
                 table.GetColumn(objectIndex).Select(x => x.ConvertToDoubleIfNumeric()) :

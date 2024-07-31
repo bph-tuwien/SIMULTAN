@@ -8,7 +8,7 @@ namespace SIMULTAN.Data.Components
     /// Defines the role of an object in the context of another object.
     /// </summary>
     [DebuggerDisplay("Slot {SlotBase} [{SlotExtension}]")]
-    public struct SimSlot : IComparable<SimSlot>, IEquatable<SimSlot>
+    public struct SimSlot : IEquatable<SimSlot>
     {
         /// <summary>
         /// Represents an invalid slot where both the base and the extension are Null.
@@ -43,12 +43,14 @@ namespace SIMULTAN.Data.Components
         /// <summary>
         /// Initializes an object of type Slot.
         /// </summary>
-        /// <param name="slotBase">The slot base</param>
+        /// <param name="slotBase">A reference to the taxonomy entry for the slot base. The Reference may not already be in use anywhere else.</param>
         /// <param name="slotExtension">The slot extension</param>
         public SimSlot(SimTaxonomyEntryReference slotBase, string slotExtension)
         {
             if (slotBase == null)
                 throw new ArgumentNullException(nameof(slotBase));
+            if (!(slotBase is SimPlaceholderTaxonomyEntryReference) && (slotBase.Target == null || slotBase.Target.Taxonomy == null || slotBase.Target.Factory == null))
+                throw new Exception("Slot base taxonomy entry needs to be in a taxonomy and project");
             this.SlotBase = slotBase;
             this.SlotExtension = slotExtension == null ? string.Empty : slotExtension;
         }
@@ -64,19 +66,6 @@ namespace SIMULTAN.Data.Components
         }
 
         #region Interfaces
-
-        /// <summary>
-        /// Implementation of the IComparable interface.
-        /// </summary>
-        /// <param name="other">the other DisplayableProductDefinition to compare to</param>
-        /// <returns>the result</returns>
-        public int CompareTo(SimSlot other)
-        {
-            var baseCompare = this.SlotBase.CompareTo(other.SlotBase);
-            if (baseCompare == 0)
-                return this.SlotExtension.CompareTo(other.SlotExtension);
-            return baseCompare;
-        }
 
         /// <inheritdoc/>
 		public bool Equals(SimSlot other)
@@ -121,19 +110,5 @@ namespace SIMULTAN.Data.Components
 
         #endregion
 
-        /// <summary>
-        /// Serializes the slot into a string.
-        /// </summary>
-        /// <returns>A serialized representation of the slot</returns>
-        public string ToSerializerString()
-        {
-            // ToDo: This is only used in excel mapping, needs to be removed with it
-            var name = "";
-            if (SimDefaultSlotKeys.KeyToBaseLookup.TryGetValue(SlotBase.Target.Key, out var basename))
-                name = basename;
-            else
-                name = SlotBase.Target.Name;
-            return name + SimDefaultSlots.COMP_SLOT_DELIMITER + this.SlotExtension;
-        }
     }
 }

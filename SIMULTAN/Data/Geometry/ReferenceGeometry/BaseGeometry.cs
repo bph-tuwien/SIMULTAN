@@ -2,7 +2,6 @@
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Windows.Media;
 
 namespace SIMULTAN.Data.Geometry
 {
@@ -27,8 +26,8 @@ namespace SIMULTAN.Data.Geometry
             set
             {
                 isVisible = value;
-                OnPropertyChanged(nameof(IsVisible));
-                OnPropertyChanged(nameof(IsActuallyVisible));
+                NotifyPropertyChanged(nameof(IsVisible));
+                NotifyPropertyChanged(nameof(IsActuallyVisible));
             }
         }
         private bool isVisible;
@@ -83,20 +82,35 @@ namespace SIMULTAN.Data.Geometry
             get { return color; }
             set
             {
+                if (value == null)
+                    throw new ArgumentNullException("Color may not be null");
+                if (value.Parent != null)
+                    throw new ArgumentException("BaseGeometries set the parent automatically");
+
                 if (color != value)
                 {
                     if (color != null)
+                    {
                         color.PropertyChanged -= onColorPropertyChanged;
+                        color.Parent = null;
+                    }
 
                     color = value;
+                    AssignParentColor();
 
                     if (color != null)
+                    {
                         color.PropertyChanged += onColorPropertyChanged;
+                    }
 
-                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Color)));
+                    NotifyPropertyChanged(nameof(Color));
                 }
             }
         }
+        /// <summary>
+        /// Called whenever the color of this object has been changed
+        /// </summary>
+        protected virtual void OnColorChanged() { }
         private DerivedColor color;
 
         /// <summary>
@@ -125,18 +139,17 @@ namespace SIMULTAN.Data.Geometry
 
             Id = id;
 
+            this.onColorPropertyChanged = new PropertyChangedEventHandler(Color_PropertyChanged);
+
             this.layer = null;
-            this.color = null;
+            this.Color = new DerivedColor(layer.Color.Color, true);
             this.Name = string.Empty;
             this.geometryHasChanged = false;
             this.topologyHasChanged = false;
             this.isVisible = true;
 
-            this.onColorPropertyChanged = new PropertyChangedEventHandler(Color_PropertyChanged);
-
             MoveToLayer(layer);
         }
-
 
 
         #region Events
@@ -219,7 +232,7 @@ namespace SIMULTAN.Data.Geometry
         /// Emits the PropertyChanged event
         /// </summary>
         /// <param name="prop">The name of the property</param>
-        protected void OnPropertyChanged(string prop)
+        protected void NotifyPropertyChanged(string prop)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(prop));
         }
@@ -253,42 +266,37 @@ namespace SIMULTAN.Data.Geometry
                 {
                     //Remove from old layer
                     layer.Elements.Remove(this);
-                    layer.PropertyChanged -= Layer_PropertyChanged;
                 }
 
                 this.layer = newLayer;
                 layer.Elements.Add(this);
-                layer.PropertyChanged += Layer_PropertyChanged;
 
-                AssignToLayerColor(newLayer);
+                AssignParentColor();
 
-                this.OnPropertyChanged(nameof(Layer));
-                this.OnPropertyChanged(nameof(IsActuallyVisible));
+                this.NotifyPropertyChanged(nameof(Layer));
+                this.NotifyPropertyChanged(nameof(IsActuallyVisible));
             }
         }
 
         /// <summary>
-        /// Called during Layer reassignment to handle colors. The default implementation transers the color parent to the layer.
+        /// Called during Layer reassignment to handle colors. The default implementation transfers the color parent to the layer.
         /// </summary>
-        /// <param name="layer">The new layer</param>
-        protected virtual void AssignToLayerColor(Layer layer)
+        protected virtual void AssignParentColor()
         {
-            var baseColor = Colors.White;
-            if (this.color != null)
-                baseColor = this.color.LocalColor;
-            this.Color = new DerivedColor(baseColor, layer, nameof(layer.Color));
+            this.Color.Parent = this.layer;
         }
 
         #region EventHandler
 
         private void Color_PropertyChanged(object sender, PropertyChangedEventArgs e)
         {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Color)));
+            NotifyPropertyChanged(nameof(Color));
+            OnColorChanged();
         }
-        private void Layer_PropertyChanged(object sender, PropertyChangedEventArgs e)
+
+        internal void NotifyActualVisibilityChanged()
         {
-            if (e.PropertyName == nameof(Layer.IsActuallyVisible))
-                OnPropertyChanged(nameof(IsActuallyVisible));
+            NotifyPropertyChanged(nameof(IsActuallyVisible));
         }
 
         #endregion

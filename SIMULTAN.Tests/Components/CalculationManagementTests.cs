@@ -13,8 +13,8 @@ namespace SIMULTAN.Tests.Components
     [TestClass]
     public class CalculationManagementTests : BaseProjectTest
     {
-        private static readonly FileInfo calculationProject = new FileInfo(@".\CalculationTestsProject.simultan");
-        private static readonly FileInfo accessProject = new FileInfo(@".\AccessTestsProject.simultan");
+        private static readonly FileInfo calculationProject = new FileInfo(@"./CalculationTestsProject.simultan");
+        private static readonly FileInfo accessProject = new FileInfo(@"./AccessTestsProject.simultan");
 
         [TestMethod]
         public void AddCalculation()
@@ -216,7 +216,7 @@ namespace SIMULTAN.Tests.Components
         [TestMethod]
         public void MemoryLeak()
         {
-            LoadProject(new FileInfo(".\\UnitTestProject.simultan"));
+            LoadProject(new FileInfo("./UnitTestProject.simultan"));
 
             var calcRef = MemoryLeak_Action();
 
@@ -273,8 +273,8 @@ namespace SIMULTAN.Tests.Components
             var childComp = parentComp.Components.First(x => x.Component.Name == "Sub").Component;
             var calc = parentComp.Calculations.First(x => x.Name == "calculation");
 
-            var aParam = parentComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "a");
-            var bParam = childComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "b");
+            var aParam = parentComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Text == "a");
+            var bParam = childComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Text == "b");
 
             //Input
             parentComp.Parameters.Remove(aParam);
@@ -295,8 +295,8 @@ namespace SIMULTAN.Tests.Components
             var childComp = parentComp.Components.First(x => x.Component.Name == "Sub").Component;
             var calc = parentComp.Calculations.First(x => x.Name == "calculation");
 
-            var outParam = parentComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "out");
-            var out2Param = childComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "out2");
+            var outParam = parentComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Text == "out");
+            var out2Param = childComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Text == "out2");
 
             //Output
             parentComp.Parameters.Remove(outParam);
@@ -317,8 +317,8 @@ namespace SIMULTAN.Tests.Components
             var childComp = parentComp.Components.First(x => x.Component.Name == "Sub");
             var calc = parentComp.Calculations.First(x => x.Name == "calculation");
 
-            var aParam = parentComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "a");
-            var bParam = childComp.Component.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "b");
+            var aParam = parentComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Text == "a");
+            var bParam = childComp.Component.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Text == "b");
 
             //Input
             parentComp.Components.Remove(childComp);
@@ -340,8 +340,8 @@ namespace SIMULTAN.Tests.Components
             var childComp = parentComp.Components.First(x => x.Component.Name == "Sub");
             var calc = parentComp.Calculations.First(x => x.Name == "calculation");
 
-            var outParam = parentComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "out");
-            var out2Param = childComp.Component.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "out2");
+            var outParam = parentComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Text == "out");
+            var out2Param = childComp.Component.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Text == "out2");
 
             //Output
             parentComp.Components.Remove(childComp);

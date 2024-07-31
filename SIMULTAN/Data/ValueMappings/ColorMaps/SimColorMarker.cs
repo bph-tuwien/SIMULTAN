@@ -4,7 +4,7 @@ using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Windows.Media;
+using SIMULTAN.Data.SimMath;
 
 namespace SIMULTAN.Data.ValueMappings
 {
@@ -23,7 +23,7 @@ namespace SIMULTAN.Data.ValueMappings
         /// <summary>
         /// The color of the marker
         /// </summary>
-        public Color Color
+        public SimColor Color
         {
             get { return color; }
             set
@@ -36,7 +36,7 @@ namespace SIMULTAN.Data.ValueMappings
                 }
             }
         }
-        private Color color;
+        private SimColor color;
 
         /// <summary>
         /// The value (position) of the marker
@@ -78,7 +78,7 @@ namespace SIMULTAN.Data.ValueMappings
         /// </summary>
         /// <param name="value">The value of the marker (position)</param>
         /// <param name="color">The color of the marker</param>
-        public SimColorMarker(double value, Color color)
+        public SimColorMarker(double value, SimColor color)
         {
             this.value = value;
             this.color = color;

@@ -3,12 +3,8 @@ using SIMULTAN.Projects;
 using SIMULTAN.Serializer.Projects;
 using SIMULTAN.Utils;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Security;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace _01_ProjectBasics
 {
@@ -40,6 +36,7 @@ namespace _01_ProjectBasics
             //----------------------------------------------------------------
 
             //ProjectData contains the data loaded from the project
+            // Use Dummy implementation from tests here, not intended for production use but sufficient for example.
             var projectData = new ExtendedProjectData();
             //Load the project. Loading reads all public information and also the user information
             var project = ZipProjectIO.Load(projectFile, projectData);
@@ -63,7 +60,7 @@ namespace _01_ProjectBasics
 
             foreach (var comp in projectData.Components)
             {
-                Console.WriteLine("{0} [{1}]", comp.Name, comp.CurrentSlot);
+                Console.WriteLine("{0} [{1}]", comp.Name, comp.Slots[0].Target.Localization.Localize().Name);
             }
 
             Console.WriteLine();

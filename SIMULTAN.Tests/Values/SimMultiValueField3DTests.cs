@@ -1,5 +1,6 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SIMULTAN.Data;
+using SIMULTAN.Data.SimMath;
 using SIMULTAN.Data.MultiValues;
 using SIMULTAN.Projects;
 using SIMULTAN.Tests.TestUtils;
@@ -7,7 +8,7 @@ using SIMULTAN.Utils;
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using System.Windows.Media.Media3D;
+
 
 namespace SIMULTAN.Tests.Values
 {
@@ -69,7 +70,7 @@ namespace SIMULTAN.Tests.Values
 
 
         internal static (string name, List<double> xaxis, List<double> yaxis, List<double> zaxis, List<double> data,
-            Dictionary<Point3D, double> dataDict,
+            Dictionary<SimPoint3D, double> dataDict,
             string unitX, string unitY, string unitZ)
             TestData(int xCount, int yCount, int zCount)
         {
@@ -85,7 +86,7 @@ namespace SIMULTAN.Tests.Values
                 zaxis.Add(i * 100.0);
 
             List<double> data = new List<double>();
-            Dictionary<Point3D, double> dataDict = new Dictionary<Point3D, double>();
+            Dictionary<SimPoint3D, double> dataDict = new Dictionary<SimPoint3D, double>();
             int val = 0;
             for (int z = 0; z < zaxis.Count; ++z)
             {
@@ -94,7 +95,7 @@ namespace SIMULTAN.Tests.Values
                     for (int x = 0; x < xaxis.Count; ++x)
                     {
                         data.Add(val);
-                        dataDict.Add(new Point3D(x, y, z), val);
+                        dataDict.Add(new SimPoint3D(x, y, z), val);
                         val++;
                     }
                 }
@@ -111,7 +112,7 @@ namespace SIMULTAN.Tests.Values
         }
 
         internal static ((string name, List<double> xaxis, List<double> yaxis, List<double> zaxis, List<double> data,
-            Dictionary<Point3D, double> dataDict,
+            Dictionary<SimPoint3D, double> dataDict,
             string unitX, string unitY, string unitZ) data, SimMultiValueField3D table, ExtendedProjectData projectData)
             TestDataTable(int xCount, int yCount, int zCount)
         {
@@ -219,7 +220,7 @@ namespace SIMULTAN.Tests.Values
             var data = TestData(3, 4, 5);
             var location = new DummyReferenceLocation(Guid.Empty);
 
-            data.dataDict.Add(new Point3D(1000, 1000, 1000), 99.9);
+            data.dataDict.Add(new SimPoint3D(1000, 1000, 1000), 99.9);
 
             //Case xaxis == null
             var mvt = new SimMultiValueField3D(55, data.name, data.xaxis, data.unitX, data.yaxis, data.unitY, data.zaxis, data.unitZ, data.dataDict, true);
@@ -279,24 +280,24 @@ namespace SIMULTAN.Tests.Values
         {
             var data = TestData(3, 4, 5);
 
-            var datadict = new Dictionary<Point3D, double>
+            var datadict = new Dictionary<SimPoint3D, double>
             {
-                { new Point3D(0,0,0), 0 },
-                { new Point3D(1,0,0), 1 },
-                { new Point3D(0,1,0), 2 },
-                { new Point3D(1,1,0), 3 },
+                { new SimPoint3D(0,0,0), 0 },
+                { new SimPoint3D(1,0,0), 1 },
+                { new SimPoint3D(0,1,0), 2 },
+                { new SimPoint3D(1,1,0), 3 },
 
-                { new Point3D(0,0,1), 4 },
-                { new Point3D(1,0,1), 5 },
-                { new Point3D(0,1,1), 6 },
-                { new Point3D(1,1,1), 7 },
+                { new SimPoint3D(0,0,1), 4 },
+                { new SimPoint3D(1,0,1), 5 },
+                { new SimPoint3D(0,1,1), 6 },
+                { new SimPoint3D(1,1,1), 7 },
             };
 
             //Check data exception
             Assert.ThrowsException<ArgumentNullException>(() =>
             { var tabex = new SimMultiValueField3D(0, data.name, data.xaxis, data.unitX, data.yaxis, data.unitY, data.zaxis, data.unitZ, null, false); });
 
-            var table1 = new SimMultiValueField3D(99, data.name, null, data.unitX, null, data.unitY, null, data.unitZ, new Dictionary<Point3D, double>(), true);
+            var table1 = new SimMultiValueField3D(99, data.name, null, data.unitX, null, data.unitY, null, data.unitZ, new Dictionary<SimPoint3D, double>(), true);
             Assert.AreEqual(SimMultiValueType.Field3D, table1.MVType);
             Assert.AreEqual(99, table1.LocalID);
             Assert.AreEqual(data.name, table1.Name);
@@ -307,7 +308,7 @@ namespace SIMULTAN.Tests.Values
             Assert.AreEqual(1, table1.ZAxis.Count);
             Assert.AreEqual(0, table1.ZAxis[0]);
             Assert.AreEqual(1, table1.Length);
-            Assert.AreEqual(0, table1.GetValue(new Point3D(0, 0, 0)));
+            Assert.AreEqual(0, table1.GetValue(new SimPoint3D(0, 0, 0)));
             Assert.AreEqual(data.unitX, table1.UnitX);
             Assert.AreEqual(data.unitY, table1.UnitY);
             Assert.AreEqual(data.unitZ, table1.UnitZ);
@@ -328,7 +329,7 @@ namespace SIMULTAN.Tests.Values
             for (int x = 0; x < data.xaxis.Count; x++)
                 for (int y = 0; y < data.yaxis.Count; y++)
                     for (int z = 0; z < data.zaxis.Count; z++)
-                        Assert.AreEqual(data.dataDict[new Point3D(x, y, z)], table2.GetValue(new Point3D(x, y, z)));
+                        Assert.AreEqual(data.dataDict[new SimPoint3D(x, y, z)], table2.GetValue(new SimPoint3D(x, y, z)));
             Assert.AreEqual(data.unitX, table2.UnitX);
             Assert.AreEqual(data.unitY, table2.UnitY);
             Assert.AreEqual(data.unitZ, table2.UnitZ);
@@ -364,19 +365,19 @@ namespace SIMULTAN.Tests.Values
             var mvt = new SimMultiValueField3D(data.name, data.xaxis, data.unitX, data.yaxis, data.unitY, data.zaxis, data.unitZ, data.data, false);
 
             //Hit on point
-            Assert.AreEqual(16, mvt.GetValue(new Point3D(1, 1, 1)));
+            Assert.AreEqual(16, mvt.GetValue(new SimPoint3D(1, 1, 1)));
 
             //Hit exactly in middle of four points
-            Assert.AreEqual(16, mvt.GetValue(new Point3D(0.5, 0.5, 0.5)));
+            Assert.AreEqual(16, mvt.GetValue(new SimPoint3D(0.5, 0.5, 0.5)));
 
             //Hit at 1/4
-            Assert.AreEqual(0, mvt.GetValue(new Point3D(0.25, 0.25, 0.25)));
+            Assert.AreEqual(0, mvt.GetValue(new SimPoint3D(0.25, 0.25, 0.25)));
 
             //Hit at 3/4
-            Assert.AreEqual(16, mvt.GetValue(new Point3D(0.75, 0.75, 0.75)));
+            Assert.AreEqual(16, mvt.GetValue(new SimPoint3D(0.75, 0.75, 0.75)));
 
             //Hit outside
-            Assert.AreEqual(59, mvt.GetValue(new Point3D(30, 30, 30)));
+            Assert.AreEqual(59, mvt.GetValue(new SimPoint3D(30, 30, 30)));
         }
 
         [TestMethod]
@@ -415,19 +416,19 @@ namespace SIMULTAN.Tests.Values
             var mvt = new SimMultiValueField3D(data.name, data.xaxis, data.unitX, data.yaxis, data.unitY, data.zaxis, data.unitZ, data.data, true);
 
             //Hit on point
-            Assert.AreEqual(16.0, mvt.GetValue(new Point3D(1, 1, 1)));
+            Assert.AreEqual(16.0, mvt.GetValue(new SimPoint3D(1, 1, 1)));
 
             //Hit exactly in middle of four points
-            Assert.AreEqual(8.0, mvt.GetValue(new Point3D(0.5, 0.5, 0.5)));
+            Assert.AreEqual(8.0, mvt.GetValue(new SimPoint3D(0.5, 0.5, 0.5)));
 
             //Hit at 1/4
-            Assert.AreEqual(4.0, mvt.GetValue(new Point3D(0.25, 0.25, 0.25)));
+            Assert.AreEqual(4.0, mvt.GetValue(new SimPoint3D(0.25, 0.25, 0.25)));
 
             //Hit at 3/4
-            Assert.AreEqual(12.0, mvt.GetValue(new Point3D(0.75, 0.75, 0.75)));
+            Assert.AreEqual(12.0, mvt.GetValue(new SimPoint3D(0.75, 0.75, 0.75)));
 
             //Hit outside
-            Assert.AreEqual(59, mvt.GetValue(new Point3D(30, 30, 30)));
+            Assert.AreEqual(59, mvt.GetValue(new SimPoint3D(30, 30, 30)));
         }
 
 
@@ -844,18 +845,18 @@ namespace SIMULTAN.Tests.Values
             mvt[1, 2, 3] = 77.77;
 
             eventCounter.AssertCount(0, 1, 0);
-            AssertUtil.AreEqual(new Point3D(0, 0.01, 200), eventCounter.ValueChangedArgs[0].Range.Minimum);
-            AssertUtil.AreEqual(new Point3D(double.PositiveInfinity, double.PositiveInfinity, double.PositiveInfinity), eventCounter.ValueChangedArgs[0].Range.Maximum);
+            AssertUtil.AreEqual(new SimPoint3D(0, 0.01, 200), eventCounter.ValueChangedArgs[0].Range.Minimum);
+            AssertUtil.AreEqual(new SimPoint3D(double.PositiveInfinity, double.PositiveInfinity, double.PositiveInfinity), eventCounter.ValueChangedArgs[0].Range.Maximum);
 
             mvt[0, 0, 0] = -99;
             eventCounter.AssertCount(0, 2, 0);
-            AssertUtil.AreEqual(new Point3D(double.NegativeInfinity, double.NegativeInfinity, double.NegativeInfinity), eventCounter.ValueChangedArgs[1].Range.Minimum);
-            AssertUtil.AreEqual(new Point3D(1, 0.01, 100), eventCounter.ValueChangedArgs[1].Range.Maximum);
+            AssertUtil.AreEqual(new SimPoint3D(double.NegativeInfinity, double.NegativeInfinity, double.NegativeInfinity), eventCounter.ValueChangedArgs[1].Range.Minimum);
+            AssertUtil.AreEqual(new SimPoint3D(1, 0.01, 100), eventCounter.ValueChangedArgs[1].Range.Maximum);
 
             mvt[0, 1, 1] = -99;
             eventCounter.AssertCount(0, 3, 0);
-            AssertUtil.AreEqual(new Point3D(double.NegativeInfinity, 0, 0), eventCounter.ValueChangedArgs[2].Range.Minimum);
-            AssertUtil.AreEqual(new Point3D(1, 0.02, 200), eventCounter.ValueChangedArgs[2].Range.Maximum);
+            AssertUtil.AreEqual(new SimPoint3D(double.NegativeInfinity, 0, 0), eventCounter.ValueChangedArgs[2].Range.Minimum);
+            AssertUtil.AreEqual(new SimPoint3D(1, 0.02, 200), eventCounter.ValueChangedArgs[2].Range.Maximum);
         }
 
         [TestMethod]
@@ -898,17 +899,17 @@ namespace SIMULTAN.Tests.Values
             (var data, var mvt, _) = TestDataTable(3, 4, 5);
             var eventCounter = new MultiValueTableEventCounter(mvt);
 
-            Assert.AreEqual(4.0, mvt.GetValue(new Point3D(0.25, 0.25, 0.25)));
+            Assert.AreEqual(4.0, mvt.GetValue(new SimPoint3D(0.25, 0.25, 0.25)));
 
             mvt.CanInterpolate = false;
             eventCounter.AssertCount(1, 0, 0);
             Assert.AreEqual(nameof(SimMultiValue.CanInterpolate), eventCounter.PropertyChangedArgs[0]);
-            Assert.AreEqual(0, mvt.GetValue(new Point3D(0.25, 0.25, 0.25)));
+            Assert.AreEqual(0, mvt.GetValue(new SimPoint3D(0.25, 0.25, 0.25)));
 
             mvt.CanInterpolate = true;
             eventCounter.AssertCount(2, 0, 0);
             Assert.AreEqual(nameof(SimMultiValue.CanInterpolate), eventCounter.PropertyChangedArgs[1]);
-            Assert.AreEqual(4.0, mvt.GetValue(new Point3D(0.25, 0.25, 0.25)));
+            Assert.AreEqual(4.0, mvt.GetValue(new SimPoint3D(0.25, 0.25, 0.25)));
         }
 
         [TestMethod]

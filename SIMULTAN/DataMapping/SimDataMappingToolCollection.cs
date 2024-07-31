@@ -1,4 +1,5 @@
 ﻿using SIMULTAN.Data;
+using SIMULTAN.Data.Components;
 using SIMULTAN.Data.MultiValues;
 using SIMULTAN.Projects;
 using System;
@@ -113,5 +114,28 @@ namespace SIMULTAN.DataMapping
         }
 
         #endregion
+
+        /// <summary>
+        /// Notifies the collection that a component has been removed from the project
+        /// </summary>
+        /// <param name="component">The component that got removed</param>
+        internal void OnComponentRemoved(SimComponent component)
+        {
+            if (component == null)
+                throw new ArgumentNullException(nameof(component));
+
+            foreach (var tool in this)
+                tool.Rules.RemoveMapping(component);
+        }
+
+        /// <summary>
+        /// Looks up taxonomy entries for default slot by their name.
+        /// Do this if the default taxonomies changed, could mean that the project is migrated.
+        /// </summary>
+        internal void RestoreDefaultTaxonomyReferences()
+        {
+            foreach (var tool in this)
+                tool.RestoreDefaultTaxonomyReferences();
+        }
     }
 }

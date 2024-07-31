@@ -74,12 +74,6 @@ namespace SIMULTAN.Serializer.Projects
             MultiValueDxfIO.Read(_file, parserInfo);
         }
 
-        internal static void SaveMultiValueFile(FileInfo _file, SimMultiValueCollection _value_factory)
-        {
-            MultiValueDxfIO.Write(_file, _value_factory);
-            _file.LastWriteTime = DateTime.Now;
-        }
-
         internal static void SavePublicMultiValueFile(FileInfo _file, ProjectData projectData)
         {
             HashSet<SimMultiValue> exportedMVs = new HashSet<SimMultiValue>();
@@ -101,13 +95,6 @@ namespace SIMULTAN.Serializer.Projects
 
             MultiValueDxfIO.Write(_file, exportedMVs);
             _file.LastWriteTime = DateTime.Now;
-        }
-
-        internal static void OpenMultiValueFileAlone(HierarchicalProject _caller, FileInfo _file, ExtendedProjectData targetData)
-        {
-            targetData.SetCallingLocation(_caller);
-            DXFParserInfo info = new DXFParserInfo(_caller.GlobalID, targetData);
-            MultiValueDxfIO.Read(_file, info);
         }
 
         #endregion
@@ -137,32 +124,8 @@ namespace SIMULTAN.Serializer.Projects
             ComponentDxfIO.Read(_file, new DXFParserInfo(_calling_global_id, projectData));
         }
 
-        internal static void SaveComponentFile(FileInfo _file, ProjectData projectData)
-        {
-            // create the export string
-            /*StringBuilder export = ComponentFactorySerialization.ExportRecord(projectData.NetworkManager, projectData.Components,
-                projectData.AssetManager, projectData.UserComponentLists, true);
-            string content = export.ToString();
-            using (FileStream fs = File.Create(_file.FullName))
-            {
-                byte[] content_B = Encoding.UTF8.GetBytes(content);
-                fs.Write(content_B, 0, content_B.Length);
-            }
-            _file.LastWriteTime = DateTime.Now;*/
-        }
-
         internal static void SavePublicComponentFile(FileInfo _file, ProjectData projectData)
         {
-            // create the export string and save the component file
-            //(StringBuilder export, List<string> public_paths) = ComponentFactorySerialization.ExportPublic(projectData.NetworkManager,
-            //    projectData.Components,
-            //    projectData.AssetManager, true);
-            //string content = export.ToString();
-            //using (FileStream fs = File.Create(_file.FullName))
-            //{
-            //    byte[] content_B = System.Text.Encoding.UTF8.GetBytes(content);
-            //    fs.Write(content_B, 0, content_B.Length);
-            //}
             ComponentDxfIO.WritePublic(_file, projectData);
             _file.LastWriteTime = DateTime.Now;
 
@@ -171,21 +134,6 @@ namespace SIMULTAN.Serializer.Projects
                                      ParamStructFileExtensions.PUBLIC_PROJECT_PATHS_SUFFIX +
                                      ParamStructFileExtensions.FILE_EXT_PUBLIC_PROJECT_PATHS);
             PPathIO.Write(file_paths_name, projectData);
-
-            // save a separate text file containing the paths to the public resources that need to be unpacked during loading
-            //string path_content = string.Empty;
-            //if (public_paths.Count == 1)
-            //    path_content += public_paths[0];
-            //else if (public_paths.Count >= 2)
-            //    path_content = public_paths.Aggregate((x, y) => x + Environment.NewLine + y);
-            //string file_paths_name = _file.FullName.Substring(0, _file.FullName.Length - ParamStructFileExtensions.FILE_EXT_COMPONENTS_PUBLIC.Length) +
-            //                         ParamStructFileExtensions.PUBLIC_PROJECT_PATHS_SUFFIX +
-            //                         ParamStructFileExtensions.FILE_EXT_PUBLIC_PROJECT_PATHS;
-            //using (FileStream fs = File.Create(file_paths_name))
-            //{
-            //    byte[] content_P = System.Text.Encoding.UTF8.GetBytes(path_content);
-            //    fs.Write(content_P, 0, content_P.Length);
-            //}
         }
 
         #endregion
@@ -274,7 +222,7 @@ namespace SIMULTAN.Serializer.Projects
 
             var userManager = _projectData.UsersManager;
 
-            var users = SimUserDxfIO.Read(_file, ProjectIO.ENCR_KEY, new DXFParserInfo(_projectData.Project.GlobalID, _projectData));
+            var users = SimUserDxfIO.Read(_file, ProjectIO.ENCR_KEY, new DXFParserInfo(_projectData.Owner.GlobalID, _projectData));
 
             if (users.Any(x => x.EncryptedEncryptionKey == null)) //For legacy projects where no key was present -> reset passwords of ALL users and create key
             {
@@ -344,8 +292,6 @@ namespace SIMULTAN.Serializer.Projects
 
         internal static void SaveLinksFile(FileInfo _file, ExtendedProjectData projectData)
         {
-            FileCanBeOverwritten(_file); // throws exceptions, if there are time stamp inconsistencies
-
             if (projectData.MultiLinkManager.UserEncryptionUtiliy == null)
                 throw new Exception("Encryption key utility cannot be found!");
 
@@ -369,15 +315,8 @@ namespace SIMULTAN.Serializer.Projects
             if (projectData == null)
                 throw new ArgumentNullException(nameof(projectData));
 
-            var parseInfo = new DXFParserInfo(projectData.Project.GlobalID, projectData) { CurrentFile = file };
+            var parseInfo = new DXFParserInfo(projectData.Owner.GlobalID, projectData) { CurrentFile = file };
             GeoMapDxfIO.Read(file, parseInfo);
-        }
-
-        internal static void SaveGeoMapFile(FileInfo _file, SitePlannerManager _manager, ProjectData _projectData)
-        {
-            GeoMapDxfIO.Write(_file, _manager.GetGeoMapByFile(_file), _projectData);
-
-            _file.LastWriteTime = DateTime.Now;
         }
 
         internal static void OpenSitePlannerFile(ResourceFileEntry fileResource, ExtendedProjectData projectData)
@@ -388,13 +327,6 @@ namespace SIMULTAN.Serializer.Projects
             var file = new FileInfo(fileResource.CurrentFullPath);
             var parseInfo = new DXFParserInfo(projectData.Owner.GlobalID, projectData) { CurrentFile = file };
             SiteplannerDxfIO.Read(file, parseInfo);
-        }
-
-        internal static void SaveSitePlannerFile(FileInfo _file, SitePlannerManager _manager, ProjectData _projectData)
-        {
-            SiteplannerDxfIO.Write(_file, _manager.GetSitePlannerProjectByFile(_file), _projectData);
-
-            _file.LastWriteTime = DateTime.Now;
         }
 
         internal static ulong OpenTaxonomyFile(FileInfo file, ExtendedProjectData projectData)
@@ -426,12 +358,6 @@ namespace SIMULTAN.Serializer.Projects
             SimTaxonomyDxfIO.Import(file, parserInfo);
         }
 
-        internal static void SaveTaxonomyFile(FileInfo file, ExtendedProjectData projectData)
-        {
-            SimTaxonomyDxfIO.Write(file, projectData.Taxonomies, projectData);
-            file.LastWriteTime = DateTime.Now;
-        }
-
         /// <summary>
         /// Exports selected taxonomies.
         /// </summary>
@@ -459,12 +385,6 @@ namespace SIMULTAN.Serializer.Projects
             var parserInfo = new DXFParserInfo(projectData.Owner.GlobalID, projectData);
             SimGeometryRelationsDxfIO.Read(file, parserInfo);
             return parserInfo.FileVersion;
-        }
-
-        internal static void SaveGeometryRelationsFile(FileInfo file, ExtendedProjectData projectData)
-        {
-            SimGeometryRelationsDxfIO.Write(file, projectData.GeometryRelations);
-            file.LastWriteTime = DateTime.Now;
         }
 
         #endregion
@@ -544,8 +464,12 @@ namespace SIMULTAN.Serializer.Projects
             // 1f. Save the initial taxonomy file
             project_content_files.Add(CreateInitialTaxonomyFile(unpacking_dir.FullName));
 
-            // 1g. Save the initial geometry relations file
-            project_content_files.Add(CreateInitialGeometryRelationsFile(unpacking_dir.FullName));
+            // 1f. Create initial geometry relations file
+            string geometryRelationsPath = Path.Combine(unpacking_dir.FullName, "GeometryRelations" + ParamStructFileExtensions.FILE_EXT_GEOMETRY_RELATIONS);
+            FileInfo file_geometry_relations = new FileInfo(geometryRelationsPath);
+            File.Create(file_geometry_relations.FullName).Dispose();
+            file_geometry_relations.LastWriteTime = DateTime.Now;
+            project_content_files.Add(file_geometry_relations);
 
             // 2. copy the other files to the project's directory            
             foreach (FileInfo existing_file in _files_to_convert_to_project)
@@ -589,13 +513,25 @@ namespace SIMULTAN.Serializer.Projects
             ExtendedProjectData _project_data_manager)
         {
             // create the minimally required files in a temporary folder
+            DirectoryInfo tempFolder = new DirectoryInfo(Path.Combine(_path_to_local_tmp_folder, Guid.NewGuid().ToString("N")));
 
-            string file_path_public_values = Path.Combine(_path_to_local_tmp_folder, "ValueRecord" + ParamStructFileExtensions.FILE_EXT_MULTIVALUES);
+            //Find out which path already exists
+            DirectoryInfo existingFolder = tempFolder;
+            DirectoryInfo folderToDelete = null;
+            while (!existingFolder.Exists)
+            {
+                folderToDelete = existingFolder;
+                existingFolder = existingFolder.Parent;
+            }
+
+            Directory.CreateDirectory(tempFolder.FullName);
+
+            string file_path_public_values = Path.Combine(tempFolder.FullName, "ValueRecord" + ParamStructFileExtensions.FILE_EXT_MULTIVALUES);
             FileInfo file_values = new FileInfo(file_path_public_values);
             File.Create(file_values.FullName).Dispose();
             file_values.LastWriteTime = DateTime.Now;
 
-            string file_path_public_comps = Path.Combine(_path_to_local_tmp_folder, "ComponentRecord" + ParamStructFileExtensions.FILE_EXT_COMPONENTS);
+            string file_path_public_comps = Path.Combine(tempFolder.FullName, "ComponentRecord" + ParamStructFileExtensions.FILE_EXT_COMPONENTS);
             FileInfo file_comps = new FileInfo(file_path_public_comps);
             File.Create(file_comps.FullName).Dispose();
             file_comps.LastWriteTime = DateTime.Now;
@@ -612,6 +548,9 @@ namespace SIMULTAN.Serializer.Projects
             // delete the files from the temporary folder
             file_values.Delete();
             file_comps.Delete();
+
+            if (folderToDelete != null)
+                folderToDelete.Delete(true);
 
             return created;
         }
@@ -633,16 +572,17 @@ namespace SIMULTAN.Serializer.Projects
 
         /// <summary>
         /// Creates the initial Geometry Relations file. Should only be used when creating a new project. Or when loading and it doesn't exist yet.
+        /// Also adds it to the managed files
         /// </summary>
-        /// <param name="folderPath">The folder path in which to create the file.</param>
-        /// <returns>The created file</returns>
-        internal static FileInfo CreateInitialGeometryRelationsFile(string folderPath)
+        /// <param name="project">The project</param>
+        internal static void CreateInitialGeometryRelationsFile(HierarchicalProject project)
         {
+            string folderPath = project.ProjectUnpackFolder.FullName;
             string geometryRelationsPath = Path.Combine(folderPath, "GeometryRelations" + ParamStructFileExtensions.FILE_EXT_GEOMETRY_RELATIONS);
             FileInfo file_geometry_relations = new FileInfo(geometryRelationsPath);
             File.Create(file_geometry_relations.FullName).Dispose();
             file_geometry_relations.LastWriteTime = DateTime.Now;
-            return file_geometry_relations;
+            project.ManagedFiles.AddFile(file_geometry_relations, project.AllProjectDataManagers);
         }
 
         /// <summary>
@@ -669,17 +609,6 @@ namespace SIMULTAN.Serializer.Projects
         #endregion
 
         #region UTILS
-
-        private static void FileCanBeOverwritten(FileInfo _file)
-        {
-            FileInfo file_current_state = new FileInfo(_file.FullName);
-
-            if (file_current_state.LastWriteTime > _file.LastWriteTime)
-                throw new System.IO.IOException("Another user has written to this file!");
-
-            if (file_current_state.LastWriteTime > DateTime.Now)
-                throw new ArgumentOutOfRangeException(nameof(_file), "This file's last write access lies in the future!");
-        }
 
         /// <summary>
         /// Creates a unique copying path for a file.

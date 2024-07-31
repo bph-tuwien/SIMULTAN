@@ -12,7 +12,7 @@ namespace SIMULTAN.Tests.Geometry.GeometryRelations
     [TestClass]
     public class GeometryRelationsTests : BaseProjectTest
     {
-        private static readonly FileInfo testProject = new FileInfo(@".\GeometryRelationsTest.simultan");
+        private static readonly FileInfo testProject = new FileInfo(@"./GeometryRelationsTest.simultan");
 
         private SimTaxonomy geoRelTax;
         private SimTaxonomyEntry generalTaxEntry;
@@ -41,14 +41,14 @@ namespace SIMULTAN.Tests.Geometry.GeometryRelations
             var basegeom2 = gm2.Geometry.Edges.First(x => x.Name == "Edge 3");
 
             var relation = new SimGeometryRelation(generalTaxEntry,
-                projectData.Project.GlobalID, resource1.Key, basegeom1.Id,
-                projectData.Project.GlobalID, resource2.Key, basegeom2.Id);
+                projectData.Owner.GlobalID, resource1.Key, basegeom1.Id,
+                projectData.Owner.GlobalID, resource2.Key, basegeom2.Id);
 
             Assert.AreEqual(SimId.Empty, relation.Id);
             Assert.IsNull(relation.Factory);
 
-            Assert.AreEqual(projectData.Project.GlobalID, relation.Source.ProjectId);
-            Assert.AreEqual(projectData.Project.GlobalID, relation.Target.ProjectId);
+            Assert.AreEqual(projectData.Owner.GlobalID, relation.Source.ProjectId);
+            Assert.AreEqual(projectData.Owner.GlobalID, relation.Target.ProjectId);
             Assert.AreEqual(resource1.Key, relation.Source.FileId);
             Assert.AreEqual(resource2.Key, relation.Target.FileId);
             Assert.AreEqual(basegeom1.Id, relation.Source.BaseGeometryId);
@@ -104,14 +104,14 @@ namespace SIMULTAN.Tests.Geometry.GeometryRelations
             var basegeom2 = gm2.Geometry.Edges.First(x => x.Name == "Edge 3");
 
             var relation = new SimGeometryRelation(generalTaxEntry,
-                projectData.Project.GlobalID, resource1.Key, basegeom1.Id,
-                projectData.Project.GlobalID, resource2.Key, basegeom2.Id);
+                projectData.Owner.GlobalID, resource1.Key, basegeom1.Id,
+                projectData.Owner.GlobalID, resource2.Key, basegeom2.Id);
 
             Assert.AreEqual(SimId.Empty, relation.Id);
             Assert.IsNull(relation.Factory);
 
-            Assert.AreEqual(projectData.Project.GlobalID, relation.Source.ProjectId);
-            Assert.AreEqual(projectData.Project.GlobalID, relation.Target.ProjectId);
+            Assert.AreEqual(projectData.Owner.GlobalID, relation.Source.ProjectId);
+            Assert.AreEqual(projectData.Owner.GlobalID, relation.Target.ProjectId);
             Assert.AreEqual(resource1.Key, relation.Source.FileId);
             Assert.AreEqual(resource2.Key, relation.Target.FileId);
             Assert.AreEqual(basegeom1.Id, relation.Source.BaseGeometryId);
@@ -125,8 +125,8 @@ namespace SIMULTAN.Tests.Geometry.GeometryRelations
             Assert.AreEqual(projectData.GeometryRelations, relation.Factory);
 
             var relation2 = new SimGeometryRelation(generalTaxEntry,
-                projectData.Project.GlobalID, resource2.Key, basegeom2.Id,
-                projectData.Project.GlobalID, resource1.Key, basegeom1.Id);
+                projectData.Owner.GlobalID, resource2.Key, basegeom2.Id,
+                projectData.Owner.GlobalID, resource1.Key, basegeom1.Id);
 
             var index = projectData.GeometryRelations.IndexOf(relation);
             projectData.GeometryRelations[index] = relation2;

@@ -1,12 +1,13 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SIMULTAN.Data.Geometry;
+using SIMULTAN.Data.SimMath;
 using SIMULTAN.Tests.Geometry.EventData;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Windows.Media.Media3D;
+
 
 namespace SIMULTAN.Tests.Geometry.BaseGeometries
 {
@@ -23,8 +24,8 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
         {
             var data = GeometryModelHelper.EmptyModel();
 
-            var v0 = new Vertex(data.layer, "", new Point3D(1, 2, 3));
-            var v1 = new Vertex(data.layer, "", new Point3D(2, 4, 6));
+            var v0 = new Vertex(data.layer, "", new SimPoint3D(1, 2, 3));
+            var v1 = new Vertex(data.layer, "", new SimPoint3D(2, 4, 6));
 
             var e0 = new Edge(data.layer, "", new Vertex[] { v0, v1 });
 

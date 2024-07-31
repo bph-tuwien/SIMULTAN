@@ -10,9 +10,9 @@ using SIMULTAN.Serializer.CODXF;
 using SIMULTAN.Serializer.DXF;
 using SIMULTAN.Tests.Properties;
 using SIMULTAN.Tests.TestUtils;
-using SIMULTAN.Tests.Util;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Text;
 
@@ -134,8 +134,10 @@ namespace SIMULTAN.Tests.IO
         [TestMethod]
         public void WriteParameterWithTaxonomyEntry()
         {
-            var tax = new SimTaxonomy(new SimId(1200)) { Name = "Taxonomy" };
-            var taxEntry = new SimTaxonomyEntry(new SimId(1201)) { Name = "Parameter X", Key = "key" };
+            var tax = new SimTaxonomy(new SimId(1200));
+            tax.Languages.Add(CultureInfo.InvariantCulture);
+            tax.Localization.SetLanguage(new SimTaxonomyLocalizationEntry(CultureInfo.InvariantCulture, "Taxonomy"));
+            var taxEntry = new SimTaxonomyEntry(new SimId(1201), "key", "Parameter X");
             tax.Entries.Add(taxEntry);
             SimDoubleParameter parameter = new SimDoubleParameter(99, "Parameter X", "Unit",
                 SimCategory.Cooling | SimCategory.Communication | SimCategory.Light_Artificial,
@@ -176,13 +178,12 @@ namespace SIMULTAN.Tests.IO
                 info.FileVersion = 0;
 
                 reader.Read();
-
                 parameter = ComponentDxfIOComponents.BaseParameterEntityElement.Parse(reader, info) as SimDoubleParameter;
             }
 
             Assert.IsNotNull(parameter);
             Assert.AreEqual(1076741824, parameter.Id.LocalId);
-            Assert.AreEqual("Parameter X", parameter.NameTaxonomyEntry.Name);
+            Assert.AreEqual("Parameter X", parameter.NameTaxonomyEntry.Text);
             Assert.AreEqual("Unit", parameter.Unit);
             Assert.AreEqual(SimCategory.Cooling | SimCategory.Communication | SimCategory.Light_Artificial, parameter.Category);
             Assert.AreEqual(SimInfoFlow.Output, parameter.Propagation);
@@ -208,13 +209,12 @@ namespace SIMULTAN.Tests.IO
                 info.FileVersion = 5;
 
                 reader.Read();
-
                 parameter = ComponentDxfIOComponents.BaseParameterEntityElement.Parse(reader, info) as SimDoubleParameter;
             }
 
             Assert.IsNotNull(parameter);
             Assert.AreEqual(99, parameter.Id.LocalId);
-            Assert.AreEqual("Parameter X", parameter.NameTaxonomyEntry.Name);
+            Assert.AreEqual("Parameter X", parameter.NameTaxonomyEntry.Text);
             Assert.AreEqual("Unit", parameter.Unit);
             Assert.AreEqual(SimCategory.Cooling | SimCategory.Communication | SimCategory.Light_Artificial, parameter.Category);
             Assert.AreEqual(SimInfoFlow.Output, parameter.Propagation);
@@ -228,11 +228,49 @@ namespace SIMULTAN.Tests.IO
             Assert.IsNull(parameter.ValueSource);
         }
 
+
+        [TestMethod]
+        public void ParseParameterV19()
+        {
+            Guid guid = Guid.NewGuid();
+
+
+            SimDoubleParameter parameter = null;
+            ExtendedProjectData projectData = new ExtendedProjectData();
+            var location = new DummyReferenceLocation(guid);
+            projectData.SetCallingLocation(location);
+
+            using (DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_ReadCODXF_DoubleParameterV19)))
+            {
+                var info = new DXFParserInfo(guid, projectData);
+                info.FileVersion = 19;
+
+                reader.Read();
+                parameter = ComponentDxfIOComponents.BaseParameterEntityElement.Parse(reader, info) as SimDoubleParameter;
+            }
+
+            Assert.IsNotNull(parameter);
+            Assert.AreEqual("Parameter X", parameter.NameTaxonomyEntry.Text);
+            Assert.AreEqual(45, parameter.Value);
+        }
+
+
         [TestMethod]
         public void ParseParameterV14()
         {
             ExtendedProjectData projectData = new ExtendedProjectData();
             Guid guid = Guid.NewGuid();
+            projectData.SetCallingLocation(new DummyReferenceLocation(guid));
+
+            //Create taxonomy entry
+            projectData.Taxonomies.StartLoading();
+            var taxonomy = new SimTaxonomy("demo taxonomy");
+            projectData.Taxonomies.Add(taxonomy);
+
+            var taxEntry = new SimTaxonomyEntry("paramX", "Parameter X") { Id = new SimId(1201) };
+            taxonomy.Entries.Add(taxEntry);
+            projectData.Taxonomies.StopLoading();
+
 
             SimDoubleParameter parameter = null;
 
@@ -242,14 +280,13 @@ namespace SIMULTAN.Tests.IO
                 info.FileVersion = 14;
 
                 reader.Read();
-
                 parameter = ComponentDxfIOComponents.BaseParameterEntityElement.Parse(reader, info) as SimDoubleParameter;
             }
 
             Assert.IsNotNull(parameter);
             Assert.AreEqual(99, parameter.Id.LocalId);
-            Assert.IsNull(parameter.NameTaxonomyEntry.Name); // null because taxonomy entry reference not restored yet
-            Assert.AreEqual(true, parameter.NameTaxonomyEntry.HasTaxonomyEntryReference());
+            Assert.AreEqual(taxEntry, parameter.NameTaxonomyEntry.TaxonomyEntryReference.Target); // null because taxonomy entry reference not restored yet
+            Assert.AreEqual(true, parameter.NameTaxonomyEntry.HasTaxonomyEntryReference);
             Assert.AreEqual(1201, parameter.NameTaxonomyEntry.TaxonomyEntryReference.TaxonomyEntryId.LocalId);
             Assert.AreEqual("Unit", parameter.Unit);
             Assert.AreEqual(SimCategory.Cooling | SimCategory.Communication | SimCategory.Light_Artificial, parameter.Category);
@@ -278,13 +315,12 @@ namespace SIMULTAN.Tests.IO
                 info.FileVersion = 12;
 
                 reader.Read();
-
                 parameter = ComponentDxfIOComponents.BaseParameterEntityElement.Parse(reader, info) as SimDoubleParameter;
             }
 
             Assert.IsNotNull(parameter);
             Assert.AreEqual(99, parameter.Id.LocalId);
-            Assert.AreEqual("Parameter X", parameter.NameTaxonomyEntry.Name);
+            Assert.AreEqual("Parameter X", parameter.NameTaxonomyEntry.Text);
             Assert.AreEqual("Unit", parameter.Unit);
             Assert.AreEqual(SimCategory.Cooling | SimCategory.Communication | SimCategory.Light_Artificial, parameter.Category);
             Assert.AreEqual(SimInfoFlow.Output, parameter.Propagation);
@@ -322,13 +358,12 @@ namespace SIMULTAN.Tests.IO
                 info.FileVersion = 12;
 
                 reader.Read();
-
                 parameter = ComponentDxfIOComponents.BaseParameterEntityElement.Parse(reader, info) as SimDoubleParameter;
             }
 
             Assert.IsNotNull(parameter);
             Assert.AreEqual(99, parameter.Id.LocalId);
-            Assert.AreEqual("Parameter X", parameter.NameTaxonomyEntry.Name);
+            Assert.AreEqual("Parameter X", parameter.NameTaxonomyEntry.Text);
             Assert.AreEqual("Unit", parameter.Unit);
             Assert.AreEqual(SimCategory.Cooling | SimCategory.Communication | SimCategory.Light_Artificial, parameter.Category);
             Assert.AreEqual(SimInfoFlow.Output, parameter.Propagation);
@@ -366,13 +401,12 @@ namespace SIMULTAN.Tests.IO
                 info.FileVersion = 17;
 
                 reader.Read();
-
                 parameter = ComponentDxfIOComponents.BaseParameterEntityElement.Parse(reader, info) as SimDoubleParameter;
             }
 
             Assert.IsNotNull(parameter);
             Assert.AreEqual(99, parameter.Id.LocalId);
-            Assert.AreEqual("Parameter X", parameter.NameTaxonomyEntry.Name);
+            Assert.AreEqual("Parameter X", parameter.NameTaxonomyEntry.Text);
             Assert.AreEqual("Unit", parameter.Unit);
             Assert.AreEqual(SimCategory.Cooling | SimCategory.Communication | SimCategory.Light_Artificial, parameter.Category);
             Assert.AreEqual(SimInfoFlow.Output, parameter.Propagation);
@@ -410,13 +444,12 @@ namespace SIMULTAN.Tests.IO
                 info.FileVersion = 17;
 
                 reader.Read();
-
                 parameter = ComponentDxfIOComponents.BaseParameterEntityElement.Parse(reader, info) as SimDoubleParameter;
             }
 
             Assert.IsNotNull(parameter);
             Assert.AreEqual(99, parameter.Id.LocalId);
-            Assert.AreEqual("Parameter X", parameter.NameTaxonomyEntry.Name);
+            Assert.AreEqual("Parameter X", parameter.NameTaxonomyEntry.Text);
             Assert.AreEqual("Unit", parameter.Unit);
             Assert.AreEqual(SimCategory.Cooling | SimCategory.Communication | SimCategory.Light_Artificial, parameter.Category);
             Assert.AreEqual(SimInfoFlow.Output, parameter.Propagation);
@@ -504,7 +537,6 @@ namespace SIMULTAN.Tests.IO
             using (DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_ReadMVPointer_BigTableV0a)))
             {
                 reader.Read();
-
                 parameter = ComponentDxfIOComponents.BaseParameterEntityElement.Parse(reader, info) as SimDoubleParameter;
             }
 
@@ -540,7 +572,6 @@ namespace SIMULTAN.Tests.IO
             using (DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_ReadMVPointer_BigTableV5)))
             {
                 reader.Read();
-
                 parameter = ComponentDxfIOComponents.BaseParameterEntityElement.Parse(reader, info) as SimDoubleParameter;
             }
 
@@ -576,7 +607,6 @@ namespace SIMULTAN.Tests.IO
                 info.FileVersion = 12;
 
                 reader.Read();
-
                 parameter = ComponentDxfIOComponents.BaseParameterEntityElement.Parse(reader, info) as SimDoubleParameter;
             }
 
@@ -698,10 +728,9 @@ namespace SIMULTAN.Tests.IO
             using (DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_ReadMVPointer_Field3DV12)))
             {
                 var info = new DXFParserInfo(project.GlobalID, projectData);
-                info.FileVersion = 12;
+                info.FileVersion = 19;
 
                 reader.Read();
-
                 parameter = ComponentDxfIOComponents.BaseParameterEntityElement.Parse(reader, info) as SimDoubleParameter;
             }
 
@@ -783,7 +812,6 @@ namespace SIMULTAN.Tests.IO
                 info.FileVersion = 12;
 
                 reader.Read();
-
                 parameter = ComponentDxfIOComponents.BaseParameterEntityElement.Parse(reader, info) as SimDoubleParameter;
             }
 

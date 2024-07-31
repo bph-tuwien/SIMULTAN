@@ -1,13 +1,14 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SIMULTAN.Data.Geometry;
+using SIMULTAN.Data.SimMath;
 using SIMULTAN.Tests.Geometry.EventData;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Windows.Media;
-using System.Windows.Media.Media3D;
+
+
 
 namespace SIMULTAN.Tests.Geometry.BaseGeometries
 {
@@ -24,9 +25,9 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
         {
             var data = GeometryModelHelper.EmptyModel();
 
-            var v0 = new Vertex(data.layer, "", new Point3D(1, 2, 3));
-            var v1 = new Vertex(data.layer, "", new Point3D(2, 4, 6));
-            var v2 = new Vertex(data.layer, "", new Point3D(3, 6, 9));
+            var v0 = new Vertex(data.layer, "", new SimPoint3D(1, 2, 3));
+            var v1 = new Vertex(data.layer, "", new SimPoint3D(2, 4, 6));
+            var v2 = new Vertex(data.layer, "", new SimPoint3D(3, 6, 9));
 
             Assert.ThrowsException<ArgumentNullException>(() => { Edge e0 = new Edge(null, "", new Vertex[] { v0, v1 }); });
             Assert.ThrowsException<ArgumentNullException>(() => { Edge e0 = new Edge(data.layer, null, new Vertex[] { v0, v1 }); });
@@ -78,8 +79,8 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
         {
             var data = GeometryModelHelper.EmptyModelWithEvents();
 
-            var v0 = new Vertex(data.layer, "", new Point3D(1, 2, 3));
-            var v1 = new Vertex(data.layer, "", new Point3D(2, 4, 6));
+            var v0 = new Vertex(data.layer, "", new SimPoint3D(1, 2, 3));
+            var v1 = new Vertex(data.layer, "", new SimPoint3D(2, 4, 6));
 
             //Add an edge
             Edge e0 = new Edge(data.layer, "", new Vertex[] { v0, v1 });
@@ -108,8 +109,8 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
             var data = GeometryModelHelper.EmptyModelWithEvents();
 
             //Testdata
-            var v0 = new Vertex(data.layer, "", new Point3D(1, 2, 3));
-            var v1 = new Vertex(data.layer, "", new Point3D(2, 4, 6));
+            var v0 = new Vertex(data.layer, "", new SimPoint3D(1, 2, 3));
+            var v1 = new Vertex(data.layer, "", new SimPoint3D(2, 4, 6));
             var e0 = EdgeWithEvents(new Edge(data.layer, "", new Vertex[] { v0, v1 }));
             data.eventData.Reset();
 
@@ -154,8 +155,8 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
             var data = GeometryModelHelper.EmptyModelWithEvents();
 
             //Testdata
-            var v0 = new Vertex(data.layer, "", new Point3D(1, 2, 3));
-            var v1 = new Vertex(data.layer, "", new Point3D(2, 4, 6));
+            var v0 = new Vertex(data.layer, "", new SimPoint3D(1, 2, 3));
+            var v1 = new Vertex(data.layer, "", new SimPoint3D(2, 4, 6));
             var e0 = EdgeWithEvents(new Edge(data.layer, "", new Vertex[] { v0, v1 }));
             e0.edge.RemoveFromModel();
             data.eventData.Reset();
@@ -189,9 +190,9 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
         {
             var data = GeometryModelHelper.EmptyModelWithEvents();
 
-            var v0 = new Vertex(data.layer, "", new Point3D(1, 2, 3));
-            var v1 = new Vertex(data.layer, "", new Point3D(2, 4, 6));
-            var v2 = new Vertex(data.layer, "", new Point3D(3, 6, 9));
+            var v0 = new Vertex(data.layer, "", new SimPoint3D(1, 2, 3));
+            var v1 = new Vertex(data.layer, "", new SimPoint3D(2, 4, 6));
+            var v2 = new Vertex(data.layer, "", new SimPoint3D(3, 6, 9));
             data.eventData.Reset();
 
             //Prepare data
@@ -236,9 +237,9 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
             //Prepare data
             data.model.Geometry.StartBatchOperation();
 
-            var v0 = new Vertex(data.layer, "", new Point3D(1, 2, 3));
-            var v1 = new Vertex(data.layer, "", new Point3D(2, 4, 6));
-            var v2 = new Vertex(data.layer, "", new Point3D(3, 6, 9));
+            var v0 = new Vertex(data.layer, "", new SimPoint3D(1, 2, 3));
+            var v1 = new Vertex(data.layer, "", new SimPoint3D(2, 4, 6));
+            var v2 = new Vertex(data.layer, "", new SimPoint3D(3, 6, 9));
 
             var e0 = EdgeWithEvents(new Edge(data.layer, "", new Vertex[] { v0, v1 }));
             var e1 = EdgeWithEvents(new Edge(data.layer, "", new Vertex[] { v1, v2 }));
@@ -287,9 +288,9 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
             //Prepare data
             data.model.Geometry.StartBatchOperation();
 
-            var v0 = new Vertex(data.layer, "", new Point3D(1, 2, 3));
-            var v1 = new Vertex(data.layer, "", new Point3D(2, 4, 6));
-            var v2 = new Vertex(data.layer, "", new Point3D(3, 6, 9));
+            var v0 = new Vertex(data.layer, "", new SimPoint3D(1, 2, 3));
+            var v1 = new Vertex(data.layer, "", new SimPoint3D(2, 4, 6));
+            var v2 = new Vertex(data.layer, "", new SimPoint3D(3, 6, 9));
 
             var e0 = EdgeWithEvents(new Edge(data.layer, "", new Vertex[] { v0, v1 }));
             var e1 = EdgeWithEvents(new Edge(data.layer, "", new Vertex[] { v1, v2 }));
@@ -297,7 +298,7 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
             data.model.Geometry.EndBatchOperation();
             data.eventData.Reset();
 
-            v0.Position = new Point3D(1, 2, 3);
+            v0.Position = new SimPoint3D(1, 2, 3);
             Assert.AreEqual(2, data.eventData.GeometryChangedEventData.Count(), "ChangedEvent");
             Assert.AreEqual(1, data.eventData.GeometryChangedEventData[0].Count(), "ChangedEvent");
             Assert.IsTrue(data.eventData.GeometryChangedEventData[0].Contains(v0), "ChangedEvent.Contains");
@@ -312,7 +313,7 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
             Assert.AreEqual(0, e1.eventData.GeometryChangedCount);
             Assert.AreEqual(0, e1.eventData.TopologyChangedCount);
 
-            v1.Position = new Point3D(-1, -2, -3);
+            v1.Position = new SimPoint3D(-1, -2, -3);
             Assert.AreEqual(5, data.eventData.GeometryChangedEventData.Count(), "ChangedEvent");
             Assert.AreEqual(1, data.eventData.GeometryChangedEventData[2].Count(), "ChangedEvent");
             Assert.IsTrue(data.eventData.GeometryChangedEventData[2].Contains(v1), "ChangedEvent.Contains");
@@ -338,9 +339,9 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
             //Prepare data
             data.model.Geometry.StartBatchOperation();
 
-            var v0 = new Vertex(data.layer, "", new Point3D(1, 2, 3));
-            var v1 = new Vertex(data.layer, "", new Point3D(2, 4, 6));
-            var v2 = new Vertex(data.layer, "", new Point3D(3, 6, 9));
+            var v0 = new Vertex(data.layer, "", new SimPoint3D(1, 2, 3));
+            var v1 = new Vertex(data.layer, "", new SimPoint3D(2, 4, 6));
+            var v2 = new Vertex(data.layer, "", new SimPoint3D(3, 6, 9));
 
             var e0 = EdgeWithEvents(new Edge(data.layer, "", new Vertex[] { v0, v1 }));
             var e1 = EdgeWithEvents(new Edge(data.layer, "", new Vertex[] { v1, v2 }));
@@ -351,8 +352,8 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
             //Test
             data.model.Geometry.StartBatchOperation();
 
-            v0.Position = new Point3D(1, 2, 3);
-            Assert.AreEqual(new Point3D(1, 2, 3), v0.Position, "Position 2");
+            v0.Position = new SimPoint3D(1, 2, 3);
+            Assert.AreEqual(new SimPoint3D(1, 2, 3), v0.Position, "Position 2");
             Assert.AreEqual(0, data.eventData.GeometryChangedEventData.Count(), "ChangedEvent");
             Assert.AreEqual(0, data.eventData.AddEventData.Count(), "AddEvent");
             Assert.AreEqual(0, data.eventData.RemoveEventData.Count(), "RemoveEvent");
@@ -363,8 +364,8 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
             Assert.AreEqual(0, e1.eventData.GeometryChangedCount);
             Assert.AreEqual(0, e1.eventData.TopologyChangedCount);
 
-            v1.Position = new Point3D(-1, -2, -3);
-            Assert.AreEqual(new Point3D(-1, -2, -3), v1.Position, "Position 2");
+            v1.Position = new SimPoint3D(-1, -2, -3);
+            Assert.AreEqual(new SimPoint3D(-1, -2, -3), v1.Position, "Position 2");
             Assert.AreEqual(0, data.eventData.GeometryChangedEventData.Count(), "ChangedEvent");
             Assert.AreEqual(0, data.eventData.AddEventData.Count(), "AddEvent");
             Assert.AreEqual(0, data.eventData.RemoveEventData.Count(), "RemoveEvent");
@@ -398,9 +399,9 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
         {
             var data = GeometryModelHelper.EmptyModelWithEvents();
 
-            var v0 = new Vertex(data.layer, "", new Point3D(1, 2, 3));
-            var v1 = new Vertex(data.layer, "", new Point3D(2, 4, 6));
-            var v2 = new Vertex(data.layer, "", new Point3D(3, 6, 9));
+            var v0 = new Vertex(data.layer, "", new SimPoint3D(1, 2, 3));
+            var v1 = new Vertex(data.layer, "", new SimPoint3D(2, 4, 6));
+            var v2 = new Vertex(data.layer, "", new SimPoint3D(3, 6, 9));
 
             var e0 = EdgeWithEvents(new Edge(data.layer, "", new Vertex[] { v0, v1 }));
 
@@ -434,10 +435,10 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
         {
             var data = GeometryModelHelper.EmptyModelWithEvents();
 
-            var v0 = new Vertex(data.layer, "", new Point3D(1, 2, 3));
-            var v1 = new Vertex(data.layer, "", new Point3D(2, 4, 6));
-            var v2 = new Vertex(data.layer, "", new Point3D(3, 6, 9));
-            var v3 = new Vertex(data.layer, "", new Point3D(4, 8, 12));
+            var v0 = new Vertex(data.layer, "", new SimPoint3D(1, 2, 3));
+            var v1 = new Vertex(data.layer, "", new SimPoint3D(2, 4, 6));
+            var v2 = new Vertex(data.layer, "", new SimPoint3D(3, 6, 9));
+            var v3 = new Vertex(data.layer, "", new SimPoint3D(4, 8, 12));
 
             var e0 = EdgeWithEvents(new Edge(data.layer, "", new Vertex[] { v0, v1 }));
 
@@ -495,8 +496,8 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
             var data = GeometryModelHelper.EmptyModelWithEvents();
 
             //Add an edge
-            var v0 = new Vertex(data.layer, "", new Point3D(1, 2, 3));
-            var v1 = new Vertex(data.layer, "", new Point3D(2, 4, 6));
+            var v0 = new Vertex(data.layer, "", new SimPoint3D(1, 2, 3));
+            var v1 = new Vertex(data.layer, "", new SimPoint3D(2, 4, 6));
             var e0 = EdgeWithEvents(new Edge(data.layer, "", new Vertex[] { v0, v1 }));
             data.eventData.Reset();
 
@@ -541,8 +542,8 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
             var data = GeometryModelHelper.EmptyModelWithEvents();
 
             //Add a vertex
-            var v0 = new Vertex(data.layer, "", new Point3D(1, 2, 3));
-            var v1 = new Vertex(data.layer, "", new Point3D(2, 4, 6));
+            var v0 = new Vertex(data.layer, "", new SimPoint3D(1, 2, 3));
+            var v1 = new Vertex(data.layer, "", new SimPoint3D(2, 4, 6));
             var e0 = EdgeWithEvents(new Edge(data.layer, "", new Vertex[] { v0, v1 }));
             data.eventData.Reset();
             Assert.AreEqual(0, e0.eventData.PropertyChangedData.Count);
@@ -560,23 +561,23 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
         public void MoveToLayer()
         {
             var data = GeometryModelHelper.EmptyModelWithEvents();
-            Layer targetLayer = new Layer(data.model.Geometry, "TargetLayer") { Color = new DerivedColor(Colors.Pink) };
+            Layer targetLayer = new Layer(data.model.Geometry, "TargetLayer") { Color = new DerivedColor(SimColors.Pink) };
 
             //Add an edge
-            var v0 = new Vertex(data.layer, "", new Point3D(1, 2, 3));
-            var v1 = new Vertex(data.layer, "", new Point3D(2, 4, 6));
+            var v0 = new Vertex(data.layer, "", new SimPoint3D(1, 2, 3));
+            var v1 = new Vertex(data.layer, "", new SimPoint3D(2, 4, 6));
             var e0 = EdgeWithEvents(new Edge(data.layer, "", new Vertex[] { v0, v1 }));
             data.eventData.Reset();
 
             Assert.AreEqual(data.layer, e0.edge.Layer);
             Assert.AreEqual(1, data.layer.Elements.Count(x => x is Edge));
-            Assert.AreEqual(Colors.Red, e0.edge.Color.Color);
+            Assert.AreEqual(SimColors.Red, e0.edge.Color.Color);
 
             e0.edge.Layer = targetLayer;
             Assert.AreEqual(targetLayer, e0.edge.Layer);
             Assert.AreEqual(0, data.layer.Elements.Count(x => x is Edge));
             Assert.AreEqual(1, targetLayer.Elements.Count(x => x is Edge));
-            Assert.AreEqual(Colors.Pink, e0.edge.Color.Color);
+            Assert.AreEqual(SimColors.Pink, e0.edge.Color.Color);
 
             Assert.AreEqual(0, data.eventData.GeometryChangedEventData.Count);
             Assert.AreEqual(0, data.eventData.AddEventData.Count);

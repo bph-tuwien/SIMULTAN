@@ -71,7 +71,22 @@ namespace SIMULTAN.Data.Components
             {
                 if (loadingParameterName != null && instance.Component != null)
                 {
-                    var param = instance.Component.Parameters.FirstOrDefault(x => x is SimDoubleParameter && x.NameTaxonomyEntry.Name == loadingParameterName) as SimDoubleParameter;
+                    SimDoubleParameter param;
+                    // lookup with taxonomy entry or text if it is a reserved one
+                    if (ReservedParameterKeys.NameToKeyLookup.TryGetValue(loadingParameterName, out var key))
+                    {
+                        var taxentry = instance.Factory.ProjectData.Taxonomies.GetReservedParameter(key);
+                        // if the default tax entries were not restored yet, also check text
+                        param = instance.Component.Parameters.FirstOrDefault(x => x is SimDoubleParameter &&
+                            ((x.NameTaxonomyEntry.HasTaxonomyEntry && x.NameTaxonomyEntry.TaxonomyEntryReference.Target == taxentry) ||
+                            (!x.NameTaxonomyEntry.HasTaxonomyEntry && x.NameTaxonomyEntry.Text == loadingParameterName))) as SimDoubleParameter;
+                    }
+                    else
+                    {
+                        param = instance.Component.Parameters.FirstOrDefault(x => x is SimDoubleParameter && !x.NameTaxonomyEntry.HasTaxonomyEntry &&
+                            x.NameTaxonomyEntry.Text == loadingParameterName) as SimDoubleParameter;
+                    }
+
                     if (param != null)
                         Parameter = param;
                 }

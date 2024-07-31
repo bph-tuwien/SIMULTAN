@@ -17,7 +17,7 @@ namespace SIMULTAN.Tests.ValueMappings
     [TestClass]
     public class SimValueMappingCollectionTests : BaseProjectTest
     {
-        private static readonly FileInfo emptyProject = new FileInfo(@".\EmptyProject.simultan");
+        private static readonly FileInfo emptyProject = new FileInfo(@"./EmptyProject.simultan");
 
         [TestMethod]
         public void AddValueMapping()

@@ -4,6 +4,7 @@ using SIMULTAN.Data.MultiValues;
 using SIMULTAN.Projects;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 
 namespace SIMULTAN.Serializer.DXF
@@ -211,7 +212,7 @@ namespace SIMULTAN.Serializer.DXF
 
             if (logFileWriter != null)
             {
-                Console.WriteLine("Import log: {0}", message);
+                Debug.WriteLine("Import log: {0}", message);
                 logFileWriter.WriteLine(message);
             }
         }

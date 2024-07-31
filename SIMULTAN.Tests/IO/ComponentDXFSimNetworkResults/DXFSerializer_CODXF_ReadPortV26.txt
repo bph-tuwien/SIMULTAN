@@ -1,0 +1,18 @@
+﻿0
+SIMNETWORK_PORT
+100
+SIMULTAN.Data.SimNetworks.SimNetworkPort
+900
+65004
+2
+My Port A
+9506
+1
+9518
+#FF2800A3
+9503
+5
+9504
+5
+0
+EOF

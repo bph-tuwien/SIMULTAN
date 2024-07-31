@@ -1,5 +1,6 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SIMULTAN.Data.Geometry;
+using SIMULTAN.Data.SimMath;
 using SIMULTAN.Tests.TestUtils;
 using System;
 using System.Collections.Generic;
@@ -7,14 +8,13 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Windows.Media.Media3D;
 
 namespace SIMULTAN.Tests.Geometry.Algorithms
 {
     [TestClass]
     public class OffsetSurfaceAlgorithmTests : BaseProjectTest
     {
-        private static readonly FileInfo offsetProject = new FileInfo(@".\OffsetGeometryProject.simultan");
+        private static readonly FileInfo offsetProject = new FileInfo(@"./OffsetGeometryProject.simultan");
 
         [TestMethod]
         public void ConvertToModelCube()
@@ -26,7 +26,7 @@ namespace SIMULTAN.Tests.Geometry.Algorithms
             List<OffsetFace> interiorOffsetFaces = interiorFaces.Select(x => model.geometryModel.Geometry.OffsetModel.Faces[(x.Face, x.Orientation)]).ToList();
 
             //Action
-            var offsetModel = OffsetSurfaceAlgorithms.ConvertToModel(interiorOffsetFaces, Matrix3D.Identity);
+            var offsetModel = OffsetSurfaceAlgorithms.ConvertToModel(interiorOffsetFaces, SimMatrix3D.Identity, projectData.DispatcherTimerFactory);
 
             //Check
             Assert.AreEqual(8, offsetModel.Vertices.Count);
@@ -57,7 +57,7 @@ namespace SIMULTAN.Tests.Geometry.Algorithms
                 .Select(x => x.Value).ToList();
 
             //Action
-            var offsetModel = OffsetSurfaceAlgorithms.ConvertToModel(interiorOffsetFaces, Matrix3D.Identity);
+            var offsetModel = OffsetSurfaceAlgorithms.ConvertToModel(interiorOffsetFaces, SimMatrix3D.Identity, projectData.DispatcherTimerFactory);
 
             //Check
             Assert.AreEqual(8, offsetModel.Vertices.Count);
@@ -75,9 +75,9 @@ namespace SIMULTAN.Tests.Geometry.Algorithms
                 .Select(x => x.Value).ToList();
 
             //Action
-            Matrix3D transform = Matrix3D.Identity;
-            transform.Scale(new Vector3D(1, 0, 1));
-            var offsetModel = OffsetSurfaceAlgorithms.ConvertToModel(interiorOffsetFaces, transform);
+            SimMatrix3D transform = SimMatrix3D.Identity;
+            transform.Scale(new SimVector3D(1, 0, 1));
+            var offsetModel = OffsetSurfaceAlgorithms.ConvertToModel(interiorOffsetFaces, transform, projectData.DispatcherTimerFactory);
 
             //Check
             Assert.AreEqual(6, offsetModel.Vertices.Count);

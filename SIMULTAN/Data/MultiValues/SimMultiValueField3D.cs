@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using System.Windows.Media.Media3D;
+using SIMULTAN.Data.SimMath;
 
 namespace SIMULTAN.Data.MultiValues
 {
@@ -426,7 +426,7 @@ namespace SIMULTAN.Data.MultiValues
         /// <param name="name">Name of the value field</param>
         public SimMultiValueField3D(long id, string name,
                                  IEnumerable<double> xaxis, string unitX, IEnumerable<double> yaxis, string unitY, IEnumerable<double> zaxis, string unitZ,
-                                 IDictionary<Point3D, double> data, bool canInterpolate)
+                                 IDictionary<SimPoint3D, double> data, bool canInterpolate)
             : base(id, name, unitX, unitY, unitZ)
         {
             if (data == null)
@@ -576,7 +576,7 @@ namespace SIMULTAN.Data.MultiValues
                 var zminus = AxisRangeValueFromPosition(Axis.Z, index.Z - 1, double.NegativeInfinity);
                 var zplus = AxisRangeValueFromPosition(Axis.Z, index.Z + 1, double.PositiveInfinity);
 
-                NotifyValueChanged(new Range3D(new Point3D(xminus, yminus, zminus), new Point3D(xplus, yplus, zplus)));
+                NotifyValueChanged(new Range3D(new SimPoint3D(xminus, yminus, zminus), new SimPoint3D(xplus, yplus, zplus)));
                 this.NotifyChanged();
             }
         }
@@ -592,7 +592,7 @@ namespace SIMULTAN.Data.MultiValues
         /// </summary>
         /// <param name="position">Position in the value field. position is clamped to the value field borders.</param>
         /// <returns>The value at position in the value field</returns>
-        public double GetValue(Point3D position)
+        public double GetValue(SimPoint3D position)
         {
             (double x, int xint, double fractX) = ClampAxis(position.X, this.XAxis);
             (double y, int yint, double fractY) = ClampAxis(position.Y, this.YAxis);

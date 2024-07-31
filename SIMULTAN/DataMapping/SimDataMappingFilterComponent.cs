@@ -1,12 +1,8 @@
 ﻿using SIMULTAN.Data.Components;
 using SIMULTAN.Data.Taxonomy;
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace SIMULTAN.DataMapping
 {
@@ -79,9 +75,16 @@ namespace SIMULTAN.DataMapping
                         throw new NotSupportedException("Unsupported value type");
                 case SimDataMappingComponentFilterProperties.Slot:
                     if (this.Value is SimTaxonomyEntryReference tref)
-                        return matchObject.CurrentSlot == tref;
+                        return matchObject.Slots.Any(t => t.Target == tref.Target);
                     else if (this.Value is SimSlot slot)
-                        return matchObject.CurrentSlot == slot.SlotBase && slot.SlotExtension == string.Empty;
+                    {
+                        if (matchObject.ParentContainer != null)
+                        {
+                            return matchObject.ParentContainer.Slot.SlotBase == slot.SlotBase && slot.SlotExtension == string.Empty;
+                        }
+                        return matchObject.Slots[0] == slot.SlotBase && slot.SlotExtension == string.Empty;
+                    }
+
                     else if (this.Value == null)
                         return true;
                     else
@@ -144,7 +147,7 @@ namespace SIMULTAN.DataMapping
                         return (matchObject.Slot == tslot) || (string.IsNullOrEmpty(tslot.SlotExtension) && matchObject.Slot.SlotBase == tslot.SlotBase);
                     else if (this.Value == null)
                         return true;
-                    else 
+                    else
                         throw new NotSupportedException("Unsupported value type");
                 default:
                     return Match(matchObject.Target);

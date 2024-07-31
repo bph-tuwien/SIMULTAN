@@ -2,9 +2,10 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Linq;
 using System.Windows;
-using System.Windows.Media.Media3D;
+using SIMULTAN.Data.SimMath;
 
 namespace SIMULTAN.Data.FlowNetworks
 {
@@ -12,17 +13,17 @@ namespace SIMULTAN.Data.FlowNetworks
     {
         #region PROPERTIES: Specific (Position, derived: Edges_In, derived: Edges_Out)
 
-        protected Point position;
-        public Point Position
+        protected SimPoint position;
+        public SimPoint Position
         {
             get { return this.position; }
             set
             {
                 if (this.position.X != value.X || this.position.Y != value.Y)
                 {
-                    var old_value = new Point(this.position.X, this.position.Y);
+                    var old_value = new SimPoint(this.position.X, this.position.Y);
                     this.position = value;
-                    var new_value = new Point(this.position.X, this.position.Y);
+                    var new_value = new SimPoint(this.position.X, this.position.Y);
                     this.SetValidity();
                     this.NotifyPropertyChanged(nameof(Position));
                 }
@@ -99,7 +100,7 @@ namespace SIMULTAN.Data.FlowNetworks
         #endregion
 
         #region .CTOR
-        internal SimFlowNetworkNode(IReferenceLocation _location, Point _pos)
+        internal SimFlowNetworkNode(IReferenceLocation _location, SimPoint _pos)
             : base(_location)
         {
             this.name = "Node " + this.ID.LocalId.ToString();
@@ -131,7 +132,7 @@ namespace SIMULTAN.Data.FlowNetworks
 
         // for parsing
         // the content component has to be parsed FIRST
-        internal SimFlowNetworkNode(Guid _location, long _id, string _name, string _description, bool _is_valid, Point _position,
+        internal SimFlowNetworkNode(Guid _location, long _id, string _name, string _description, bool _is_valid, SimPoint _position,
             IEnumerable<SimFlowNetworkCalcRule> _calc_rules)
             : base(_location, _id, _name, _description)
         {
@@ -195,7 +196,7 @@ namespace SIMULTAN.Data.FlowNetworks
         // the nodes need to be SORTED in flow direction before calling this method!
         // Note: Method GetFirstParamBySuffix is called according to the DYNAMIC Type of the caller
 
-        internal void CalculateFlow(bool _in_flow_dir)
+        internal void CalculateFlow(bool _in_flow_dir, CultureInfo culture)
         {
             if (this.Content == null) return;
 
@@ -213,7 +214,7 @@ namespace SIMULTAN.Data.FlowNetworks
                     continue;
 
                 // check if the rule applies to the type component of the instance in this node
-                SimDoubleParameter p_result = this.GetFirstParamBySuffix(rule.Suffix_Result, _in_flow_dir);
+                SimDoubleParameter p_result = this.GetFirstParamBySuffix(rule.Suffix_Result, _in_flow_dir, culture);
                 if (p_result == null) continue;
 
                 if (!(instance.InstanceParameterValuesTemporary.Contains(p_result)))
@@ -229,10 +230,10 @@ namespace SIMULTAN.Data.FlowNetworks
                             if (!e.CanCalculateFlow(_in_flow_dir)) continue;
 
                             SimComponentInstance instance_in_e = e.Content;
-                            SimDoubleParameter p_e_Operand = e.GetFirstParamBySuffix(rule.Suffix_Operands, _in_flow_dir);
-                            SimDoubleParameter p_e_Result = e.GetFirstParamBySuffix(rule.Suffix_Result, _in_flow_dir);
+                            SimDoubleParameter p_e_Operand = e.GetFirstParamBySuffix(rule.Suffix_Operands, _in_flow_dir, culture);
+                            SimDoubleParameter p_e_Result = e.GetFirstParamBySuffix(rule.Suffix_Result, _in_flow_dir, culture);
                             SimComponentInstance instance_in_eStart = e.Start.Content;
-                            SimDoubleParameter p_eStart_Operand = e.Start.GetFirstParamBySuffix(rule.Suffix_Operands, _in_flow_dir);
+                            SimDoubleParameter p_eStart_Operand = e.Start.GetFirstParamBySuffix(rule.Suffix_Operands, _in_flow_dir, culture);
 
                             if (instance_in_e == null || p_e_Operand == null || p_e_Result == null) continue;
                             if (!(instance_in_e.InstanceParameterValuesTemporary.Contains(p_e_Operand)) || !(instance_in_e.InstanceParameterValuesTemporary.Contains(p_e_Result)))
@@ -263,10 +264,10 @@ namespace SIMULTAN.Data.FlowNetworks
                             if (!e.CanCalculateFlow(_in_flow_dir)) continue;
 
                             SimComponentInstance instance_in_e = e.Content;
-                            SimDoubleParameter p_e_Operand = e.GetFirstParamBySuffix(rule.Suffix_Operands, _in_flow_dir);
-                            SimDoubleParameter p_e_Result = e.GetFirstParamBySuffix(rule.Suffix_Result, _in_flow_dir);
+                            SimDoubleParameter p_e_Operand = e.GetFirstParamBySuffix(rule.Suffix_Operands, _in_flow_dir, culture);
+                            SimDoubleParameter p_e_Result = e.GetFirstParamBySuffix(rule.Suffix_Result, _in_flow_dir, culture);
                             SimComponentInstance instance_in_eEnd = e.End.Content;
-                            SimDoubleParameter p_eEnd_Operand = e.End.GetFirstParamBySuffix(rule.Suffix_Operands, _in_flow_dir);
+                            SimDoubleParameter p_eEnd_Operand = e.End.GetFirstParamBySuffix(rule.Suffix_Operands, _in_flow_dir, culture);
 
                             if (instance_in_e == null || p_e_Operand == null || p_e_Result == null) continue;
                             if (!(instance_in_e.InstanceParameterValuesTemporary.Contains(p_e_Operand)) || !(instance_in_e.InstanceParameterValuesTemporary.Contains(p_e_Result)))

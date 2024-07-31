@@ -1,4 +1,5 @@
 ﻿using SIMULTAN;
+using SIMULTAN.Data.SimMath;
 using SIMULTAN.Utils;
 using System;
 using System.Collections.Generic;
@@ -6,14 +7,13 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
-using System.Windows.Media.Media3D;
 
 namespace SIMULTAN.Data.Geometry
 {
     /// <summary>
     /// Represents a planar surface
     /// </summary>
-    [DebuggerDisplay("Face ID={Id}, Normal={Normal}")]
+    [DebuggerDisplay("Face ID={Id}, Normal={Normal}, Name={Name}")]
     public class Face : BaseGeometry
     {
         /// <summary>
@@ -33,7 +33,7 @@ namespace SIMULTAN.Data.Geometry
             set
             {
                 orientation = value;
-                OnPropertyChanged(nameof(Orientation));
+                NotifyPropertyChanged(nameof(Orientation));
 
                 if (ModelGeometry.HandleConsistency)
                     UpdateNormal(); //GeometryChanged will be emitted by UpdateNormal -> Normal.set
@@ -44,20 +44,47 @@ namespace SIMULTAN.Data.Geometry
         private GeometricOrientation orientation;
 
         /// <summary>
+        /// Base Edge of the Face as defined by the user.
+        /// Can be used to get a consistent base direction for the Face
+        /// </summary>
+        public Edge BaseEdge
+        {
+            get { return baseEdge; }
+            set
+            {
+                if (value == null)
+                    throw new ArgumentNullException();
+
+                if (value != baseEdge)
+                {
+                    if (value.PEdges.Any(x => x.Parent == this.Boundary))
+                    {
+                        baseEdge = value;
+                        NotifyPropertyChanged(nameof(BaseEdge));
+                        NotifyGeometryChanged();
+                    }
+                    else
+                        throw new ArgumentException($"BaseEdge is not part of the Boundary Loop {this.Boundary.Name} (Id={this.Boundary.Id}");
+                }
+            }
+        }
+        private Edge baseEdge;
+
+        /// <summary>
         /// Returns the face normal
         /// </summary>
-        public Vector3D Normal
+        public SimVector3D Normal
         {
             get { return normal; }
             private set
             {
                 normal = value;
-                OnPropertyChanged(nameof(Normal));
+                NotifyPropertyChanged(nameof(Normal));
 
                 NotifyGeometryChanged();
             }
         }
-        private Vector3D normal;
+        private SimVector3D normal;
 
         /// <summary>
         /// Returns all PFaces associated with this Face
@@ -70,10 +97,11 @@ namespace SIMULTAN.Data.Geometry
         /// <param name="layer">The layer this object is placed on</param>
         /// <param name="nameFormat">The display name (this is used as a format string for string.Format. {0} is the Id</param>
         /// <param name="boundary">The boundary loop</param>
+        /// <param name="baseEdge">Base edge of the face. Needs to be part of the boundary EdgeLoop</param>
         /// <param name="orientation">Orientation of the face</param>
         /// <param name="holes">A list of hole loops</param>
-        public Face(Layer layer, string nameFormat, EdgeLoop boundary, GeometricOrientation orientation = GeometricOrientation.Forward, IEnumerable<EdgeLoop> holes = null)
-            : this(layer != null ? layer.Model.GetFreeId() : ulong.MaxValue, layer, nameFormat, boundary, orientation, holes) { }
+        public Face(Layer layer, string nameFormat, EdgeLoop boundary, GeometricOrientation orientation = GeometricOrientation.Forward, IEnumerable<EdgeLoop> holes = null, Edge baseEdge = null)
+            : this(layer != null ? layer.Model.GetFreeId() : ulong.MaxValue, layer, nameFormat, boundary, orientation, holes, baseEdge) { }
         /// <summary>
         /// Initializes a new instance of the Face class
         /// </summary>
@@ -81,9 +109,11 @@ namespace SIMULTAN.Data.Geometry
         /// <param name="nameFormat">The display name (this is used as a format string for string.Format. {0} is the Id</param>
         /// <param name="layer">The layer this object is placed on</param>
         /// <param name="boundary">The boundary loop</param>
+        /// <param name="baseEdge">Base edge of the face. Needs to be part of the boundary EdgeLoop</param>
         /// <param name="orientation">Orientation of the face</param>
         /// <param name="holes">A list of hole loops</param>
-        public Face(ulong id, Layer layer, string nameFormat, EdgeLoop boundary, GeometricOrientation orientation = GeometricOrientation.Forward, IEnumerable<EdgeLoop> holes = null)
+        public Face(ulong id, Layer layer, string nameFormat, EdgeLoop boundary,
+            GeometricOrientation orientation = GeometricOrientation.Forward, IEnumerable<EdgeLoop> holes = null, Edge baseEdge = null)
             : base(id, layer)
         {
             if (boundary == null)
@@ -94,6 +124,11 @@ namespace SIMULTAN.Data.Geometry
             this.Name = string.Format(nameFormat, id);
             this.Boundary = boundary;
             this.Orientation = orientation;
+
+            if (baseEdge != null)
+                this.BaseEdge = baseEdge;
+            else
+                GuessBaseEdge();
 
             if (holes == null)
                 this.Holes = new ObservableCollection<EdgeLoop>();
@@ -158,6 +193,16 @@ namespace SIMULTAN.Data.Geometry
             if (GeometryHasChanged || hasTopologyChanged)
                 UpdateNormal();
 
+            if (hasTopologyChanged || baseEdge == null)
+            {
+                //Check base edge
+                if (baseEdge == null || !Boundary.Edges.Any(pe => pe.Edge == baseEdge))
+                {
+                    //Invalid -> guess new base edge
+                    GuessBaseEdge();
+                }
+            }
+
             OnGeometryChanged(notifyGeometryChanged);
             OnTopologyChanged();
         }
@@ -214,9 +259,38 @@ namespace SIMULTAN.Data.Geometry
 
         private void UpdateNormal()
         {
-            Normal = EdgeLoopAlgorithms.NormalCCW(this.Boundary);
+            var n = EdgeLoopAlgorithms.NormalCCW(this.Boundary);
             if (Orientation == GeometricOrientation.Backward)
-                Normal = -Normal;
+                n = -n;
+
+            Normal = n;
+        }
+
+        private void GuessBaseEdge()
+        {
+            Edge bestEdge = null;
+
+            if (!FaceAlgorithms.IsFloorOrCeiling(this)) //Wall mode
+            {
+                //Try to find an edge in the XZ plane, then take the one with the lowest Y value
+                double bestY = double.PositiveInfinity;
+                foreach (var edge in this.Boundary.Edges)
+                {
+                    if ((edge.StartVertex.Position.Y - edge.EndVertex.Position.Y < 0.00001) && edge.StartVertex.Position.Y < bestY)
+                    {
+                        bestEdge = edge.Edge;
+                        bestY = edge.StartVertex.Position.Y;
+                    }
+                }
+
+            }
+
+            if (bestEdge == null) //Either wall not found or no wall
+            {
+                bestEdge = Boundary.Edges.First().Edge;
+            }
+
+            this.BaseEdge = bestEdge;
         }
     }
 }

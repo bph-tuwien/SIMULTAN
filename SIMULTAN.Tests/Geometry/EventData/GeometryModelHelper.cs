@@ -1,6 +1,8 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SIMULTAN.Data.Geometry;
+using SIMULTAN.Data.SimMath;
 using SIMULTAN.Tests.TestUtils;
+using SIMULTAN.Utils;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -8,8 +10,8 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Windows.Media;
-using System.Windows.Media.Media3D;
+
+
 
 namespace SIMULTAN.Tests.Geometry.EventData
 {
@@ -26,8 +28,8 @@ namespace SIMULTAN.Tests.Geometry.EventData
 
         public static (GeometryModelData modelData, Layer layer) EmptyModelData()
         {
-            GeometryModelData gm = new GeometryModelData();
-            Layer layer = new Layer(gm, "Layer0") { Color = new DerivedColor(Colors.Red) };
+            GeometryModelData gm = new GeometryModelData(new SystemTimerFactory());
+            Layer layer = new Layer(gm, "Layer0") { Color = new DerivedColor(SimColors.Red) };
             gm.Layers.Add(layer);
 
             return (gm, layer);
@@ -41,11 +43,11 @@ namespace SIMULTAN.Tests.Geometry.EventData
 
         public static GeometryModelData CubeModel()
         {
-            GeometryModelData gm = new GeometryModelData();
-            Layer layer = new Layer(gm, "Layer0") { Color = new DerivedColor(Colors.Red) };
+            GeometryModelData gm = new GeometryModelData(new SystemTimerFactory());
+            Layer layer = new Layer(gm, "Layer0") { Color = new DerivedColor(SimColors.Red) };
             gm.Layers.Add(layer);
 
-            ShapeGenerator.GenerateCube(layer, new Point3D(0, 0, 0), new Point3D(2, 2, 2));
+            ShapeGenerator.GenerateCube(layer, new SimPoint3D(0, 0, 0), new SimPoint3D(2, 2, 2));
 
             return gm;
         }

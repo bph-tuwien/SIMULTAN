@@ -47,7 +47,7 @@ namespace SIMULTAN.DataMapping
         /// <param name="property">The property that should be filtered</param>
         /// <param name="value">The value the property is compared to. See description of <see cref="SimDataMappingParameterFilterProperties"/>
         /// to see which value types are supported</param>
-        public SimDataMappingFilterParameter(SimDataMappingParameterFilterProperties property, object value) 
+        public SimDataMappingFilterParameter(SimDataMappingParameterFilterProperties property, object value)
             : base(property, value) { }
 
         /// <summary>
@@ -71,23 +71,19 @@ namespace SIMULTAN.DataMapping
                 case SimDataMappingParameterFilterProperties.Name:
                     if (this.Value is string sname)
                     {
-                        var paramName = parameter.NameTaxonomyEntry.Name;
-                        if (parameter.NameTaxonomyEntry.HasTaxonomyEntry())
-                            paramName = parameter.NameTaxonomyEntry.TaxonomyEntryReference.Target.Key;
+                        var paramName = parameter.NameTaxonomyEntry.TextOrKey;
 
                         return paramName == sname;
                     }
                     else if (this.Value is Regex rname)
                     {
-                        var paramName = parameter.NameTaxonomyEntry.Name;
-                        if (parameter.NameTaxonomyEntry.HasTaxonomyEntry())
-                            paramName = parameter.NameTaxonomyEntry.TaxonomyEntryReference.Target.Key;
+                        var paramName = parameter.NameTaxonomyEntry.TextOrKey;
 
                         return rname.IsMatch(paramName);
                     }
                     else if (this.Value is SimTaxonomyEntryReference tref)
                     {
-                        if (parameter.NameTaxonomyEntry.HasTaxonomyEntry())
+                        if (parameter.NameTaxonomyEntry.HasTaxonomyEntry)
                             return parameter.NameTaxonomyEntry.TaxonomyEntryReference == tref;
                     }
                     else

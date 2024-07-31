@@ -65,6 +65,8 @@ namespace SIMULTAN.Tests.Properties {
         ///SECTION
         ///2
         ///ENTITIES
+        ///901
+        ///0
         ///0
         ///ENDSEC
         ///.
@@ -80,6 +82,8 @@ namespace SIMULTAN.Tests.Properties {
         ///SECTION
         ///2
         ///ENTITIES
+        ///901
+        ///1
         ///0
         ///COMPONENT
         ///100
@@ -131,8 +135,7 @@ namespace SIMULTAN.Tests.Properties {
         ///0
         ///ACCESS_TRACKER
         ///100
-        ///SIMULTAN.Data.Components.SimAccessProfileEntry
-        /// [rest of string was truncated]&quot;;.
+        ///SIMULTAN.Data.Components.SimAccessProfil [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string DXFSerializer_CODXF_Multiple {
             get {
@@ -195,6 +198,195 @@ namespace SIMULTAN.Tests.Properties {
         
         /// <summary>
         ///   Looks up a localized string similar to 0
+        ///SIMNETWORK_BLOCK
+        ///100
+        ///SIMULTAN.Data.SimNetworks.SimNetworkBlock
+        ///900
+        ///65002
+        ///2
+        ///Block A
+        ///9518
+        ///#FFFF0000
+        ///9503
+        ///1.00000000
+        ///9504
+        ///2.00000000
+        ///9505
+        ///2
+        ///0
+        ///ENTSEQ
+        ///0
+        ///SIMNETWORK_PORT
+        ///100
+        ///SIMULTAN.Data.SimNetworks.SimNetworkPort
+        ///900
+        ///65004
+        ///2
+        ///My Port A
+        ///9506
+        ///1
+        ///9518
+        ///#FFFFFFFF
+        ///9514
+        ///-1
+        ///9515
+        ///18446744073709551615
+        ///0
+        ///SIMNETWORK_PORT
+        ///100
+        ///SIMULTAN.Data.SimNetworks.SimNetworkPort
+        ///900
+        ///65005
+        ///2
+        ///My Port C
+        ///9506
+        ///0
+        ///9518
+        ///#FF0000FF
+        ///9514
+        ///-1
+        ///9515
+        ///18446744073709551615
+        ///0
+        ///SEQEND
+        ///0
+        ///ENTCTN
+        ///9514
+        ///-1
+        /// [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string DXFSerializer_CODXF_ReadBlockV14 {
+            get {
+                return ResourceManager.GetString("DXFSerializer_CODXF_ReadBlockV14", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to 0
+        ///SIMNETWORK_BLOCK
+        ///100
+        ///SIMULTAN.Data.SimNetworks.SimNetworkBlock
+        ///900
+        ///65002
+        ///2
+        ///Block A
+        ///9518
+        ///#FFFF0000
+        ///9503
+        ///1.00000000
+        ///9504
+        ///2.00000000
+        ///9519
+        ///250.00000000
+        ///9520
+        ///250.00000000
+        ///9505
+        ///2
+        ///0
+        ///ENTSEQ
+        ///0
+        ///SIMNETWORK_PORT
+        ///100
+        ///SIMULTAN.Data.SimNetworks.SimNetworkPort
+        ///900
+        ///65004
+        ///2
+        ///My Port A
+        ///9506
+        ///1
+        ///9518
+        ///#FFA9A9A9
+        ///9514
+        ///-1
+        ///9515
+        ///18446744073709551615
+        ///0
+        ///SIMNETWORK_PORT
+        ///100
+        ///SIMULTAN.Data.SimNetworks.SimNetworkPort
+        ///900
+        ///65005
+        ///2
+        ///My Port C
+        ///9506
+        ///0
+        ///9518
+        ///#FFA9A9A9
+        ///9514
+        ///-1
+        ///9515
+        ///18446744073709 [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string DXFSerializer_CODXF_ReadBlockV16 {
+            get {
+                return ResourceManager.GetString("DXFSerializer_CODXF_ReadBlockV16", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to 0
+        ///SIMNETWORK_BLOCK
+        ///100
+        ///SIMULTAN.Data.SimNetworks.SimNetworkBlock
+        ///900
+        ///65002
+        ///2
+        ///Block A
+        ///9518
+        ///#FFA9A9A9
+        ///9503
+        ///1.00000000
+        ///9504
+        ///2.00000000
+        ///9519
+        ///200.00000000
+        ///9520
+        ///200.00000000
+        ///9505
+        ///2
+        ///0
+        ///ENTSEQ
+        ///0
+        ///SIMNETWORK_PORT
+        ///100
+        ///SIMULTAN.Data.SimNetworks.SimNetworkPort
+        ///900
+        ///65004
+        ///2
+        ///My Port A
+        ///9506
+        ///1
+        ///9518
+        ///#FFA9A9A9
+        ///9503
+        ///100.00000000
+        ///9504
+        ///0.00000000
+        ///9514
+        ///-1
+        ///9515
+        ///18446744073709551615
+        ///0
+        ///SIMNETWORK_PORT
+        ///100
+        ///SIMULTAN.Data.SimNetworks.SimNetworkPort
+        ///900
+        ///65005
+        ///2
+        ///My Port C
+        ///9506
+        ///0
+        ///9518
+        ///#FF [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string DXFSerializer_CODXF_ReadBlockV26 {
+            get {
+                return ResourceManager.GetString("DXFSerializer_CODXF_ReadBlockV26", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to 0
         ///SIMNETWORK_CONNECTOR
         ///100
         ///SIMULTAN.Data.SimNetworks.SimNetworkConnector
@@ -213,6 +405,72 @@ namespace SIMULTAN.Tests.Properties {
         internal static string DXFSerializer_CODXF_ReadConnectorV12 {
             get {
                 return ResourceManager.GetString("DXFSerializer_CODXF_ReadConnectorV12", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to 0
+        ///SIMNETWORK_CONNECTOR
+        ///100
+        ///SIMULTAN.Data.SimNetworks.SimNetworkConnector
+        ///900
+        ///65007
+        ///2
+        ///My Connector
+        ///9511
+        ///65004
+        ///9512
+        ///65006
+        ///9518
+        ///#FF800080
+        ///9514
+        ///-1
+        ///9515
+        ///18446744073709551615
+        ///0
+        ///EOF.
+        /// </summary>
+        internal static string DXFSerializer_CODXF_ReadConnectorV14 {
+            get {
+                return ResourceManager.GetString("DXFSerializer_CODXF_ReadConnectorV14", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to 0
+        ///SIMNETWORK_CONNECTOR
+        ///100
+        ///SIMULTAN.Data.SimNetworks.SimNetworkConnector
+        ///900
+        ///65007
+        ///2
+        ///My Connector
+        ///9511
+        ///65004
+        ///9512
+        ///65006
+        ///9518
+        ///#FFA9A9A9
+        ///9514
+        ///-1
+        ///9515
+        ///18446744073709551615
+        ///9521
+        ///2
+        ///9503
+        ///100.00000000
+        ///9504
+        ///0.00000000
+        ///9503
+        ///2.00000000
+        ///9504
+        ///2.00000000
+        ///0
+        ///EOF.
+        /// </summary>
+        internal static string DXFSerializer_CODXF_ReadConnectorV26 {
+            get {
+                return ResourceManager.GetString("DXFSerializer_CODXF_ReadConnectorV26", resourceCulture);
             }
         }
         
@@ -284,6 +542,207 @@ namespace SIMULTAN.Tests.Properties {
         
         /// <summary>
         ///   Looks up a localized string similar to 0
+        ///SECTION
+        ///2
+        ///SIMNETWORKS
+        ///0
+        ///SIMNETWORK
+        ///100
+        ///SIMULTAN.Data.SimNetworks.SimNetwork
+        ///900
+        ///65001
+        ///2
+        ///My Network
+        ///9503
+        ///45.00000000
+        ///9504
+        ///46.00000000
+        ///9518
+        ///#FF000000
+        ///9514
+        ///-1
+        ///9515
+        ///18446744073709551615
+        ///9516
+        ///-1
+        ///9505
+        ///1
+        ///0
+        ///ENTSEQ
+        ///0
+        ///SIMNETWORK_PORT
+        ///100
+        ///SIMULTAN.Data.SimNetworks.SimNetworkPort
+        ///900
+        ///65008
+        ///2
+        ///Network Port 1
+        ///9506
+        ///1
+        ///9518
+        ///#FF0000FF
+        ///9514
+        ///-1
+        ///9515
+        ///18446744073709551615
+        ///0
+        ///SEQEND
+        ///0
+        ///ENTCTN
+        ///9001
+        ///2
+        ///0
+        ///ENTSEQ
+        ///0
+        ///SIMNETWORK_BLOCK
+        ///100
+        ///SIMULTAN.Data.SimNetworks.SimNetworkBlock
+        ///900 [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string DXFSerializer_CODXF_ReadNetworkSectionV14 {
+            get {
+                return ResourceManager.GetString("DXFSerializer_CODXF_ReadNetworkSectionV14", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to 0
+        ///SECTION
+        ///2
+        ///SIMNETWORKS
+        ///0
+        ///SIMNETWORK
+        ///100
+        ///SIMULTAN.Data.SimNetworks.SimNetwork
+        ///900
+        ///65001
+        ///2
+        ///My Network
+        ///9503
+        ///45.00000000
+        ///9504
+        ///46.00000000
+        ///9519
+        ///500.00000000
+        ///9520
+        ///500.00000000
+        ///9518
+        ///#FF000000
+        ///9514
+        ///-1
+        ///9515
+        ///18446744073709551615
+        ///9516
+        ///-1
+        ///9505
+        ///1
+        ///0
+        ///ENTSEQ
+        ///0
+        ///SIMNETWORK_PORT
+        ///100
+        ///SIMULTAN.Data.SimNetworks.SimNetworkPort
+        ///900
+        ///65008
+        ///2
+        ///Network Port 1
+        ///9506
+        ///1
+        ///9518
+        ///#FFA9A9A9
+        ///9514
+        ///-1
+        ///9515
+        ///18446744073709551615
+        ///0
+        ///SEQEND
+        ///0
+        ///ENTCTN
+        ///9001
+        ///2
+        ///0
+        ///ENTSEQ
+        ///0
+        ///SIMNETWORK_BLOCK
+        ///100
+        ///SIMULT [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string DXFSerializer_CODXF_ReadNetworkSectionV16 {
+            get {
+                return ResourceManager.GetString("DXFSerializer_CODXF_ReadNetworkSectionV16", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to 0
+        ///SECTION
+        ///2
+        ///SIMNETWORKS
+        ///0
+        ///SIMNETWORK
+        ///100
+        ///SIMULTAN.Data.SimNetworks.SimNetwork
+        ///900
+        ///65001
+        ///2
+        ///My Network
+        ///9503
+        ///45.00000000
+        ///9504
+        ///46.00000000
+        ///9519
+        ///200.00000000
+        ///9520
+        ///100.00000000
+        ///9518
+        ///#FFA9A9A9
+        ///9514
+        ///-1
+        ///9515
+        ///18446744073709551615
+        ///9516
+        ///-1
+        ///9505
+        ///1
+        ///0
+        ///ENTSEQ
+        ///0
+        ///SIMNETWORK_PORT
+        ///100
+        ///SIMULTAN.Data.SimNetworks.SimNetworkPort
+        ///900
+        ///65008
+        ///2
+        ///Network Port 1
+        ///9506
+        ///1
+        ///9518
+        ///#FFA9A9A9
+        ///9503
+        ///100.00000000
+        ///9504
+        ///0.00000000
+        ///9514
+        ///-1
+        ///9515
+        ///18446744073709551615
+        ///0
+        ///SEQEND
+        ///0
+        ///ENTCTN
+        ///9001
+        ///2
+        ///0
+        ///EN [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string DXFSerializer_CODXF_ReadNetworkSectionV26 {
+            get {
+                return ResourceManager.GetString("DXFSerializer_CODXF_ReadNetworkSectionV26", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to 0
         ///SIMNETWORK
         ///100
         ///SIMULTAN.Data.SimNetworks.SimNetwork
@@ -347,6 +806,267 @@ namespace SIMULTAN.Tests.Properties {
         
         /// <summary>
         ///   Looks up a localized string similar to 0
+        ///SIMNETWORK
+        ///100
+        ///SIMULTAN.Data.SimNetworks.SimNetwork
+        ///900
+        ///65001
+        ///2
+        ///My Network
+        ///9503
+        ///45.00000000
+        ///9504
+        ///46.00000000
+        ///9518
+        ///#FF000000
+        ///9514
+        ///-1
+        ///9515
+        ///18446744073709551615
+        ///9516
+        ///-1
+        ///9505
+        ///1
+        ///0
+        ///ENTSEQ
+        ///0
+        ///SIMNETWORK_PORT
+        ///100
+        ///SIMULTAN.Data.SimNetworks.SimNetworkPort
+        ///900
+        ///65008
+        ///2
+        ///Network Port 1
+        ///9506
+        ///1
+        ///9518
+        ///#FF0000FF
+        ///9514
+        ///-1
+        ///9515
+        ///18446744073709551615
+        ///0
+        ///SEQEND
+        ///0
+        ///ENTCTN
+        ///9001
+        ///2
+        ///0
+        ///ENTSEQ
+        ///0
+        ///SIMNETWORK_BLOCK
+        ///100
+        ///SIMULTAN.Data.SimNetworks.SimNetworkBlock
+        ///900
+        ///65002
+        ///2
+        ///Block A
+        ///9518
+        ///# [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string DXFSerializer_CODXF_ReadNetworkV14 {
+            get {
+                return ResourceManager.GetString("DXFSerializer_CODXF_ReadNetworkV14", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to 0
+        ///SIMNETWORK
+        ///100
+        ///SIMULTAN.Data.SimNetworks.SimNetwork
+        ///900
+        ///65001
+        ///2
+        ///My Network
+        ///9503
+        ///45.00000000
+        ///9504
+        ///46.00000000
+        ///9519
+        ///500.00000000
+        ///9520
+        ///500.00000000
+        ///9518
+        ///#FF000000
+        ///9514
+        ///-1
+        ///9515
+        ///18446744073709551615
+        ///9516
+        ///-1
+        ///9505
+        ///1
+        ///0
+        ///ENTSEQ
+        ///0
+        ///SIMNETWORK_PORT
+        ///100
+        ///SIMULTAN.Data.SimNetworks.SimNetworkPort
+        ///900
+        ///65008
+        ///2
+        ///Network Port 1
+        ///9506
+        ///1
+        ///9518
+        ///#FFA9A9A9
+        ///9514
+        ///-1
+        ///9515
+        ///18446744073709551615
+        ///0
+        ///SEQEND
+        ///0
+        ///ENTCTN
+        ///9001
+        ///2
+        ///0
+        ///ENTSEQ
+        ///0
+        ///SIMNETWORK_BLOCK
+        ///100
+        ///SIMULTAN.Data.SimNetworks.SimNetwo [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string DXFSerializer_CODXF_ReadNetworkV16 {
+            get {
+                return ResourceManager.GetString("DXFSerializer_CODXF_ReadNetworkV16", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to 0
+        ///SIMNETWORK
+        ///100
+        ///SIMULTAN.Data.SimNetworks.SimNetwork
+        ///900
+        ///65001
+        ///2
+        ///My Network
+        ///9503
+        ///45.00000000
+        ///9504
+        ///46.00000000
+        ///9519
+        ///500.00000000
+        ///9520
+        ///500.00000000
+        ///9518
+        ///#FF000000
+        ///9514
+        ///-1
+        ///9515
+        ///18446744073709551615
+        ///9516
+        ///-1
+        ///9505
+        ///1
+        ///0
+        ///ENTSEQ
+        ///0
+        ///SIMNETWORK_PORT
+        ///100
+        ///SIMULTAN.Data.SimNetworks.SimNetworkPort
+        ///900
+        ///65008
+        ///2
+        ///Network Port 1
+        ///9506
+        ///1
+        ///9518
+        ///#FFA9A9A9
+        ///9514
+        ///-1
+        ///9515
+        ///18446744073709551615
+        ///0
+        ///SEQEND
+        ///0
+        ///ENTCTN
+        ///9001
+        ///2
+        ///0
+        ///ENTSEQ
+        ///0
+        ///SIMNETWORK_BLOCK
+        ///100
+        ///SIMULTAN.Data.SimNetworks.SimNetwo [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string DXFSerializer_CODXF_ReadNetworkV161 {
+            get {
+                return ResourceManager.GetString("DXFSerializer_CODXF_ReadNetworkV161", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to 0
+        ///SIMNETWORK
+        ///100
+        ///SIMULTAN.Data.SimNetworks.SimNetwork
+        ///900
+        ///65001
+        ///2
+        ///My Network
+        ///9503
+        ///45.00000000
+        ///9504
+        ///46.00000000
+        ///9519
+        ///200.00000000
+        ///9520
+        ///100.00000000
+        ///9518
+        ///#FFA9A9A9
+        ///9514
+        ///-1
+        ///9515
+        ///18446744073709551615
+        ///9516
+        ///-1
+        ///9505
+        ///1
+        ///0
+        ///ENTSEQ
+        ///0
+        ///SIMNETWORK_PORT
+        ///100
+        ///SIMULTAN.Data.SimNetworks.SimNetworkPort
+        ///900
+        ///65008
+        ///2
+        ///Network Port 1
+        ///9506
+        ///1
+        ///9518
+        ///#FFA9A9A9
+        ///9503
+        ///100.00000000
+        ///9504
+        ///0.00000000
+        ///9514
+        ///-1
+        ///9515
+        ///18446744073709551615
+        ///0
+        ///SEQEND
+        ///0
+        ///ENTCTN
+        ///9001
+        ///2
+        ///0
+        ///ENTSEQ
+        ///0
+        ///SIMNETWORK_BLOCK
+        ///1 [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string DXFSerializer_CODXF_ReadNetworkV26 {
+            get {
+                return ResourceManager.GetString("DXFSerializer_CODXF_ReadNetworkV26", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to 0
         ///SIMNETWORK_PORT
         ///100
         ///SIMULTAN.Data.SimNetworks.SimNetworkPort
@@ -368,6 +1088,59 @@ namespace SIMULTAN.Tests.Properties {
         
         /// <summary>
         ///   Looks up a localized string similar to 0
+        ///SIMNETWORK_PORT
+        ///100
+        ///SIMULTAN.Data.SimNetworks.SimNetworkPort
+        ///900
+        ///65004
+        ///2
+        ///My Port A
+        ///9506
+        ///1
+        ///9518
+        ///#FFFFFFFF
+        ///9514
+        ///-1
+        ///9515
+        ///18446744073709551615
+        ///0
+        ///EOF.
+        /// </summary>
+        internal static string DXFSerializer_CODXF_ReadPortV14 {
+            get {
+                return ResourceManager.GetString("DXFSerializer_CODXF_ReadPortV14", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to 0
+        ///SIMNETWORK_PORT
+        ///100
+        ///SIMULTAN.Data.SimNetworks.SimNetworkPort
+        ///900
+        ///65004
+        ///2
+        ///My Port A
+        ///9506
+        ///1
+        ///9518
+        ///#FF2800A3
+        ///9503
+        ///5
+        ///9504
+        ///5
+        ///0
+        ///EOF
+        ///.
+        /// </summary>
+        internal static string DXFSerializer_CODXF_ReadPortV26 {
+            get {
+                return ResourceManager.GetString("DXFSerializer_CODXF_ReadPortV26", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to 0
         ///SIMNETWORK_BLOCK
         ///100
         ///SIMULTAN.Data.SimNetworks.SimNetworkBlock
@@ -376,11 +1149,15 @@ namespace SIMULTAN.Tests.Properties {
         ///2
         ///Block A
         ///9518
-        ///#FFA9A9A9
+        ///#FFFF0000
         ///9503
         ///1.00000000
         ///9504
         ///2.00000000
+        ///9519
+        ///200.00000000
+        ///9520
+        ///200.00000000
         ///9505
         ///2
         ///0
@@ -396,7 +1173,11 @@ namespace SIMULTAN.Tests.Properties {
         ///9506
         ///1
         ///9518
-        ///#FFA9A9A9
+        ///#FFFFFFFF
+        ///9503
+        ///100.00000000
+        ///9504
+        ///0.00000000
         ///9514
         ///-1
         ///9515
@@ -412,18 +1193,7 @@ namespace SIMULTAN.Tests.Properties {
         ///9506
         ///0
         ///9518
-        ///#FFA9A9A9
-        ///9514
-        ///-1
-        ///9515
-        ///18446744073709551615
-        ///0
-        ///SEQEND
-        ///0
-        ///ENTCTN
-        ///9514
-        ///-1
-        /// [rest of string was truncated]&quot;;.
+        ///#FF [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string DXFSerializer_CODXF_WriteBlock {
             get {
@@ -499,11 +1269,21 @@ namespace SIMULTAN.Tests.Properties {
         ///9512
         ///65006
         ///9518
-        ///#FFA9A9A9
+        ///#FF800080
         ///9514
         ///-1
         ///9515
         ///18446744073709551615
+        ///9521
+        ///2
+        ///9503
+        ///100.00000000
+        ///9504
+        ///0.00000000
+        ///9503
+        ///2.00000000
+        ///9504
+        ///2.00000000
         ///.
         /// </summary>
         internal static string DXFSerializer_CODXF_WriteConnector {
@@ -525,8 +1305,12 @@ namespace SIMULTAN.Tests.Properties {
         ///45.00000000
         ///9504
         ///46.00000000
+        ///9519
+        ///500.00000000
+        ///9520
+        ///500.00000000
         ///9518
-        ///#FFA9A9A9
+        ///#FF000000
         ///9514
         ///-1
         ///9515
@@ -549,6 +1333,10 @@ namespace SIMULTAN.Tests.Properties {
         ///1
         ///9518
         ///#FFA9A9A9
+        ///9503
+        ///100.00000000
+        ///9504
+        ///0.00000000
         ///9514
         ///-1
         ///9515
@@ -563,14 +1351,7 @@ namespace SIMULTAN.Tests.Properties {
         ///ENTSEQ
         ///0
         ///SIMNETWORK_BLOCK
-        ///100
-        ///SIMULTAN.Data.SimNetworks.SimNetworkBlock
-        ///900
-        ///65002
-        ///2
-        ///Block A
-        ///9518
-        ///# [rest of string was truncated]&quot;;.
+        ///1 [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string DXFSerializer_CODXF_WriteNetwork {
             get {
@@ -583,6 +1364,8 @@ namespace SIMULTAN.Tests.Properties {
         ///SECTION
         ///2
         ///SIMNETWORKS
+        ///901
+        ///1
         ///0
         ///SIMNETWORK
         ///100
@@ -595,8 +1378,12 @@ namespace SIMULTAN.Tests.Properties {
         ///45.00000000
         ///9504
         ///46.00000000
+        ///9519
+        ///500.00000000
+        ///9520
+        ///500.00000000
         ///9518
-        ///#FFA9A9A9
+        ///#FF000000
         ///9514
         ///-1
         ///9515
@@ -619,6 +1406,10 @@ namespace SIMULTAN.Tests.Properties {
         ///1
         ///9518
         ///#FFA9A9A9
+        ///9503
+        ///100.00000000
+        ///9504
+        ///0.00000000
         ///9514
         ///-1
         ///9515
@@ -628,14 +1419,7 @@ namespace SIMULTAN.Tests.Properties {
         ///0
         ///ENTCTN
         ///9001
-        ///2
-        ///0
-        ///ENTSEQ
-        ///0
-        ///SIMNETWORK_BLOCK
-        ///100
-        ///SIMULTAN.Data.SimNetworks.SimNetworkBlock
-        ///900 [rest of string was truncated]&quot;;.
+        /// [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string DXFSerializer_CODXF_WriteNetworkSection {
             get {
@@ -655,7 +1439,11 @@ namespace SIMULTAN.Tests.Properties {
         ///9506
         ///1
         ///9518
-        ///#FFA9A9A9
+        ///#FFFFFFFF
+        ///9503
+        ///100.00000000
+        ///9504
+        ///0.00000000
         ///9514
         ///-1
         ///9515
@@ -786,6 +1574,8 @@ namespace SIMULTAN.Tests.Properties {
         ///SECTION
         ///2
         ///VALUEMAPPINGS
+        ///901
+        ///2
         ///0
         ///VALUEMAPPING
         ///900
@@ -843,8 +1633,7 @@ namespace SIMULTAN.Tests.Properties {
         ///900
         ///665578
         ///11018
-        ///my mapping 2
-        ///11020        /// [rest of string was truncated]&quot;;.
+        ///my mapping 2 [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string DXFSerializer_CODXF_WriteValueMappingSection {
             get {
@@ -2726,16 +3515,20 @@ namespace SIMULTAN.Tests.Properties {
         ///SECTION
         ///2
         ///VERSION_SECTION
+        ///901
+        ///-1
         ///0
         ///FILE_VERSION
         ///10
-        ///21
+        ///29
         ///0
         ///ENDSEC
         ///0
         ///SECTION
         ///2
         ///DATAMAPPING_TOOLS
+        ///901
+        ///-1
         ///0
         ///DATAMAPPING_TOOL
         ///100
@@ -2774,6 +3567,8 @@ namespace SIMULTAN.Tests.Properties {
         ///1
         ///6015
         ///1
+        ///6027
+        ///2
         ///6603
         ///2
         ///6006
@@ -2786,12 +3581,7 @@ namespace SIMULTAN.Tests.Properties {
         ///2
         ///6010
         ///4
-        ///6016
-        ///0
-        ///6017
-        ///0
-        ///6018
-        ///filt [rest of string was truncated]&quot;;.
+        ///6 [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string DXFSerializer_ETDXF_Write {
             get {
@@ -2838,6 +3628,8 @@ namespace SIMULTAN.Tests.Properties {
         ///1
         ///6015
         ///1
+        ///6027
+        ///2
         ///6603
         ///2
         ///6006
@@ -2873,8 +3665,6 @@ namespace SIMULTAN.Tests.Properties {
         ///6016
         ///3
         ///6017
-        ///4
-        ///6018
         /// [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string DXFSerializer_ETDXF_WriteDataMappingTool {
@@ -2922,6 +3712,8 @@ namespace SIMULTAN.Tests.Properties {
         ///1
         ///6015
         ///1
+        ///6027
+        ///2
         ///6603
         ///2
         ///6006
@@ -2957,8 +3749,6 @@ namespace SIMULTAN.Tests.Properties {
         ///6016
         ///3
         ///6017
-        ///4
-        ///6018
         /// [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string DXFSerializer_ETDXF_WriteDataMappingToolMappings {
@@ -3021,6 +3811,8 @@ namespace SIMULTAN.Tests.Properties {
         ///1
         ///6015
         ///1
+        ///6027
+        ///2
         ///6603
         ///2
         ///6006
@@ -3058,7 +3850,7 @@ namespace SIMULTAN.Tests.Properties {
         ///6017
         ///4
         ///6018
-        ///4
+        ///2
         ///6020
         ///0
         ///6013
@@ -3098,6 +3890,8 @@ namespace SIMULTAN.Tests.Properties {
         ///1
         ///6015
         ///1
+        ///6027
+        ///2
         ///6603
         ///2
         ///6006
@@ -3135,7 +3929,7 @@ namespace SIMULTAN.Tests.Properties {
         ///6017
         ///4
         ///6018
-        ///4
+        ///2
         ///6020
         ///0
         ///6013
@@ -3147,8 +3941,7 @@ namespace SIMULTAN.Tests.Properties {
         ///100
         ///SIMULTAN.DataMapping.SimDataMappingRuleComponent
         ///6001
-        ///Child Rule 1
-        ///6 [rest of string was truncated]&quot;;.
+        ///Child  [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string DXFSerializer_ETDXF_WriteDMRuleComponentChildren {
             get {
@@ -3181,6 +3974,8 @@ namespace SIMULTAN.Tests.Properties {
         ///1
         ///6015
         ///1
+        ///6027
+        ///2
         ///6006
         ///5
         ///910
@@ -3250,6 +4045,8 @@ namespace SIMULTAN.Tests.Properties {
         ///1
         ///6015
         ///1
+        ///6027
+        ///2
         ///6006
         ///5
         ///910
@@ -3298,9 +4095,7 @@ namespace SIMULTAN.Tests.Properties {
         ///0
         ///6004
         ///0
-        ///6011
-        ///0
-        ///6012        /// [rest of string was truncated]&quot;;.
+        ///6011        /// [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string DXFSerializer_ETDXF_WriteDMRuleFaceChildren {
             get {
@@ -3333,6 +4128,8 @@ namespace SIMULTAN.Tests.Properties {
         ///1
         ///6015
         ///1
+        ///6027
+        ///2
         ///6006
         ///2
         ///910
@@ -3352,7 +4149,7 @@ namespace SIMULTAN.Tests.Properties {
         ///6017
         ///4
         ///6018
-        ///4
+        ///2
         ///6013
         ///0
         ///0
@@ -3390,6 +4187,8 @@ namespace SIMULTAN.Tests.Properties {
         ///1
         ///6015
         ///1
+        ///6027
+        ///2
         ///6006
         ///2
         ///910
@@ -3409,7 +4208,7 @@ namespace SIMULTAN.Tests.Properties {
         ///6017
         ///4
         ///6018
-        ///4
+        ///2
         ///6013
         ///2
         ///0
@@ -3433,8 +4232,7 @@ namespace SIMULTAN.Tests.Properties {
         ///6601
         ///2147483647
         ///6602
-        ///2147483647
-        ///6014 [rest of string was truncated]&quot;;.
+        ///2147483 [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string DXFSerializer_ETDXF_WriteDMRuleInstanceChildren {
             get {
@@ -3467,6 +4265,8 @@ namespace SIMULTAN.Tests.Properties {
         ///1
         ///6015
         ///1
+        ///6027
+        ///2
         ///6007
         ///3
         ///6006
@@ -3546,6 +4346,8 @@ namespace SIMULTAN.Tests.Properties {
         ///1
         ///6015
         ///1
+        ///6027
+        ///2
         ///6006
         ///7
         ///910
@@ -3613,6 +4415,8 @@ namespace SIMULTAN.Tests.Properties {
         ///1
         ///6015
         ///1
+        ///6027
+        ///2
         ///6006
         ///7
         ///910
@@ -3661,9 +4465,7 @@ namespace SIMULTAN.Tests.Properties {
         ///0
         ///6011
         ///0
-        ///6012
-        ///0
-        ///660 [rest of string was truncated]&quot;;.
+        ///601 [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string DXFSerializer_ETDXF_WriteDMRuleVolumeChildren {
             get {
@@ -3959,16 +4761,20 @@ namespace SIMULTAN.Tests.Properties {
         ///SECTION
         ///2
         ///VERSION_SECTION
+        ///901
+        ///-1
         ///0
         ///FILE_VERSION
         ///10
-        ///21
+        ///29
         ///0
         ///ENDSEC
         ///0
         ///SECTION
         ///2
         ///GEOMAPS
+        ///901
+        ///-1
         ///0
         ///GEOMAP
         ///10008
@@ -3994,16 +4800,20 @@ namespace SIMULTAN.Tests.Properties {
         ///SECTION
         ///2
         ///VERSION_SECTION
+        ///901
+        ///-1
         ///0
         ///FILE_VERSION
         ///10
-        ///21
+        ///29
         ///0
         ///ENDSEC
         ///0
         ///SECTION
         ///2
         ///GEOMAPS
+        ///901
+        ///-1
         ///0
         ///GEOMAP
         ///10008
@@ -4049,16 +4859,20 @@ namespace SIMULTAN.Tests.Properties {
         ///SECTION
         ///2
         ///VERSION_SECTION
+        ///901
+        ///-1
         ///0
         ///FILE_VERSION
         ///10
-        ///21
+        ///29
         ///0
         ///ENDSEC
         ///0
         ///SECTION
         ///2
         ///GEOMAPS
+        ///901
+        ///-1
         ///0
         ///GEOMAP
         ///10008
@@ -4168,16 +4982,20 @@ namespace SIMULTAN.Tests.Properties {
         ///SECTION
         ///2
         ///VERSION_SECTION
+        ///901
+        ///-1
         ///0
         ///FILE_VERSION
         ///10
-        ///21
+        ///29
         ///0
         ///ENDSEC
         ///0
         ///SECTION
         ///2
         ///GEOMETRY_RELATION_SECTION
+        ///901
+        ///0
         ///0
         ///ENDSEC
         ///0
@@ -4195,16 +5013,20 @@ namespace SIMULTAN.Tests.Properties {
         ///SECTION
         ///2
         ///VERSION_SECTION
+        ///901
+        ///-1
         ///0
         ///FILE_VERSION
         ///10
-        ///21
+        ///29
         ///0
         ///ENDSEC
         ///0
         ///SECTION
         ///2
         ///GEOMETRY_RELATION_SECTION
+        ///901
+        ///3
         ///0
         ///GEOMETRY_RELATION
         ///899
@@ -4238,8 +5060,7 @@ namespace SIMULTAN.Tests.Properties {
         ///23005
         ///33
         ///23006
-        ///0a060b64-94a5-4d04-8acc-52844be9629c
-        ///230 [rest of string was truncated]&quot;;.
+        ///0a060b64-94a5-4d04-8acc- [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string DXFSerializer_GRDXF_WriteRelations {
             get {
@@ -4326,16 +5147,20 @@ namespace SIMULTAN.Tests.Properties {
         ///SECTION
         ///2
         ///VERSION_SECTION
+        ///901
+        ///-1
         ///0
         ///FILE_VERSION
         ///10
-        ///21
+        ///29
         ///0
         ///ENDSEC
         ///0
         ///SECTION
         ///2
         ///GEOMETRY_RELATION_FILE_MAPPING_SECTION
+        ///901
+        ///-1
         ///0
         ///GEOMETRY_RELATION_FILE_MAPPING
         ///23101
@@ -4357,16 +5182,20 @@ namespace SIMULTAN.Tests.Properties {
         ///SECTION
         ///2
         ///VERSION_SECTION
+        ///901
+        ///-1
         ///0
         ///FILE_VERSION
         ///10
-        ///21
+        ///29
         ///0
         ///ENDSEC
         ///0
         ///SECTION
         ///2
         ///GEOMETRY_RELATION_FILE_MAPPING_SECTION
+        ///901
+        ///-1
         ///0
         ///GEOMETRY_RELATION_FILE_MAPPING
         ///23101
@@ -4478,16 +5307,20 @@ namespace SIMULTAN.Tests.Properties {
         ///SECTION
         ///2
         ///VERSION_SECTION
+        ///901
+        ///-1
         ///0
         ///FILE_VERSION
         ///10
-        ///21
+        ///29
         ///0
         ///ENDSEC
         ///0
         ///SECTION
         ///2
         ///METADATA
+        ///901
+        ///-1
         ///0
         ///PROJECT_METADATA
         ///100
@@ -4530,16 +5363,20 @@ namespace SIMULTAN.Tests.Properties {
         ///SECTION
         ///2
         ///VERSION_SECTION
+        ///901
+        ///-1
         ///0
         ///FILE_VERSION
         ///10
-        ///21
+        ///29
         ///0
         ///ENDSEC
         ///0
         ///SECTION
         ///2
         ///ENTITIES
+        ///901
+        ///0
         ///0
         ///ENDSEC
         ///0
@@ -4700,13 +5537,92 @@ namespace SIMULTAN.Tests.Properties {
         ///0
         ///FILE_VERSION
         ///10
-        ///21
+        ///19
         ///0
         ///ENDSEC
         ///0
         ///SECTION
         ///2
         ///ENTITIES
+        ///0
+        ///PARAMETER
+        ///1034 
+        ///0
+        ///100
+        ///SIMULTAN.Data.Components.SimDoubleParameter
+        ///900
+        ///99
+        ///1001
+        ///Parameter X
+        ///1002
+        ///Unit
+        ///1003
+        ///66592
+        ///1004
+        ///1
+        ///1014
+        ///2
+        ///1005
+        ///-12.30000000
+        ///1006
+        ///+∞
+        ///1007
+        ///45.67000000
+        ///1010
+        ///text value with spaces
+        ///1012
+        ///3
+        ///1013
+        ///1
+        ///0
+        ///PARAMETER
+        ///1034 
+        ///0
+        ///100
+        ///SIMULTAN.Data.Components.SimDoubleParameter
+        ///900
+        ///100
+        ///1001
+        ///Parameter Y
+        ///1002
+        ///Unit
+        ///1003
+        ///32
+        ///1004
+        ///1
+        ///1014
+        ///1
+        ///1005
+        ///-12.30000000
+        ///1006
+        ///+∞
+        ///1007 [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string DXFSerializer_PADXF_ReadV19 {
+            get {
+                return ResourceManager.GetString("DXFSerializer_PADXF_ReadV19", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to 0
+        ///SECTION
+        ///2
+        ///VERSION_SECTION
+        ///901
+        ///-1
+        ///0
+        ///FILE_VERSION
+        ///10
+        ///29
+        ///0
+        ///ENDSEC
+        ///0
+        ///SECTION
+        ///2
+        ///ENTITIES
+        ///901
+        ///2
         ///0
         ///PARAMETER
         ///1034
@@ -5084,6 +6000,38 @@ namespace SIMULTAN.Tests.Properties {
         internal static string DXFSerializer_ReadCODXF_AssetsSectionV12 {
             get {
                 return ResourceManager.GetString("DXFSerializer_ReadCODXF_AssetsSectionV12", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to 0
+        ///PARAMETER
+        ///1034
+        ///2
+        ///900
+        ///99
+        ///1001
+        ///Parameter X
+        ///1003
+        ///66592
+        ///1004
+        ///1
+        ///1014
+        ///2
+        ///1007
+        ///1
+        ///1010
+        ///text value with spaces
+        ///1012
+        ///3
+        ///1013
+        ///1
+        ///0
+        ///ENDSEC.
+        /// </summary>
+        internal static string DXFSerializer_ReadCODXF_BoolParameterV19 {
+            get {
+                return ResourceManager.GetString("DXFSerializer_ReadCODXF_BoolParameterV19", resourceCulture);
             }
         }
         
@@ -5534,6 +6482,83 @@ namespace SIMULTAN.Tests.Properties {
         
         /// <summary>
         ///   Looks up a localized string similar to 0
+        ///PARAMETER
+        ///1034
+        ///0
+        ///900
+        ///99
+        ///1001
+        ///Parameter X
+        ///1002
+        ///Unit
+        ///1003
+        ///66592
+        ///1004
+        ///1
+        ///1014
+        ///2
+        ///1005
+        ///12
+        ///1006
+        ///2147483647
+        ///1007
+        ///45
+        ///1010
+        ///text value with spaces
+        ///1012
+        ///3
+        ///1013
+        ///1
+        ///0
+        ///ENDSEC.
+        /// </summary>
+        internal static string DXFSerializer_ReadCODXF_DoubleParameterV19 {
+            get {
+                return ResourceManager.GetString("DXFSerializer_ReadCODXF_DoubleParameterV19", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to 0
+        ///PARAMETER
+        ///1034
+        ///4
+        ///900
+        ///99
+        ///1001
+        ///Parameter X
+        ///1003
+        ///66592
+        ///1004
+        ///1
+        ///1014
+        ///2
+        ///1010
+        ///text value with spaces
+        ///1012
+        ///3
+        ///1013
+        ///1
+        ///1030
+        ///0
+        ///1031
+        ///00000000-0000-0000-0000-000000000666
+        ///1032
+        ///2
+        ///1033
+        ///00000000-0000-0000-0000-000000000666
+        ///0
+        ///ENDSEC
+        ///.
+        /// </summary>
+        internal static string DXFSerializer_ReadCODXF_EnumParameterV19 {
+            get {
+                return ResourceManager.GetString("DXFSerializer_ReadCODXF_EnumParameterV19", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to 0
         ///FLOWNETWORK_EDGE
         ///900
         ///4
@@ -5664,52 +6689,6 @@ namespace SIMULTAN.Tests.Properties {
         ///1518
         ///suf result
         ///1519
-        ///1
-        ///1520
-        ///:=
-        ///1517
-        ///suf op 2
-        ///1518
-        ///suf result 2
-        ///1519
-        ///0
-        ///1520
-        ///-
-        ///0
-        ///EOF.
-        /// </summary>
-        internal static string DXFSerializer_ReadCODXF_FlowNetworkNodeV111 {
-            get {
-                return ResourceManager.GetString("DXFSerializer_ReadCODXF_FlowNetworkNodeV111", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to 0
-        ///FLOWNETWORK_NODE
-        ///900
-        ///9950
-        ///1507
-        ///Network Node
-        ///1508
-        ///Description Text
-        ///1502
-        ///1
-        ///1531
-        ///3
-        ///1532
-        ///66
-        ///1503
-        ///33.40000000
-        ///1504
-        ///-7.60000000
-        ///1516
-        ///2
-        ///1517
-        ///suf op
-        ///1518
-        ///suf result
-        ///1519
         ///0
         ///1520
         ///6
@@ -5727,98 +6706,6 @@ namespace SIMULTAN.Tests.Properties {
         internal static string DXFSerializer_ReadCODXF_FlowNetworkNodeV12 {
             get {
                 return ResourceManager.GetString("DXFSerializer_ReadCODXF_FlowNetworkNodeV12", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to 0
-        ///FLOWNETWORK_NODE
-        ///900
-        ///9950
-        ///1507
-        ///Network Node
-        ///1508
-        ///Description Text
-        ///1502
-        ///1
-        ///1531
-        ///3
-        ///1532
-        ///66
-        ///1503
-        ///33.40000000
-        ///1504
-        ///-7.60000000
-        ///1516
-        ///2
-        ///1517
-        ///suf op
-        ///1518
-        ///suf result
-        ///1519
-        ///0
-        ///1520
-        ///6
-        ///1517
-        ///suf op 2
-        ///1518
-        ///suf result 2
-        ///1519
-        ///1
-        ///1520
-        ///1
-        ///0
-        ///EOF.
-        /// </summary>
-        internal static string DXFSerializer_ReadCODXF_FlowNetworkNodeV121 {
-            get {
-                return ResourceManager.GetString("DXFSerializer_ReadCODXF_FlowNetworkNodeV121", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to 0
-        ///FLOWNETWORK_NODE
-        ///900
-        ///9950
-        ///1507
-        ///Network Node
-        ///1508
-        ///Description Text
-        ///1502
-        ///1
-        ///1531
-        ///3
-        ///1532
-        ///66
-        ///1503
-        ///33.40000000
-        ///1504
-        ///-7.60000000
-        ///1516
-        ///2
-        ///1517
-        ///suf op
-        ///1518
-        ///suf result
-        ///1519
-        ///0
-        ///1520
-        ///6
-        ///1517
-        ///suf op 2
-        ///1518
-        ///suf result 2
-        ///1519
-        ///1
-        ///1520
-        ///1
-        ///0
-        ///EOF.
-        /// </summary>
-        internal static string DXFSerializer_ReadCODXF_FlowNetworkNodeV122 {
-            get {
-                return ResourceManager.GetString("DXFSerializer_ReadCODXF_FlowNetworkNodeV122", resourceCulture);
             }
         }
         
@@ -6166,6 +7053,112 @@ namespace SIMULTAN.Tests.Properties {
         ///1601
         ///Custom Instance
         ///1602
+        ///5
+        ///1609
+        ///1
+        ///1665
+        ///0
+        ///1670
+        ///4
+        ///0
+        ///ENTSEQ
+        ///0
+        ///INSTANCE_PLACEMENT_GEOMETRY
+        ///100
+        ///SIMULTAN.Data.Components.SimInstancePlacementGeometry
+        ///1663
+        ///3
+        ///1664
+        ///58
+        ///1672
+        ///0
+        ///0
+        ///SEQEND
+        ///0
+        ///INSTANCE_PLACEMENT_NETWORK
+        ///100
+        ///SIMULTAN.Data.Components.SimInstancePlacementNetwork
+        ///1621
+        ///123
+        ///1666
+        ///00000000-0000-0000-0000-000000000000
+        ///0
+        ///SEQEND
+        ///0
+        ///INSTANCE_PLACEMENT_NETWORK
+        ///100
+        ///SIMULTAN.Data.Components.SimInstan [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string DXFSerializer_ReadCODXF_InstanceV21 {
+            get {
+                return ResourceManager.GetString("DXFSerializer_ReadCODXF_InstanceV21", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to 0
+        ///GEOM_RELATIONSHIP
+        ///100
+        ///SIMULTAN.Data.Components.SimComponentInstance
+        ///900
+        ///3669
+        ///1601
+        ///Custom Instance
+        ///1609
+        ///1
+        ///1665
+        ///0
+        ///1670
+        ///4
+        ///0
+        ///ENTSEQ
+        ///0
+        ///INSTANCE_PLACEMENT_GEOMETRY
+        ///100
+        ///SIMULTAN.Data.Components.SimInstancePlacementGeometry
+        ///1663
+        ///3
+        ///1664
+        ///58
+        ///1672
+        ///0
+        ///1673
+        ///2
+        ///0
+        ///SEQEND
+        ///0
+        ///INSTANCE_PLACEMENT_NETWORK
+        ///100
+        ///SIMULTAN.Data.Components.SimInstancePlacementNetwork
+        ///1621
+        ///123
+        ///1666
+        ///00000000-0000-0000-0000-000000000000
+        ///1673
+        ///4
+        ///0
+        ///SEQEND
+        ///0
+        ///INSTANCE_PLACEMENT_NETWORK
+        ///100
+        ///SIMULTAN.Data.Components. [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string DXFSerializer_ReadCODXF_InstanceV27 {
+            get {
+                return ResourceManager.GetString("DXFSerializer_ReadCODXF_InstanceV27", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to 0
+        ///GEOM_RELATIONSHIP
+        ///100
+        ///SIMULTAN.Data.Components.SimComponentInstance
+        ///900
+        ///3669
+        ///1601
+        ///Custom Instance
+        ///1602
         ///CONTAINED_IN
         ///1609
         ///1
@@ -6285,6 +7278,44 @@ namespace SIMULTAN.Tests.Properties {
         internal static string DXFSerializer_ReadCODXF_InstanceV7 {
             get {
                 return ResourceManager.GetString("DXFSerializer_ReadCODXF_InstanceV7", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to 0
+        ///PARAMETER
+        ///1034
+        ///1
+        ///900
+        ///99
+        ///1001
+        ///Parameter X
+        ///1002
+        ///Unit
+        ///1003
+        ///66592
+        ///1004
+        ///1
+        ///1014
+        ///2
+        ///1005
+        ///12
+        ///1006
+        ///2147483647
+        ///1007
+        ///45
+        ///1010
+        ///text value with spaces
+        ///1012
+        ///3
+        ///1013
+        ///1
+        ///0
+        ///ENDSEC.
+        /// </summary>
+        internal static string DXFSerializer_ReadCODXF_IntegerParameterV19 {
+            get {
+                return ResourceManager.GetString("DXFSerializer_ReadCODXF_IntegerParameterV19", resourceCulture);
             }
         }
         
@@ -6915,6 +7946,201 @@ namespace SIMULTAN.Tests.Properties {
         internal static string DXFSerializer_ReadCODXF_MultipleV12 {
             get {
                 return ResourceManager.GetString("DXFSerializer_ReadCODXF_MultipleV12", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to 0
+        ///SECTION
+        ///2
+        ///ENTITIES
+        ///0
+        ///COMPONENT
+        ///100
+        ///SIMULTAN.Data.Components.SimComponent
+        ///900
+        ///123
+        ///1401
+        ///Root Component
+        ///1402
+        ///Some[NewLine]descriptive[NewLine]text
+        ///1415
+        ///1
+        ///1403
+        ///0
+        ///1431
+        ///4
+        ///1432
+        ///13
+        ///0
+        ///ENTSEQ
+        ///0
+        ///ACCESS_TRACKER
+        ///100
+        ///SIMULTAN.Data.Components.SimAccessProfileEntry
+        ///904
+        ///0
+        ///1421
+        ///3
+        ///1423
+        ///0
+        ///1425
+        ///0
+        ///1427
+        ///0
+        ///0
+        ///ACCESS_TRACKER
+        ///100
+        ///SIMULTAN.Data.Components.SimAccessProfileEntry
+        ///904
+        ///1
+        ///1421
+        ///0
+        ///1423
+        ///0
+        ///1425
+        ///0
+        ///1427
+        ///0
+        ///0
+        ///ACCESS_TRACKER
+        ///100
+        ///SIMULTAN.Data.Components.SimAccessProfileEntry
+        /// [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string DXFSerializer_ReadCODXF_MultipleV19 {
+            get {
+                return ResourceManager.GetString("DXFSerializer_ReadCODXF_MultipleV19", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to 0
+        ///SECTION
+        ///2
+        ///ENTITIES
+        ///0
+        ///COMPONENT
+        ///100
+        ///SIMULTAN.Data.Components.SimComponent
+        ///900
+        ///123
+        ///1401
+        ///Root Component
+        ///1402
+        ///Some[NewLine]descriptive[NewLine]text
+        ///1415
+        ///1
+        ///1403
+        ///0
+        ///1431
+        ///4
+        ///1432
+        ///13
+        ///0
+        ///ENTSEQ
+        ///0
+        ///ACCESS_TRACKER
+        ///100
+        ///SIMULTAN.Data.Components.SimAccessProfileEntry
+        ///904
+        ///0
+        ///1421
+        ///3
+        ///1423
+        ///0
+        ///1425
+        ///0
+        ///1427
+        ///0
+        ///0
+        ///ACCESS_TRACKER
+        ///100
+        ///SIMULTAN.Data.Components.SimAccessProfileEntry
+        ///904
+        ///1
+        ///1421
+        ///0
+        ///1423
+        ///0
+        ///1425
+        ///0
+        ///1427
+        ///0
+        ///0
+        ///ACCESS_TRACKER
+        ///100
+        ///SIMULTAN.Data.Components.SimAccessProfileEntry
+        /// [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string DXFSerializer_ReadCODXF_MultipleV21 {
+            get {
+                return ResourceManager.GetString("DXFSerializer_ReadCODXF_MultipleV21", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to 0
+        ///SECTION
+        ///2
+        ///ENTITIES
+        ///0
+        ///COMPONENT
+        ///100
+        ///SIMULTAN.Data.Components.SimComponent
+        ///900
+        ///123
+        ///1401
+        ///Root Component
+        ///1402
+        ///Some[NewLine]descriptive[NewLine]text
+        ///1415
+        ///1
+        ///1403
+        ///0
+        ///1431
+        ///4
+        ///1432
+        ///13
+        ///0
+        ///ENTSEQ
+        ///0
+        ///ACCESS_TRACKER
+        ///100
+        ///SIMULTAN.Data.Components.SimAccessProfileEntry
+        ///904
+        ///0
+        ///1421
+        ///3
+        ///1423
+        ///0
+        ///1425
+        ///0
+        ///1427
+        ///0
+        ///0
+        ///ACCESS_TRACKER
+        ///100
+        ///SIMULTAN.Data.Components.SimAccessProfileEntry
+        ///904
+        ///1
+        ///1421
+        ///0
+        ///1423
+        ///0
+        ///1425
+        ///0
+        ///1427
+        ///0
+        ///0
+        ///ACCESS_TRACKER
+        ///100
+        ///SIMULTAN.Data.Components.SimAccessProfileEntry
+        /// [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string DXFSerializer_ReadCODXF_MultipleV25 {
+            get {
+                return ResourceManager.GetString("DXFSerializer_ReadCODXF_MultipleV25", resourceCulture);
             }
         }
         
@@ -8027,6 +9253,38 @@ namespace SIMULTAN.Tests.Properties {
         
         /// <summary>
         ///   Looks up a localized string similar to 0
+        ///PARAMETER
+        ///1034
+        ///3
+        ///900
+        ///99
+        ///1001
+        ///Parameter X
+        ///1003
+        ///66592
+        ///1004
+        ///1
+        ///1014
+        ///2
+        ///1007
+        ///String Value
+        ///1010
+        ///text value with spaces
+        ///1012
+        ///3
+        ///1013
+        ///1
+        ///0
+        ///ENDSEC.
+        /// </summary>
+        internal static string DXFSerializer_ReadCODXF_StringParameterV19 {
+            get {
+                return ResourceManager.GetString("DXFSerializer_ReadCODXF_StringParameterV19", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to 0
         ///SECTION
         ///2
         ///ENTITIES
@@ -8830,6 +10088,356 @@ namespace SIMULTAN.Tests.Properties {
         internal static string DXFSerializer_ReadCODXFV13 {
             get {
                 return ResourceManager.GetString("DXFSerializer_ReadCODXFV13", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to 0
+        ///SECTION
+        ///2
+        ///VERSION_SECTION
+        ///0
+        ///FILE_VERSION
+        ///10
+        ///21
+        ///0
+        ///ENDSEC
+        ///0
+        ///SECTION
+        ///2
+        ///ASSETS
+        ///0
+        ///ASSET_MANAGER
+        ///100
+        ///SIMULTAN.Data.Assets.AssetManager
+        ///7101
+        ///1
+        ///0
+        ///ENTSEQ
+        ///0
+        ///RESOURCE_DIRECTORY
+        ///100
+        ///SIMULTAN.Data.Assets.ResourceDirectoryEntry
+        ///7201
+        ///8
+        ///7202
+        ///3
+        ///7204
+        ///RootFolder
+        ///7212
+        ///0
+        ///7213
+        ///0
+        ///7207
+        ///2
+        ///0
+        ///ENTSEQ
+        ///0
+        ///RESOURCE_DIRECTORY
+        ///100
+        ///SIMULTAN.Data.Assets.ResourceDirectoryEntry
+        ///7201
+        ///6
+        ///7202
+        ///4
+        ///7204
+        ///RootFolder\ChildFolder1
+        ///7212
+        ///1
+        ///7213
+        ///0
+        ///7207
+        ///2
+        ///0
+        ///ENTSEQ
+        ///0
+        ///RESOURCE_CONTAINED_FILE
+        ///100
+        ///SIM [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string DXFSerializer_ReadCODXFV19 {
+            get {
+                return ResourceManager.GetString("DXFSerializer_ReadCODXFV19", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to 0
+        ///SECTION
+        ///2
+        ///VERSION_SECTION
+        ///0
+        ///FILE_VERSION
+        ///10
+        ///21
+        ///0
+        ///ENDSEC
+        ///0
+        ///SECTION
+        ///2
+        ///ASSETS
+        ///0
+        ///ASSET_MANAGER
+        ///100
+        ///SIMULTAN.Data.Assets.AssetManager
+        ///7101
+        ///1
+        ///0
+        ///ENTSEQ
+        ///0
+        ///RESOURCE_DIRECTORY
+        ///100
+        ///SIMULTAN.Data.Assets.ResourceDirectoryEntry
+        ///7201
+        ///8
+        ///7202
+        ///3
+        ///7204
+        ///RootFolder
+        ///7212
+        ///0
+        ///7213
+        ///0
+        ///7207
+        ///2
+        ///0
+        ///ENTSEQ
+        ///0
+        ///RESOURCE_DIRECTORY
+        ///100
+        ///SIMULTAN.Data.Assets.ResourceDirectoryEntry
+        ///7201
+        ///6
+        ///7202
+        ///4
+        ///7204
+        ///RootFolder\ChildFolder1
+        ///7212
+        ///1
+        ///7213
+        ///0
+        ///7207
+        ///2
+        ///0
+        ///ENTSEQ
+        ///0
+        ///RESOURCE_CONTAINED_FILE
+        ///100
+        ///SIM [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string DXFSerializer_ReadCODXFV21 {
+            get {
+                return ResourceManager.GetString("DXFSerializer_ReadCODXFV21", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to 0
+        ///SECTION
+        ///2
+        ///VERSION_SECTION
+        ///0
+        ///FILE_VERSION
+        ///10
+        ///25
+        ///0
+        ///ENDSEC
+        ///0
+        ///SECTION
+        ///2
+        ///ASSETS
+        ///0
+        ///ASSET_MANAGER
+        ///100
+        ///SIMULTAN.Data.Assets.AssetManager
+        ///7101
+        ///1
+        ///0
+        ///ENTSEQ
+        ///0
+        ///RESOURCE_DIRECTORY
+        ///100
+        ///SIMULTAN.Data.Assets.ResourceDirectoryEntry
+        ///7201
+        ///8
+        ///7202
+        ///3
+        ///7204
+        ///RootFolder
+        ///7212
+        ///0
+        ///7213
+        ///0
+        ///7207
+        ///2
+        ///0
+        ///ENTSEQ
+        ///0
+        ///RESOURCE_DIRECTORY
+        ///100
+        ///SIMULTAN.Data.Assets.ResourceDirectoryEntry
+        ///7201
+        ///6
+        ///7202
+        ///4
+        ///7204
+        ///RootFolder\ChildFolder1
+        ///7212
+        ///1
+        ///7213
+        ///0
+        ///7207
+        ///2
+        ///0
+        ///ENTSEQ
+        ///0
+        ///RESOURCE_CONTAINED_FILE
+        ///100
+        ///SIM [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string DXFSerializer_ReadCODXFV25 {
+            get {
+                return ResourceManager.GetString("DXFSerializer_ReadCODXFV25", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to 0
+        ///SECTION
+        ///2
+        ///VERSION_SECTION
+        ///0
+        ///FILE_VERSION
+        ///10
+        ///26
+        ///0
+        ///ENDSEC
+        ///0
+        ///SECTION
+        ///2
+        ///ASSETS
+        ///0
+        ///ASSET_MANAGER
+        ///100
+        ///SIMULTAN.Data.Assets.AssetManager
+        ///7101
+        ///1
+        ///0
+        ///ENTSEQ
+        ///0
+        ///RESOURCE_DIRECTORY
+        ///100
+        ///SIMULTAN.Data.Assets.ResourceDirectoryEntry
+        ///7201
+        ///8
+        ///7202
+        ///3
+        ///7204
+        ///RootFolder
+        ///7212
+        ///0
+        ///7213
+        ///0
+        ///7207
+        ///2
+        ///0
+        ///ENTSEQ
+        ///0
+        ///RESOURCE_DIRECTORY
+        ///100
+        ///SIMULTAN.Data.Assets.ResourceDirectoryEntry
+        ///7201
+        ///6
+        ///7202
+        ///4
+        ///7204
+        ///RootFolder\ChildFolder1
+        ///7212
+        ///1
+        ///7213
+        ///0
+        ///7207
+        ///2
+        ///0
+        ///ENTSEQ
+        ///0
+        ///RESOURCE_CONTAINED_FILE
+        ///100
+        ///SIM [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string DXFSerializer_ReadCODXFV26 {
+            get {
+                return ResourceManager.GetString("DXFSerializer_ReadCODXFV26", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to 0
+        ///SECTION
+        ///2
+        ///VERSION_SECTION
+        ///0
+        ///FILE_VERSION
+        ///10
+        ///27
+        ///0
+        ///ENDSEC
+        ///0
+        ///SECTION
+        ///2
+        ///ASSETS
+        ///0
+        ///ASSET_MANAGER
+        ///100
+        ///SIMULTAN.Data.Assets.AssetManager
+        ///7101
+        ///1
+        ///0
+        ///ENTSEQ
+        ///0
+        ///RESOURCE_DIRECTORY
+        ///100
+        ///SIMULTAN.Data.Assets.ResourceDirectoryEntry
+        ///7201
+        ///8
+        ///7202
+        ///3
+        ///7204
+        ///RootFolder
+        ///7212
+        ///0
+        ///7213
+        ///0
+        ///7207
+        ///2
+        ///0
+        ///ENTSEQ
+        ///0
+        ///RESOURCE_DIRECTORY
+        ///100
+        ///SIMULTAN.Data.Assets.ResourceDirectoryEntry
+        ///7201
+        ///6
+        ///7202
+        ///4
+        ///7204
+        ///RootFolder\ChildFolder1
+        ///7212
+        ///1
+        ///7213
+        ///0
+        ///7207
+        ///2
+        ///0
+        ///ENTSEQ
+        ///0
+        ///RESOURCE_CONTAINED_FILE
+        ///100
+        ///SIM [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string DXFSerializer_ReadCODXFV27 {
+            get {
+                return ResourceManager.GetString("DXFSerializer_ReadCODXFV27", resourceCulture);
             }
         }
         
@@ -10423,50 +12031,6 @@ namespace SIMULTAN.Tests.Properties {
         ///0
         ///ENDSEC.
         /// </summary>
-        internal static string DXFSerializer_ReadMVPointer_FunctionV12_String {
-            get {
-                return ResourceManager.GetString("DXFSerializer_ReadMVPointer_FunctionV12_String", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to 0
-        ///PARAMETER
-        ///1034
-        ///3
-        ///100
-        ///SIMULTAN.Data.Components.SimStringParameter
-        ///900
-        ///99
-        ///1001
-        ///Parameter X
-        ///1003
-        ///66592
-        ///1004
-        ///1
-        ///1014
-        ///2
-        ///1007
-        ///Some String Value
-        ///1010
-        ///text value with spaces
-        ///1012
-        ///3
-        ///1013
-        ///1
-        ///1218
-        ///2255
-        ///1215
-        ///3.00000000
-        ///1216
-        ///-1.50000000
-        ///1217
-        ///0.00000000
-        ///1214
-        ///graph 2
-        ///0
-        ///ENDSEC.
-        /// </summary>
         internal static string DXFSerializer_ReadMVPointer_FunctionV19_String {
             get {
                 return ResourceManager.GetString("DXFSerializer_ReadMVPointer_FunctionV19_String", resourceCulture);
@@ -10717,13 +12281,60 @@ namespace SIMULTAN.Tests.Properties {
         ///0
         ///FILE_VERSION
         ///10
-        ///21
+        ///12
         ///0
         ///ENDSEC
         ///0
         ///SECTION
         ///2
         ///MULTI_LINKS
+        ///0
+        ///MULTI_LINK
+        ///901
+        ///1
+        ///10
+        ///42BE0F32C1C2CDC58646B483E18C864978D668C64687FF16C8149951721AA191
+        ///20
+        ///C:\something
+        ///0
+        ///MULTI_LINK
+        ///901
+        ///1
+        ///10
+        ///42BE0F32C1C2CDC58646B483E18C864978D668C64687FF16C8149951721AA191
+        ///20
+        ///D:\something
+        ///0
+        ///ENDSEC
+        ///0
+        ///EOF
+        ///.
+        /// </summary>
+        internal static string DXFSerializer_SIMLINKS_ReadV29 {
+            get {
+                return ResourceManager.GetString("DXFSerializer_SIMLINKS_ReadV29", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to 0
+        ///SECTION
+        ///2
+        ///VERSION_SECTION
+        ///901
+        ///-1
+        ///0
+        ///FILE_VERSION
+        ///10
+        ///29
+        ///0
+        ///ENDSEC
+        ///0
+        ///SECTION
+        ///2
+        ///MULTI_LINKS
+        ///901
+        ///2
         ///0
         ///MULTI_LINK
         ///901
@@ -10774,6 +12385,8 @@ namespace SIMULTAN.Tests.Properties {
         ///SECTION
         ///2
         ///MULTI_LINKS
+        ///901
+        ///2
         ///0
         ///MULTI_LINK
         ///901
@@ -10805,16 +12418,20 @@ namespace SIMULTAN.Tests.Properties {
         ///SECTION
         ///2
         ///VERSION_SECTION
+        ///901
+        ///-1
         ///0
         ///FILE_VERSION
         ///10
-        ///21
+        ///29
         ///0
         ///ENDSEC
         ///0
         ///SECTION
         ///2
         ///USERS
+        ///901
+        ///0
         ///0
         ///ENDSEC
         ///0
@@ -10832,16 +12449,20 @@ namespace SIMULTAN.Tests.Properties {
         ///SECTION
         ///2
         ///VERSION_SECTION
+        ///901
+        ///-1
         ///0
         ///FILE_VERSION
         ///10
-        ///21
+        ///29
         ///0
         ///ENDSEC
         ///0
         ///SECTION
         ///2
         ///USERS
+        ///901
+        ///2
         ///0
         ///USER
         ///9001
@@ -10865,7 +12486,7 @@ namespace SIMULTAN.Tests.Properties {
         ///9004
         ///8
         ///9005
-        ///QsgWmfO3xYtpdTKOdleuPMUCLMmAFHZ [rest of string was truncated]&quot;;.
+        ///QsgWmfO3xYtpdT [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string DXFSerializer_SIMUSER_WriteUsers {
             get {
@@ -11015,64 +12636,6 @@ namespace SIMULTAN.Tests.Properties {
         ///0
         ///FILE_VERSION
         ///10
-        ///11
-        ///0
-        ///ENDSEC
-        ///0
-        ///SECTION
-        ///2
-        ///SITEPLANNER
-        ///0
-        ///SITEPLANNER
-        ///11001
-        ///0
-        ///11003
-        ///0
-        ///11016
-        ///4
-        ///11017
-        ///0
-        ///11018
-        ///Test1
-        ///11020
-        ///a5ef2c5d-9519-4335-9ac2-4beb0a597326
-        ///11015
-        ///552151483658
-        ///11010
-        ///Column
-        ///11011
-        ///SIMULTAN.Data.SitePlanner.MultiThresholdColorMap
-        ///11012
-        ///0|#FF3FFF00;3.5|#FFFFFFFF;100|#12345678
-        ///11013
-        ///SIMULTAN.Data.SitePlanner.TimelinePrefilter
-        ///11014
-        ///1
-        ///11017
-        ///1
-        ///11018
-        ///Test2
-        ///11020
-        ///a5ef2c5d-9519-4335-9ac2-4beb0a597326
-        ///11015
-        ///552151483658
-        ///11010
-        ///R [rest of string was truncated]&quot;;.
-        /// </summary>
-        internal static string DXFSerializer_SPDXF_AssociationsV111 {
-            get {
-                return ResourceManager.GetString("DXFSerializer_SPDXF_AssociationsV111", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to 0
-        ///SECTION
-        ///2
-        ///VERSION_SECTION
-        ///0
-        ///FILE_VERSION
-        ///10
         ///12
         ///0
         ///ENDSEC
@@ -11138,158 +12701,6 @@ namespace SIMULTAN.Tests.Properties {
         internal static string DXFSerializer_SPDXF_AssociationsV12 {
             get {
                 return ResourceManager.GetString("DXFSerializer_SPDXF_AssociationsV12", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to 0
-        ///SECTION
-        ///2
-        ///VERSION_SECTION
-        ///0
-        ///FILE_VERSION
-        ///10
-        ///12
-        ///0
-        ///ENDSEC
-        ///0
-        ///SECTION
-        ///2
-        ///SITEPLANNER
-        ///0
-        ///SITEPLANNER
-        ///11001
-        ///0
-        ///11003
-        ///0
-        ///11016
-        ///4
-        ///11018
-        ///Test1
-        ///11020
-        ///00000000-0000-0000-0000-000000000000
-        ///11015
-        ///2151483658
-        ///11010
-        ///1
-        ///11025
-        ///1
-        ///0
-        ///ENTSEQ
-        ///0
-        ///COLOR_MAP_MULTI_THRESHOLD
-        ///11027
-        ///3
-        ///11028
-        ///0.00000000
-        ///11029
-        ///#FF3FFF00
-        ///11028
-        ///3.50000000
-        ///11029
-        ///#FFFFFFFF
-        ///11028
-        ///100.00000000
-        ///11029
-        ///#12345678
-        ///0
-        ///SEQEND
-        ///0
-        ///SEQEND
-        ///0
-        ///ENTCTN
-        ///11026
-        ///1
-        ///0
-        ///ENTSEQ
-        ///0
-        ///PREFILTER_TIMELINE
-        ///11030
-        ///1
-        ///0
-        ///SEQEND
-        ///0
-        ///SEQEND        /// [rest of string was truncated]&quot;;.
-        /// </summary>
-        internal static string DXFSerializer_SPDXF_AssociationsV121 {
-            get {
-                return ResourceManager.GetString("DXFSerializer_SPDXF_AssociationsV121", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to 0
-        ///SECTION
-        ///2
-        ///VERSION_SECTION
-        ///0
-        ///FILE_VERSION
-        ///10
-        ///12
-        ///0
-        ///ENDSEC
-        ///0
-        ///SECTION
-        ///2
-        ///SITEPLANNER
-        ///0
-        ///SITEPLANNER
-        ///11001
-        ///0
-        ///11003
-        ///0
-        ///11016
-        ///4
-        ///11018
-        ///Test1
-        ///11020
-        ///00000000-0000-0000-0000-000000000000
-        ///11015
-        ///2151483658
-        ///11010
-        ///1
-        ///11025
-        ///1
-        ///0
-        ///ENTSEQ
-        ///0
-        ///COLOR_MAP_MULTI_THRESHOLD
-        ///11027
-        ///3
-        ///11028
-        ///0.00000000
-        ///11029
-        ///#FF3FFF00
-        ///11028
-        ///3.50000000
-        ///11029
-        ///#FFFFFFFF
-        ///11028
-        ///100.00000000
-        ///11029
-        ///#12345678
-        ///0
-        ///SEQEND
-        ///0
-        ///SEQEND
-        ///0
-        ///ENTCTN
-        ///11026
-        ///1
-        ///0
-        ///ENTSEQ
-        ///0
-        ///PREFILTER_TIMELINE
-        ///11030
-        ///1
-        ///0
-        ///SEQEND
-        ///0
-        ///SEQEND        /// [rest of string was truncated]&quot;;.
-        /// </summary>
-        internal static string DXFSerializer_SPDXF_AssociationsV122 {
-            get {
-                return ResourceManager.GetString("DXFSerializer_SPDXF_AssociationsV122", resourceCulture);
             }
         }
         
@@ -11446,52 +12857,6 @@ namespace SIMULTAN.Tests.Properties {
         ///0
         ///FILE_VERSION
         ///10
-        ///11
-        ///0
-        ///ENDSEC
-        ///0
-        ///SECTION
-        ///2
-        ///SITEPLANNER
-        ///0
-        ///SITEPLANNER
-        ///11001
-        ///0
-        ///11003
-        ///2
-        ///11007
-        ///2
-        ///11005
-        ///a5ef2c5d-9519-4335-9ac2-4beb0a597326 5
-        ///11006
-        ///0 128 255
-        ///11007
-        ///3
-        ///11005
-        ///a5ef2c5d-9519-4335-9ac2-4beb0a597327 6
-        ///11006
-        ///128 0 32
-        ///11016
-        ///0
-        ///0
-        ///ENDSEC
-        ///0
-        ///EOF.
-        /// </summary>
-        internal static string DXFSerializer_SPDXF_BuildingsV111 {
-            get {
-                return ResourceManager.GetString("DXFSerializer_SPDXF_BuildingsV111", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to 0
-        ///SECTION
-        ///2
-        ///VERSION_SECTION
-        ///0
-        ///FILE_VERSION
-        ///10
         ///12
         ///0
         ///ENDSEC
@@ -11532,57 +12897,6 @@ namespace SIMULTAN.Tests.Properties {
         internal static string DXFSerializer_SPDXF_BuildingsV12 {
             get {
                 return ResourceManager.GetString("DXFSerializer_SPDXF_BuildingsV12", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to 0
-        ///SECTION
-        ///2
-        ///VERSION_SECTION
-        ///0
-        ///FILE_VERSION
-        ///10
-        ///12
-        ///0
-        ///ENDSEC
-        ///0
-        ///SECTION
-        ///2
-        ///SITEPLANNER
-        ///0
-        ///SITEPLANNER
-        ///11001
-        ///0
-        ///11003
-        ///2
-        ///11007
-        ///2
-        ///11023
-        ///00000000-0000-0000-0000-000000000000
-        ///11024
-        ///5
-        ///11006
-        ///#FF0080FF
-        ///11007
-        ///3
-        ///11023
-        ///a5ef2c5d-9519-4335-9ac2-4beb0a597327
-        ///11024
-        ///6
-        ///11006
-        ///#FF800020
-        ///11016
-        ///0
-        ///0
-        ///ENDSEC
-        ///0
-        ///EOF
-        ///.
-        /// </summary>
-        internal static string DXFSerializer_SPDXF_BuildingsV121 {
-            get {
-                return ResourceManager.GetString("DXFSerializer_SPDXF_BuildingsV121", resourceCulture);
             }
         }
         
@@ -11679,40 +12993,6 @@ namespace SIMULTAN.Tests.Properties {
         ///0
         ///FILE_VERSION
         ///10
-        ///11
-        ///0
-        ///ENDSEC
-        ///0
-        ///SECTION
-        ///2
-        ///SITEPLANNER
-        ///0
-        ///SITEPLANNER
-        ///11001
-        ///0
-        ///11003
-        ///0
-        ///11016
-        ///0
-        ///0
-        ///ENDSEC
-        ///0
-        ///EOF.
-        /// </summary>
-        internal static string DXFSerializer_SPDXF_EmptyV111 {
-            get {
-                return ResourceManager.GetString("DXFSerializer_SPDXF_EmptyV111", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to 0
-        ///SECTION
-        ///2
-        ///VERSION_SECTION
-        ///0
-        ///FILE_VERSION
-        ///10
         ///12
         ///0
         ///ENDSEC
@@ -11737,41 +13017,6 @@ namespace SIMULTAN.Tests.Properties {
         internal static string DXFSerializer_SPDXF_EmptyV12 {
             get {
                 return ResourceManager.GetString("DXFSerializer_SPDXF_EmptyV12", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to 0
-        ///SECTION
-        ///2
-        ///VERSION_SECTION
-        ///0
-        ///FILE_VERSION
-        ///10
-        ///12
-        ///0
-        ///ENDSEC
-        ///0
-        ///SECTION
-        ///2
-        ///SITEPLANNER
-        ///0
-        ///SITEPLANNER
-        ///11001
-        ///0
-        ///11003
-        ///0
-        ///11016
-        ///0
-        ///0
-        ///ENDSEC
-        ///0
-        ///EOF
-        ///.
-        /// </summary>
-        internal static string DXFSerializer_SPDXF_EmptyV121 {
-            get {
-                return ResourceManager.GetString("DXFSerializer_SPDXF_EmptyV121", resourceCulture);
             }
         }
         
@@ -11864,52 +13109,6 @@ namespace SIMULTAN.Tests.Properties {
         ///0
         ///FILE_VERSION
         ///10
-        ///11
-        ///0
-        ///ENDSEC
-        ///0
-        ///SECTION
-        ///2
-        ///SITEPLANNER
-        ///0
-        ///SITEPLANNER
-        ///11001
-        ///2
-        ///11002
-        ///a5ef2c5d-9519-4335-9ac2-4beb0a597326 12
-        ///11008
-        ///
-        ///11009
-        ///100
-        ///11002
-        ///a5ef2c5d-9519-4335-9ac2-4beb0a597327 13
-        ///11008
-        ///S3ElevationProviderGtiff
-        ///11009
-        ///123
-        ///11003
-        ///0
-        ///11016
-        ///0
-        ///0
-        ///ENDSEC
-        ///0
-        ///EOF.
-        /// </summary>
-        internal static string DXFSerializer_SPDXF_GeoMapsV111 {
-            get {
-                return ResourceManager.GetString("DXFSerializer_SPDXF_GeoMapsV111", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to 0
-        ///SECTION
-        ///2
-        ///VERSION_SECTION
-        ///0
-        ///FILE_VERSION
-        ///10
         ///12
         ///0
         ///ENDSEC
@@ -11950,57 +13149,6 @@ namespace SIMULTAN.Tests.Properties {
         internal static string DXFSerializer_SPDXF_GeoMapsV12 {
             get {
                 return ResourceManager.GetString("DXFSerializer_SPDXF_GeoMapsV12", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to 0
-        ///SECTION
-        ///2
-        ///VERSION_SECTION
-        ///0
-        ///FILE_VERSION
-        ///10
-        ///12
-        ///0
-        ///ENDSEC
-        ///0
-        ///SECTION
-        ///2
-        ///SITEPLANNER
-        ///0
-        ///SITEPLANNER
-        ///11001
-        ///2
-        ///11021
-        ///00000000-0000-0000-0000-000000000000
-        ///11022
-        ///12
-        ///11008
-        ///
-        ///11009
-        ///100
-        ///11021
-        ///a5ef2c5d-9519-4335-9ac2-4beb0a597327
-        ///11022
-        ///13
-        ///11008
-        ///S3ElevationProviderGtiff
-        ///11009
-        ///123
-        ///11003
-        ///0
-        ///11016
-        ///0
-        ///0
-        ///ENDSEC
-        ///0
-        ///EOF
-        ///.
-        /// </summary>
-        internal static string DXFSerializer_SPDXF_GeoMapsV121 {
-            get {
-                return ResourceManager.GetString("DXFSerializer_SPDXF_GeoMapsV121", resourceCulture);
             }
         }
         
@@ -12060,16 +13208,20 @@ namespace SIMULTAN.Tests.Properties {
         ///SECTION
         ///2
         ///VERSION_SECTION
+        ///901
+        ///-1
         ///0
         ///FILE_VERSION
         ///10
-        ///21
+        ///29
         ///0
         ///ENDSEC
         ///0
         ///SECTION
         ///2
         ///SITEPLANNER
+        ///901
+        ///-1
         ///0
         ///SITEPLANNER
         ///11001
@@ -12105,16 +13257,20 @@ namespace SIMULTAN.Tests.Properties {
         ///SECTION
         ///2
         ///VERSION_SECTION
+        ///901
+        ///-1
         ///0
         ///FILE_VERSION
         ///10
-        ///21
+        ///29
         ///0
         ///ENDSEC
         ///0
         ///SECTION
         ///2
         ///SITEPLANNER
+        ///901
+        ///-1
         ///0
         ///SITEPLANNER
         ///11001
@@ -12156,16 +13312,20 @@ namespace SIMULTAN.Tests.Properties {
         ///SECTION
         ///2
         ///VERSION_SECTION
+        ///901
+        ///-1
         ///0
         ///FILE_VERSION
         ///10
-        ///21
+        ///29
         ///0
         ///ENDSEC
         ///0
         ///SECTION
         ///2
         ///SITEPLANNER
+        ///901
+        ///-1
         ///0
         ///SITEPLANNER
         ///11001
@@ -12191,16 +13351,20 @@ namespace SIMULTAN.Tests.Properties {
         ///SECTION
         ///2
         ///VERSION_SECTION
+        ///901
+        ///-1
         ///0
         ///FILE_VERSION
         ///10
-        ///21
+        ///29
         ///0
         ///ENDSEC
         ///0
         ///SECTION
         ///2
         ///SITEPLANNER
+        ///901
+        ///-1
         ///0
         ///SITEPLANNER
         ///11001
@@ -12245,7 +13409,7 @@ namespace SIMULTAN.Tests.Properties {
         ///0
         ///FILE_VERSION
         ///10
-        ///21
+        ///18
         ///0
         ///ENDSEC
         ///0
@@ -12298,9 +13462,9 @@ namespace SIMULTAN.Tests.Properties {
         ///EOF
         ///.
         /// </summary>
-        internal static string DXFSerializer_TXDXF_WriteEmpty {
+        internal static string DXFSerializer_TXDXF_ReadEmptyV18 {
             get {
-                return ResourceManager.GetString("DXFSerializer_TXDXF_WriteEmpty", resourceCulture);
+                return ResourceManager.GetString("DXFSerializer_TXDXF_ReadEmptyV18", resourceCulture);
             }
         }
         
@@ -12312,7 +13476,88 @@ namespace SIMULTAN.Tests.Properties {
         ///0
         ///FILE_VERSION
         ///10
-        ///21
+        ///23
+        ///0
+        ///ENDSEC
+        ///0
+        ///SECTION
+        ///2
+        ///TAXONOMY_SECTION
+        ///0
+        ///TAXONOMY
+        ///899
+        ///00000000-0000-0000-0000-000000000000
+        ///900
+        ///1
+        ///22004
+        ///TaxKey 1
+        ///22005
+        ///1
+        ///22006
+        ///1
+        ///22100
+        ///1
+        ///22101
+        ///
+        ///22102
+        ///1
+        ///22103
+        ///
+        ///22104
+        ///Taxonomy 1
+        ///22105
+        ///Description
+        ///22001
+        ///0
+        ///0
+        ///SEQEND
+        ///0
+        ///TAXONOMY
+        ///899
+        ///00000000-0000-0000-0000-000000000000
+        ///900
+        ///2
+        ///22004
+        ///TaxKey 2
+        ///22005
+        ///0
+        ///22006
+        ///1
+        ///22100
+        ///2
+        ///22101
+        ///
+        ///22101
+        ///de
+        ///22102
+        ///2
+        ///22103
+        ///
+        ///22104
+        ///Taxonomy 2
+        ///22105
+        ///
+        ///22103
+        ///de
+        ///22104
+        ///Taxonomy 2 de
+        ///2 [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string DXFSerializer_TXDXF_ReadEmptyV23 {
+            get {
+                return ResourceManager.GetString("DXFSerializer_TXDXF_ReadEmptyV23", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to 0
+        ///SECTION
+        ///2
+        ///VERSION_SECTION
+        ///0
+        ///FILE_VERSION
+        ///10
+        ///18
         ///0
         ///ENDSEC
         ///0
@@ -12382,9 +13627,9 @@ namespace SIMULTAN.Tests.Properties {
         ///0
         ///SE [rest of string was truncated]&quot;;.
         /// </summary>
-        internal static string DXFSerializer_TXDXF_WriteEntries {
+        internal static string DXFSerializer_TXDXF_ReadEntriesV18 {
             get {
-                return ResourceManager.GetString("DXFSerializer_TXDXF_WriteEntries", resourceCulture);
+                return ResourceManager.GetString("DXFSerializer_TXDXF_ReadEntriesV18", resourceCulture);
             }
         }
         
@@ -12396,13 +13641,270 @@ namespace SIMULTAN.Tests.Properties {
         ///0
         ///FILE_VERSION
         ///10
-        ///21
+        ///23
+        ///0
+        ///ENDSEC
+        ///0
+        ///SECTION
+        ///2
+        ///TAXONOMY_SECTION
+        ///0
+        ///TAXONOMY
+        ///899
+        ///00000000-0000-0000-0000-000000000000
+        ///900
+        ///1
+        ///22004
+        ///TaxKey 1
+        ///22005
+        ///0
+        ///22006
+        ///1
+        ///22100
+        ///2
+        ///22101
+        ///
+        ///22101
+        ///de
+        ///22102
+        ///2
+        ///22103
+        ///
+        ///22104
+        ///Taxonomy 1
+        ///22105
+        ///Description
+        ///22103
+        ///de
+        ///22104
+        ///Taxonomy 1 de
+        ///22105
+        ///Description de
+        ///22001
+        ///1
+        ///0
+        ///ENTSEQ
+        ///0
+        ///TAXONOMY_ENTRY
+        ///22003
+        ///Key 1
+        ///900
+        ///3
+        ///22102
+        ///2
+        ///22103
+        ///
+        ///22104
+        ///Entry 1
+        ///22105
+        ///
+        ///22103
+        ///de
+        ///22104
+        ///
+        ///22105
+        ///
+        ///22001
+        ///2
+        ///0
+        ///ENTSEQ
+        ///0
+        ///TAXONOM [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string DXFSerializer_TXDXF_ReadEntriesV23 {
+            get {
+                return ResourceManager.GetString("DXFSerializer_TXDXF_ReadEntriesV23", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to 0
+        ///SECTION
+        ///2
+        ///VERSION_SECTION
+        ///901
+        ///-1
+        ///0
+        ///FILE_VERSION
+        ///10
+        ///29
+        ///0
+        ///ENDSEC
+        ///0
+        ///SECTION
+        ///2
+        ///TAXONOMY_SECTION
+        ///901
+        ///-1
+        ///0
+        ///TAXONOMY
+        ///899
+        ///00000000-0000-0000-0000-000000000000
+        ///900
+        ///1
+        ///22004
+        ///TaxKey 1
+        ///22005
+        ///1
+        ///22006
+        ///1
+        ///22100
+        ///1
+        ///22101
+        ///
+        ///22102
+        ///1
+        ///22103
+        ///
+        ///22104
+        ///Taxonomy 1
+        ///22105
+        ///Description
+        ///22001
+        ///0
+        ///0
+        ///SEQEND
+        ///0
+        ///TAXONOMY
+        ///899
+        ///00000000-0000-0000-0000-000000000000
+        ///900
+        ///2
+        ///22004
+        ///TaxKey 2
+        ///22005
+        ///0
+        ///22006
+        ///1
+        ///22100
+        ///2
+        ///22101
+        ///
+        ///22101
+        ///de
+        ///22102
+        ///2
+        ///22103
+        ///
+        ///22104
+        ///Taxonomy 2
+        ///22105
+        ///
+        ///22103
+        ///de
+        ///22104 [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string DXFSerializer_TXDXF_WriteEmpty {
+            get {
+                return ResourceManager.GetString("DXFSerializer_TXDXF_WriteEmpty", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to 0
+        ///SECTION
+        ///2
+        ///VERSION_SECTION
+        ///901
+        ///-1
+        ///0
+        ///FILE_VERSION
+        ///10
+        ///29
+        ///0
+        ///ENDSEC
+        ///0
+        ///SECTION
+        ///2
+        ///TAXONOMY_SECTION
+        ///901
+        ///-1
+        ///0
+        ///TAXONOMY
+        ///899
+        ///00000000-0000-0000-0000-000000000000
+        ///900
+        ///1
+        ///22004
+        ///TaxKey 1
+        ///22005
+        ///0
+        ///22006
+        ///1
+        ///22100
+        ///2
+        ///22101
+        ///
+        ///22101
+        ///de
+        ///22102
+        ///2
+        ///22103
+        ///
+        ///22104
+        ///Taxonomy 1
+        ///22105
+        ///Description
+        ///22103
+        ///de
+        ///22104
+        ///Taxonomy 1 de
+        ///22105
+        ///Description de
+        ///22001
+        ///1
+        ///0
+        ///ENTSEQ
+        ///0
+        ///TAXONOMY_ENTRY
+        ///22003
+        ///Key 1
+        ///900
+        ///3
+        ///22102
+        ///2
+        ///22103
+        ///
+        ///22104
+        ///Entry 1
+        ///22105
+        ///
+        ///22103
+        ///de
+        ///22104
+        ///
+        ///22105
+        ///
+        ///22001
+        ///2
+        ///0
+        /// [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string DXFSerializer_TXDXF_WriteEntries {
+            get {
+                return ResourceManager.GetString("DXFSerializer_TXDXF_WriteEntries", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to 0
+        ///SECTION
+        ///2
+        ///VERSION_SECTION
+        ///901
+        ///-1
+        ///0
+        ///FILE_VERSION
+        ///10
+        ///29
         ///0
         ///ENDSEC
         ///0
         ///SECTION
         ///2
         ///ASSETS
+        ///901
+        ///1
         ///0
         ///ASSET_MANAGER
         ///100
@@ -12438,7 +13940,7 @@ namespace SIMULTAN.Tests.Properties {
         ///7202
         ///4
         ///7204
-        ///RootFolder\ChildFolder1
+        ///RootFolder/ChildFolder1
         ///7212
         ///1
         ///7213
@@ -12448,9 +13950,7 @@ namespace SIMULTAN.Tests.Properties {
         ///0
         ///ENTSEQ
         ///0
-        ///RESOURCE_CONTAINED_FILE
-        ///100
-        ///SIM [rest of string was truncated]&quot;;.
+        ///RESOURCE_CONTAIN [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string DXFSerializer_Write {
             get {
@@ -12517,7 +14017,7 @@ namespace SIMULTAN.Tests.Properties {
         ///7202
         ///4
         ///7204
-        ///RootFolder\ChildFolder1
+        ///RootFolder/ChildFolder1
         ///7212
         ///1
         ///7213
@@ -12535,7 +14035,7 @@ namespace SIMULTAN.Tests.Properties {
         ///7202
         ///11
         ///7204
-        ///RootFolder\ChildFold [rest of string was truncated]&quot;;.
+        ///RootFolder/ChildFold [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string DXFSerializer_WriteAssetManager {
             get {
@@ -12548,6 +14048,8 @@ namespace SIMULTAN.Tests.Properties {
         ///SECTION
         ///2
         ///ASSETS
+        ///901
+        ///1
         ///0
         ///ASSET_MANAGER
         ///100
@@ -12583,7 +14085,7 @@ namespace SIMULTAN.Tests.Properties {
         ///7202
         ///4
         ///7204
-        ///RootFolder\ChildFolder1
+        ///RootFolder/ChildFolder1
         ///7212
         ///1
         ///7213
@@ -12598,9 +14100,7 @@ namespace SIMULTAN.Tests.Properties {
         ///SIMULTAN.Data.Assets.ContainedResourceFileEntry
         ///7201
         ///8
-        ///7202
-        ///11
-        ///720 [rest of string was truncated]&quot;;.
+        ///7202        /// [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string DXFSerializer_WriteAssetsSection {
             get {
@@ -13282,8 +14782,6 @@ namespace SIMULTAN.Tests.Properties {
         ///3669
         ///1601
         ///Custom Instance
-        ///1602
-        ///5
         ///1609
         ///1
         ///1665
@@ -13302,6 +14800,8 @@ namespace SIMULTAN.Tests.Properties {
         ///58
         ///1672
         ///0
+        ///1673
+        ///512
         ///0
         ///SEQEND
         ///0
@@ -13312,12 +14812,14 @@ namespace SIMULTAN.Tests.Properties {
         ///123
         ///1666
         ///00000000-0000-0000-0000-000000000000
+        ///1673
+        ///4
         ///0
         ///SEQEND
         ///0
         ///INSTANCE_PLACEMENT_NETWORK
         ///100
-        ///SIMULTAN.Data.Components.SimInstan [rest of string was truncated]&quot;;.
+        ///SIMULTAN.Data.Component [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string DXFSerializer_WriteInstance {
             get {
@@ -13396,16 +14898,20 @@ namespace SIMULTAN.Tests.Properties {
         ///SECTION
         ///2
         ///VERSION_SECTION
+        ///901
+        ///-1
         ///0
         ///FILE_VERSION
         ///10
-        ///21
+        ///29
         ///0
         ///ENDSEC
         ///0
         ///SECTION
         ///2
         ///ENTITIES
+        ///901
+        ///3
         ///0
         ///VALUE_FIELD
         ///100
@@ -13459,8 +14965,6 @@ namespace SIMULTAN.Tests.Properties {
         ///910
         ///0.00000000
         ///920
-        ///0.00000000
-        ///930
         ///0.0 [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string DXFSerializer_WriteMVDXF_Multiple {
@@ -13602,6 +15106,8 @@ namespace SIMULTAN.Tests.Properties {
         ///SECTION
         ///2
         ///NETWORKS
+        ///901
+        ///1
         ///0
         ///FLOWNETWORK
         ///900
@@ -13671,8 +15177,7 @@ namespace SIMULTAN.Tests.Properties {
         ///900
         ///3
         ///1507
-        ///Network Node 2
-        ///150 [rest of string was truncated]&quot;;.
+        ///Network Nod [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string DXFSerializer_WriteNetworkSection {
             get {
@@ -14205,7 +15710,7 @@ namespace SIMULTAN.Tests.Properties {
         ///900
         ///99
         ///1001
-        ///Parameter X
+        ///key
         ///1002
         ///Unit
         ///1003
@@ -14244,7 +15749,7 @@ namespace SIMULTAN.Tests.Properties {
         ///900
         ///99
         ///1001
-        ///Parameter X
+        ///key
         ///1003
         ///66592
         ///1017
@@ -14277,7 +15782,7 @@ namespace SIMULTAN.Tests.Properties {
         ///900
         ///99
         ///1001
-        ///Parameter X
+        ///key
         ///1003
         ///66592
         ///1017
@@ -14316,7 +15821,7 @@ namespace SIMULTAN.Tests.Properties {
         ///900
         ///99
         ///1001
-        ///Parameter X
+        ///key
         ///1002
         ///Unit
         ///1003
@@ -14355,7 +15860,7 @@ namespace SIMULTAN.Tests.Properties {
         ///900
         ///99
         ///1001
-        ///Parameter X
+        ///key
         ///1003
         ///66592
         ///1017
@@ -14385,22 +15890,26 @@ namespace SIMULTAN.Tests.Properties {
         ///SECTION
         ///2
         ///VERSION_SECTION
+        ///901
+        ///-1
         ///0
         ///FILE_VERSION
         ///10
-        ///21
+        ///29
         ///0
         ///ENDSEC
         ///0
         ///SECTION
         ///2
         ///ASSETS
+        ///901
+        ///4
         ///0
         ///ASSET_MANAGER
         ///100
         ///SIMULTAN.Data.Assets.AssetManager
         ///7101
-        ///2
+        ///1
         ///0
         ///ENTSEQ
         ///0
@@ -14430,7 +15939,7 @@ namespace SIMULTAN.Tests.Properties {
         ///7202
         ///2
         ///7204
-        ///F1\F2
+        ///F1/F2
         ///7212
         ///1
         ///7213
@@ -14442,7 +15951,7 @@ namespace SIMULTAN.Tests.Properties {
         ///0
         ///RESOURCE_CONTAINED_FILE
         ///100
-        ///SIMULTAN.Data.Assets.Containe [rest of string was truncated]&quot;;.
+        ///SIMULTAN.Dat [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string DXFSerializer_WritePublic {
             get {
@@ -14480,7 +15989,7 @@ namespace SIMULTAN.Tests.Properties {
         ///7202
         ///4
         ///7204
-        ///RootFolder\ChildFolder1
+        ///RootFolder/ChildFolder1
         ///7212
         ///1
         ///7213
@@ -14500,7 +16009,7 @@ namespace SIMULTAN.Tests.Properties {
         ///7202
         ///11
         ///7204
-        ///RootFolder\ChildFolder1\MyContainedFile.txt
+        ///RootFolder/ChildFolder1/MyContainedFile.txt
         ///7212
         ///0
         ///7213
@@ -14575,6 +16084,8 @@ namespace SIMULTAN.Tests.Properties {
         ///SECTION
         ///2
         ///USER_COMPONENT_LISTS
+        ///901
+        ///3
         ///0
         ///USER_LIST
         ///100
@@ -14700,17 +16211,78 @@ namespace SIMULTAN.Tests.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to F1\F2\D1.txt
-        ///F1\F2\
-        ///F1\D2.txt
-        ///F1\
-        ///F4\D4.txt
-        ///F4\
+        ///   Looks up a localized string similar to F1/F2/D1.txt
+        ///F1/F2/
+        ///F1/D2.txt
+        ///F1/
+        ///F4/D4.txt
+        ///F4/
         ///.
         /// </summary>
         internal static string PPathSerializer_Write {
             get {
                 return ResourceManager.GetString("PPathSerializer_Write", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to &lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;
+        ///&lt;Simultan xmi:version=&quot;2.0&quot; xmlns:xmi=&quot;http://www.omg.org/XMI&quot; xmlns=&quot;http://tuwien.ac.at/simultan&quot;&gt;
+        ///	&lt;globalId&gt;30665bc9-b1f2-4204-adb1-c3e68e60c1c7&lt;/globalId&gt;
+        ///	&lt;fileVersion&gt;0&lt;/fileVersion&gt;
+        ///&lt;/Simultan&gt;.
+        /// </summary>
+        internal static string XMISerializer_Empty {
+            get {
+                return ResourceManager.GetString("XMISerializer_Empty", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to &lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;
+        ///&lt;Simultan xmi:version=&quot;2.0&quot; xmlns:xmi=&quot;http://www.omg.org/XMI&quot; xmlns=&quot;http://tuwien.ac.at/simultan&quot;&gt;
+        ///	&lt;globalId&gt;c2105b04-a762-4650-a9e8-eb5a20e51702&lt;/globalId&gt;
+        ///	&lt;fileVersion&gt;0&lt;/fileVersion&gt;
+        ///	&lt;components&gt;
+        ///		&lt;id&gt;2181&lt;/id&gt;
+        ///		&lt;name&gt;ExportTest&lt;/name&gt;
+        ///		&lt;description&gt;&lt;/description&gt;
+        ///		&lt;instanceType&gt;SimNetworkBlock&lt;/instanceType&gt;
+        ///		&lt;slots&gt;
+        ///			&lt;taxonomyKey&gt;resslot&lt;/taxonomyKey&gt;
+        ///			&lt;taxonomyEntryKey&gt;specification&lt;/taxonomyEntryKey&gt;
+        ///		&lt;/slots&gt;
+        ///		&lt;components&gt;
+        ///			&lt;slot [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string XMISerializer_ExportSingle {
+            get {
+                return ResourceManager.GetString("XMISerializer_ExportSingle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to &lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;
+        ///&lt;Simultan xmi:version=&quot;2.0&quot; xmlns:xmi=&quot;http://www.omg.org/XMI&quot; xmlns=&quot;http://tuwien.ac.at/simultan&quot;&gt;
+        ///	&lt;globalId&gt;c2105b04-a762-4650-a9e8-eb5a20e51702&lt;/globalId&gt;
+        ///	&lt;fileVersion&gt;0&lt;/fileVersion&gt;
+        ///	&lt;components&gt;
+        ///		&lt;id&gt;66&lt;/id&gt;
+        ///		&lt;name&gt;Lagerhalle&lt;/name&gt;
+        ///		&lt;description&gt;&lt;/description&gt;
+        ///		&lt;instanceType&gt;None&lt;/instanceType&gt;
+        ///		&lt;slots&gt;
+        ///			&lt;taxonomyKey&gt;resslot&lt;/taxonomyKey&gt;
+        ///			&lt;taxonomyEntryKey&gt;list&lt;/taxonomyEntryKey&gt;
+        ///		&lt;/slots&gt;
+        ///		&lt;components&gt;
+        ///			&lt;slot&gt;
+        ///				&lt;slot&gt;
+        ///					&lt;t [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string XMISerializer_TestProject {
+            get {
+                return ResourceManager.GetString("XMISerializer_TestProject", resourceCulture);
             }
         }
     }

@@ -49,104 +49,106 @@ namespace SIMULTAN.Exchange.GeometryConnectors
 
         internal void UpdateComponent(bool placementDeleted, bool geometryRemoved)
         {
-            if (placementDeleted)
+            using (AccessCheckingDisabler.Disable(ParameterSource.TargetParameter.Factory.ProjectData.Components))
             {
-                Placement.Instance.InstanceParameterValuesPersistent[ParameterSource.TargetParameter] = double.NaN;
-                if (ParameterSource.TargetParameter is SimDoubleParameter dParam)
+                if (placementDeleted)
                 {
-                    dParam.Value = Aggregate(
-                     ParameterSource.GeometryProperty,
-                     ParameterSource.TargetParameter.Component.Instances
-                         .Where(x => x != Placement.Instance && x.Placements.Any(p => p is SimInstancePlacementGeometry))
-                         .Select(x => x.InstanceParameterValuesPersistent[ParameterSource.TargetParameter]).OfType<double>().ToList());
-                }
-
-            }
-            else if (geometryRemoved)
-            {
-                Placement.Instance.InstanceParameterValuesPersistent[ParameterSource.TargetParameter] = double.NaN;
-                if (ParameterSource.TargetParameter is SimDoubleParameter dParam)
-                {
-                    dParam.Value = Aggregate(
-                      ParameterSource.GeometryProperty,
-                      ParameterSource.TargetParameter.Component.Instances
-                          .Where(x => x.Placements.Any(p => p is SimInstancePlacementGeometry))
-                          .Select(x => x.InstanceParameterValuesPersistent[ParameterSource.TargetParameter]).OfType<double>().ToList());
-                }
-
-            }
-            else
-            {
-                var resourceEntry = ParameterSource.TargetParameter.Factory.ProjectData.AssetManager.GetResource(Placement.FileId);
-                var resourceTags = resourceEntry.Tags.ToHashSet();
-                var filterTags = ParameterSource.FilterTags;
-                if (filterTags.All(x => resourceTags.Contains(x)))
-                {
-                    switch (ParameterSource.GeometryProperty)
-                    {
-                        case SimGeometrySourceProperty.FaceArea:
-                            Placement.Instance.InstanceParameterValuesPersistent[ParameterSource.TargetParameter] = FaceAlgorithms.Area((Face)Geometry);
-                            break;
-                        case SimGeometrySourceProperty.FaceIncline:
-                            Placement.Instance.InstanceParameterValuesPersistent[ParameterSource.TargetParameter]
-                                = FaceAlgorithms.OrientationIncline(((Face)Geometry).Normal).incline * 180 / Math.PI;
-                            break;
-                        case SimGeometrySourceProperty.FaceOrientation:
-                            Placement.Instance.InstanceParameterValuesPersistent[ParameterSource.TargetParameter]
-                                = FaceAlgorithms.OrientationIncline(((Face)Geometry).Normal).orientation * 180 / Math.PI;
-                            break;
-
-                        case SimGeometrySourceProperty.VolumeFloorElevation:
-                            Placement.Instance.InstanceParameterValuesPersistent[ParameterSource.TargetParameter]
-                                = VolumeAlgorithms.ElevationReference((Volume)Geometry).floor;
-                            break;
-                        case SimGeometrySourceProperty.VolumeCeilingElevation:
-                            Placement.Instance.InstanceParameterValuesPersistent[ParameterSource.TargetParameter]
-                                = VolumeAlgorithms.ElevationReference((Volume)Geometry).ceiling;
-                            break;
-                        case SimGeometrySourceProperty.VolumeHeight:
-                            Placement.Instance.InstanceParameterValuesPersistent[ParameterSource.TargetParameter]
-                                = VolumeAlgorithms.Height((Volume)Geometry).reference;
-                            break;
-                        case SimGeometrySourceProperty.VolumeFloorArea:
-                            Placement.Instance.InstanceParameterValuesPersistent[ParameterSource.TargetParameter]
-                                = VolumeAlgorithms.AreaBruttoNetto((Volume)Geometry).areaReference;
-                            break;
-                        case SimGeometrySourceProperty.VolumeVolume:
-                            Placement.Instance.InstanceParameterValuesPersistent[ParameterSource.TargetParameter]
-                                = VolumeAlgorithms.Volume((Volume)Geometry);
-                            break;
-
-                        case SimGeometrySourceProperty.EdgeLength:
-                            Placement.Instance.InstanceParameterValuesPersistent[ParameterSource.TargetParameter]
-                                = EdgeAlgorithms.Length((Edge)Geometry);
-                            break;
-
-                    }
-
+                    Placement.Instance.InstanceParameterValuesPersistent[ParameterSource.TargetParameter] = double.NaN;
                     if (ParameterSource.TargetParameter is SimDoubleParameter dParam)
                     {
                         dParam.Value = Aggregate(
-             ParameterSource.GeometryProperty,
-             ParameterSource.TargetParameter.Component.Instances
-                     .Where(x => x.Placements.Any(p => p is SimInstancePlacementGeometry) && ParameterSource.InstancePassesFilter(x))
-                 .Select(x => x.InstanceParameterValuesPersistent[ParameterSource.TargetParameter]).OfType<double>().ToList());
+                         ParameterSource.GeometryProperty,
+                         ParameterSource.TargetParameter.Component.Instances
+                             .Where(x => x != Placement.Instance && x.Placements.Any(p => p is SimInstancePlacementGeometry))
+                             .Select(x => x.InstanceParameterValuesPersistent[ParameterSource.TargetParameter]).OfType<double>().ToList());
+                    }
+
+                }
+                else if (geometryRemoved)
+                {
+                    Placement.Instance.InstanceParameterValuesPersistent[ParameterSource.TargetParameter] = double.NaN;
+                    if (ParameterSource.TargetParameter is SimDoubleParameter dParam)
+                    {
+                        dParam.Value = Aggregate(
+                          ParameterSource.GeometryProperty,
+                          ParameterSource.TargetParameter.Component.Instances
+                              .Where(x => x.Placements.Any(p => p is SimInstancePlacementGeometry))
+                              .Select(x => x.InstanceParameterValuesPersistent[ParameterSource.TargetParameter]).OfType<double>().ToList());
                     }
 
                 }
                 else
                 {
-
-                    Placement.Instance.InstanceParameterValuesPersistent[ParameterSource.TargetParameter] = 0;
-                    if (ParameterSource.TargetParameter is SimDoubleParameter dParam)
+                    var resourceEntry = ParameterSource.TargetParameter.Factory.ProjectData.AssetManager.GetResource(Placement.FileId);
+                    var resourceTags = resourceEntry.Tags.ToHashSet();
+                    var filterTags = ParameterSource.FilterTags;
+                    if (filterTags.All(x => resourceTags.Contains(x)))
                     {
-                        dParam.Value = Aggregate(
-                      ParameterSource.GeometryProperty,
-                      ParameterSource.TargetParameter.Component.Instances
-                          .Where(x => x.Placements.Any(p => p is SimInstancePlacementGeometry) && ParameterSource.InstancePassesFilter(x))
-                          .Select(x => x.InstanceParameterValuesPersistent[ParameterSource.TargetParameter]).OfType<double>().ToList());
-                    }
+                        switch (ParameterSource.GeometryProperty)
+                        {
+                            case SimGeometrySourceProperty.FaceArea:
+                                Placement.Instance.InstanceParameterValuesPersistent[ParameterSource.TargetParameter] = FaceAlgorithms.Area((Face)Geometry);
+                                break;
+                            case SimGeometrySourceProperty.FaceIncline:
+                                Placement.Instance.InstanceParameterValuesPersistent[ParameterSource.TargetParameter]
+                                    = FaceAlgorithms.OrientationIncline(((Face)Geometry).Normal).incline * 180 / Math.PI;
+                                break;
+                            case SimGeometrySourceProperty.FaceOrientation:
+                                Placement.Instance.InstanceParameterValuesPersistent[ParameterSource.TargetParameter]
+                                    = FaceAlgorithms.OrientationIncline(((Face)Geometry).Normal).orientation * 180 / Math.PI;
+                                break;
 
+                            case SimGeometrySourceProperty.VolumeFloorElevation:
+                                Placement.Instance.InstanceParameterValuesPersistent[ParameterSource.TargetParameter]
+                                    = VolumeAlgorithms.ElevationReference((Volume)Geometry).floor;
+                                break;
+                            case SimGeometrySourceProperty.VolumeCeilingElevation:
+                                Placement.Instance.InstanceParameterValuesPersistent[ParameterSource.TargetParameter]
+                                    = VolumeAlgorithms.ElevationReference((Volume)Geometry).ceiling;
+                                break;
+                            case SimGeometrySourceProperty.VolumeHeight:
+                                Placement.Instance.InstanceParameterValuesPersistent[ParameterSource.TargetParameter]
+                                    = VolumeAlgorithms.Height((Volume)Geometry).reference;
+                                break;
+                            case SimGeometrySourceProperty.VolumeFloorArea:
+                                Placement.Instance.InstanceParameterValuesPersistent[ParameterSource.TargetParameter]
+                                    = VolumeAlgorithms.AreaBruttoNetto((Volume)Geometry).areaReference;
+                                break;
+                            case SimGeometrySourceProperty.VolumeVolume:
+                                Placement.Instance.InstanceParameterValuesPersistent[ParameterSource.TargetParameter]
+                                    = VolumeAlgorithms.Volume((Volume)Geometry);
+                                break;
+
+                            case SimGeometrySourceProperty.EdgeLength:
+                                Placement.Instance.InstanceParameterValuesPersistent[ParameterSource.TargetParameter]
+                                    = EdgeAlgorithms.Length((Edge)Geometry);
+                                break;
+
+                        }
+
+                        if (ParameterSource.TargetParameter is SimDoubleParameter dParam)
+                        {
+                            dParam.Value = Aggregate(
+                                 ParameterSource.GeometryProperty,
+                                 ParameterSource.TargetParameter.Component.Instances
+                                     .Where(x => x.Placements.Any(p => p is SimInstancePlacementGeometry) && ParameterSource.InstancePassesFilter(x))
+                                     .Select(x => x.InstanceParameterValuesPersistent[ParameterSource.TargetParameter]).OfType<double>().ToList());
+                        }
+                    }
+                    else
+                    {
+
+                        Placement.Instance.InstanceParameterValuesPersistent[ParameterSource.TargetParameter] = 0;
+                        if (ParameterSource.TargetParameter is SimDoubleParameter dParam)
+                        {
+                            dParam.Value = Aggregate(
+                                  ParameterSource.GeometryProperty,
+                                  ParameterSource.TargetParameter.Component.Instances
+                                      .Where(x => x.Placements.Any(p => p is SimInstancePlacementGeometry) && ParameterSource.InstancePassesFilter(x))
+                                      .Select(x => x.InstanceParameterValuesPersistent[ParameterSource.TargetParameter]).OfType<double>().ToList());
+                        }
+
+                    }
                 }
             }
         }

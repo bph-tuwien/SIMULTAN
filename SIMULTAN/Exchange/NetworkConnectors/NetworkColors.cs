@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Windows.Media;
+using SIMULTAN.Data.SimMath;
 
 namespace SIMULTAN.Exchange.NetworkConnectors
 {
@@ -15,10 +15,10 @@ namespace SIMULTAN.Exchange.NetworkConnectors
         /// <summary>
         /// The color of an empty network element representation.
         /// </summary>
-        public static readonly Color COL_EMPTY = (Color)ColorConverter.ConvertFromString("#FF404040");
+        public static readonly SimColor COL_EMPTY = (SimColor)SimColorConverter.ConvertFromString("#FF404040");
         /// <summary>
         /// The default color of a network element representation.
         /// </summary>
-        public static readonly Color COL_NEUTRAL = (Color)ColorConverter.ConvertFromString("#FFffffff");
+        public static readonly SimColor COL_NEUTRAL = (SimColor)SimColorConverter.ConvertFromString("#FFffffff");
     }
 }

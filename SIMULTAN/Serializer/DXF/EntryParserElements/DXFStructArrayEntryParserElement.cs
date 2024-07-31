@@ -1,10 +1,7 @@
-﻿using SIMULTAN.Serializer.DXF;
-using SIMULTAN.Utils;
+﻿using SIMULTAN.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SIMULTAN.Serializer.DXF
 {
@@ -53,6 +50,15 @@ namespace SIMULTAN.Serializer.DXF
         /// <param name="parser">Method that converts the parsed data of a single element into the desired target type</param>
         /// <param name="elements">The elements in each entry</param>
         internal DXFStructArrayEntryParserElement(GeometryRelationSaveCode code, Func<DXFParserResultSet, DXFParserInfo, T> parser,
+            IEnumerable<DXFEntryParserElement> elements)
+            : this((int)code, parser, elements) { }
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DXFStructArrayEntryParserElement{T}"/> class
+        /// </summary>
+        /// <param name="code">The code of the count entry</param>
+        /// <param name="parser">Method that converts the parsed data of a single element into the desired target type</param>
+        /// <param name="elements">The elements in each entry</param>
+        internal DXFStructArrayEntryParserElement(TaxonomySaveCode code, Func<DXFParserResultSet, DXFParserInfo, T> parser,
             IEnumerable<DXFEntryParserElement> elements)
             : this((int)code, parser, elements) { }
         /// <summary>

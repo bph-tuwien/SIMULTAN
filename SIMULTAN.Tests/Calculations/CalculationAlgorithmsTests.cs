@@ -11,7 +11,7 @@ namespace SIMULTAN.Tests.Calculations
     [TestClass]
     public class CalculationAlgorithmsTests : BaseProjectTest
     {
-        private static readonly FileInfo calculationProject = new FileInfo(@".\CalculationTestsProject.simultan");
+        private static readonly FileInfo calculationProject = new FileInfo(@"./CalculationTestsProject.simultan");
 
         [TestMethod]
         public void ReplaceSingleParameter()
@@ -128,10 +128,10 @@ namespace SIMULTAN.Tests.Calculations
             Assert.AreEqual(comp2, calc.Component);
 
             //Check parameters
-            Assert.AreEqual(comp2.Parameters.First(x => x.NameTaxonomyEntry.Name == "param1"), calc.InputParams["a"]);
-            Assert.AreEqual(comp2child.Parameters.First(x => x.NameTaxonomyEntry.Name == "param2"), calc.InputParams["b"]);
+            Assert.AreEqual(comp2.Parameters.First(x => x.NameTaxonomyEntry.Text == "param1"), calc.InputParams["a"]);
+            Assert.AreEqual(comp2child.Parameters.First(x => x.NameTaxonomyEntry.Text == "param2"), calc.InputParams["b"]);
             Assert.AreEqual(null, calc.InputParams["c"]);
-            Assert.AreEqual(comp2.Parameters.First(x => x.NameTaxonomyEntry.Name == "out"), calc.ReturnParams["out1"]);
+            Assert.AreEqual(comp2.Parameters.First(x => x.NameTaxonomyEntry.Text == "out"), calc.ReturnParams["out1"]);
             Assert.AreEqual(null, calc.ReturnParams["out2"]);
         }
 
@@ -158,10 +158,10 @@ namespace SIMULTAN.Tests.Calculations
             Assert.AreEqual(comp2, copy.Component);
 
             //Check parameters
-            Assert.AreEqual(comp2.Parameters.First(x => x.NameTaxonomyEntry.Name == "param1"), copy.InputParams["a"]);
-            Assert.AreEqual(comp2child.Parameters.First(x => x.NameTaxonomyEntry.Name == "param2"), copy.InputParams["b"]);
+            Assert.AreEqual(comp2.Parameters.First(x => x.NameTaxonomyEntry.Text == "param1"), copy.InputParams["a"]);
+            Assert.AreEqual(comp2child.Parameters.First(x => x.NameTaxonomyEntry.Text == "param2"), copy.InputParams["b"]);
             Assert.AreEqual(null, copy.InputParams["c"]);
-            Assert.AreEqual(comp2.Parameters.First(x => x.NameTaxonomyEntry.Name == "out"), copy.ReturnParams["out1"]);
+            Assert.AreEqual(comp2.Parameters.First(x => x.NameTaxonomyEntry.Text == "out"), copy.ReturnParams["out1"]);
             Assert.AreEqual(null, copy.ReturnParams["out2"]);
         }
     }

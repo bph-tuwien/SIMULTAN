@@ -1,5 +1,6 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SIMULTAN.Data.Components;
+using SIMULTAN.Data.SimMath;
 using SIMULTAN.Exceptions;
 using SIMULTAN.Tests.TestUtils;
 using System;
@@ -7,18 +8,16 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
-using System.Windows;
-using System.Windows.Media.Media3D;
 
 namespace SIMULTAN.Tests.Components
 {
     [TestClass]
     public class InstanceManagementTests : BaseProjectTest
     {
-        private static readonly FileInfo testProject = new FileInfo(@".\GeometryInstanceTestsProject.simultan");
-        private static readonly FileInfo accessProject = new FileInfo(@".\AccessTestsProject.simultan");
-        private static readonly FileInfo emptyProject = new FileInfo(@".\EmptyProject.simultan");
-        private static readonly FileInfo instanceProject = new FileInfo(@".\InstanceTestsProject.simultan");
+        private static readonly FileInfo testProject = new FileInfo(@"./GeometryInstanceTestsProject.simultan");
+        private static readonly FileInfo accessProject = new FileInfo(@"./AccessTestsProject.simultan");
+        private static readonly FileInfo emptyProject = new FileInfo(@"./EmptyProject.simultan");
+        private static readonly FileInfo instanceProject = new FileInfo(@"./InstanceTestsProject.simultan");
 
         [TestMethod]
         public void AddInstance()
@@ -33,7 +32,7 @@ namespace SIMULTAN.Tests.Components
             Assert.ThrowsException<ArgumentNullException>(() => { component.Instances.Add(null); });
 
             //Add valid data
-            var instance = new SimComponentInstance(SimInstanceType.None);
+            var instance = new SimComponentInstance();
             Assert.AreEqual(null, instance.Component);
 
             component.Instances.Add(instance);
@@ -139,7 +138,7 @@ namespace SIMULTAN.Tests.Components
 
             PropertyChangedEventCounter compPC = new PropertyChangedEventCounter(component);
 
-            var instance = new SimComponentInstance(SimInstanceType.None);
+            var instance = new SimComponentInstance();
             PropertyChangedEventCounter instPC = new PropertyChangedEventCounter(instance);
 
             //Set state
@@ -195,7 +194,7 @@ namespace SIMULTAN.Tests.Components
             var archComp = this.projectData.Components.First(x => x.Name == "ArchComp");
             var bphComp = this.projectData.Components.First(x => x.Name == "BPHComp");
 
-            var instance = new SimComponentInstance(SimInstanceType.NetworkNode);
+            var instance = new SimComponentInstance();
 
             Assert.ThrowsException<AccessDeniedException>(() => { archComp.Instances.Add(instance); });
 
@@ -219,21 +218,21 @@ namespace SIMULTAN.Tests.Components
             var node = this.projectData.NetworkManager.NetworkRecord.First().ContainedNodes.Values.First(x => x.Content == null);
 
             //Add placement to instance outside of tree
-            var instance = new SimComponentInstance(SimInstanceType.NetworkNode);
-            instance.Placements.Add(new SimInstancePlacementNetwork(node));
+            var instance = new SimComponentInstance();
+            instance.Placements.Add(new SimInstancePlacementNetwork(node, SimInstanceType.NetworkNode));
             instance.Placements.RemoveAt(0);
 
             //Placement in read only component
             instance = archComp.Instances.First();
-            Assert.ThrowsException<AccessDeniedException>(() => { instance.Placements.Add(new SimInstancePlacementNetwork(node)); });
+            Assert.ThrowsException<AccessDeniedException>(() => { instance.Placements.Add(new SimInstancePlacementNetwork(node, SimInstanceType.NetworkNode)); });
             Assert.ThrowsException<AccessDeniedException>(() => { instance.Placements.RemoveAt(0); });
 
 
             //Placement in writable component
-            instance = new SimComponentInstance(SimInstanceType.NetworkNode);
+            instance = new SimComponentInstance();
             bphComp.Instances.Add(instance);
             Assert.AreEqual(bphComp, instance.Component);
-            instance.Placements.Add(new SimInstancePlacementNetwork(node));
+            instance.Placements.Add(new SimInstancePlacementNetwork(node, SimInstanceType.NetworkNode));
             Assert.AreEqual(1, instance.Placements.Count);
             instance.Placements.RemoveAt(0);
             Assert.AreEqual(0, instance.Placements.Count);
@@ -245,12 +244,12 @@ namespace SIMULTAN.Tests.Components
 
             var archComp = this.projectData.Components.First(x => x.Name == "ArchComp");
             var bphComp = this.projectData.Components.First(x => x.Name == "BPHComp");
-            var instance = new SimComponentInstance(SimInstanceType.NetworkNode);
+            var instance = new SimComponentInstance();
 
             //Instance not in tree
             instance.Description = "new description";
-            instance.InstanceRotation = new Quaternion(new Vector3D(0, 0, 1), 33);
-            instance.InstanceSize = new SimInstanceSize(new Vector3D(1, 1, 1), new Vector3D(99, 99, 99));
+            instance.InstanceRotation = new SimQuaternion(new SimVector3D(0, 0, 1), 33);
+            instance.InstanceSize = new SimInstanceSize(new SimVector3D(1, 1, 1), new SimVector3D(99, 99, 99));
             instance.Name = "another name";
             instance.SizeTransfer = new SimInstanceSizeTransferDefinition();
             instance.State = new SimInstanceState(true, SimInstanceConnectionState.GeometryNotFound);
@@ -258,20 +257,20 @@ namespace SIMULTAN.Tests.Components
             //Instance in read only component
             var archInst = archComp.Instances.First();
             Assert.ThrowsException<AccessDeniedException>(() => { archInst.Description = "new description"; });
-            Assert.ThrowsException<AccessDeniedException>(() => { archInst.InstanceRotation = new Quaternion(new Vector3D(0, 0, 1), 33); });
-            Assert.ThrowsException<AccessDeniedException>(() => { archInst.InstanceSize = new SimInstanceSize(new Vector3D(1, 1, 1), new Vector3D(99, 99, 99)); });
+            Assert.ThrowsException<AccessDeniedException>(() => { archInst.InstanceRotation = new SimQuaternion(new SimVector3D(0, 0, 1), 33); });
+            Assert.ThrowsException<AccessDeniedException>(() => { archInst.InstanceSize = new SimInstanceSize(new SimVector3D(1, 1, 1), new SimVector3D(99, 99, 99)); });
             Assert.ThrowsException<AccessDeniedException>(() => { archInst.Name = "another name"; });
             Assert.ThrowsException<AccessDeniedException>(() => { archInst.SizeTransfer = new SimInstanceSizeTransferDefinition(); });
             Assert.ThrowsException<AccessDeniedException>(() => { archInst.State = new SimInstanceState(true, SimInstanceConnectionState.GeometryNotFound); });
 
             //Instance in writable component
-            instance = new SimComponentInstance(SimInstanceType.NetworkNode);
+            instance = new SimComponentInstance();
             bphComp.Instances.Add(instance);
             Assert.AreEqual(bphComp, instance.Component);
 
             instance.Description = "new description";
-            instance.InstanceRotation = new Quaternion(new Vector3D(0, 0, 1), 33);
-            instance.InstanceSize = new SimInstanceSize(new Vector3D(1, 1, 1), new Vector3D(99, 99, 99));
+            instance.InstanceRotation = new SimQuaternion(new SimVector3D(0, 0, 1), 33);
+            instance.InstanceSize = new SimInstanceSize(new SimVector3D(1, 1, 1), new SimVector3D(99, 99, 99));
             instance.Name = "another name";
             instance.SizeTransfer = new SimInstanceSizeTransferDefinition();
             instance.State = new SimInstanceState(true, SimInstanceConnectionState.GeometryNotFound);
@@ -283,8 +282,8 @@ namespace SIMULTAN.Tests.Components
 
             var archComp = this.projectData.Components.First(x => x.Name == "ArchComp");
             var bphComp = this.projectData.Components.First(x => x.Name == "BPHComp");
-            var param1 = archComp.Parameters.First(x => x.NameTaxonomyEntry.Name == "Parameter1");
-            var param2 = bphComp.Parameters.First(x => x.NameTaxonomyEntry.Name == "Parameter2");
+            var param1 = archComp.Parameters.First(x => x.NameTaxonomyEntry.Text == "Parameter1");
+            var param2 = bphComp.Parameters.First(x => x.NameTaxonomyEntry.Text == "Parameter2");
 
             //Instance outside of tree
             //It's not possible to edit parameters before the instance has been added to the component
@@ -294,7 +293,7 @@ namespace SIMULTAN.Tests.Components
             Assert.ThrowsException<AccessDeniedException>(() => { instance.InstanceParameterValuesPersistent[param1] = 99.9; });
 
             //Instance in writable component
-            instance = new SimComponentInstance(SimInstanceType.NetworkNode);
+            instance = new SimComponentInstance();
             bphComp.Instances.Add(instance);
             instance.InstanceParameterValuesPersistent[param2] = 99.9;
         }
@@ -305,8 +304,8 @@ namespace SIMULTAN.Tests.Components
 
             var archComp = this.projectData.Components.First(x => x.Name == "ArchComp");
             var bphComp = this.projectData.Components.First(x => x.Name == "BPHComp");
-            var param1 = archComp.Parameters.First(x => x.NameTaxonomyEntry.Name == "Parameter1");
-            var param2 = bphComp.Parameters.First(x => x.NameTaxonomyEntry.Name == "Parameter2");
+            var param1 = archComp.Parameters.First(x => x.NameTaxonomyEntry.Text == "Parameter1");
+            var param2 = bphComp.Parameters.First(x => x.NameTaxonomyEntry.Text == "Parameter2");
 
             //Instance outside of tree
             //It's not possible to edit parameters before the instance has been added to the component
@@ -317,7 +316,7 @@ namespace SIMULTAN.Tests.Components
             instance.InstanceParameterValuesTemporary[param1] = 99.9;
 
             //Instance in writable component
-            instance = new SimComponentInstance(SimInstanceType.NetworkNode);
+            instance = new SimComponentInstance();
             bphComp.Instances.Add(instance);
             instance.InstanceParameterValuesTemporary[param2] = 99.9;
         }
@@ -332,7 +331,7 @@ namespace SIMULTAN.Tests.Components
             var network = this.projectData.NetworkManager.NetworkRecord.First(x => x.Name == "Network");
             var edge = network.ContainedEdges.Values.First(x => x.Name == "Edge 4");
 
-            var instance = new SimComponentInstance(edge, new Point(0, 0));
+            var instance = new SimComponentInstance(edge);
             nodeComponent.Instances.Add(instance);
 
             this.projectData.Components.Remove(nodeComponent);

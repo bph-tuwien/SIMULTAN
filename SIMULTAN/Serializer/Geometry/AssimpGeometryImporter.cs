@@ -1,5 +1,6 @@
 ﻿using Assimp;
 using SIMULTAN.Data.Geometry;
+using SIMULTAN.Data.SimMath;
 using SIMULTAN.Excel;
 using System;
 using System.Collections.Generic;
@@ -54,16 +55,16 @@ namespace SIMULTAN.Serializer.Geometry
                     foreach (var aMesh in aScene.Meshes)
                     {
                         var indexOffset = result.Vertices.Count;
-                        result.Vertices.AddRange(aMesh.Vertices.Select(x => new System.Windows.Media.Media3D.Point3D(x.X, x.Y, x.Z)));
+                        result.Vertices.AddRange(aMesh.Vertices.Select(x => new SimPoint3D(x.X, x.Y, x.Z)));
                         if (aMesh.HasNormals)
                         {
-                            result.Normals.AddRange(aMesh.Normals.Select(x => new System.Windows.Media.Media3D.Vector3D(x.X, x.Y, x.Z)));
+                            result.Normals.AddRange(aMesh.Normals.Select(x => new Data.SimMath.SimVector3D(x.X, x.Y, x.Z)));
                         }
                         else
                         {
                             for (var i = 0; i < aMesh.Vertices.Count; i++)
                             {
-                                result.Normals.Add(new System.Windows.Media.Media3D.Vector3D(0, 0, 0));
+                                result.Normals.Add(new Data.SimMath.SimVector3D(0, 0, 0));
                             }
                         }
                         result.Indices.AddRange(new List<int>(aMesh.GetIndices()).Select(x => x + indexOffset));
@@ -74,9 +75,9 @@ namespace SIMULTAN.Serializer.Geometry
             {
                 throw new GeometryImporterException(path, e);
             }
-            catch (FileNotFoundException e)
+            catch (FileNotFoundException)
             {
-                throw e;
+                throw;
             }
 
             return result;

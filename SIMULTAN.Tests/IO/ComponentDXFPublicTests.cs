@@ -2,21 +2,19 @@
 using SIMULTAN.Data;
 using SIMULTAN.Data.Assets;
 using SIMULTAN.Data.Components;
+using SIMULTAN.Data.SimMath;
 using SIMULTAN.Data.Taxonomy;
 using SIMULTAN.Data.Users;
 using SIMULTAN.Projects;
 using SIMULTAN.Serializer.CODXF;
 using SIMULTAN.Serializer.DXF;
 using SIMULTAN.Tests.Properties;
-using SIMULTAN.Tests.Util;
 using SIMULTAN.Tests.TestUtils;
+using SIMULTAN.Utils.Files;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Media;
+
 
 namespace SIMULTAN.Tests.IO
 {
@@ -44,12 +42,12 @@ namespace SIMULTAN.Tests.IO
                 Name = "C1",
                 Description = "",
                 IsAutomaticallyGenerated = false,
-                CurrentSlot = new SimTaxonomyEntryReference(costTax),
-                ComponentColor = Color.FromArgb(230, 100, 10, 20),
+                ComponentColor = SimColor.FromArgb(230, 100, 10, 20),
                 InstanceType = SimInstanceType.AttributesFace,
                 Visibility = SimComponentVisibility.AlwaysVisible,
                 SortingType = SimComponentContentSorting.ByName,
             };
+            c1.Slots.Add(new SimTaxonomyEntryReference(costTax));
 
             var c2 = new SimComponent()
             {
@@ -57,13 +55,13 @@ namespace SIMULTAN.Tests.IO
                 Name = "C2",
                 Description = "",
                 IsAutomaticallyGenerated = false,
-                CurrentSlot = new SimTaxonomyEntryReference(costTax),
-                ComponentColor = Color.FromArgb(230, 100, 10, 20),
+                ComponentColor = SimColor.FromArgb(230, 100, 10, 20),
                 InstanceType = SimInstanceType.AttributesFace,
                 Visibility = SimComponentVisibility.VisibleInProject,
                 SortingType = SimComponentContentSorting.ByName,
             };
-            c1.Components.Add(new SimChildComponentEntry(new SimSlot(new SimTaxonomyEntryReference(c2.CurrentSlot), "1"), c2));
+            c2.Slots.Add(new SimTaxonomyEntryReference(costTax));
+            c1.Components.Add(new SimChildComponentEntry(new SimSlot(new SimTaxonomyEntryReference(c2.Slots[0]), "1"), c2));
 
             var c3 = new SimComponent()
             {
@@ -71,12 +69,12 @@ namespace SIMULTAN.Tests.IO
                 Name = "C3",
                 Description = "",
                 IsAutomaticallyGenerated = false,
-                CurrentSlot = new SimTaxonomyEntryReference(costTax),
-                ComponentColor = Color.FromArgb(230, 100, 10, 20),
+                ComponentColor = SimColor.FromArgb(230, 100, 10, 20),
                 InstanceType = SimInstanceType.AttributesFace,
                 Visibility = SimComponentVisibility.VisibleInProject,
                 SortingType = SimComponentContentSorting.ByName,
             };
+            c3.Slots.Add(new SimTaxonomyEntryReference(costTax));
 
             projectData.Components.Add(c1);
             projectData.Components.Add(c3);
@@ -89,7 +87,7 @@ namespace SIMULTAN.Tests.IO
             projectData.AssetManager.AddResourceEntry(f1);
 
             ResourceDirectoryEntry f2 = new ResourceDirectoryEntry(projectData.AssetManager,
-                SimUserRole.BUILDING_PHYSICS, "F1\\F2", false, 2, false)
+                SimUserRole.BUILDING_PHYSICS, Path.Join("F1", "F2"), false, 2, false)
             {
                 Visibility = SimComponentVisibility.VisibleInProject
             };
@@ -117,35 +115,35 @@ namespace SIMULTAN.Tests.IO
             projectData.AssetManager.AddResourceEntry(f5);
 
             ContainedResourceFileEntry d1 = new ContainedResourceFileEntry(projectData.AssetManager,
-                SimUserRole.BUILDING_PHYSICS, "F1\\F2\\D1.txt", false, 3, false)
+                SimUserRole.BUILDING_PHYSICS, Path.Join("F1", "F2", "D1.txt"), false, 3, false)
             {
                 Visibility = SimComponentVisibility.AlwaysVisible
             };
             projectData.AssetManager.AddResourceEntry(d1, f2);
 
             ContainedResourceFileEntry d2 = new ContainedResourceFileEntry(projectData.AssetManager,
-                SimUserRole.BUILDING_PHYSICS, "F1\\D2.txt", false, 4, false)
+                SimUserRole.BUILDING_PHYSICS, Path.Join("F1", "D2.txt"), false, 4, false)
             {
                 Visibility = SimComponentVisibility.VisibleInProject
             };
             projectData.AssetManager.AddResourceEntry(d2, f2);
 
             ContainedResourceFileEntry d3 = new ContainedResourceFileEntry(projectData.AssetManager,
-                SimUserRole.BUILDING_PHYSICS, "F3\\D3.txt", false, 6, false)
+                SimUserRole.BUILDING_PHYSICS, Path.Join("F3", "D3.txt"), false, 6, false)
             {
                 Visibility = SimComponentVisibility.VisibleInProject
             };
             projectData.AssetManager.AddResourceEntry(d3, f3);
 
             ContainedResourceFileEntry d4 = new ContainedResourceFileEntry(projectData.AssetManager,
-                SimUserRole.BUILDING_PHYSICS, "F4\\D4.txt", false, 8, false)
+                SimUserRole.BUILDING_PHYSICS, Path.Join("F4", "D4.txt"), false, 8, false)
             {
                 Visibility = SimComponentVisibility.VisibleInProject
             };
             projectData.AssetManager.AddResourceEntry(d4, f4);
 
             ContainedResourceFileEntry d5 = new ContainedResourceFileEntry(projectData.AssetManager,
-                SimUserRole.BUILDING_PHYSICS, "F5\\D5.txt", false, 10, false)
+                SimUserRole.BUILDING_PHYSICS, Path.Join("F5", "D5.txt"), false, 10, false)
             {
                 Visibility = SimComponentVisibility.VisibleInProject
             };
@@ -206,6 +204,8 @@ namespace SIMULTAN.Tests.IO
         public void WritePublicComponentFile()
         {
             ExtendedProjectData data = CreateTestData(workingDirectory);
+            Guid guid = new Guid("98478ed1-d3f4-4873-95b6-412e5e23aac4");
+            data.SetCallingLocation(new DummyReferenceLocation(guid));
 
             string exportedString = null;
             using (MemoryStream stream = new MemoryStream())

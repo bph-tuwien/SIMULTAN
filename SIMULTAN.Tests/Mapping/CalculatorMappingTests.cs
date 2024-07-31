@@ -12,7 +12,7 @@ namespace SIMULTAN.Tests.Mapping
     [TestClass]
     public class CalculatorMappingTests : BaseProjectTest
     {
-        private static readonly FileInfo testProject = new FileInfo(@".\CalculatorTestsProject.simultan");
+        private static readonly FileInfo testProject = new FileInfo(@"./CalculatorTestsProject.simultan");
 
         [TestMethod]
         public void CtorTest()
@@ -282,18 +282,18 @@ namespace SIMULTAN.Tests.Mapping
             Dictionary<SimDoubleParameter, SimDoubleParameter> paramMapping = new Dictionary<SimDoubleParameter, SimDoubleParameter>();
             foreach (var param in testData.dataComp.Parameters.OfType<SimDoubleParameter>())
             {
-                paramMapping.Add(param, data2Comp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == param.NameTaxonomyEntry.Name));
+                paramMapping.Add(param, data2Comp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Text == param.NameTaxonomyEntry.Text));
             }
 
             string[] testNames = new string[] { "a", "b" };
             for (int i = 0; i < testMapping.InputMapping.Count; ++i)
             {
                 Assert.AreEqual(testData.dataComp, testMapping.InputMapping[i].DataParameter.Component);
-                Assert.AreEqual(testNames[i], testMapping.InputMapping[i].DataParameter.NameTaxonomyEntry.Name);
+                Assert.AreEqual(testNames[i], testMapping.InputMapping[i].DataParameter.NameTaxonomyEntry.Text);
             }
             Assert.AreEqual(1, testMapping.OutputMapping.Count);
             Assert.AreEqual(testData.dataComp, testMapping.OutputMapping[0].DataParameter.Component);
-            Assert.AreEqual("result", testMapping.OutputMapping[0].DataParameter.NameTaxonomyEntry.Name);
+            Assert.AreEqual("result", testMapping.OutputMapping[0].DataParameter.NameTaxonomyEntry.Text);
 
             var exchangedMapping = testMapping.ExchangeDataParameter(paramMapping);
 
@@ -301,11 +301,11 @@ namespace SIMULTAN.Tests.Mapping
             {
                 var mapping = exchangedMapping.InputMapping[i];
                 Assert.AreEqual(data2Comp, mapping.DataParameter.Component);
-                Assert.AreEqual(testNames[i], mapping.DataParameter.NameTaxonomyEntry.Name);
+                Assert.AreEqual(testNames[i], mapping.DataParameter.NameTaxonomyEntry.Text);
             }
             Assert.AreEqual(1, exchangedMapping.OutputMapping.Count);
             Assert.AreEqual(data2Comp, exchangedMapping.OutputMapping[0].DataParameter.Component);
-            Assert.AreEqual("result", exchangedMapping.OutputMapping[0].DataParameter.NameTaxonomyEntry.Name);
+            Assert.AreEqual("result", exchangedMapping.OutputMapping[0].DataParameter.NameTaxonomyEntry.Text);
         }
 
 
@@ -346,7 +346,7 @@ namespace SIMULTAN.Tests.Mapping
             });
 
             var invalidParam = projectData.Components.First(x => x.Name == "Other")
-                .Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "Output_NotValid");
+                .Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Text == "Output_NotValid");
 
             Assert.ThrowsException<ArgumentException>(() =>
             {
@@ -395,7 +395,7 @@ namespace SIMULTAN.Tests.Mapping
             });
 
             var invalidParam = projectData.Components.First(x => x.Name == "Other")
-                .Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "Output_NotValid");
+                .Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Text == "Output_NotValid");
 
             Assert.ThrowsException<ArgumentException>(() =>
             {
@@ -415,7 +415,7 @@ namespace SIMULTAN.Tests.Mapping
             var dataComp = projectData.Components.First(x => x.Name == "SimpleData");
             var calcComp = projectData.Components.First(x => x.Name == "SimpleCalc");
 
-            var resultParam = dataComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "result");
+            var resultParam = dataComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Text == "result");
             Assert.AreEqual(0.0, resultParam.Value);
 
             dataComp.EvaluateAllMappings();
@@ -431,7 +431,7 @@ namespace SIMULTAN.Tests.Mapping
             var calcComp = projectData.Components.First(x => x.Name == "SimpleCalc");
 
             var resultParam = dataComp.Components.First(x => x.Component != null && x.Component.Name == "SubResult").Component
-                .Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "result");
+                .Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Text == "result");
             Assert.AreEqual(0.0, resultParam.Value);
 
             dataComp.EvaluateAllMappings();
@@ -447,7 +447,7 @@ namespace SIMULTAN.Tests.Mapping
             var calcComp = projectData.Components.First(x => x.Name == "ComplexCalc");
 
             var resultParam = dataComp.Components.First(x => x.Component != null && x.Component.Name == "SubResult").Component
-                .Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "result");
+                .Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Text == "result");
             Assert.AreEqual(0.0, resultParam.Value);
 
             dataComp.EvaluateAllMappings();
@@ -493,12 +493,12 @@ namespace SIMULTAN.Tests.Mapping
 
             var inputMapping = new List<CalculatorMapping.MappingParameterTuple>
             {
-                new CalculatorMapping.MappingParameterTuple(dataComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "a"), calcComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "a")),
-                new CalculatorMapping.MappingParameterTuple(dataComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "b"), calcComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "b")),
+                new CalculatorMapping.MappingParameterTuple(dataComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Text == "a"), calcComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Text == "a")),
+                new CalculatorMapping.MappingParameterTuple(dataComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Text == "b"), calcComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Text == "b")),
             };
             var outputMapping = new List<CalculatorMapping.MappingParameterTuple>
             {
-                new CalculatorMapping.MappingParameterTuple(dataComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "result"), calcComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "result")),
+                new CalculatorMapping.MappingParameterTuple(dataComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Text == "result"), calcComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Text == "result")),
             };
 
             return (

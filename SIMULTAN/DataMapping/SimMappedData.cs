@@ -9,16 +9,71 @@ using System.Threading.Tasks;
 namespace SIMULTAN.DataMapping
 {
     /// <summary>
+    /// The type of warning that the DataMapping produced
+    /// </summary>
+    public enum SimDataMappingWarningType
+    {
+        /// <summary>
+        /// A cell that has previously been written is overwritten by another rule
+        /// </summary>
+        DataOverriden
+    }
+
+    /// <summary>
+    /// Stores information about a warning produced by the DataMapping
+    /// </summary>
+    public class SimDataMappingWarning
+    {
+        /// <summary>
+        /// The type of the warning
+        /// </summary>
+        public SimDataMappingWarningType Type { get; }
+        /// <summary>
+        /// The rule which produced the warning
+        /// </summary>
+        public ISimDataMappingRuleBase Rule { get; }
+        /// <summary>
+        /// The name of the worksheet in which the warning was produced (only if applicable)
+        /// </summary>
+        public string SheetName { get; }
+        /// <summary>
+        /// The index of the cell in which the warning was produced (only if applicable)
+        /// </summary>
+        public RowColumnIndex Index { get; }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SimDataMappingWarning"/> class
+        /// </summary>
+        /// <param name="type">The type of the warning</param>
+        /// <param name="rule">The rule which produced the warning</param>
+        /// <param name="sheetName">The name of the worksheet in which the warning was produced (only if applicable)</param>
+        /// <param name="index">The index of the cell in which the warning was produced (only if applicable)</param>
+        public SimDataMappingWarning(SimDataMappingWarningType type, ISimDataMappingRuleBase rule, string sheetName, RowColumnIndex index)
+        {
+            this.Type = type;
+            this.Rule = rule;
+            this.SheetName = sheetName;
+            this.Index = index;
+        }
+    }
+
+    /// <summary>
     /// Stores mapped results from a <see cref="SimDataMappingTool"/>.
     /// </summary>
     public class SimMappedData
     {
         /// <summary>
+        /// Stores all warnings that were produced during the mapping
+        /// </summary>
+        public IEnumerable<SimDataMappingWarning> Warnings => warnings;
+        private List<SimDataMappingWarning> warnings { get; } = new List<SimDataMappingWarning>();
+
+        /// <summary>
         /// The mapped data
         /// The key stores the name of the worksheet into which the data has been mapped.
         /// The value stores the data of one worksheet, with the row/column as index.
         /// </summary>
-        public Dictionary<string, Dictionary<IntIndex2D, object>> Data { get; } = new Dictionary<string, Dictionary<IntIndex2D, object>>();
+        public Dictionary<string, Dictionary<RowColumnIndex, object>> Data { get; } = new Dictionary<string, Dictionary<RowColumnIndex, object>>();
 
         /// <summary>
         /// Adds an entry to the data
@@ -26,14 +81,20 @@ namespace SIMULTAN.DataMapping
         /// <param name="sheet">Name of the worksheet</param>
         /// <param name="position">Index inside the worksheet</param>
         /// <param name="data">The data to write into the worksheet</param>
-        public void AddData(string sheet, IntIndex2D position, object data)
+        /// <param name="source">The rule which adds the data</param>
+        public void AddData(string sheet, RowColumnIndex position, object data, ISimDataMappingRuleBase source)
         {
             if (!Data.TryGetValue(sheet, out var sheetData))
             {
-                sheetData = new Dictionary<IntIndex2D, object>();
+                sheetData = new Dictionary<RowColumnIndex, object>();
                 Data.Add(sheet, sheetData);
             }
 
+            if (sheetData.ContainsKey(position))
+            {
+                if (warnings.Count < 100) //Just to make sure that there aren't infinite many errors
+                    warnings.Add(new SimDataMappingWarning(SimDataMappingWarningType.DataOverriden, source, sheet, position));
+            }
             sheetData[position] = data;
         }
         /// <summary>
@@ -42,7 +103,7 @@ namespace SIMULTAN.DataMapping
         /// <param name="sheetName">Name of the worksheet</param>
         /// <param name="existingTable">When set to Null, a new table is created. When a valid instance is supplied, the data in the table is updated</param>
         /// <returns>Depending on the existingTable parameter, either a new table or the existing table</returns>
-        public SimMultiValueBigTable ConverToTable(string sheetName, SimMultiValueBigTable existingTable = null)
+        public SimMultiValueBigTable ConvertToTable(string sheetName, SimMultiValueBigTable existingTable = null)
         {
             if (this.Data.TryGetValue(sheetName, out var sheetData))
             {
@@ -50,8 +111,8 @@ namespace SIMULTAN.DataMapping
                 int maxRow = 0, maxColumn = 0;
                 foreach (var entry in sheetData.Keys)
                 {
-                    maxColumn = Math.Max(maxColumn, entry.X);
-                    maxRow = Math.Max(maxRow, entry.Y);
+                    maxColumn = Math.Max(maxColumn, entry.Column);
+                    maxRow = Math.Max(maxRow, entry.Row);
                 }
 
                 List<List<object>> tableData = new List<List<object>>(maxRow + 1);
@@ -75,7 +136,7 @@ namespace SIMULTAN.DataMapping
                 //Move data to table data
                 foreach (var entry in sheetData)
                 {
-                    tableData[entry.Key.Y][entry.Key.X] = entry.Value;
+                    tableData[entry.Key.Row][entry.Key.Column] = entry.Value;
                 }
 
                 if (existingTable == null)

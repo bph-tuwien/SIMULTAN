@@ -49,5 +49,14 @@ namespace SIMULTAN.Data.Components
 
             return new double[0, 0];
         }
+
+        /// <inheritdoc/>
+        public override SimMultiValueExpression Clone()
+        {
+            return new SimMultiValueExpressionUnary(Operation)
+            {
+                Operand = Operand.Clone(),
+            };
+        }
     }
 }

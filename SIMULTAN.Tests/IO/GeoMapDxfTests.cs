@@ -1,12 +1,13 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SIMULTAN.Data.Assets;
+using SIMULTAN.Data.SimMath;
 using SIMULTAN.Data.SitePlanner;
 using SIMULTAN.Projects;
 using SIMULTAN.Serializer.DXF;
 using SIMULTAN.Serializer.GMDXF;
 using SIMULTAN.Tests.Properties;
-using SIMULTAN.Tests.Util;
 using SIMULTAN.Tests.TestUtils;
+using SIMULTAN.Tests.Util;
 using System;
 using System.IO;
 using System.Linq;
@@ -17,7 +18,7 @@ namespace SIMULTAN.Tests.IO
     [TestClass]
     public class GeoMapDxfTests : BaseProjectTest
     {
-        private static readonly FileInfo testProject = new FileInfo(@".\SiteplannerTest.simultan");
+        private static readonly FileInfo testProject = new FileInfo(@"./SiteplannerTest.simultan");
         private ResourceFileEntry mapRes;
 
         private ExtendedProjectData CreateProjectData()
@@ -211,8 +212,8 @@ namespace SIMULTAN.Tests.IO
             var gmap = new GeoMap(null);
             data.SitePlannerManager.GeoMaps.Add(gmap);
 
-            var gref1 = new ImageGeoReference(new System.Windows.Point(0.6, 0.3), new System.Windows.Media.Media3D.Point3D(10.0, 20.0, 30.0));
-            var gref2 = new ImageGeoReference(new System.Windows.Point(0.5, 0.8), new System.Windows.Media.Media3D.Point3D(40.0, 50.0, 60.0));
+            var gref1 = new ImageGeoReference(new SimPoint(0.6, 0.3), new SimPoint3D(10.0, 20.0, 30.0));
+            var gref2 = new ImageGeoReference(new SimPoint(0.5, 0.8), new SimPoint3D(40.0, 50.0, 60.0));
 
             gmap.GeoReferences.Add(gref1);
             gmap.GeoReferences.Add(gref2);

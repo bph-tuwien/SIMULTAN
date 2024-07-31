@@ -5,7 +5,7 @@ PARAMETER
 900
 99
 1001
-Parameter X
+key
 1002
 Unit
 1003

@@ -1,13 +1,14 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SIMULTAN.Data;
+using SIMULTAN.Data.Taxonomy;
 using SIMULTAN.Projects;
 using SIMULTAN.Serializer.CODXF;
 using SIMULTAN.Serializer.DXF;
 using SIMULTAN.Tests.Properties;
-using SIMULTAN.Tests.Util;
 using SIMULTAN.Tests.TestUtils;
 using System;
 using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace SIMULTAN.Tests.IO
@@ -23,6 +24,7 @@ namespace SIMULTAN.Tests.IO
             ExtendedProjectData data = CreateTestData();
 
             string exportedString = null;
+            var entries = data.Taxonomies.SelectMany(t => t.Entries);
             using (MemoryStream stream = new MemoryStream())
             {
                 using (DXFStreamWriter writer = new DXFStreamWriter(stream, true))
@@ -38,6 +40,198 @@ namespace SIMULTAN.Tests.IO
             }
 
             AssertUtil.AreEqualMultiline(Properties.Resources.DXFSerializer_Write, exportedString);
+        }
+
+        [TestMethod]
+        public void ReadComponentFileV27()
+        {
+            Guid guid = Guid.Parse("98478ed1-d3f4-4873-95b6-412e5e23aac4");
+            var otherGuid = Guid.Parse("da7d8f7c-8eec-423b-b127-9d6e17f52522");
+
+            ExtendedProjectData projectData = new ExtendedProjectData();
+            projectData.SetCallingLocation(new DummyReferenceLocation(guid));
+            projectData.AssetManager.WorkingDirectory = workingDirectory.FullName;
+            projectData.AssetManager.PathsToResourceFiles.Add(linkDirectory.FullName);
+
+
+            var tax = new SimTaxonomy("BaseTax");
+            var baseTaxonomyEntry = new SimTaxonomyEntry("BaseEnumTaxEntry", "BaseTaxEntry");
+            tax.Entries.Add(baseTaxonomyEntry);
+            projectData.Taxonomies.Add(tax);
+
+
+            HierarchicalProject.LoadDefaultTaxonomies(projectData);
+            using (DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_ReadCODXFV27)))
+            {
+                var info = new DXFParserInfo(guid, projectData);
+                info.FileVersion = 27;
+                ComponentDxfIO.Read(reader, info);
+            }
+
+            projectData.Components.RestoreDefaultTaxonomyReferences();
+
+            //Resources
+            ComponentDXFResourceTests.CheckAssetManager(projectData.AssetManager);
+            ComponentDXFNetworkTests.CheckNetworks(projectData, guid);
+
+            var instanceNode = projectData.NetworkManager.NetworkRecord[0].ContainedNodes[2];
+            ComponentDXFComponentTests.CheckComponents(9, projectData, guid, otherGuid, instanceNode);
+            ComponentDXFUserComponentListTests.CheckUserLists(projectData);
+
+            Assert.AreEqual(0, projectData.ValueMappings.Count);
+        }
+
+        [TestMethod]
+        public void ReadComponentFileV26()
+        {
+            Guid guid = Guid.Parse("98478ed1-d3f4-4873-95b6-412e5e23aac4");
+            var otherGuid = Guid.Parse("da7d8f7c-8eec-423b-b127-9d6e17f52522");
+
+            ExtendedProjectData projectData = new ExtendedProjectData();
+            projectData.SetCallingLocation(new DummyReferenceLocation(guid));
+            projectData.AssetManager.WorkingDirectory = workingDirectory.FullName;
+            projectData.AssetManager.PathsToResourceFiles.Add(linkDirectory.FullName);
+
+
+            var tax = new SimTaxonomy("BaseTax");
+            var baseTaxonomyEntry = new SimTaxonomyEntry("BaseEnumTaxEntry", "BaseTaxEntry");
+            tax.Entries.Add(baseTaxonomyEntry);
+            projectData.Taxonomies.Add(tax);
+
+
+            HierarchicalProject.LoadDefaultTaxonomies(projectData);
+            using (DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_ReadCODXFV26)))
+            {
+                var info = new DXFParserInfo(guid, projectData);
+                info.FileVersion = 26;
+                ComponentDxfIO.Read(reader, info);
+            }
+
+            projectData.Components.RestoreDefaultTaxonomyReferences();
+
+            //Resources
+            ComponentDXFResourceTests.CheckAssetManager(projectData.AssetManager);
+            ComponentDXFNetworkTests.CheckNetworks(projectData, guid);
+
+            var instanceNode = projectData.NetworkManager.NetworkRecord[0].ContainedNodes[2];
+            ComponentDXFComponentTests.CheckComponents(9, projectData, guid, otherGuid, instanceNode);
+            ComponentDXFUserComponentListTests.CheckUserLists(projectData);
+
+            Assert.AreEqual(0, projectData.ValueMappings.Count);
+        }
+
+        [TestMethod]
+        public void ReadComponentFileV25()
+        {
+            Guid guid = Guid.Parse("98478ed1-d3f4-4873-95b6-412e5e23aac4");
+            var otherGuid = Guid.Parse("da7d8f7c-8eec-423b-b127-9d6e17f52522");
+
+            ExtendedProjectData projectData = new ExtendedProjectData();
+            projectData.SetCallingLocation(new DummyReferenceLocation(guid));
+            projectData.AssetManager.WorkingDirectory = workingDirectory.FullName;
+            projectData.AssetManager.PathsToResourceFiles.Add(linkDirectory.FullName);
+
+
+            var tax = new SimTaxonomy("BaseTax");
+            var baseTaxonomyEntry = new SimTaxonomyEntry("BaseEnumTaxEntry", "BaseTaxEntry");
+            tax.Entries.Add(baseTaxonomyEntry);
+            projectData.Taxonomies.Add(tax);
+
+
+            HierarchicalProject.LoadDefaultTaxonomies(projectData);
+            using (DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_ReadCODXFV25)))
+            {
+                var info = new DXFParserInfo(guid, projectData);
+                ComponentDxfIO.Read(reader, info);
+            }
+
+            projectData.Components.RestoreDefaultTaxonomyReferences();
+
+            //Resources
+            ComponentDXFResourceTests.CheckAssetManager(projectData.AssetManager);
+            ComponentDXFNetworkTests.CheckNetworks(projectData, guid);
+
+            var instanceNode = projectData.NetworkManager.NetworkRecord[0].ContainedNodes[2];
+            ComponentDXFComponentTests.CheckComponents(9, projectData, guid, otherGuid, instanceNode);
+            ComponentDXFUserComponentListTests.CheckUserLists(projectData);
+
+            Assert.AreEqual(0, projectData.ValueMappings.Count);
+        }
+
+        [TestMethod]
+        public void ReadComponentFileV21()
+        {
+            Guid guid = Guid.Parse("98478ed1-d3f4-4873-95b6-412e5e23aac4");
+            var otherGuid = Guid.Parse("da7d8f7c-8eec-423b-b127-9d6e17f52522");
+
+            ExtendedProjectData projectData = new ExtendedProjectData();
+            projectData.SetCallingLocation(new DummyReferenceLocation(guid));
+            projectData.AssetManager.WorkingDirectory = workingDirectory.FullName;
+            projectData.AssetManager.PathsToResourceFiles.Add(linkDirectory.FullName);
+
+
+            var tax = new SimTaxonomy("BaseTax");
+            var baseTaxonomyEntry = new SimTaxonomyEntry("BaseEnumTaxEntry", "BaseTaxEntry");
+            tax.Entries.Add(baseTaxonomyEntry);
+            projectData.Taxonomies.Add(tax);
+
+
+            HierarchicalProject.LoadDefaultTaxonomies(projectData);
+            using (DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_ReadCODXFV21)))
+            {
+                var info = new DXFParserInfo(guid, projectData);
+                ComponentDxfIO.Read(reader, info);
+            }
+
+            projectData.Components.RestoreDefaultTaxonomyReferences();
+
+            //Resources
+            ComponentDXFResourceTests.CheckAssetManager(projectData.AssetManager);
+            ComponentDXFNetworkTests.CheckNetworks(projectData, guid);
+
+            var instanceNode = projectData.NetworkManager.NetworkRecord[0].ContainedNodes[2];
+            ComponentDXFComponentTests.CheckComponents(9, projectData, guid, otherGuid, instanceNode);
+            ComponentDXFUserComponentListTests.CheckUserLists(projectData);
+
+            Assert.AreEqual(0, projectData.ValueMappings.Count);
+        }
+
+        [TestMethod]
+        public void ReadComponentFileV19()
+        {
+            Guid guid = Guid.Parse("98478ed1-d3f4-4873-95b6-412e5e23aac4");
+            var otherGuid = Guid.Parse("da7d8f7c-8eec-423b-b127-9d6e17f52522");
+
+            ExtendedProjectData projectData = new ExtendedProjectData();
+            projectData.SetCallingLocation(new DummyReferenceLocation(guid));
+            projectData.AssetManager.WorkingDirectory = workingDirectory.FullName;
+            projectData.AssetManager.PathsToResourceFiles.Add(linkDirectory.FullName);
+
+
+            var tax = new SimTaxonomy("BaseTax");
+            var baseTaxonomyEntry = new SimTaxonomyEntry("BaseEnumTaxEntry", "BaseTaxEntry");
+            tax.Entries.Add(baseTaxonomyEntry);
+            projectData.Taxonomies.Add(tax);
+
+
+            HierarchicalProject.LoadDefaultTaxonomies(projectData);
+            using (DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_ReadCODXFV19)))
+            {
+                var info = new DXFParserInfo(guid, projectData);
+                ComponentDxfIO.Read(reader, info);
+            }
+
+            projectData.Components.RestoreDefaultTaxonomyReferences();
+
+            //Resources
+            ComponentDXFResourceTests.CheckAssetManager(projectData.AssetManager);
+            ComponentDXFNetworkTests.CheckNetworks(projectData, guid);
+
+            var instanceNode = projectData.NetworkManager.NetworkRecord[0].ContainedNodes[2];
+            ComponentDXFComponentTests.CheckComponents(9, projectData, guid, otherGuid, instanceNode);
+            ComponentDXFUserComponentListTests.CheckUserLists(projectData);
+
+            Assert.AreEqual(0, projectData.ValueMappings.Count);
         }
 
         [TestMethod]
@@ -71,7 +265,7 @@ namespace SIMULTAN.Tests.IO
             ComponentDXFNetworkTests.CheckNetworks(projectData, guid);
 
             var instanceNode = projectData.NetworkManager.NetworkRecord[0].ContainedNodes[2];
-            ComponentDXFComponentTests.CheckComponents(projectData, guid, otherGuid, instanceNode);
+            ComponentDXFComponentTests.CheckComponents(2, projectData, guid, otherGuid, instanceNode);
             ComponentDXFUserComponentListTests.CheckUserLists(projectData);
             ComponentDXFSimNetworkTests.CheckTestData(projectData);
             ComponentDXFValueMappingTests.CheckTestData(projectData);
@@ -102,7 +296,7 @@ namespace SIMULTAN.Tests.IO
             ComponentDXFNetworkTests.CheckNetworks(projectData, guid);
 
             var instanceNode = projectData.NetworkManager.NetworkRecord[0].ContainedNodes[2];
-            ComponentDXFComponentTests.CheckComponents(projectData, guid, otherGuid, instanceNode);
+            ComponentDXFComponentTests.CheckComponents(2, projectData, guid, otherGuid, instanceNode);
             ComponentDXFUserComponentListTests.CheckUserLists(projectData);
             ComponentDXFSimNetworkTests.CheckTestData(projectData);
 
@@ -134,7 +328,7 @@ namespace SIMULTAN.Tests.IO
             ComponentDXFNetworkTests.CheckNetworks(projectData, guid);
 
             var instanceNode = projectData.NetworkManager.NetworkRecord[0].ContainedNodes[2];
-            ComponentDXFComponentTests.CheckComponents(projectData, guid, otherGuid, instanceNode);
+            ComponentDXFComponentTests.CheckComponents(2, projectData, guid, otherGuid, instanceNode);
             ComponentDXFUserComponentListTests.CheckUserLists(projectData);
 
             Assert.AreEqual(0, projectData.ValueMappings.Count);

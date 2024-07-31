@@ -1,4 +1,5 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using SIMULTAN.Data.SimMath;
 using SIMULTAN.Data.MultiValues;
 using SIMULTAN.Tests.TestUtils;
 using System;
@@ -6,55 +7,55 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Windows.Media.Media3D;
+
 
 namespace SIMULTAN.Tests.Values
 {
     [TestClass]
     public class SimMultiValueFunctionGraphTests
     {
-        private static List<List<Point3D>> testPoints = new List<List<Point3D>>()
+        private static List<List<SimPoint3D>> testPoints = new List<List<SimPoint3D>>()
         {
-            new List<Point3D>
+            new List<SimPoint3D>
             {
-                new Point3D(0,0,0), new Point3D(0.5,0,0), new Point3D(1,0.5,0)
+                new SimPoint3D(0,0,0), new SimPoint3D(0.5,0,0), new SimPoint3D(1,0.5,0)
             },
-            new List<Point3D>
+            new List<SimPoint3D>
             {
-                new Point3D(0,1,0), new Point3D(0.25,0,0), new Point3D(0.5,1,0), new Point3D(1, 0.6, 0)
+                new SimPoint3D(0,1,0), new SimPoint3D(0.25,0,0), new SimPoint3D(0.5,1,0), new SimPoint3D(1, 0.6, 0)
             },
-            new List<Point3D>
+            new List<SimPoint3D>
             {
-                new Point3D(0, 0, 0), new Point3D(1, 0, 0), new Point3D(0.75, 1, 0), new Point3D(0, 1, 0)
+                new SimPoint3D(0, 0, 0), new SimPoint3D(1, 0, 0), new SimPoint3D(0.75, 1, 0), new SimPoint3D(0, 1, 0)
             },
-            new List<Point3D>
+            new List<SimPoint3D>
             {
-                new Point3D(0, 0, 0), new Point3D(1, 0.5, 0), new Point3D(0.75, 1, 0), new Point3D(0, 1, 0)
+                new SimPoint3D(0, 0, 0), new SimPoint3D(1, 0.5, 0), new SimPoint3D(0.75, 1, 0), new SimPoint3D(0, 1, 0)
             },
-            new List<Point3D>
+            new List<SimPoint3D>
             {
 
             },
-            new List<Point3D>
+            new List<SimPoint3D>
             {
-                new Point3D(0.5, 0.5, 0)
+                new SimPoint3D(0.5, 0.5, 0)
             }
         };
 
-        public static (string name, List<Point3D> points) TestData(int pointSet, double sizeX, double SizeY, int z)
+        public static (string name, List<SimPoint3D> points) TestData(int pointSet, double sizeX, double SizeY, int z)
         {
-            var points = testPoints[pointSet].Select(x => new Point3D(x.X * sizeX, x.Y * SizeY, z)).ToList();
+            var points = testPoints[pointSet].Select(x => new SimPoint3D(x.X * sizeX, x.Y * SizeY, z)).ToList();
             return (string.Format("graph_{0}_{1}", pointSet, z), points);
         }
 
-        public static (SimMultiValueFunctionGraph graph, (string name, List<Point3D> points) data) TestDataGraph(int pointSet, double sizeX, double SizeY, int z)
+        public static (SimMultiValueFunctionGraph graph, (string name, List<SimPoint3D> points) data) TestDataGraph(int pointSet, double sizeX, double SizeY, int z)
         {
             var data = TestData(pointSet, sizeX, SizeY, z);
             return (new SimMultiValueFunctionGraph(data.name, data.points), data);
         }
 
 
-        public static void CheckTestData(SimMultiValueFunctionGraph graph, (string name, List<Point3D> points) data)
+        public static void CheckTestData(SimMultiValueFunctionGraph graph, (string name, List<SimPoint3D> points) data)
         {
             Assert.AreEqual(data.name, graph.Name);
 
@@ -116,8 +117,8 @@ namespace SIMULTAN.Tests.Values
             var data = TestDataGraph(0, 2, 2, 0);
             var eventCounter = new CollectionChangedEventCounter(data.graph.Points);
 
-            data.data.points.Add(new Point3D(3, 3, 0));
-            data.graph.Points.Add(new Point3D(3, 3, 0));
+            data.data.points.Add(new SimPoint3D(3, 3, 0));
+            data.graph.Points.Add(new SimPoint3D(3, 3, 0));
             CheckTestData(data.graph, data.data);
             eventCounter.AssertEventCount(1);
         }
@@ -127,8 +128,8 @@ namespace SIMULTAN.Tests.Values
             var data = TestDataGraph(0, 2, 2, 0);
             var eventCounter = new CollectionChangedEventCounter(data.graph.Points);
 
-            data.data.points.Insert(1, new Point3D(3, 3, 0));
-            data.graph.Points.Insert(1, new Point3D(3, 3, 0));
+            data.data.points.Insert(1, new SimPoint3D(3, 3, 0));
+            data.graph.Points.Insert(1, new SimPoint3D(3, 3, 0));
             CheckTestData(data.graph, data.data);
             eventCounter.AssertEventCount(1);
         }
@@ -149,8 +150,8 @@ namespace SIMULTAN.Tests.Values
             var data = TestDataGraph(0, 2, 2, 0);
             var eventCounter = new CollectionChangedEventCounter(data.graph.Points);
 
-            data.data.points[1] = new Point3D(3, 3, 0);
-            data.graph.Points[1] = new Point3D(3, 3, 0);
+            data.data.points[1] = new SimPoint3D(3, 3, 0);
+            data.graph.Points[1] = new SimPoint3D(3, 3, 0);
             CheckTestData(data.graph, data.data);
             eventCounter.AssertEventCount(1);
         }
@@ -166,13 +167,13 @@ namespace SIMULTAN.Tests.Values
                 new List<SimMultiValueFunctionGraph> { graphData.graph });
 
             //Not clamped
-            graphData.data.points.Add(new Point3D(2, 3, 0));
-            graphData.graph.Points.Add(new Point3D(2, 3, 0));
+            graphData.data.points.Add(new SimPoint3D(2, 3, 0));
+            graphData.graph.Points.Add(new SimPoint3D(2, 3, 0));
             CheckTestData(graphData.graph, graphData.data);
 
             //Clamped
-            graphData.data.points.Add(new Point3D(3, 3, 0));
-            graphData.graph.Points.Add(new Point3D(5, 6, 0));
+            graphData.data.points.Add(new SimPoint3D(3, 3, 0));
+            graphData.graph.Points.Add(new SimPoint3D(5, 6, 0));
             CheckTestData(graphData.graph, graphData.data);
         }
         [TestMethod]
@@ -185,13 +186,13 @@ namespace SIMULTAN.Tests.Values
                 new List<SimMultiValueFunctionGraph> { graphData.graph });
 
             //Not clamped
-            graphData.data.points.Insert(1, new Point3D(2, 3, 0));
-            graphData.graph.Points.Insert(1, new Point3D(2, 3, 0));
+            graphData.data.points.Insert(1, new SimPoint3D(2, 3, 0));
+            graphData.graph.Points.Insert(1, new SimPoint3D(2, 3, 0));
             CheckTestData(graphData.graph, graphData.data);
 
             //Clamped
-            graphData.data.points.Insert(1, new Point3D(3, 3, 0));
-            graphData.graph.Points.Insert(1, new Point3D(5, 6, 0));
+            graphData.data.points.Insert(1, new SimPoint3D(3, 3, 0));
+            graphData.graph.Points.Insert(1, new SimPoint3D(5, 6, 0));
             CheckTestData(graphData.graph, graphData.data);
         }
         [TestMethod]
@@ -204,13 +205,13 @@ namespace SIMULTAN.Tests.Values
                 new List<SimMultiValueFunctionGraph> { graphData.graph });
 
             //Not clamped
-            graphData.data.points[1] = new Point3D(2, 3, 0);
-            graphData.graph.Points[1] = new Point3D(2, 3, 0);
+            graphData.data.points[1] = new SimPoint3D(2, 3, 0);
+            graphData.graph.Points[1] = new SimPoint3D(2, 3, 0);
             CheckTestData(graphData.graph, graphData.data);
 
             //Clamped
-            graphData.data.points[2] = new Point3D(3, 3, 0);
-            graphData.graph.Points[2] = new Point3D(5, 6, 0);
+            graphData.data.points[2] = new SimPoint3D(3, 3, 0);
+            graphData.graph.Points[2] = new SimPoint3D(5, 6, 0);
             CheckTestData(graphData.graph, graphData.data);
         }
 
@@ -221,26 +222,26 @@ namespace SIMULTAN.Tests.Values
             var graphData = TestDataGraph(0, 2, 2, 0);
 
             //Sample left of leftmost point
-            var sample = graphData.graph.ClosestPoint(new Point3D(-3, 0, 0));
-            AssertUtil.AreEqual(new Point3D(0, 0, 0), sample.closestPoint);
+            var sample = graphData.graph.ClosestPoint(new SimPoint3D(-3, 0, 0));
+            AssertUtil.AreEqual(new SimPoint3D(0, 0, 0), sample.closestPoint);
             AssertUtil.AssertDoubleEqual(3, sample.distance);
             AssertUtil.AssertDoubleEqual(0, sample.value);
 
             //Sample right of rightmost point
-            sample = graphData.graph.ClosestPoint(new Point3D(4, 0, 0));
-            AssertUtil.AreEqual(new Point3D(2, 1, 0), sample.closestPoint);
+            sample = graphData.graph.ClosestPoint(new SimPoint3D(4, 0, 0));
+            AssertUtil.AreEqual(new SimPoint3D(2, 1, 0), sample.closestPoint);
             AssertUtil.AssertDoubleEqual(Math.Sqrt(2 * 2 + 1 * 1), sample.distance);
             AssertUtil.AssertDoubleEqual(1, sample.value);
 
             //Sample on graph
-            sample = graphData.graph.ClosestPoint(new Point3D(1.5, 0.5, 0));
-            AssertUtil.AreEqual(new Point3D(1.5, 0.5, 0), sample.closestPoint);
+            sample = graphData.graph.ClosestPoint(new SimPoint3D(1.5, 0.5, 0));
+            AssertUtil.AreEqual(new SimPoint3D(1.5, 0.5, 0), sample.closestPoint);
             AssertUtil.AssertDoubleEqual(0, sample.distance);
             AssertUtil.AssertDoubleEqual(0.5, sample.value);
 
             //Sample next to graph
-            sample = graphData.graph.ClosestPoint(new Point3D(1.4, 0.6, 0));
-            AssertUtil.AreEqual(new Point3D(1.5, 0.5, 0), sample.closestPoint);
+            sample = graphData.graph.ClosestPoint(new SimPoint3D(1.4, 0.6, 0));
+            AssertUtil.AreEqual(new SimPoint3D(1.5, 0.5, 0), sample.closestPoint);
             AssertUtil.AssertDoubleEqual(Math.Sqrt(0.1 * 0.1 + 0.1 * 0.1), sample.distance);
             AssertUtil.AssertDoubleEqual(0.5, sample.value);
         }
@@ -250,8 +251,8 @@ namespace SIMULTAN.Tests.Values
             var graphData = TestDataGraph(4, 2, 2, 0);
 
             //Sample left of leftmost point
-            var sample = graphData.graph.ClosestPoint(new Point3D(0, 0, 0));
-            AssertUtil.AreEqual(new Point3D(double.NaN, double.NaN, double.NaN), sample.closestPoint);
+            var sample = graphData.graph.ClosestPoint(new SimPoint3D(0, 0, 0));
+            AssertUtil.AreEqual(new SimPoint3D(double.NaN, double.NaN, double.NaN), sample.closestPoint);
             AssertUtil.AssertDoubleEqual(double.NaN, sample.distance);
             AssertUtil.AssertDoubleEqual(double.NaN, sample.value);
         }
@@ -261,8 +262,8 @@ namespace SIMULTAN.Tests.Values
             var graphData = TestDataGraph(0, 2, 2, 0);
 
             //Sample left of leftmost point
-            var sample = graphData.graph.ClosestPoint(new Point3D(0, 0, 2.0));
-            AssertUtil.AreEqual(new Point3D(double.NaN, double.NaN, double.NaN), sample.closestPoint);
+            var sample = graphData.graph.ClosestPoint(new SimPoint3D(0, 0, 2.0));
+            AssertUtil.AreEqual(new SimPoint3D(double.NaN, double.NaN, double.NaN), sample.closestPoint);
             AssertUtil.AssertDoubleEqual(double.NaN, sample.distance);
             AssertUtil.AssertDoubleEqual(double.NaN, sample.value);
         }
@@ -272,8 +273,8 @@ namespace SIMULTAN.Tests.Values
             var graphData = TestDataGraph(5, 2, 2, 0);
 
             //Sample left of leftmost point
-            var sample = graphData.graph.ClosestPoint(new Point3D(0, 0, 0));
-            AssertUtil.AreEqual(new Point3D(1, 1, 0), sample.closestPoint);
+            var sample = graphData.graph.ClosestPoint(new SimPoint3D(0, 0, 0));
+            AssertUtil.AreEqual(new SimPoint3D(1, 1, 0), sample.closestPoint);
             AssertUtil.AssertDoubleEqual(Math.Sqrt(2), sample.distance);
             AssertUtil.AssertDoubleEqual(1, sample.value);
         }

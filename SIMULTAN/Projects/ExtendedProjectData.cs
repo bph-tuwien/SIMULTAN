@@ -1,9 +1,12 @@
 ﻿using SIMULTAN.Data;
 using SIMULTAN.Data.Assets;
+using SIMULTAN.Utils;
 using SIMULTAN.Utils.Files;
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 
@@ -16,29 +19,23 @@ namespace SIMULTAN.Projects
     {
         #region PROPERTIES: Owning project
 
-        /// <inheritdoc />
-        public override IReferenceLocation Owner => this.Project;
-
         /// <summary>
         /// The project owning all managers. It can be set only once.
         /// </summary>
         public HierarchicalProject Project
         {
-            get { return this.project; }
+            get { return this.Owner as HierarchicalProject; }
             internal set
             {
-                if (this.project != null)
+                if (this.Owner is HierarchicalProject project)
                 {
                     //Remove from old project
-                    this.project.AllProjectDataManagers = null;
+                    project.AllProjectDataManagers = null;
                 }
 
-                this.project = value;
-
-                this.SetCallingLocation(value);
+                this.Owner = value;
             }
         }
-        private HierarchicalProject project;
 
         #endregion
 
@@ -47,11 +44,11 @@ namespace SIMULTAN.Projects
         /// <summary>
         /// All watchers of the fallback paths of the asset managers (paths used by linked resources).
         /// </summary>
-        private Dictionary<FileSystemWatcher, List<string>> assetManagerFallbackWatchers;
+        private Dictionary<FileSystemWatcher, List<string>> assetManagerFallbackWatchers = new Dictionary<FileSystemWatcher, List<string>>();
         /// <summary>
         /// All watchers of lost linked files.
         /// </summary>
-        private Dictionary<LinkedResourceFileEntry, FileSystemWatcher> assetManagerMissingLinkWatchers;
+        private Dictionary<LinkedResourceFileEntry, FileSystemWatcher> assetManagerMissingLinkWatchers = new Dictionary<LinkedResourceFileEntry, FileSystemWatcher>();
 
 
         #region .CTOR
@@ -59,14 +56,19 @@ namespace SIMULTAN.Projects
         /// <summary>
         /// Initializes all data managers and attaches their respective event handlers.
         /// </summary>
-        public ExtendedProjectData() : base()
+        /// <param name="synchronizationContext">Synchronization context used to run events on the main thread for thread safety.</param>
+        /// <param name="dispatcherTimer">Dispatcher timer factory used for the OffsetSurfaceGenerator.</param>
+        public ExtendedProjectData(ISynchronizeInvoke synchronizationContext, IDispatcherTimerFactory dispatcherTimer) 
+            : base(synchronizationContext, dispatcherTimer)
         {
             this.AssetManager.PathsToResourceFiles.CollectionChanged += AssetManager_PathsToResourceFiles_CollectionChanged;
             this.AssetManager.UpToDate += AssetManager_UpToDate;
-
-            this.assetManagerFallbackWatchers = new Dictionary<FileSystemWatcher, List<string>>();
-            this.assetManagerMissingLinkWatchers = new Dictionary<LinkedResourceFileEntry, FileSystemWatcher>();
         }
+
+        /// <summary>
+        /// Initializes all data managers and attaches their respective event handlers.
+        /// </summary>
+        public ExtendedProjectData() : this(new UnsyncedSynchronizationContext(), new SystemTimerFactory()) { }
 
         #endregion
 
@@ -81,7 +83,7 @@ namespace SIMULTAN.Projects
             base.Clear();
 
             this.ReleaseAssetManagerWatchers();
-            this.project = null;
+            this.Owner = null;
         }
 
         #endregion
@@ -148,26 +150,30 @@ namespace SIMULTAN.Projects
 
         private void AddWatcherForAssetManagerPath(string _path)
         {
-            //Console.WriteLine("AddWatcherForAssetManagerPath called by \"{0}\"", _path);
+            //Debug.WriteLine("AddWatcherForAssetManagerPath called by \"{0}\"", _path);
             DirectoryInfo dir = new DirectoryInfo(_path);
             if (!dir.Exists) return;
 
             var duplicate = this.assetManagerFallbackWatchers.FirstOrDefault(x => string.Equals(x.Key.Path, dir.Parent.FullName, StringComparison.InvariantCultureIgnoreCase));
             if (duplicate.Key == null)
             {
-                var watcher = new FileSystemWatcher();
-                //Console.WriteLine("ADDING watcher for path \"{0}\"", dir.Parent.FullName);
+                var watcher = new FileSystemWatcher()
+                {
+                    SynchronizingObject = SynchronizationContext
+                };
+
+                //Debug.WriteLine("ADDING watcher for path \"{0}\"", dir.Parent.FullName);
                 watcher.Path = dir.Parent.FullName;
                 watcher.Renamed += Watcher_Renamed;
                 watcher.Deleted += Watcher_Deleted;
                 watcher.EnableRaisingEvents = true;
                 //watcher.IncludeSubdirectories = true;
-                //Console.WriteLine("watcher [{0}] ASSIGNED to path \"{1}\"", watcher.Path, _path);
+                //Debug.WriteLine("watcher [{0}] ASSIGNED to path \"{1}\"", watcher.Path, _path);
                 this.assetManagerFallbackWatchers.Add(watcher, new List<string> { _path });
             }
             else
             {
-                //Console.WriteLine("watcher [{0}] ASSIGNED to path \"{1}\"", duplicate.Key.Path, _path);
+                //Debug.WriteLine("watcher [{0}] ASSIGNED to path \"{1}\"", duplicate.Key.Path, _path);
                 this.assetManagerFallbackWatchers[duplicate.Key].Add(_path);
             }
         }
@@ -218,7 +224,7 @@ namespace SIMULTAN.Projects
 
             if (found.Value.Contains(rename.OldFullPath) || found.Value.Any(x => FileSystemNavigation.IsContainedIn(x, rename.OldFullPath, false)))
             {
-                Console.WriteLine("- - - Watcher [{0}]: \"{1}\" was RENAMED into \"{2}\".", watcher.Path, rename.OldFullPath, e.FullPath);
+                Debug.WriteLine("- - - Watcher [{0}]: \"{1}\" was RENAMED into \"{2}\".", watcher.Path, rename.OldFullPath, e.FullPath);
                 // communicate to the asset manager
                 int index = this.AssetManager.PathsToResourceFiles.IndexOf(rename.OldFullPath);
                 this.AssetManager.PathsToResourceFiles[index] = e.FullPath;
@@ -240,7 +246,7 @@ namespace SIMULTAN.Projects
 
             if (found.Value.Contains(e.FullPath) || found.Value.Any(x => FileSystemNavigation.IsContainedIn(x, e.FullPath, false)))
             {
-                Console.WriteLine("- - - Watcher [{0}]: \"{1}\" was DELETED.", watcher.Path, e.FullPath);
+                Debug.WriteLine("- - - Watcher [{0}]: \"{1}\" was DELETED.", watcher.Path, e.FullPath);
                 this.AssetManager.PathsToResourceFiles.Remove(e.FullPath);
             }
 
@@ -254,7 +260,7 @@ namespace SIMULTAN.Projects
         {
             if (!this.assetManagerMissingLinkWatchers.ContainsKey(_missing))
             {
-                var watcher = new FileSystemWatcher();
+                var watcher = new FileSystemWatcher() { SynchronizingObject = SynchronizationContext };
                 FileInfo file = new FileInfo(_missing.CurrentRelativePath);
                 watcher.Path = file.DirectoryName;
                 watcher.Created += LinkWatcher_Created;
@@ -299,11 +305,7 @@ namespace SIMULTAN.Projects
                 // check if the renaming / creation caused the missing linked resource to recover
                 if (string.Equals(_full_path, found.Key.CurrentRelativePath, StringComparison.InvariantCultureIgnoreCase))
                 {
-                    var dispatcher = System.Windows.Threading.Dispatcher.CurrentDispatcher;
-                    dispatcher.Invoke(() =>
-                    {
-                        this.AssetManager.ReLinkLinkedFileEntry(found.Key, new FileInfo(_full_path), true);
-                    });
+                    this.AssetManager.ReLinkLinkedFileEntry(found.Key, new FileInfo(_full_path), true);
                 }
             }
         }

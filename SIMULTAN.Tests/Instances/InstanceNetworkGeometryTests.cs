@@ -4,6 +4,7 @@ using SIMULTAN.Data.Assets;
 using SIMULTAN.Data.Components;
 using SIMULTAN.Data.FlowNetworks;
 using SIMULTAN.Data.Geometry;
+using SIMULTAN.Data.SimMath;
 using SIMULTAN.Exchange.NetworkConnectors;
 using SIMULTAN.Tests.TestUtils;
 using System;
@@ -12,15 +13,15 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Media.Media3D;
+
+
 
 namespace SIMULTAN.Tests.Instances
 {
     [TestClass]
     public class InstanceNetworkGeometryTests : BaseProjectTest
     {
-        private static readonly FileInfo instanceProject = new FileInfo(@".\InstanceTestsProject.simultan");
+        private static readonly FileInfo instanceProject = new FileInfo(@"./InstanceTestsProject.simultan");
 
         #region Convert / Replace
 
@@ -42,7 +43,7 @@ namespace SIMULTAN.Tests.Instances
             var node4 = edge3.End;
             Assert.AreEqual(0, node4.Edges_Out.Count);
 
-            var gm = projectData.ComponentGeometryExchange.ConvertNetwork(network, new FileInfo(Path.Combine(project.ProjectUnpackFolder.FullName, "test.simgeo")));
+            var gm = projectData.ComponentGeometryExchange.ConvertNetwork(network, new FileInfo(Path.Combine(project.ProjectUnpackFolder.FullName, "test.simgeo")), projectData.DispatcherTimerFactory);
             var geo = gm.Geometry;
 
             // correct number of geometry elements?
@@ -84,23 +85,23 @@ namespace SIMULTAN.Tests.Instances
             Assert.AreEqual(1, v4.ProxyGeometries.Count);
 
             // proxy geometry correct size?
-            Assert.AreEqual(new Vector3D(1.0, 1.0, 1.0), v1.ProxyGeometries[0].Size);
-            Assert.AreEqual(new Vector3D(1.0, 1.0, 1.0), v2.ProxyGeometries[0].Size);
-            Assert.AreEqual(new Vector3D(1.0, 2.0, 3.0), v3.ProxyGeometries[0].Size);
-            Assert.AreEqual(new Vector3D(1.0, 1.0, 1.0), v4.ProxyGeometries[0].Size);
+            Assert.AreEqual(new SimVector3D(1.0, 1.0, 1.0), v1.ProxyGeometries[0].Size);
+            Assert.AreEqual(new SimVector3D(1.0, 1.0, 1.0), v2.ProxyGeometries[0].Size);
+            Assert.AreEqual(new SimVector3D(1.0, 2.0, 3.0), v3.ProxyGeometries[0].Size);
+            Assert.AreEqual(new SimVector3D(1.0, 1.0, 1.0), v4.ProxyGeometries[0].Size);
             Assert.AreEqual(node1.GetInstanceSize().Max, v1.ProxyGeometries[0].Size);
             Assert.AreEqual(node2.GetInstanceSize().Max, v2.ProxyGeometries[0].Size);
             Assert.AreEqual(node3.GetInstanceSize().Max, v3.ProxyGeometries[0].Size);
             Assert.AreEqual(node4.GetInstanceSize().Max, v4.ProxyGeometries[0].Size);
 
             // check colors
-            Assert.AreEqual(System.Windows.Media.Color.FromRgb(0xFF, 0xFF, 0xFF), v1.Color.Color);
-            Assert.AreEqual(System.Windows.Media.Color.FromRgb(0xFF, 0xFF, 0xFF), v2.Color.Color);
-            Assert.AreEqual(System.Windows.Media.Color.FromRgb(0xFF, 0xFF, 0xFF), v3.Color.Color);
-            Assert.AreEqual(System.Windows.Media.Color.FromRgb(0x40, 0x40, 0x40), v4.Color.Color);
-            Assert.AreEqual(System.Windows.Media.Color.FromRgb(0xFF, 0xFF, 0xFF), e1.Color.Color);
-            Assert.AreEqual(System.Windows.Media.Color.FromRgb(0xFF, 0xFF, 0xFF), e2.Color.Color);
-            Assert.AreEqual(System.Windows.Media.Color.FromRgb(0x40, 0x40, 0x40), e3.Color.Color);
+            Assert.AreEqual(SimColor.FromRgb(0xFF, 0xFF, 0xFF), v1.Color.Color);
+            Assert.AreEqual(SimColor.FromRgb(0xFF, 0xFF, 0xFF), v2.Color.Color);
+            Assert.AreEqual(SimColor.FromRgb(0xFF, 0xFF, 0xFF), v3.Color.Color);
+            Assert.AreEqual(SimColor.FromRgb(0x40, 0x40, 0x40), v4.Color.Color);
+            Assert.AreEqual(SimColor.FromRgb(0xFF, 0xFF, 0xFF), e1.Color.Color);
+            Assert.AreEqual(SimColor.FromRgb(0xFF, 0xFF, 0xFF), e2.Color.Color);
+            Assert.AreEqual(SimColor.FromRgb(0x40, 0x40, 0x40), e3.Color.Color);
 
             // polyline edge count correct?
             Assert.AreEqual(1, e1.Edges.Count);
@@ -126,7 +127,7 @@ namespace SIMULTAN.Tests.Instances
 
             Assert.ThrowsException<ArgumentException>(() =>
             {
-                projectData.ComponentGeometryExchange.ConvertNetwork(network, new FileInfo("asdf.simgeo"));
+                projectData.ComponentGeometryExchange.ConvertNetwork(network, new FileInfo("asdf.simgeo"), projectData.DispatcherTimerFactory);
             });
         }
 
@@ -147,7 +148,7 @@ namespace SIMULTAN.Tests.Instances
             Assert.AreEqual(5, gm.Geometry.Vertices.Count);
 
             //Create node
-            var newId = network.AddNode(new Point(1000, 1000));
+            var newId = network.AddNode(new SimPoint(1000, 1000));
             var node = network.ContainedNodes.Values.First(x => x.ID.LocalId == newId);
 
             Assert.AreNotEqual(GeometricReference.Empty, node.RepresentationReference);
@@ -171,7 +172,7 @@ namespace SIMULTAN.Tests.Instances
             //Open Geometry to initialize ComponentExchange
             (var gm, var resource) = ProjectUtils.LoadGeometry("Network.simgeo", projectData, sp);
             //Create node
-            var newId = network.AddNode(new System.Windows.Point(1000, 1000));
+            var newId = network.AddNode(new SimPoint(1000, 1000));
             var node = network.ContainedNodes.Values.First(x => x.ID.LocalId == newId);
             var v = gm.Geometry.Vertices.FirstOrDefault(x => x.Id == node.RepresentationReference.GeometryId);
 
@@ -200,7 +201,7 @@ namespace SIMULTAN.Tests.Instances
             //Create edge
             var node1 = network.ContainedNodes.Values.First();
 
-            var newId = network.AddNode(new System.Windows.Point(1000, 1000));
+            var newId = network.AddNode(new SimPoint(1000, 1000));
             var node2 = network.ContainedNodes.Values.First(x => x.ID.LocalId == newId);
 
             var edgeId = network.AddEdge(node1, node2);
@@ -230,7 +231,7 @@ namespace SIMULTAN.Tests.Instances
             //Create edge
             var node1 = network.ContainedNodes.Values.First();
 
-            var newId = network.AddNode(new System.Windows.Point(1000, 1000));
+            var newId = network.AddNode(new SimPoint(1000, 1000));
             var node2 = network.ContainedNodes.Values.First(x => x.ID.LocalId == newId);
 
             var edgeId = network.AddEdge(node1, node2);
@@ -531,7 +532,7 @@ namespace SIMULTAN.Tests.Instances
             Assert.AreEqual(1.0, middleNode.Content.InstanceSize.Max.Y);
             Assert.AreEqual(1.0, middleNode.Content.InstanceSize.Max.Z);
 
-            p.Size = new Vector3D(2.0, 3.0, 4.0);
+            p.Size = new SimVector3D(2.0, 3.0, 4.0);
 
             Assert.AreEqual(2.0, middleNode.Content.InstanceSize.Max.X);
             Assert.AreEqual(3.0, middleNode.Content.InstanceSize.Max.Y);
@@ -560,7 +561,7 @@ namespace SIMULTAN.Tests.Instances
             Assert.AreEqual(1.0, middleNode.Content.InstanceSize.Max.Y);
             Assert.AreEqual(1.0, middleNode.Content.InstanceSize.Max.Z);
 
-            middleNode.Content.InstanceSize = new SimInstanceSize(new Vector3D(1, 1, 1), new Vector3D(2, 3, 4));
+            middleNode.Content.InstanceSize = new SimInstanceSize(new SimVector3D(1, 1, 1), new SimVector3D(2, 3, 4));
 
             Assert.AreEqual(2.0, p.Size.X);
             Assert.AreEqual(3.0, p.Size.Y);
@@ -591,7 +592,7 @@ namespace SIMULTAN.Tests.Instances
             Assert.AreEqual(0.0, middleNode.Content.InstanceRotation.Z);
             Assert.AreEqual(1.0, middleNode.Content.InstanceRotation.W);
 
-            p.Rotation = new Quaternion(0.1, 0.2, 0.3, 0.4);
+            p.Rotation = new SimQuaternion(0.1, 0.2, 0.3, 0.4);
 
             Assert.AreEqual(0.1, middleNode.Content.InstanceRotation.X);
             Assert.AreEqual(0.2, middleNode.Content.InstanceRotation.Y);
@@ -623,7 +624,7 @@ namespace SIMULTAN.Tests.Instances
             Assert.AreEqual(0.0, middleNode.Content.InstanceRotation.Z);
             Assert.AreEqual(1.0, middleNode.Content.InstanceRotation.W);
 
-            middleNode.Content.InstanceRotation = new Quaternion(0.1, 0.2, 0.3, 0.4);
+            middleNode.Content.InstanceRotation = new SimQuaternion(0.1, 0.2, 0.3, 0.4);
 
             Assert.AreEqual(0.1, p.Rotation.X);
             Assert.AreEqual(0.2, p.Rotation.Y);
@@ -648,10 +649,10 @@ namespace SIMULTAN.Tests.Instances
             var p = v.ProxyGeometries.First();
             var comp = projectData.Components.First(x => x.Name == "gmUnusedNode");
 
-            p.Size = new Vector3D(2.0, 3.0, 4.0);
+            p.Size = new SimVector3D(2.0, 3.0, 4.0);
 
             //Create instance
-            var instance = new SimComponentInstance(node, new Point(0, 0));
+            var instance = new SimComponentInstance(node);
             comp.Instances.Add(instance);
 
             Assert.AreEqual(2.0, node.Content.InstanceSize.Max.X);
@@ -676,10 +677,10 @@ namespace SIMULTAN.Tests.Instances
             var p = v.ProxyGeometries.First();
             var comp = projectData.Components.First(x => x.Name == "gmUnusedNode");
 
-            p.Rotation = new Quaternion(0.1, 0.2, 0.3, 0.4);
+            p.Rotation = new SimQuaternion(0.1, 0.2, 0.3, 0.4);
 
             //Create instance
-            var instance = new SimComponentInstance(node, new Point(0, 0));
+            var instance = new SimComponentInstance(node);
             comp.Instances.Add(instance);
 
             Assert.AreEqual(0.1, node.Content.InstanceRotation.X);
@@ -790,7 +791,7 @@ namespace SIMULTAN.Tests.Instances
             //Open Geometry to initialize ComponentExchange
             (var gm, var resource) = ProjectUtils.LoadGeometry("Network.simgeo", projectData, sp);
 
-            comp.Instances.Add(new SimComponentInstance(n, new Point(0, 0)));
+            comp.Instances.Add(new SimComponentInstance(n));
             var vertex = gm.Geometry.GeometryFromId(n.RepresentationReference.GeometryId);
 
             Assert.AreEqual(NetworkColors.COL_NEUTRAL, vertex.Color.Color);
@@ -829,7 +830,7 @@ namespace SIMULTAN.Tests.Instances
             //Open Geometry to initialize ComponentExchange
             (var gm, var resource) = ProjectUtils.LoadGeometry("Network.simgeo", projectData, sp);
 
-            comp.Instances.Add(new SimComponentInstance(e, new Point(0, 0)));
+            comp.Instances.Add(new SimComponentInstance(e));
 
             var polyline = (Polyline)gm.Geometry.GeometryFromId(e.RepresentationReference.GeometryId);
 

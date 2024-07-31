@@ -1,14 +1,12 @@
 ﻿using SIMULTAN.Data;
+using SIMULTAN.Data.SimMath;
 using SIMULTAN.Data.MultiValues;
 using SIMULTAN.Serializer.DXF;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Media.Media3D;
 
 namespace SIMULTAN.Serializer.MVDXF
 {
@@ -55,7 +53,7 @@ namespace SIMULTAN.Serializer.MVDXF
                     new DXFArrayEntryParserElement<double>(MultiValueSaveCode.MV_YAXIS, ParamStructCommonSaveCode.X_VALUE),
                     new DXFArrayEntryParserElement<double>(MultiValueSaveCode.MV_ZAXIS, ParamStructCommonSaveCode.X_VALUE),
 
-                    new DXFStructArrayEntryParserElement<KeyValuePair<Point3D, double>>(MultiValueSaveCode.MVDATA_ROW_COUNT,
+                    new DXFStructArrayEntryParserElement<KeyValuePair<SimPoint3D, double>>(MultiValueSaveCode.MVDATA_ROW_COUNT,
                         (data, info) => ParseField3DDataEntry(data, info),
                         new DXFEntryParserElement[]
                         {
@@ -84,10 +82,10 @@ namespace SIMULTAN.Serializer.MVDXF
                     new DXFSingleEntryParserElement<double>(MultiValueSaveCode.MV_MAX_Y),
 
                     new DXFArrayEntryParserElement<double>(MultiValueSaveCode.MV_ZAXIS, ParamStructCommonSaveCode.X_VALUE),
-                    new DXFNestedListEntryParserElement<Point3D>(MultiValueSaveCode.MVDATA_ROW_COUNT, ParamStructCommonSaveCode.W_VALUE,
+                    new DXFNestedListEntryParserElement<SimPoint3D>(MultiValueSaveCode.MVDATA_ROW_COUNT, ParamStructCommonSaveCode.W_VALUE,
                         data =>
                         {
-                            return new Point3D(
+                            return new SimPoint3D(
                                 data.Get<double>(ParamStructCommonSaveCode.X_VALUE, 0.0),
                                 data.Get<double>(ParamStructCommonSaveCode.Y_VALUE, 0.0),
                                 data.Get<double>(ParamStructCommonSaveCode.Z_VALUE, 0.0)
@@ -132,7 +130,7 @@ namespace SIMULTAN.Serializer.MVDXF
             writer.WriteVersionSection();
 
             //Data
-            writer.StartSection(ParamStructTypes.ENTITY_SECTION);
+            writer.StartSection(ParamStructTypes.ENTITY_SECTION, collection.Count());
             foreach (var mv in collection)
             {
                 if (mv is SimMultiValueBigTable bt)
@@ -149,7 +147,6 @@ namespace SIMULTAN.Serializer.MVDXF
             //EOF
             writer.WriteEOF();
         }
-
         internal static void Read(FileInfo file, DXFParserInfo parserInfo)
         {
             parserInfo.CurrentFile = file;
@@ -395,7 +392,7 @@ namespace SIMULTAN.Serializer.MVDXF
             double[] yAxis = data.Get<double[]>(MultiValueSaveCode.MV_YAXIS, null);
             double[] zAxis = data.Get<double[]>(MultiValueSaveCode.MV_ZAXIS, null);
 
-            KeyValuePair<Point3D, double>[] field = data.Get<KeyValuePair<Point3D, double>[]>(MultiValueSaveCode.MVDATA_ROW_COUNT, null);
+            KeyValuePair<SimPoint3D, double>[] field = data.Get<KeyValuePair<SimPoint3D, double>[]>(MultiValueSaveCode.MVDATA_ROW_COUNT, null);
 
             //Translate Ids
             if (info.TranslationExists(typeof(SimMultiValue), localId))
@@ -425,14 +422,14 @@ namespace SIMULTAN.Serializer.MVDXF
 
             return null;
         }
-        private static KeyValuePair<Point3D, double> ParseField3DDataEntry(DXFParserResultSet data, DXFParserInfo info)
+        private static KeyValuePair<SimPoint3D, double> ParseField3DDataEntry(DXFParserResultSet data, DXFParserInfo info)
         {
             double x = data.Get(ParamStructCommonSaveCode.X_VALUE, 0.0);
             double y = data.Get(ParamStructCommonSaveCode.Y_VALUE, 0.0);
             double z = data.Get(ParamStructCommonSaveCode.Z_VALUE, 0.0);
             double value = data.Get(ParamStructCommonSaveCode.W_VALUE, 0.0);
 
-            return new KeyValuePair<Point3D, double>(new Point3D(x, y, z), value);
+            return new KeyValuePair<SimPoint3D, double>(new SimPoint3D(x, y, z), value);
         }
 
         internal static void WriteFunctionField(SimMultiValueFunction field, DXFStreamWriter sw)
@@ -472,7 +469,7 @@ namespace SIMULTAN.Serializer.MVDXF
             });
 
             //Graphs positions
-            sw.WriteNestedList<SimMultiValueFunctionPointList, Point3D>(MultiValueSaveCode.MVDATA_ROW_COUNT,
+            sw.WriteNestedList<SimMultiValueFunctionPointList, SimPoint3D>(MultiValueSaveCode.MVDATA_ROW_COUNT,
                 field.Graphs.Select(x => x.Points), (x, ccode, lsw) =>
                 {
                     lsw.Write(ParamStructCommonSaveCode.X_VALUE, x.X);
@@ -502,11 +499,11 @@ namespace SIMULTAN.Serializer.MVDXF
             double minY = data.Get<double>(MultiValueSaveCode.MV_MIN_Y, 0.0);
             double maxY = data.Get<double>(MultiValueSaveCode.MV_MAX_Y, 0.0);
 
-            Rect bounds = new Rect(minX, minY, maxX - minX, maxY - minY);
+            SimRect bounds = new SimRect(minX, minY, maxX - minX, maxY - minY);
 
             double[] zaxis = data.Get<double[]>(MultiValueSaveCode.MV_ZAXIS, new double[] { });
 
-            List<List<Point3D>> graphPoints = data.Get<List<List<Point3D>>>(MultiValueSaveCode.MVDATA_ROW_COUNT, new List<List<Point3D>>());
+            List<List<SimPoint3D>> graphPoints = data.Get<List<List<SimPoint3D>>>(MultiValueSaveCode.MVDATA_ROW_COUNT, new List<List<SimPoint3D>>());
             string[] graphNames = data.Get<string[]>(MultiValueSaveCode.MV_ROW_NAMES, new string[] { });
 
             //Translate Ids

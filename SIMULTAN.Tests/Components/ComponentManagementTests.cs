@@ -12,15 +12,15 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows;
+
 
 namespace SIMULTAN.Tests.Components
 {
     [TestClass]
     public class ComponentManagementTests : BaseProjectTest
     {
-        private static readonly FileInfo emptyProject = new FileInfo(@".\EmptyProject.simultan");
-        private static readonly FileInfo accessProject = new FileInfo(@".\ComponentAccessTestsProject.simultan");
+        private static readonly FileInfo emptyProject = new FileInfo(@"./EmptyProject.simultan");
+        private static readonly FileInfo accessProject = new FileInfo(@"./ComponentAccessTestsProject.simultan");
 
         #region Operations
 

@@ -65,7 +65,7 @@ namespace SIMULTAN.Serializer.PADXF
             writer.WriteVersionSection();
 
             //Data
-            writer.StartSection(ParamStructTypes.ENTITY_SECTION);
+            writer.StartSection(ParamStructTypes.ENTITY_SECTION, parameters.Count());
 
             foreach (var parameter in parameters)
             {
@@ -77,7 +77,6 @@ namespace SIMULTAN.Serializer.PADXF
             //EOF
             writer.WriteEOF();
         }
-
         /// <summary>
         /// Reads a parameter library file and stores the result in a project data
         /// </summary>
@@ -115,7 +114,6 @@ namespace SIMULTAN.Serializer.PADXF
             foreach (var parameter in parameters.Where(x => x != null))
             {
                 parserInfo.ProjectData.ParameterLibraryManager.ParameterRecord.Add(parameter);
-                parameter.RestoreReferences(parserInfo.ProjectData.IdGenerator);
             }
 
 

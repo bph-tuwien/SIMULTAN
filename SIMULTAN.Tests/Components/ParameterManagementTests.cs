@@ -15,8 +15,8 @@ namespace SIMULTAN.Tests.Components
     [TestClass]
     public class ParameterManagementTests : BaseProjectTest
     {
-        private static readonly FileInfo parameterProject = new FileInfo(@".\ParameterTestsProject.simultan");
-        private static readonly FileInfo accessProject = new FileInfo(@".\AccessTestsProject.simultan");
+        private static readonly FileInfo parameterProject = new FileInfo(@"./ParameterTestsProject.simultan");
+        private static readonly FileInfo accessProject = new FileInfo(@"./AccessTestsProject.simultan");
 
 
         [TestMethod]
@@ -172,7 +172,7 @@ namespace SIMULTAN.Tests.Components
             var comp1 = projectData.Components.First(x => x.Name == "NotEmpty");
             var comp2 = projectData.Components.First(x => x.Name == "Empty");
 
-            var param = comp1.Parameters.First(x => x.NameTaxonomyEntry.Name == "a");
+            var param = comp1.Parameters.First(x => x.NameTaxonomyEntry.Text == "a");
             var id = param.Id;
 
             //Move to other component
@@ -190,7 +190,7 @@ namespace SIMULTAN.Tests.Components
             var comp1 = projectData.Components.First(x => x.Name == "NotEmpty");
             var comp2 = projectData.Components.First(x => x.Name == "Empty");
 
-            var param = comp1.Parameters.First(x => x.NameTaxonomyEntry.Name == "a");
+            var param = comp1.Parameters.First(x => x.NameTaxonomyEntry.Text == "a");
             var id = param.Id;
 
             //Remove from old, add to other component
@@ -213,7 +213,7 @@ namespace SIMULTAN.Tests.Components
             LoadProject(parameterProject);
             var comp1 = projectData.Components.First(x => x.Name == "NotEmpty");
 
-            var param = comp1.Parameters.First(x => x.NameTaxonomyEntry.Name == "a");
+            var param = comp1.Parameters.First(x => x.NameTaxonomyEntry.Text == "a");
             var id = param.Id;
 
             ExtendedProjectData data = new ExtendedProjectData();

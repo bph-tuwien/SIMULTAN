@@ -1,5 +1,6 @@
 ﻿using Microsoft.SqlServer.Server;
 using SIMULTAN.Data.Components;
+using SIMULTAN.Data.SimMath;
 using SIMULTAN.Data.Taxonomy;
 using SIMULTAN.Exchange;
 using SIMULTAN.Projects;
@@ -12,8 +13,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Windows;
-using System.Windows.Data;
-using System.Windows.Media.Media3D;
 
 namespace SIMULTAN.Data.Geometry
 {
@@ -154,8 +153,8 @@ namespace SIMULTAN.Data.Geometry
             /// Tracks the merge of two base geometries.
             /// a is considered the remaining one
             /// </summary>
-            /// <param name="a">One of the merged geometires. Considered as the remaining one.</param>
-            /// <param name="b">One of the merged geometires. Considered as the deleted one.</param>
+            /// <param name="a">One of the merged geometries. Considered as the remaining one.</param>
+            /// <param name="b">One of the merged geometries. Considered as the deleted one.</param>
             public void Track(T a, T b)
             {
                 var foundSetA = Tracked.FirstOrDefault(x => x.Entries.Contains(a));
@@ -476,7 +475,7 @@ namespace SIMULTAN.Data.Geometry
             {
                 var aabbs = model.Vertices.Select(x => new AABB(x)).ToList();
                 var range = AABB.Merge(aabbs);
-                vertexGrid = new AABBGrid(range.min, range.max, new Vector3D(5, 5, 5));
+                vertexGrid = new AABBGrid(range.min, range.max, new SimVector3D(5, 5, 5));
                 vertexGrid.AddRange(aabbs);
             }
 
@@ -547,8 +546,6 @@ namespace SIMULTAN.Data.Geometry
 
             foreach (var cLoop in commonLoops)
             {
-                var ordered = EdgeAlgorithms.OrderLoop(cLoop.Edges);
-
                 //Find the two sub-loops that are created by the merge, when one of the loops has 0 area, do not merge
                 var cLoopVertices = EdgeAlgorithms.OrderedVertexLoop(cLoop.Edges.Select(x => x.Edge));
                 int idxi = cLoopVertices.IndexOf(ivertex);
@@ -560,7 +557,7 @@ namespace SIMULTAN.Data.Geometry
 
                 if (!isNeighbor)
                 {
-                    var normal = new Vector3D(0, 0, 0);
+                    var normal = new SimVector3D(0, 0, 0);
                     if (cLoop.Faces.Count > 0)
                         normal = cLoop.Faces[0].Normal;
 
@@ -632,7 +629,7 @@ namespace SIMULTAN.Data.Geometry
             return false;
         }
 
-        private static double SubLoopArea(List<Vertex> vertices, int start, int end, int mod, Vector3D normal)
+        private static double SubLoopArea(List<Vertex> vertices, int start, int end, int mod, SimVector3D normal)
         {
             int realEnd = end;
             if (realEnd < start)
@@ -646,12 +643,12 @@ namespace SIMULTAN.Data.Geometry
                 var v1 = vertices[i % mod];
                 var v2 = vertices[(i + 1) % mod];
 
-                var triNorm = Vector3D.CrossProduct(v1.Position - refPoint, v2.Position - refPoint);
+                var triNorm = SimVector3D.CrossProduct(v1.Position - refPoint, v2.Position - refPoint);
                 var triArea = triNorm.Length;
                 triNorm.Normalize();
 
                 if (triArea > 0.0001)
-                    area += triNorm.Length * Math.Sign(Vector3D.DotProduct(normal, triNorm));
+                    area += triNorm.Length * Math.Sign(SimVector3D.DotProduct(normal, triNorm));
             }
 
             return Math.Abs(area / 2.0);
@@ -677,7 +674,7 @@ namespace SIMULTAN.Data.Geometry
             {
                 var aabbs = model.Edges.Select(x => new AABB(x)).ToList();
                 var range = AABB.Merge(aabbs);
-                edgeGrid = new AABBGrid(range.min, range.max, new Vector3D(5, 5, 5));
+                edgeGrid = new AABBGrid(range.min, range.max, new SimVector3D(5, 5, 5));
                 edgeGrid.AddRange(aabbs);
             }
 
@@ -770,7 +767,7 @@ namespace SIMULTAN.Data.Geometry
             {
                 var aabbs = model.Faces.Select(x => new AABB(x));
                 var range = AABB.Merge(aabbs);
-                faceGrid = new AABBGrid(range.min, range.max, new Vector3D(5, 5, 5));
+                faceGrid = new AABBGrid(range.min, range.max, new SimVector3D(5, 5, 5));
                 faceGrid.AddRange(aabbs);
             }
 
@@ -852,7 +849,9 @@ namespace SIMULTAN.Data.Geometry
                                 }
 
                                 //Remove all loops from j
-                                facej.Boundary.RemoveFromModel();
+                                facej.Boundary.Faces.Remove(facej);
+                                if (facej.Boundary.Faces.Count == 0)
+                                    facej.Boundary.RemoveFromModel();
                                 facej.RemoveFromModel();
 
                                 tracker?.Track(facei, facej);
@@ -1024,7 +1023,7 @@ namespace SIMULTAN.Data.Geometry
             {
                 var aabbs = model.Volumes.Select(x => new AABB(x)).ToList();
                 var range = AABB.Merge(aabbs);
-                volumeGrid = new AABBGrid(range.min, range.max, new Vector3D(5, 5, 5));
+                volumeGrid = new AABBGrid(range.min, range.max, new SimVector3D(5, 5, 5));
                 volumeGrid.AddRange(aabbs);
             }
 
@@ -1104,7 +1103,7 @@ namespace SIMULTAN.Data.Geometry
             {
                 var aabbs = model.Faces.Select(x => new AABB(x));
                 var range = AABB.Merge(aabbs);
-                faceGrid = new AABBGrid(range.min, range.max, new Vector3D(5, 5, 5));
+                faceGrid = new AABBGrid(range.min, range.max, new SimVector3D(5, 5, 5));
                 faceGrid.AddRange(aabbs);
             }
 
@@ -1175,7 +1174,7 @@ namespace SIMULTAN.Data.Geometry
             {
                 var aabbs = model.Edges.Select(x => new AABB(x)).ToList();
                 var range = AABB.Merge(aabbs);
-                edgeGrid = new AABBGrid(range.min, range.max, new Vector3D(5, 5, 5));
+                edgeGrid = new AABBGrid(range.min, range.max, new SimVector3D(5, 5, 5));
                 edgeGrid.AddRange(aabbs);
             }
 
@@ -1207,7 +1206,7 @@ namespace SIMULTAN.Data.Geometry
                                 if (!EdgeAlgorithms.IsOnSameLine(ei, ej, tolerance))
                                 {
                                     //Handle intersections in exactly one point
-                                    var intersectionResult = EdgeAlgorithms.EdgeEdgeIntersection(ei, ej, tolerance);
+                                    var intersectionResult = EdgeAlgorithms.EdgeEdgeIntersection(ei, ej, tolerance, tolerance);
 
                                     if (intersectionResult.isIntersecting)//Split both lines
                                     {
@@ -1300,14 +1299,14 @@ namespace SIMULTAN.Data.Geometry
             {
                 var aabbs = model.Edges.Select(x => new AABB(x)).ToList();
                 var range = AABB.Merge(aabbs);
-                edgeGrid = new AABBGrid(range.min, range.max, new Vector3D(5, 5, 5));
+                edgeGrid = new AABBGrid(range.min, range.max, new SimVector3D(5, 5, 5));
                 edgeGrid.AddRange(aabbs);
             }
             if (vertexGrid == null)
             {
                 var aabbs = model.Vertices.Select(x => new AABB(x)).ToList();
                 var range = AABB.Merge(aabbs);
-                vertexGrid = new AABBGrid(edgeGrid.Min, edgeGrid.Max, new Vector3D(5, 5, 5));
+                vertexGrid = new AABBGrid(range.min, range.max, new SimVector3D(5, 5, 5));
                 vertexGrid.AddRange(aabbs);
             }
 
@@ -1336,9 +1335,6 @@ namespace SIMULTAN.Data.Geometry
                                 {
                                     var vjbox = vertexCell[j];
                                     var vj = (Vertex)vjbox.Content;
-
-                                    if (vj.Id == 421)
-                                        Console.WriteLine("Break");
 
                                     var dt = EdgeAlgorithms.EdgePointIntersection(ei, vj.Position);
 
@@ -1434,6 +1430,11 @@ namespace SIMULTAN.Data.Geometry
             /// Only set when the exception can be attributed to a specific face
             /// </summary>
             public Face exceptionFace;
+            /// <summary>
+            /// Contains Face or EdgeLoop where the splittings has failed, but the algorithm could recover
+            /// Null when no such faces exist
+            /// </summary>
+            public List<BaseGeometry> warningGeometry;
         }
 
         /// <summary>
@@ -1455,6 +1456,7 @@ namespace SIMULTAN.Data.Geometry
             IBackgroundAlgorithmInfo backgroundInfo = null)
         {
             var result = new SplitFaceResult { success = true, exception = null, exceptionFace = null };
+            List<BaseGeometry> warningGeometry = new List<BaseGeometry>();
 
             if (backgroundInfo == null)
                 backgroundInfo = new EmptyBackgroundAlgorithmInfo();
@@ -1464,7 +1466,7 @@ namespace SIMULTAN.Data.Geometry
             {
                 List<AABB> aabbs = model.Vertices.Select(x => new AABB(x)).ToList();
                 var range = AABB.Merge(aabbs);
-                vertexGrid = new AABBGrid(range.min, range.max, new Vector3D(5, 5, 5));
+                vertexGrid = new AABBGrid(range.min, range.max, new SimVector3D(5, 5, 5));
                 vertexGrid.AddRange(aabbs);
             }
 
@@ -1478,7 +1480,7 @@ namespace SIMULTAN.Data.Geometry
                 foreach (var op in nonFaceOpenings)
                 {
                     var vertices = model.Vertices.Where(v => op.Edges.Any(pe => pe.Edge.Vertices.Contains(v)) ||
-                                                              EdgeLoopAlgorithms.Contains(op, v.Position, 0, 0.01) == GeometricRelation.Contained).ToArray();
+                                                              EdgeLoopAlgorithms.Contains(op, v.Position, 0, tolerance) == GeometricRelation.Contained).ToArray();
 
                     var edges = vertices.SelectMany(v => v.Edges.Where(e => vertices.Contains(e.Vertices[0]) && vertices.Contains(e.Vertices[1]))).Distinct().ToArray();
 
@@ -1490,29 +1492,33 @@ namespace SIMULTAN.Data.Geometry
                     var mapping = EdgeLoopAlgorithms.LoopToXYMapping(op);
                     var cycles = FindCycles(cleanedEdges, cleanedVertices, mapping, op);
 
-                    if (cycles.Count > 1)
+                    if (cycles != null)
                     {
-                        List<EdgeLoop> replaceList = new List<EdgeLoop>();
-                        int replaceCounter = 1;
-
-                        foreach (var cycle in cycles)
+                        if (cycles.Count > 1)
                         {
-                            EdgeLoop boundary = new EdgeLoop(op.Layer, string.Format(splitNameFormat, op.Name, replaceCounter), cycle)
+                            List<EdgeLoop> replaceList = new List<EdgeLoop>();
+                            int replaceCounter = 1;
+
+                            foreach (var cycle in cycles)
                             {
-                                IsVisible = op.IsVisible,
-                                Color = new DerivedColor(op.Color.Color, op.Layer, nameof(Layer.Color))
+                                EdgeLoop boundary = new EdgeLoop(op.Layer, string.Format(splitNameFormat, op.Name, replaceCounter), cycle)
                                 {
-                                    IsFromParent = op.Color.IsFromParent
-                                }
-                            };
-                            replaceList.Add(boundary);
+                                    IsVisible = op.IsVisible,
+                                    Color = new DerivedColor(op.Color)
+                                };
+                                replaceList.Add(boundary);
 
-                            replaceCounter++;
+                                replaceCounter++;
+                            }
+
+                            //Replace
+                            ReplaceHole(op, replaceList);
+                            op.RemoveFromModel();
                         }
-
-                        //Replace
-                        ReplaceHole(op, replaceList);
-                        model.EdgeLoops.Remove(op);
+                    }
+                    else
+                    {
+                        warningGeometry.Add(op);
                     }
                 }
 
@@ -1552,7 +1558,7 @@ namespace SIMULTAN.Data.Geometry
                                     if (!vertices.Contains(v) &&
                                         (
                                         fi.Boundary.Edges.Any(pe => pe.Edge.Vertices.Contains(v)) ||
-                                        FaceAlgorithms.Contains(fi, v.Position, 0, 0.01) == GeometricRelation.Contained
+                                        FaceAlgorithms.Contains(fi, v.Position, 0, tolerance) == GeometricRelation.Contained
                                         ))
                                     {
                                         vertices.Add(v);
@@ -1571,75 +1577,75 @@ namespace SIMULTAN.Data.Geometry
                         var mapping = FaceAlgorithms.FaceToXYMapping(fi);
 
                         var cycles = FindCycles(cleanedEdges, cleanedVertices, mapping, fi.Boundary);
-
-                        //remove cycles that were a hole before
-                        for (int ci = 0; ci < cycles.Count; ++ci)
+                        if (cycles != null)
                         {
-                            var cycle = cycles[ci];
-
-                            var potentialLoops = destroyedHoles.Where(x => x.Edges.Count == cycle.Count).ToList();
-                            foreach (var loop in potentialLoops)
+                            //remove cycles that were a hole before
+                            for (int ci = 0; ci < cycles.Count; ++ci)
                             {
-                                if (cycle.All(e => loop.Edges.Any(pe => pe.Edge == e)))
+                                var cycle = cycles[ci];
+
+                                var potentialLoops = destroyedHoles.Where(x => x.Edges.Count == cycle.Count).ToList();
+                                foreach (var loop in potentialLoops)
                                 {
-                                    cycles.RemoveAt(ci);
-                                    ci--;
-                                    break;
+                                    if (cycle.All(e => loop.Edges.Any(pe => pe.Edge == e)))
+                                    {
+                                        cycles.RemoveAt(ci);
+                                        ci--;
+                                        break;
+                                    }
                                 }
+                            }
+
+                            if (cycles.Count > 1)
+                            {
+                                //Create face for each cycle
+                                List<Face> replaceFaces = new List<Face>();
+                                int replaceCounter = 1;
+                                foreach (var cycle in cycles)
+                                {
+                                    EdgeLoop boundary = new EdgeLoop(fi.Layer, String.Format(splitNameFormat, fi.Name, replaceCounter), cycle)
+                                    {
+                                        IsVisible = fi.IsVisible,
+                                        Color = new DerivedColor(fi.Color)
+                                    };
+
+                                    Face face = new Face(fi.Layer, string.Format(splitNameFormat, fi.Name, replaceCounter), boundary, fi.Orientation)
+                                    {
+                                        IsVisible = fi.IsVisible,
+                                        Color = new DerivedColor(fi.Color)
+                                    };
+
+                                    //Find all openings that belong into this cycle
+                                    foreach (var hole in fi.Holes.Where(x =>
+                                        !destroyedHoles.Contains(x) &&
+                                        x.Edges.All(e => FaceAlgorithms.Contains(face, e.StartVertex.Position, tolerance, tolerance) == GeometricRelation.Contained)))
+                                    {
+                                        face.Holes.Add(hole);
+                                        hole.Faces.Add(face);
+                                    }
+
+                                    replaceFaces.Add(face);
+                                    replaceCounter++;
+                                }
+
+                                //Replace
+                                tracker?.Track(fi, replaceFaces);
+                                ReplaceFace(fi, replaceFaces);
+
+                                //Remove old face
+                                fi.Boundary.Faces.Remove(fi);
+                                if (fi.Boundary.Faces.Count == 0)
+                                    fi.Boundary.RemoveFromModel();
+
+                                fi.Holes.ForEach(x => x.Faces.Remove(fi));
+                                fi.Holes.Where(x => x.Faces.Count == 0).ForEach(x => x.RemoveFromModel());
+
+                                model.Faces.Remove(fi);
                             }
                         }
-
-                        if (cycles.Count > 1)
+                        else
                         {
-                            //Create face for each cycle
-                            List<Face> replaceFaces = new List<Face>();
-                            int replaceCounter = 1;
-                            foreach (var cycle in cycles)
-                            {
-                                EdgeLoop boundary = new EdgeLoop(fi.Layer, String.Format(splitNameFormat, fi.Name, replaceCounter), cycle)
-                                {
-                                    IsVisible = fi.IsVisible,
-                                    Color = new DerivedColor(fi.Color.Color, fi.Layer, nameof(Layer.Color))
-                                    {
-                                        IsFromParent = fi.Color.IsFromParent
-                                    }
-                                };
-
-                                Face face = new Face(fi.Layer, string.Format(splitNameFormat, fi.Name, replaceCounter), boundary, fi.Orientation)
-                                {
-                                    IsVisible = fi.IsVisible,
-                                    Color = new DerivedColor(fi.Color.Color, fi.Layer, nameof(Layer.Color))
-                                    {
-                                        IsFromParent = fi.Color.IsFromParent
-                                    }
-                                };
-
-                                //Find all openings that belong into this cycle
-                                foreach (var hole in fi.Holes.Where(x =>
-                                    !destroyedHoles.Contains(x) &&
-                                    x.Edges.All(e => FaceAlgorithms.Contains(face, e.StartVertex.Position, tolerance, tolerance) == GeometricRelation.Contained)))
-                                {
-                                    face.Holes.Add(hole);
-                                    hole.Faces.Add(face);
-                                }
-
-                                replaceFaces.Add(face);
-                                replaceCounter++;
-                            }
-
-                            //Replace
-                            tracker?.Track(fi, replaceFaces);
-                            ReplaceFace(fi, replaceFaces);
-
-                            //Remove old face
-                            fi.Boundary.Faces.Remove(fi);
-                            if (fi.Boundary.Faces.Count == 0)
-                                fi.Boundary.RemoveFromModel();
-
-                            fi.Holes.ForEach(x => x.Faces.Remove(fi));
-                            fi.Holes.Where(x => x.Faces.Count == 0).ForEach(x => x.RemoveFromModel());
-
-                            model.Faces.Remove(fi);
+                            warningGeometry.Add(fi);
                         }
 
                     }
@@ -1674,12 +1680,18 @@ namespace SIMULTAN.Data.Geometry
             model.EndBatchOperation();
 
             //Regenerate face grid
-            faceGrid = new AABBGrid(vertexGrid.Min, vertexGrid.Max, new Vector3D(5, 5, 5));
+            faceGrid = new AABBGrid(vertexGrid.Min, vertexGrid.Max, new SimVector3D(5, 5, 5));
             faceGrid.AddRange(model.Faces.Select(x => new AABB(x)));
 
             replacementTracker?.MergeWith(tracker);
 
-            result = new SplitFaceResult { success = result.success, exception = result.exception, exceptionFace = result.exceptionFace };
+            result = new SplitFaceResult
+            {
+                success = result.success,
+                exception = result.exception,
+                exceptionFace = result.exceptionFace,
+                warningGeometry = warningGeometry.Any() ? warningGeometry : null,
+            };
 
             return result;
         }
@@ -1702,7 +1714,7 @@ namespace SIMULTAN.Data.Geometry
             {
                 var aabbs = model.Faces.Select(x => new AABB(x)).ToList();
                 var range = AABB.Merge(aabbs);
-                faceGrid = new AABBGrid(range.min, range.max, new Vector3D(5, 5, 5));
+                faceGrid = new AABBGrid(range.min, range.max, new SimVector3D(5, 5, 5));
                 faceGrid.AddRange(aabbs);
             }
             HashSet<(BaseGeometry, BaseGeometry)> testsDone = new HashSet<(BaseGeometry, BaseGeometry)>();
@@ -1729,6 +1741,11 @@ namespace SIMULTAN.Data.Geometry
                                     FaceAlgorithms.Contains2D(fi, fj, 0.0, tolerance) == GeometricRelation.Contained) //Contained in face
                                 {
                                     fi.Holes.Add(fj.Boundary);
+                                    // also add hole faces to volumes to keep them consistent
+                                    foreach (var pface in fi.PFaces)
+                                    {
+                                        pface.Volume.AddFace(fj);
+                                    }
                                 }
 
                                 testsDone.Add((fi, fj));
@@ -1795,12 +1812,12 @@ namespace SIMULTAN.Data.Geometry
         }
 
 
-        private static List<List<Edge>> FindCycles(IEnumerable<Edge> edges, IEnumerable<Vertex> vertices, Matrix3D xyMapping, EdgeLoop boundary)
+        private static List<List<Edge>> FindCycles(IEnumerable<Edge> edges, IEnumerable<Vertex> vertices, SimMatrix3D xyMapping, EdgeLoop boundary)
         {
             if (edges.Count() == 0)
                 return new List<List<Edge>>();
 
-            Dictionary<Vertex, Point3D> vertex2D = new Dictionary<Vertex, Point3D>();
+            Dictionary<Vertex, SimPoint3D> vertex2D = new Dictionary<Vertex, SimPoint3D>();
             vertices.ForEach(x => vertex2D.Add(x, xyMapping.Transform(x.Position)));
 
             List<(List<Edge> cycle, double signedArea)> cycles = null;
@@ -1812,6 +1829,10 @@ namespace SIMULTAN.Data.Geometry
                 anythingReduced = false;
 
                 cycles = FindCycles(currentEdges, vertex2D);
+
+                if (!cycles.Any()) //Cycle detection failed, abort here
+                    return null;
+
                 var boundaryCycle = cycles.First(x => x.signedArea > 0);
 
                 //Eliminate external edges that are contained in the boundary cycle
@@ -1921,7 +1942,7 @@ namespace SIMULTAN.Data.Geometry
                     var errorLayer = model.Layers.FirstOrDefault(x => x.Name == errorLayerName);
                     if (errorLayer == null)
                     {
-                        errorLayer = new Layer(model, errorLayerName) { Color = new DerivedColor(System.Windows.Media.Colors.Red) };
+                        errorLayer = new Layer(model, errorLayerName) { Color = new DerivedColor(SimColor.FromRgb(255, 0, 0)) }; // red
                         model.Layers.Add(errorLayer);
                     }
 
@@ -1939,7 +1960,7 @@ namespace SIMULTAN.Data.Geometry
             return (finalVertices, finalEdges, destroyedHoles);
         }
 
-        private static List<(List<Edge> cycle, double signedArea)> FindCycles(IEnumerable<Edge> edges, Dictionary<Vertex, Point3D> mapping)
+        private static List<(List<Edge> cycle, double signedArea)> FindCycles(IEnumerable<Edge> edges, Dictionary<Vertex, SimPoint3D> mapping)
         {
             if (edges.Count() == 0)
                 return new List<(List<Edge> cycle, double signedArea)>();
@@ -1979,6 +2000,9 @@ namespace SIMULTAN.Data.Geometry
                     //Search for edges that connect to the start vertex, are not in the cycle and are not completely used
                     var nextEdgeCandidates = currentStartVertex.Edges.Where(x => !cycle.Contains(x) && edgeUsage.ContainsKey(x) && edgeUsage[x] != 2);
 
+                    if (!nextEdgeCandidates.Any()) //Cycle cannot be detected, abort
+                        return new List<(List<Edge> cycle, double signedArea)>();
+
                     var currentDirection = mapping[currentStartVertex] - mapping[lastStartVertex];
                     currentDirection.Normalize();
 
@@ -2016,7 +2040,7 @@ namespace SIMULTAN.Data.Geometry
             return cycles;
         }
 
-        private static double SignedAngle(Vector v1, Vector v2)
+        private static double SignedAngle(SimVector v1, SimVector v2)
         {
             var v1l = v1.Length;
             var v2l = v2.Length;
@@ -2033,7 +2057,7 @@ namespace SIMULTAN.Data.Geometry
             return angle;
         }
 
-        private static double SignedAreaXY(Vertex v1, Vertex v2, Func<Vertex, Point3D> mapping)
+        private static double SignedAreaXY(Vertex v1, Vertex v2, Func<Vertex, SimPoint3D> mapping)
         {
             var v1m = mapping(v1);
             var v2m = mapping(v2);

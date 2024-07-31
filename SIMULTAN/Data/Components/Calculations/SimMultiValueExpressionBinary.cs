@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SIMULTAN.Data.MultiValues;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
@@ -99,6 +100,16 @@ namespace SIMULTAN.Data.Components
             }
 
             return new double[0, 0];
+        }
+
+        /// <inheritdoc />
+        public override SimMultiValueExpression Clone()
+        {
+            return new SimMultiValueExpressionBinary(Operation)
+            {
+                Left = Left.Clone(),
+                Right = Right.Clone(),
+            };
         }
     }
 }

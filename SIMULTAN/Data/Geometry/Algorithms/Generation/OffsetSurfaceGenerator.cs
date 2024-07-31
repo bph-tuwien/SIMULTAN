@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Windows.Threading;
 
 namespace SIMULTAN.Data.Geometry
 {
@@ -44,20 +43,21 @@ namespace SIMULTAN.Data.Geometry
 
         private HashSet<Face> fastFaces;
         private GeometryModelData model;
-        private DispatcherTimer fastUpdateTimer;
+        private IDispatcherTimer fastUpdateTimer;
 
         /// <summary>
         /// Initializes a new instance of the OffsetSurfaceGenerator class
         /// </summary>
         /// <param name="model">The geometry model</param>
-        public OffsetSurfaceGenerator(GeometryModelData model)
+        /// <param name="dispatcherTimer">The dispatcher timer factory</param>
+        public OffsetSurfaceGenerator(GeometryModelData model, IDispatcherTimer dispatcherTimer)
         {
             this.model = model;
             this.algorithm = OffsetAlgorithm.Full;
             this.fastFaces = new HashSet<Face>();
-            this.fastUpdateTimer = new DispatcherTimer();
+            this.fastUpdateTimer = dispatcherTimer;
             this.fastUpdateTimer.Interval = TimeSpan.FromMilliseconds(GeometrySettings.Instance.OffsetSurfaceRecalcDelay);
-            this.fastUpdateTimer.Tick += FastUpdateTimer_Tick;
+            this.fastUpdateTimer.AddTickEventHandler(FastUpdateTimer_Tick);
         }
 
         private void FastUpdateTimer_Tick(object sender, EventArgs e)

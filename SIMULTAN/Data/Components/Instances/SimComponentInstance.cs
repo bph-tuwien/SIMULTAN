@@ -1,14 +1,15 @@
 ﻿using SIMULTAN.Data.FlowNetworks;
+using SIMULTAN.Data.SimMath;
 using SIMULTAN.Data.SimNetworks;
 using SIMULTAN.Data.Taxonomy;
 using SIMULTAN.Data.Users;
+using SIMULTAN.Exceptions;
 using SIMULTAN.Utils;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows;
-using System.Windows.Media.Media3D;
 
 namespace SIMULTAN.Data.Components
 {
@@ -49,7 +50,7 @@ namespace SIMULTAN.Data.Components
     {
         #region STATIC
 
-        private static double GetPathLength(List<Point3D> _path)
+        private static double GetPathLength(List<SimPoint3D> _path)
         {
             if (_path == null) return 0.0;
 
@@ -87,111 +88,10 @@ namespace SIMULTAN.Data.Components
         #region Placement
 
         /// <summary>
-        /// Collection for managing placements of the instance. 
-        /// Automatically set/unsets properties of the placement to ensure a valid two-way connection
-        /// </summary>
-        public class PlacementCollection : ObservableCollection<SimInstancePlacement>
-        {
-            private SimComponentInstance owner;
-
-            /// <summary>
-            /// Initializes a new instance of the PlacementCollection class
-            /// </summary>
-            /// <param name="owner">The instance to which this collection belongs</param>
-            public PlacementCollection(SimComponentInstance owner)
-            {
-                this.owner = owner;
-            }
-
-            #region Collection Implementation
-
-            /// <inheritdoc />
-            protected override void InsertItem(int index, SimInstancePlacement item)
-            {
-                if (item == null)
-                    throw new ArgumentNullException(nameof(item));
-
-                this.owner.NotifyWriteAccess();
-
-                base.InsertItem(index, item);
-                this.SetValue(item);
-
-                this.owner.OnInstanceStateChanged();
-                this.owner.NotifyChanged();
-
-                if (this.owner.Factory != null && item is SimInstancePlacementGeometry gp)
-                    this.owner.Factory.ProjectData.ComponentGeometryExchange.OnPlacementAdded(gp);
-            }
-            /// <inheritdoc />
-            protected override void RemoveItem(int index)
-            {
-                this.owner.NotifyWriteAccess();
-
-                var oldItem = this[index];
-
-                if (this.owner.Factory != null && oldItem is SimInstancePlacementGeometry gp)
-                    this.owner.Factory.ProjectData.ComponentGeometryExchange.OnPlacementRemoved(gp);
-
-                this.UnsetValue(this[index]);
-                base.RemoveItem(index);
-                this.owner.OnInstanceStateChanged();
-                this.owner.NotifyChanged();
-            }
-            /// <inheritdoc />
-            protected override void ClearItems()
-            {
-                this.owner.NotifyWriteAccess();
-
-                foreach (var pl in this)
-                {
-                    if (this.owner.Factory != null && pl is SimInstancePlacementGeometry gp)
-                        this.owner.Factory.ProjectData.ComponentGeometryExchange.OnPlacementRemoved(gp);
-                    this.UnsetValue(pl);
-                }
-
-                base.ClearItems();
-                this.owner.OnInstanceStateChanged();
-                this.owner.NotifyChanged();
-            }
-            /// <inheritdoc />
-            protected override void SetItem(int index, SimInstancePlacement item)
-            {
-                if (item == null)
-                    throw new ArgumentNullException(nameof(item));
-
-                this.owner.NotifyWriteAccess();
-
-                if (this.owner.Factory != null && this[index] is SimInstancePlacementGeometry gp)
-                    this.owner.Factory.ProjectData.ComponentGeometryExchange.OnPlacementRemoved(gp);
-
-                this.UnsetValue(this[index]);
-                base.SetItem(index, item);
-                this.SetValue(item);
-
-                this.owner.OnInstanceStateChanged();
-                this.owner.NotifyChanged();
-
-                if (this.owner.Factory != null && item is SimInstancePlacementGeometry gpNew)
-                    this.owner.Factory.ProjectData.ComponentGeometryExchange.OnPlacementAdded(gpNew);
-            }
-
-            #endregion
-
-            private void SetValue(SimInstancePlacement placement)
-            {
-                placement.Instance = this.owner;
-            }
-            private void UnsetValue(SimInstancePlacement placement)
-            {
-                placement.Instance = null;
-            }
-        }
-
-        /// <summary>
         /// Stores the placements of this instance. See specializations of the
         /// <see cref="SimInstancePlacement"/> class for potential content.
         /// </summary>
-        public PlacementCollection Placements { get; }
+        public SimInstancePlacementCollection Placements { get; }
 
         #endregion
 
@@ -201,7 +101,7 @@ namespace SIMULTAN.Data.Components
         /// Stores the orientation of the instance in the geometry.
         /// This is used to orient proxy geometry attached to this component
         /// </summary>
-		public Quaternion InstanceRotation
+		public SimQuaternion InstanceRotation
         {
             get { return this.instanceRotation; }
             set
@@ -216,7 +116,7 @@ namespace SIMULTAN.Data.Components
                 }
             }
         }
-        private Quaternion instanceRotation;
+        private SimQuaternion instanceRotation;
 
         /// <summary>
         /// Stores the size of the instance.
@@ -306,11 +206,6 @@ namespace SIMULTAN.Data.Components
         private SimInstanceState state;
 
         /// <summary>
-        /// Stores the instance type of this instance. The type has to match the <see cref="SimComponent.InstanceType"/>.
-        /// </summary>
-        public SimInstanceType InstanceType { get; }
-
-        /// <summary>
         /// Stores the component to which this instance belongs.
         /// Automatically set when the instance is added to <see cref="SimComponent.Instances"/>
         /// </summary>
@@ -375,24 +270,24 @@ namespace SIMULTAN.Data.Components
                                 if (updateParam is SimEnumParameter enumParam)
                                 {
                                     var newTaxonomyEntryRef = new SimTaxonomyEntryReference(enumParam.Value.Target);
-                                    this.InstanceParameterValuesPersistent.SetWithoutNotify(updateParam, newTaxonomyEntryRef);
+                                    this.InstanceParameterValuesPersistent[updateParam] = newTaxonomyEntryRef;
                                 }
                                 else
                                 {
-                                    this.InstanceParameterValuesPersistent.SetWithoutNotify(updateParam, updateParam.Value);
+                                    this.InstanceParameterValuesPersistent[updateParam] = updateParam.Value;
                                 }
 
                             }
                         }
-                        if (this.Component.Factory != null)
-                        {
-                            this.Component.Factory.ProjectData.ComponentGeometryExchange.OnParameterValueChanged(
-                                this.Component.Parameters.Where(x =>
-                                    x.InstancePropagationMode == SimParameterInstancePropagation.PropagateAlways ||
-                                    x.InstancePropagationMode == SimParameterInstancePropagation.PropagateIfInstance),
-                                this
-                                );
-                        }
+                        //if (this.Component.Factory != null)
+                        //{
+                        //    this.Component.Factory.ProjectData.ComponentGeometryExchange.OnParameterValueChanged(
+                        //        this.Component.Parameters.Where(x =>
+                        //            x.InstancePropagationMode == SimParameterInstancePropagation.PropagateAlways ||
+                        //            x.InstancePropagationMode == SimParameterInstancePropagation.PropagateIfInstance),
+                        //        this
+                        //        );
+                        //}
                     }
 
                     this.NotifyPropertyChanged(nameof(this.PropagateParameterChanges));
@@ -446,29 +341,20 @@ namespace SIMULTAN.Data.Components
         #region .CTOR
 
         /// <summary>
-        /// Initializes a new instance of the ComponentInstance class
+        /// Initializes a new instance of the <see cref="SimComponentInstance"/> class
         /// </summary>
-        private SimComponentInstance()
+        public SimComponentInstance()
         {
-            this.Placements = new PlacementCollection(this);
+            this.Placements = new SimInstancePlacementCollection(this);
             this.InstanceParameterValuesTemporary = new SimInstanceParameterCollectionTemporary(this);
             this.InstanceParameterValuesPersistent = new SimInstanceParameterCollectionPersistent(this);
 
-            this.InstanceType = SimInstanceType.None;
             this.InstanceSize = SimInstanceSize.Default;
             this.SizeTransfer = new SimInstanceSizeTransferDefinition();
         }
-        /// <summary>
-        /// Initializes a new instance of the ComponentInstance class
-        /// </summary>
-        /// <param name="type">The instance type</param>
-        public SimComponentInstance(SimInstanceType type) : this()
-        {
-            this.InstanceType = type;
-        }
 
         /// <summary>
-        /// Initializes a new instance of the ComponentInstance class.
+        /// Initializes a new instance of the <see cref="SimComponentInstance"/> class.
         /// 
         /// Adds a <see cref="SimInstancePlacementNetwork"/> to the <see cref="Placements"/>.
         /// The instance type is determined from the networkElements type:
@@ -476,78 +362,59 @@ namespace SIMULTAN.Data.Components
         /// For edges, <see cref="SimInstanceType.NetworkEdge"/> is used.
         /// </summary>
         /// <param name="networkElement">The network element to which a connection should be established</param>
-        /// <param name="pathOffset">Initial offset for the path. Used by subnetworks to determine the origin.</param>
-        public SimComponentInstance(SimFlowNetworkElement networkElement, Point pathOffset)
+        public SimComponentInstance(SimFlowNetworkElement networkElement)
             : this()
         {
             if (networkElement == null)
                 throw new ArgumentNullException(nameof(networkElement));
 
             this.Name = string.Format("Network Placement {0}", networkElement.Name);
-            this.InstanceType = (networkElement is SimFlowNetworkEdge) ? SimInstanceType.NetworkEdge : SimInstanceType.NetworkNode;
-            var placement = new SimInstancePlacementNetwork(networkElement);
+            var placementType = (networkElement is SimFlowNetworkEdge) ? SimInstanceType.NetworkEdge : SimInstanceType.NetworkNode;
+            var placement = new SimInstancePlacementNetwork(networkElement, placementType);
             this.Placements.Add(placement);
         }
 
         /// <summary>
-        /// Initializes a new instance of the ComponentInstance class. 
+        /// Initializes a new instance of the <see cref="SimComponentInstance"/> class. 
         /// Adds a <see cref="SimInstancePlacementSimNetwork"/> to the <see cref="Placements"/>.
         /// </summary>
-        /// <param name="simNetworkElement">The network element this instance is bound to</param>
-        public SimComponentInstance(IElementWithComponent simNetworkElement) : this()
+        /// <param name="simNetworkBlock">The network block this instance is bound to</param>
+        public SimComponentInstance(SimNetworkBlock simNetworkBlock) : this()
         {
-            if (simNetworkElement == null)
-                throw new ArgumentNullException(nameof(simNetworkElement));
+            if (simNetworkBlock == null)
+                throw new ArgumentNullException(nameof(simNetworkBlock));
 
-            string name = "";
-            if (simNetworkElement is SimNetworkBlock block)
-            {
-                name = block.Name;
-            }
-            else if (simNetworkElement is SimNetworkPort port)
-            {
-                name = port.Name;
-            }
-
-            this.Name = string.Format("SimNetwork Placement {0}", name);
-            this.InstanceType = SimInstanceType.SimNetworkBlock;
-            var placement = new SimInstancePlacementSimNetwork(simNetworkElement);
+            this.Name = string.Format("SimNetwork Placement {0}", simNetworkBlock.Name);
+            var placement = new SimInstancePlacementSimNetwork(simNetworkBlock, SimInstanceType.SimNetworkBlock);
             this.Placements.Add(placement);
 
         }
 
         /// <summary>
-        /// Creates an Instance for a SimNetwork port
+        /// Initializes a new instance of the <see cref="SimComponentInstance"/> class. 
+        /// Adds a <see cref="SimInstancePlacementSimNetwork"/> to the <see cref="Placements"/>.
         /// </summary>
-        /// <param name="port"></param>
+        /// <param name="port">The network port this instance is bound to</param>
         public SimComponentInstance(SimNetworkPort port) : this()
         {
             if (port == null)
                 throw new ArgumentNullException(nameof(port));
             this.Name = string.Format("SimNetwork Placement {0}", port.Name);
-            if (port.PortType == PortType.Input)
-            {
-                this.InstanceType = SimInstanceType.InPort;
-            }
-            else
-            {
-                this.InstanceType = SimInstanceType.OutPort;
-            }
-            var placement = new SimInstancePlacementSimNetwork(port);
+
+            SimInstanceType placementType = port.PortType == PortType.Input ? SimInstanceType.InPort : SimInstanceType.OutPort;
+            var placement = new SimInstancePlacementSimNetwork(port, placementType);
             this.Placements.Add(placement);
         }
 
-
         /// <summary>
-        /// Initializes a new instance of the ComponentInstance class.
+        /// Initializes a new instance of the <see cref="SimComponentInstance"/> class.
         /// 
         /// Adds a <see cref="SimInstancePlacementGeometry"/> to the <see cref="Placements"/>.
         /// </summary>
-        /// <param name="type">The instance type</param>
+        /// <param name="placementType">The geometry type of the placement created</param>
         /// <param name="fileId">Id (key) of the geometry file</param>
         /// <param name="geometryId">The id of the geometry itself</param>
-        /// <param name="relatedIds">A list of related ids</param>
-        public SimComponentInstance(SimInstanceType type, int fileId, ulong geometryId, IEnumerable<ulong> relatedIds) : this()
+        public SimComponentInstance(SimInstanceType placementType, int fileId, ulong geometryId) : this()
         {
             if (fileId < 0)
                 throw new ArgumentException(string.Format("{0} must be 0 or a positive integer", nameof(fileId)));
@@ -555,8 +422,7 @@ namespace SIMULTAN.Data.Components
                 throw new ArgumentException(string.Format("{0} must be 0 or a positive integer", nameof(geometryId)));
 
             this.Name = string.Format("Geometry Placement {0}:{1}", fileId, geometryId);
-            this.InstanceType = type;
-            var placement = new SimInstancePlacementGeometry(fileId, geometryId, SimInstancePlacementState.Valid, relatedIds);
+            var placement = new SimInstancePlacementGeometry(fileId, geometryId, placementType, SimInstancePlacementState.Valid);
             this.Placements.Add(placement);
         }
 
@@ -571,23 +437,21 @@ namespace SIMULTAN.Data.Components
         /// </summary>
         /// <param name="localId">The local id of the instance</param>
         /// <param name="name">The name of the instance</param>
-        /// <param name="instanceType">The instance type</param>
         /// <param name="state">The current state of the instance</param>
         /// <param name="placements">A list of placements in this instance</param>
         /// <param name="instanceRotation">Rotation of the instance</param>
         /// <param name="instanceSize">Instance size</param>
         /// <param name="sizeTransfer">Instance size transfer settings</param>
         /// <param name="propagateParamterChanges">If the parameters changes should be propagated</param>
-        /// <param name="_i_path">The path (geometric information) of the instance</param>
         /// <param name="parameterValuesPersistent">A list of all persistent parameter values present in this instance</param>
-        internal SimComponentInstance(long localId, string name, SimInstanceType instanceType, SimInstanceState state,
+        internal SimComponentInstance(long localId, string name, SimInstanceState state,
                                       IEnumerable<SimInstancePlacement> placements,
-                                       Quaternion instanceRotation,
+                                       SimQuaternion instanceRotation,
                                        SimInstanceSize instanceSize, SimInstanceSizeTransferDefinition sizeTransfer,
-                                       IEnumerable<Point3D> _i_path, List<(SimId id, string parameterName, object value)> parameterValuesPersistent, bool propagateParamterChanges)
+                                       List<(SimId id, string parameterName, object value)> parameterValuesPersistent, bool propagateParamterChanges)
             : base(new SimId(localId))
         {
-            this.Placements = new PlacementCollection(this);
+            this.Placements = new SimInstancePlacementCollection(this);
 
             this.InstanceParameterValuesTemporary = new SimInstanceParameterCollectionTemporary(this);
             this.InstanceParameterValuesPersistent = new SimInstanceParameterCollectionPersistent(this);
@@ -597,11 +461,10 @@ namespace SIMULTAN.Data.Components
             this.Name = name;
             this.State = state;
 
-            this.Placements = new PlacementCollection(this);
+            this.Placements = new SimInstancePlacementCollection(this);
             foreach (var pl in placements)
                 Placements.Add(pl);
 
-            this.InstanceType = instanceType;
             this.InstanceRotation = instanceRotation;
 
             this.InstanceSize = instanceSize.Clone();
@@ -620,39 +483,6 @@ namespace SIMULTAN.Data.Components
             if (parameter == null)
                 throw new ArgumentNullException(nameof(parameter));
 
-            // ToDo: Do you have to do somethign special if the PropagateParamterChanges property changes?
-            /*
-            if (parameter.Name == ReservedParameters.RP_INST_PROPAGATE)
-            {
-                this.PropagateParameterChanges = parameter.ValueCurrent != 0;
-
-                if (this.PropagateParameterChanges) //Make sure that all parameters are updated
-                {
-                    foreach (var updateParam in this.Component.Parameters)
-                    {
-                        if ((
-                             updateParam.InstancePropagationMode == SimParameterInstancePropagation.PropagateAlways ||
-                             updateParam.InstancePropagationMode == SimParameterInstancePropagation.PropagateIfInstance
-                            ) &&
-                            this.InstanceParameterValuesPersistent.Contains(updateParam))
-                        {
-                            this.InstanceParameterValuesPersistent.SetWithoutNotify(updateParam, updateParam.ValueCurrent);
-                        }
-                    }
-
-                    if (this.Component.Factory != null)
-                    {
-                        this.Component.Factory.ProjectData.ComponentGeometryExchange.OnParameterValueChanged(
-                            this.Component.Parameters.Where(x =>
-                                x.InstancePropagationMode == SimParameterInstancePropagation.PropagateAlways ||
-                                x.InstancePropagationMode == SimParameterInstancePropagation.PropagateIfInstance),
-                            this
-                            );
-                    }
-                }
-            }
-            */
-
             if (parameter.InstancePropagationMode == SimParameterInstancePropagation.PropagateAlways ||
                 (parameter.InstancePropagationMode == SimParameterInstancePropagation.PropagateIfInstance && this.PropagateParameterChanges))
             {
@@ -666,10 +496,11 @@ namespace SIMULTAN.Data.Components
                         {
                             newValue = new SimTaxonomyEntryReference(enumParam.Value.Target);
                         }
-                        this.InstanceParameterValuesPersistent.SetWithoutNotify(enumParam, newValue);
+                        this.InstanceParameterValuesPersistent[enumParam] = newValue;
                     }
                     else
                     {
+                        //Set with special function to prevent updating the geometry twice
                         this.InstanceParameterValuesPersistent.SetWithoutNotify(parameter, parameter.Value);
                     }
                 }
@@ -681,12 +512,9 @@ namespace SIMULTAN.Data.Components
             if (parameter == null)
                 throw new ArgumentNullException(nameof(parameter));
 
-            if (IsInstanceableParameter(parameter))
-            {
-                // add or update
-                this.InstanceParameterValuesPersistent.Add(parameter, parameter.Value);
-                this.InstanceParameterValuesTemporary.Add(parameter, parameter.Value);
-            }
+            // add or update
+            this.InstanceParameterValuesPersistent.Add(parameter, parameter.Value);
+            this.InstanceParameterValuesTemporary.Add(parameter, parameter.Value);
         }
 
         internal void RemoveParameter(SimBaseParameter parameter)
@@ -699,15 +527,6 @@ namespace SIMULTAN.Data.Components
             this.InstanceParameterValuesTemporary.Remove(parameter);
         }
 
-        /// <summary>
-        /// Excludes special parameters like triangle (instance propagation)
-        /// </summary>
-        /// <returns>True when the parameter should be placed in the InstanceParameter* lists, otherwise False</returns>
-        private static bool IsInstanceableParameter(SimBaseParameter parameter)
-        {
-            return parameter.NameTaxonomyEntry.Name != ReservedParameters.RP_INST_PROPAGATE;
-        }
-
         private void UpdateInstanceParameters(SimInstanceParameterCollection instanceValues)
         {
             HashSet<SimBaseParameter> removeKeys = instanceValues.Keys.ToHashSet();
@@ -715,14 +534,11 @@ namespace SIMULTAN.Data.Components
             //Make sure all component parameters are in instance
             foreach (var param in this.Component.Parameters)
             {
-                if (SimComponentInstance.IsInstanceableParameter(param))
+                if (!instanceValues.Contains(param))
                 {
-                    if (!instanceValues.Contains(param))
-                    {
-                        instanceValues.Add(param, param.Value);
-                    }
-                    removeKeys.Remove(param);
+                    instanceValues.Add(param, param.Value);
                 }
+                removeKeys.Remove(param);
             }
 
             //Check if additional parameters are there which should be removed
@@ -839,10 +655,23 @@ namespace SIMULTAN.Data.Components
                     }
                     else //For old files: Search for parameter by name.
                     {
-                        parameter = this.Component.Parameters.FirstOrDefault(x => x.NameTaxonomyEntry.Name == loadingData.parameterName);
+                        // lookup with taxonomy entry or text if it is a reserved one
+                        if (ReservedParameterKeys.NameToKeyLookup.TryGetValue(loadingData.parameterName, out var key))
+                        {
+                            var taxentry = this.Factory.ProjectData.Taxonomies.GetReservedParameter(key);
+                            // if the default tax entries were not restored yet, also check text
+                            parameter = this.Component.Parameters.FirstOrDefault(x =>
+                                (x.NameTaxonomyEntry.HasTaxonomyEntry && x.NameTaxonomyEntry.TaxonomyEntryReference.Target == taxentry) ||
+                                (!x.NameTaxonomyEntry.HasTaxonomyEntry && x.NameTaxonomyEntry.Text == loadingData.parameterName));
+                        }
+                        else
+                        {
+                            parameter = this.Component.Parameters.FirstOrDefault(x => !x.NameTaxonomyEntry.HasTaxonomyEntry &&
+                                x.NameTaxonomyEntry.Text == loadingData.parameterName);
+                        }
                     }
 
-                    if (parameter != null && parameter.Component == this.Component && IsInstanceableParameter(parameter))
+                    if (parameter != null && parameter.Component == this.Component)
                     {
                         if (parameter is SimEnumParameter enumParam)
                         {
@@ -878,7 +707,7 @@ namespace SIMULTAN.Data.Components
 
                 bool isRealized = false;
 
-                if (this.InstanceType == SimInstanceType.NetworkEdge)
+                if (this.Component != null && this.Component.InstanceType.HasFlag(SimInstanceType.NetworkEdge)) //Only relevant for old networks
                 {
                     isRealized = this.Placements.Any(x =>
                     {
@@ -927,7 +756,7 @@ namespace SIMULTAN.Data.Components
         /// <param name="component">The component to which the parameters should be added</param>
         internal static void AddAutoParameters(SimComponent component)
         {
-            if (component.InstanceType == SimInstanceType.NetworkEdge || component.InstanceType == SimInstanceType.NetworkNode)
+            if (component.InstanceType.HasFlag(SimInstanceType.NetworkEdge) || component.InstanceType.HasFlag(SimInstanceType.NetworkNode))
                 AddCumulativSubcomponent(component);
         }
 
@@ -937,7 +766,7 @@ namespace SIMULTAN.Data.Components
         /// <param name="component">The component to update</param>
         internal static void UpdateAutoParameters(SimComponent component)
         {
-            if (component != null && (component.InstanceType == SimInstanceType.NetworkNode || component.InstanceType == SimInstanceType.NetworkEdge))
+            if (component != null && (component.InstanceType.HasFlag(SimInstanceType.NetworkNode) || component.InstanceType.HasFlag(SimInstanceType.NetworkEdge)))
             {
                 if (component.Factory != null)
                 {
@@ -1051,7 +880,7 @@ namespace SIMULTAN.Data.Components
                 // add to the parent
                 var positionTax = component.Factory.ProjectData.Taxonomies.GetDefaultSlot(SimDefaultSlotKeys.GeometricReference);
                 var slot = component.Components.FindAvailableSlot(positionTax, "AG{0}");
-                subComponent.CurrentSlot = new SimTaxonomyEntryReference(slot.SlotBase);
+                subComponent.Slots.Add(new SimTaxonomyEntryReference(slot.SlotBase));
 
                 using (AccessCheckingDisabler.Disable(component.Factory))
                 {
@@ -1160,7 +989,7 @@ namespace SIMULTAN.Data.Components
 
         private static bool HasDoubleParam(SimComponent component, string name, string key, string unit, SimInfoFlow propagation)
         {
-            return component.Parameters.OfType<SimDoubleParameter>().Any(doubleParam => (doubleParam.NameTaxonomyEntry.Name == name || doubleParam.HasReservedTaxonomyEntry(key)) && doubleParam.Unit == unit && doubleParam.Propagation == propagation);
+            return component.Parameters.OfType<SimDoubleParameter>().Any(doubleParam => (doubleParam.NameTaxonomyEntry.Text == name || doubleParam.HasReservedTaxonomyEntry(key)) && doubleParam.Unit == unit && doubleParam.Propagation == propagation);
 
         }
 

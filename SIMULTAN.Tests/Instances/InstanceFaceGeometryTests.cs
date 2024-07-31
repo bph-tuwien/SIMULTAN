@@ -1,19 +1,20 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SIMULTAN.Data.Components;
 using SIMULTAN.Data.Geometry;
+using SIMULTAN.Data.SimMath;
 using SIMULTAN.Tests.TestUtils;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Windows.Media.Media3D;
+
 
 namespace SIMULTAN.Tests.Instances
 {
     [TestClass]
     public class InstanceFaceGeometryTests : BaseProjectTest
     {
-        private static readonly FileInfo testProject = new FileInfo(@".\GeometryInstanceTestsProject.simultan");
-        private static readonly FileInfo migrationTestProject = new FileInfo(@".\InstancePropagationMigrationTest_v10.simultan");
+        private static readonly FileInfo testProject = new FileInfo(@"./GeometryInstanceTestsProject.simultan");
+        private static readonly FileInfo migrationTestProject = new FileInfo(@"./InstancePropagationMigrationTest_v10.simultan");
 
         #region Add
 
@@ -36,7 +37,6 @@ namespace SIMULTAN.Tests.Instances
 
             var inst1 = comp.Instances[0];
             Assert.AreEqual(comp, inst1.Component);
-            Assert.AreEqual(SimInstanceType.AttributesFace, inst1.InstanceType);
             Assert.AreEqual(true, inst1.State.IsRealized);
             Assert.AreEqual(SimInstanceConnectionState.Ok, inst1.State.ConnectionState);
             Assert.AreEqual(1, inst1.Placements.Count);
@@ -54,7 +54,6 @@ namespace SIMULTAN.Tests.Instances
 
             var inst2 = comp.Instances.First(x => x != inst1);
             Assert.AreEqual(comp, inst2.Component);
-            Assert.AreEqual(SimInstanceType.AttributesFace, inst2.InstanceType);
             Assert.AreEqual(true, inst2.State.IsRealized);
             Assert.AreEqual(SimInstanceConnectionState.Ok, inst2.State.ConnectionState);
             Assert.AreEqual(1, inst2.Placements.Count);
@@ -91,7 +90,6 @@ namespace SIMULTAN.Tests.Instances
 
             var inst1 = comp.Instances[0];
             Assert.AreEqual(comp, inst1.Component);
-            Assert.AreEqual(SimInstanceType.AttributesFace, inst1.InstanceType);
             Assert.AreEqual(true, inst1.State.IsRealized);
             Assert.AreEqual(SimInstanceConnectionState.Ok, inst1.State.ConnectionState);
             Assert.AreEqual(1, inst1.Placements.Count);
@@ -109,7 +107,6 @@ namespace SIMULTAN.Tests.Instances
 
             var inst2 = comp.Instances.First(x => x != inst1);
             Assert.AreEqual(comp, inst2.Component);
-            Assert.AreEqual(SimInstanceType.AttributesFace, inst2.InstanceType);
             Assert.AreEqual(true, inst2.State.IsRealized);
             Assert.AreEqual(SimInstanceConnectionState.Ok, inst2.State.ConnectionState);
             Assert.AreEqual(1, inst2.Placements.Count);
@@ -119,31 +116,6 @@ namespace SIMULTAN.Tests.Instances
             Assert.AreEqual(floorFace.Id, geomPlacement.GeometryId);
             Assert.AreEqual(resource.Key, geomPlacement.FileId);
             Assert.AreEqual(SimInstancePlacementState.Valid, geomPlacement.State);
-        }
-
-        [TestMethod]
-        public void AddFaceInstanceParameters()
-        {
-            LoadProject(testProject);
-
-            (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
-
-            var comp = projectData.Components.First(x => x.Name == "Wall");
-            var leftFace = gm.Geometry.Faces.First(f => f.Name == "LeftWall");
-            var floorFace = gm.Geometry.Faces.First(f => f.Name == "Floor");
-
-            Assert.AreEqual(0, comp.Parameters.Count);
-
-            //Add new association
-            projectData.ComponentGeometryExchange.Associate(comp, leftFace);
-
-            Assert.AreEqual(2, comp.Parameters.Count);
-
-            var din = comp.Parameters.OfType<SimDoubleParameter>().FirstOrDefault(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_MATERIAL_COMPOSITE_D_IN));
-            var dout = comp.Parameters.OfType<SimDoubleParameter>().FirstOrDefault(x => x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_MATERIAL_COMPOSITE_D_OUT));
-
-            Assert.AreEqual(0.0, din.Value);
-            Assert.AreEqual(0.0, dout.Value);
         }
 
         [TestMethod]
@@ -225,7 +197,7 @@ namespace SIMULTAN.Tests.Instances
             var gmCopy = gm.Geometry.Clone();
             var vertex = gmCopy.Vertices.First(f => f.Id == 2);
 
-            vertex.Position = new Point3D(11.0, 0.0, 0.0);
+            vertex.Position = new SimPoint3D(11.0, 0.0, 0.0);
 
             gm.Geometry = gmCopy;
 
@@ -367,11 +339,11 @@ namespace SIMULTAN.Tests.Instances
             };
             projectData.Components.Add(comp);
 
-            var instance = new SimComponentInstance(SimInstanceType.AttributesFace);
+            var instance = new SimComponentInstance();
 
             comp.Instances.Add(instance);
 
-            var placement = new SimInstancePlacementGeometry(resource.Key, face.Id);
+            var placement = new SimInstancePlacementGeometry(resource.Key, face.Id, SimInstanceType.AttributesFace);
 
             instance.Placements.Add(placement);
 
@@ -399,9 +371,9 @@ namespace SIMULTAN.Tests.Instances
             };
             projectData.Components.Add(comp);
 
-            var instance = new SimComponentInstance(SimInstanceType.AttributesFace);
+            var instance = new SimComponentInstance();
 
-            var placement = new SimInstancePlacementGeometry(resource.Key, face.Id);
+            var placement = new SimInstancePlacementGeometry(resource.Key, face.Id, SimInstanceType.AttributesFace);
 
             instance.Placements.Add(placement);
 
@@ -427,8 +399,8 @@ namespace SIMULTAN.Tests.Instances
                 Name = "NewComp",
                 InstanceType = SimInstanceType.AttributesFace
             };
-            var instance = new SimComponentInstance(SimInstanceType.AttributesFace);
-            var placement = new SimInstancePlacementGeometry(resource.Key, face.Id);
+            var instance = new SimComponentInstance();
+            var placement = new SimInstancePlacementGeometry(resource.Key, face.Id, SimInstanceType.AttributesFace);
 
             instance.Placements.Add(placement);
             comp.Instances.Add(instance);
@@ -457,11 +429,11 @@ namespace SIMULTAN.Tests.Instances
             };
             projectData.Components.Add(comp);
 
-            var instance = new SimComponentInstance(SimInstanceType.AttributesFace);
+            var instance = new SimComponentInstance();
 
             comp.Instances.Add(instance);
 
-            var placement = new SimInstancePlacementGeometry(resourceKey, faceId);
+            var placement = new SimInstancePlacementGeometry(resourceKey, faceId, SimInstanceType.AttributesFace);
 
             instance.Placements.Add(placement);
 
@@ -739,7 +711,6 @@ namespace SIMULTAN.Tests.Instances
             projectData.ComponentGeometryExchange.GeometryInvalidated += (s, e) => eventData.Add(e.ToList());
 
             //Set propagation to false
-            // Todo: replace with component propagate parameter
             comp.Instances.ToList().ForEach(x => x.PropagateParameterChanges = false);
             Assert.AreEqual(0, eventData.Count);
 
@@ -769,8 +740,8 @@ namespace SIMULTAN.Tests.Instances
             Assert.IsNotNull(propOn);
             Assert.AreEqual(1, propOff.Instances.Count);
             Assert.AreEqual(1, propOn.Instances.Count);
-            Assert.AreEqual(false, propOff.Parameters.Any(x => x.NameTaxonomyEntry.Name == ReservedParameters.RP_INST_PROPAGATE));
-            Assert.AreEqual(false, propOn.Parameters.Any(x => x.NameTaxonomyEntry.Name == ReservedParameters.RP_INST_PROPAGATE));
+            Assert.AreEqual(false, propOff.Parameters.Any(x => x.NameTaxonomyEntry.Text == ReservedParameters.RP_INST_PROPAGATE));
+            Assert.AreEqual(false, propOn.Parameters.Any(x => x.NameTaxonomyEntry.Text == ReservedParameters.RP_INST_PROPAGATE));
             Assert.AreEqual(false, propOff.Instances[0].PropagateParameterChanges);
             Assert.AreEqual(true, propOn.Instances[0].PropagateParameterChanges);
         }

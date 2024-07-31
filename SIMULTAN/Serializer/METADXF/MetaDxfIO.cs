@@ -4,8 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SIMULTAN.Serializer.METADXF
 {
@@ -66,7 +64,7 @@ namespace SIMULTAN.Serializer.METADXF
             writer.WriteVersionSection();
 
             //Data
-            writer.StartSection(ParamStructTypes.META_SECTION);
+            writer.StartSection(ParamStructTypes.META_SECTION, -1);
 
             WriteMetaData(writer, metaData);
 

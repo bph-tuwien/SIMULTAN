@@ -36,8 +36,8 @@ namespace SIMULTAN.Data.Components
                 this.owner.RecordWriteAccess();
                 this.owner.NotifyChanged();
 
-                SetValues(item);
                 base.InsertItem(index, item);
+                SetValues(item);
 
                 this.owner.Parameters?.ForEach(x => x.UpdateState());
             }
@@ -80,8 +80,8 @@ namespace SIMULTAN.Data.Components
                 this.owner.RecordWriteAccess();
 
                 UnsetValues(oldItem);
-                SetValues(item);
                 base.SetItem(index, item);
+                SetValues(item);
 
                 this.owner.NotifyChanged();
                 this.owner.Parameters?.ForEach(x => x.UpdateState());

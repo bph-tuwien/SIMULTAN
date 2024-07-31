@@ -1,4 +1,5 @@
-﻿using SIMULTAN.Serializer.Projects;
+﻿using SIMULTAN.Serializer.GRDXF;
+using SIMULTAN.Serializer.Projects;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -42,7 +43,8 @@ namespace SIMULTAN.Projects.ManagedFiles
         /// <inheritdoc/>
         public override void Save()
         {
-            ProjectIO.SaveGeometryRelationsFile(File, ProjectData);
+            SimGeometryRelationsDxfIO.Write(File, ProjectData.GeometryRelations);
+            File.LastWriteTime = DateTime.Now;
             this.OnFileUpToDateChanged(true);
         }
     }

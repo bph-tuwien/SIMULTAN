@@ -13,7 +13,7 @@ namespace SIMULTAN.Tests.IO
     [TestClass]
     public class ProjectIOTests : BaseProjectTest
     {
-        private static readonly FileInfo v16tov17Project = new FileInfo(@".\ProjectUpgradeV16toV17.simultan");
+        private static readonly FileInfo v16tov17Project = new FileInfo(@"./ProjectUpgradeV16toV17.simultan");
 
         #region Version Specific Translations
 
@@ -70,7 +70,7 @@ namespace SIMULTAN.Tests.IO
                 ReservedParameterKeys.RP_MATERIAL_COMPOSITE_D_IN));
             Assert.IsTrue(faceComp.Parameters.Any(x => x.NameTaxonomyEntry.TaxonomyEntryReference.Target.Key ==
                 ReservedParameterKeys.RP_MATERIAL_COMPOSITE_D_OUT));
-            Assert.IsTrue(faceComp.Parameters.Any(x => x.NameTaxonomyEntry.Name == "Keeper"));
+            Assert.IsTrue(faceComp.Parameters.Any(x => x.NameTaxonomyEntry.Text == "Keeper"));
         }
 
         [TestMethod]
@@ -82,7 +82,7 @@ namespace SIMULTAN.Tests.IO
             var faceComp = root.Components.First(x => x.Component.Name == "Edge").Component;
 
             Assert.AreEqual(1, faceComp.Parameters.Count);
-            Assert.IsTrue(faceComp.Parameters.Any(x => x.NameTaxonomyEntry.Name == "Keeper"));
+            Assert.IsTrue(faceComp.Parameters.Any(x => x.NameTaxonomyEntry.Text == "Keeper"));
         }
 
         [TestMethod]
@@ -94,7 +94,7 @@ namespace SIMULTAN.Tests.IO
             var faceComp = root.Components.First(x => x.Component.Name == "Vertex").Component;
 
             Assert.AreEqual(1, faceComp.Parameters.Count);
-            Assert.IsTrue(faceComp.Parameters.Any(x => x.NameTaxonomyEntry.Name == "Keeper"));
+            Assert.IsTrue(faceComp.Parameters.Any(x => x.NameTaxonomyEntry.Text == "Keeper"));
         }
 
         #endregion

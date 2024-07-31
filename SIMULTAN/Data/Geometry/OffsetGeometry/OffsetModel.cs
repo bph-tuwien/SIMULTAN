@@ -1,9 +1,10 @@
-﻿using System;
+﻿using SIMULTAN.Data.SimMath;
+using SIMULTAN.Utils;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Windows.Media.Media3D;
 
 namespace SIMULTAN.Data.Geometry
 {
@@ -74,9 +75,10 @@ namespace SIMULTAN.Data.Geometry
         /// Initializes a new instance of the OffsetModel class
         /// </summary>
         /// <param name="model">The geometrymodel</param>
-        public OffsetModel(GeometryModelData model)
+        /// <param name="dispatcherTimer">The dispatcher timer</param>
+        public OffsetModel(GeometryModelData model, IDispatcherTimer dispatcherTimer)
         {
-            this.Generator = new OffsetSurfaceGenerator(model);
+            this.Generator = new OffsetSurfaceGenerator(model, dispatcherTimer);
             this.Model = model;
             this.Faces = new Dictionary<(Face, GeometricOrientation), OffsetFace>();
 

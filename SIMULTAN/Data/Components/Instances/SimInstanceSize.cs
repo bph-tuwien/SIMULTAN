@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Windows.Media.Media3D;
+using SIMULTAN.Data.SimMath;
 
 namespace SIMULTAN.Data.Components
 {
@@ -15,18 +15,18 @@ namespace SIMULTAN.Data.Components
         /// <summary>
         /// Minimum extents
         /// </summary>
-        public Vector3D Min { get; }
+        public SimVector3D Min { get; }
         /// <summary>
         /// Maximum extents
         /// </summary>
-        public Vector3D Max { get; }
+        public SimVector3D Max { get; }
 
         /// <summary>
         /// Returns a default size of 0s
         /// </summary>
         public static SimInstanceSize Default
         {
-            get => new SimInstanceSize(new Vector3D(), new Vector3D(1.0, 1.0, 1.0));
+            get => new SimInstanceSize(new SimVector3D(), new SimVector3D(1.0, 1.0, 1.0));
         }
 
         /// <summary>
@@ -34,7 +34,7 @@ namespace SIMULTAN.Data.Components
         /// </summary>
         /// <param name="min">Minimum extents</param>
         /// <param name="max">Maximum extents</param>
-        public SimInstanceSize(Vector3D min, Vector3D max)
+        public SimInstanceSize(SimVector3D min, SimVector3D max)
         {
             Min = min;
             Max = max;
@@ -105,8 +105,8 @@ namespace SIMULTAN.Data.Components
                 throw new ArgumentException("values has to contain exactly 6 entries");
 
             return new SimInstanceSize(
-                new Vector3D(values[0], values[1], values[2]),
-                new Vector3D(values[3], values[4], values[5])
+                new SimVector3D(values[0], values[1], values[2]),
+                new SimVector3D(values[3], values[4], values[5])
                 );
         }
     }

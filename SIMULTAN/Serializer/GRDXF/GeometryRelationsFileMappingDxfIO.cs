@@ -5,9 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SIMULTAN.Serializer.GRDXF
 {
@@ -115,7 +112,7 @@ namespace SIMULTAN.Serializer.GRDXF
         {
             writer.WriteVersionSection();
 
-            writer.StartSection(ParamStructTypes.GEOMETRY_RELATION_FILE_MAPPING_SECTION);
+            writer.StartSection(ParamStructTypes.GEOMETRY_RELATION_FILE_MAPPING_SECTION, -1);
 
             // mappings entity
             writer.Write(ParamStructCommonSaveCode.ENTITY_START, ParamStructTypes.GEOMETRY_RELATION_FILE_MAPPING);

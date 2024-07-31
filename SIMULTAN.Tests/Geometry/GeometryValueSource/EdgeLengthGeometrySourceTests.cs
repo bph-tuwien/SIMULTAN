@@ -1,21 +1,21 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SIMULTAN.Data.Components;
 using SIMULTAN.Data.Geometry;
+using SIMULTAN.Data.SimMath;
 using SIMULTAN.Data.Taxonomy;
 using SIMULTAN.Tests.TestUtils;
-using SIMULTAN.Projects;
 using SIMULTAN.Utils;
 using System;
 using System.IO;
 using System.Linq;
-using System.Windows.Media.Media3D;
+
 
 namespace SIMULTAN.Tests.Geometry.GeometryValueSource
 {
     [TestClass]
     public class EdgeLengthGeometrySourceTests : BaseProjectTest
     {
-        private static readonly FileInfo geometrySourceProject = new FileInfo(@".\GeometryValueSourceTests.simultan");
+        private static readonly FileInfo geometrySourceProject = new FileInfo(@"./GeometryValueSourceTests.simultan");
 
         #region Attach/Open
 
@@ -25,7 +25,7 @@ namespace SIMULTAN.Tests.Geometry.GeometryValueSource
             LoadProject(geometrySourceProject);
 
             var faceComp = this.projectData.Components.First(x => x.Name == "Edge");
-            var param = faceComp.Parameters.OfType<SimDoubleParameter>().First(x => x is SimDoubleParameter && x.NameTaxonomyEntry.Name == "GeometryParam");
+            var param = faceComp.Parameters.OfType<SimDoubleParameter>().First(x => x is SimDoubleParameter && x.NameTaxonomyEntry.Text == "GeometryParam");
 
             Assert.IsTrue(double.IsNegativeInfinity(param.Value));
 
@@ -44,7 +44,7 @@ namespace SIMULTAN.Tests.Geometry.GeometryValueSource
             LoadProject(geometrySourceProject);
 
             var faceComp = this.projectData.Components.First(x => x.Name == "Edge");
-            var param = faceComp.Parameters.OfType<SimDoubleParameter>().First(x => x is SimDoubleParameter && x.NameTaxonomyEntry.Name == "GeometryParam");
+            var param = faceComp.Parameters.OfType<SimDoubleParameter>().First(x => x is SimDoubleParameter && x.NameTaxonomyEntry.Text == "GeometryParam");
 
             //Add parameter source
             param.ValueSource = new SimGeometryParameterSource(SimGeometrySourceProperty.EdgeLength);
@@ -61,7 +61,7 @@ namespace SIMULTAN.Tests.Geometry.GeometryValueSource
             LoadProject(geometrySourceProject);
 
             var faceComp = this.projectData.Components.First(x => x.Name == "Edge");
-            var param = faceComp.Parameters.OfType<SimDoubleParameter>().First(x => x is SimDoubleParameter && x.NameTaxonomyEntry.Name == "GeometryParam");
+            var param = faceComp.Parameters.OfType<SimDoubleParameter>().First(x => x is SimDoubleParameter && x.NameTaxonomyEntry.Text == "GeometryParam");
 
             (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
 
@@ -83,14 +83,14 @@ namespace SIMULTAN.Tests.Geometry.GeometryValueSource
             LoadProject(geometrySourceProject);
 
             var faceComp = this.projectData.Components.First(x => x.Name == "Edge");
-            var param = faceComp.Parameters.OfType<SimDoubleParameter>().First(x => x is SimDoubleParameter && x.NameTaxonomyEntry.Name == "GeometryParam");
+            var param = faceComp.Parameters.OfType<SimDoubleParameter>().First(x => x is SimDoubleParameter && x.NameTaxonomyEntry.Text == "GeometryParam");
 
             //Add parameter source
             param.ValueSource = new SimGeometryParameterSource(SimGeometrySourceProperty.EdgeLength);
 
             (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
 
-            gm.Geometry.Vertices.First(x => x.Name == "Vertex - BackRightTop").Position += new Vector3D(0, 0, -5);
+            gm.Geometry.Vertices.First(x => x.Name == "Vertex - BackRightTop").Position += new SimVector3D(0, 0, -5);
 
             AssertUtil.AssertDoubleEqual(35.0, param.Value);
             AssertUtil.AssertDoubleEqual(25.0, (double)faceComp.Instances[0].InstanceParameterValuesPersistent[param]);
@@ -102,7 +102,7 @@ namespace SIMULTAN.Tests.Geometry.GeometryValueSource
             LoadProject(geometrySourceProject);
 
             var faceComp = this.projectData.Components.First(x => x.Name == "Edge");
-            var param = faceComp.Parameters.OfType<SimDoubleParameter>().First(x => x is SimDoubleParameter && x.NameTaxonomyEntry.Name == "GeometryParam");
+            var param = faceComp.Parameters.OfType<SimDoubleParameter>().First(x => x is SimDoubleParameter && x.NameTaxonomyEntry.Text == "GeometryParam");
 
             //Add parameter source
             param.ValueSource = new SimGeometryParameterSource(SimGeometrySourceProperty.EdgeLength);
@@ -110,7 +110,7 @@ namespace SIMULTAN.Tests.Geometry.GeometryValueSource
             (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
 
             gm.Geometry.StartBatchOperation();
-            gm.Geometry.Vertices.First(x => x.Name == "Vertex - BackRightTop").Position += new Vector3D(0, 0, -5);
+            gm.Geometry.Vertices.First(x => x.Name == "Vertex - BackRightTop").Position += new SimVector3D(0, 0, -5);
             gm.Geometry.EndBatchOperation();
 
             AssertUtil.AssertDoubleEqual(35.0, param.Value);
@@ -124,7 +124,7 @@ namespace SIMULTAN.Tests.Geometry.GeometryValueSource
             LoadProject(geometrySourceProject);
 
             var faceComp = this.projectData.Components.First(x => x.Name == "Edge");
-            var param = faceComp.Parameters.OfType<SimDoubleParameter>().First(x => x is SimDoubleParameter && x.NameTaxonomyEntry.Name == "GeometryParam");
+            var param = faceComp.Parameters.OfType<SimDoubleParameter>().First(x => x is SimDoubleParameter && x.NameTaxonomyEntry.Text == "GeometryParam");
 
             //Add parameter source
             param.ValueSource = new SimGeometryParameterSource(SimGeometrySourceProperty.EdgeLength);
@@ -157,12 +157,12 @@ namespace SIMULTAN.Tests.Geometry.GeometryValueSource
             LoadProject(geometrySourceProject);
 
             var faceComp = this.projectData.Components.First(x => x.Name == "Edge");
-            var param = faceComp.Parameters.OfType<SimDoubleParameter>().First(x => x is SimDoubleParameter && x.NameTaxonomyEntry.Name == "GeometryParam");
+            var param = faceComp.Parameters.OfType<SimDoubleParameter>().First(x => x is SimDoubleParameter && x.NameTaxonomyEntry.Text == "GeometryParam");
 
             //Add parameter source
             param.ValueSource = new SimGeometryParameterSource(SimGeometrySourceProperty.EdgeLength);
 
-            var newInstance = new SimComponentInstance(SimInstanceType.AttributesEdge, 0, 9999, null);
+            var newInstance = new SimComponentInstance(SimInstanceType.AttributesEdge, 0, 9999);
             faceComp.Instances.Add(newInstance);
             newInstance.InstanceParameterValuesPersistent[param] = 0.0;
 
@@ -186,7 +186,7 @@ namespace SIMULTAN.Tests.Geometry.GeometryValueSource
             LoadProject(geometrySourceProject);
 
             var faceComp = this.projectData.Components.First(x => x.Name == "Edge");
-            var param = faceComp.Parameters.OfType<SimDoubleParameter>().First(x => x is SimDoubleParameter && x.NameTaxonomyEntry.Name == "GeometryParam");
+            var param = faceComp.Parameters.OfType<SimDoubleParameter>().First(x => x is SimDoubleParameter && x.NameTaxonomyEntry.Text == "GeometryParam");
 
             //Add parameter source
             param.ValueSource = new SimGeometryParameterSource(SimGeometrySourceProperty.EdgeLength);
@@ -224,7 +224,7 @@ namespace SIMULTAN.Tests.Geometry.GeometryValueSource
             LoadProject(geometrySourceProject);
 
             var faceComp = this.projectData.Components.First(x => x.Name == "Edge");
-            var param = faceComp.Parameters.OfType<SimDoubleParameter>().First(x => x is SimDoubleParameter && x.NameTaxonomyEntry.Name == "GeometryParam");
+            var param = faceComp.Parameters.OfType<SimDoubleParameter>().First(x => x is SimDoubleParameter && x.NameTaxonomyEntry.Text == "GeometryParam");
 
             //Add parameter source
             param.ValueSource = new SimGeometryParameterSource(SimGeometrySourceProperty.EdgeLength);
@@ -232,7 +232,7 @@ namespace SIMULTAN.Tests.Geometry.GeometryValueSource
             (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
 
             var copyGeometry = gm.Geometry.Clone();
-            copyGeometry.Vertices.First(x => x.Name == "Vertex - BackRightTop").Position += new Vector3D(0, 0, -5);
+            copyGeometry.Vertices.First(x => x.Name == "Vertex - BackRightTop").Position += new SimVector3D(0, 0, -5);
 
             AssertUtil.AssertDoubleEqual(30.0, param.Value);
             AssertUtil.AssertDoubleEqual(20.0, (double)faceComp.Instances[0].InstanceParameterValuesPersistent[param]);
@@ -250,7 +250,7 @@ namespace SIMULTAN.Tests.Geometry.GeometryValueSource
             LoadProject(geometrySourceProject);
 
             var faceComp = this.projectData.Components.First(x => x.Name == "Edge");
-            var param = faceComp.Parameters.OfType<SimDoubleParameter>().First(x => x is SimDoubleParameter && x.NameTaxonomyEntry.Name == "GeometryParam");
+            var param = faceComp.Parameters.OfType<SimDoubleParameter>().First(x => x is SimDoubleParameter && x.NameTaxonomyEntry.Text == "GeometryParam");
 
             //Add parameter source
             param.ValueSource = new SimGeometryParameterSource(SimGeometrySourceProperty.EdgeLength);
@@ -289,12 +289,12 @@ namespace SIMULTAN.Tests.Geometry.GeometryValueSource
             LoadProject(geometrySourceProject);
 
             var faceComp = this.projectData.Components.First(x => x.Name == "Edge");
-            var param = faceComp.Parameters.OfType<SimDoubleParameter>().First(x => x is SimDoubleParameter && x.NameTaxonomyEntry.Name == "GeometryParam");
+            var param = faceComp.Parameters.OfType<SimDoubleParameter>().First(x => x is SimDoubleParameter && x.NameTaxonomyEntry.Text == "GeometryParam");
 
             //Add parameter source
             param.ValueSource = new SimGeometryParameterSource(SimGeometrySourceProperty.EdgeLength);
 
-            var newInstance = new SimComponentInstance(SimInstanceType.AttributesEdge, 0, 9999, null);
+            var newInstance = new SimComponentInstance(SimInstanceType.AttributesEdge, 0, 9999);
             faceComp.Instances.Add(newInstance);
             newInstance.InstanceParameterValuesPersistent[param] = 0.0;
 
@@ -322,7 +322,7 @@ namespace SIMULTAN.Tests.Geometry.GeometryValueSource
             LoadProject(geometrySourceProject);
 
             var faceComp = this.projectData.Components.First(x => x.Name == "Edge");
-            var param = faceComp.Parameters.OfType<SimDoubleParameter>().First(x => x is SimDoubleParameter && x.NameTaxonomyEntry.Name == "GeometryParam");
+            var param = faceComp.Parameters.OfType<SimDoubleParameter>().First(x => x is SimDoubleParameter && x.NameTaxonomyEntry.Text == "GeometryParam");
 
             //Add parameter source
             param.ValueSource = new SimGeometryParameterSource(SimGeometrySourceProperty.EdgeLength);
@@ -367,7 +367,7 @@ namespace SIMULTAN.Tests.Geometry.GeometryValueSource
             LoadProject(geometrySourceProject);
 
             var faceComp = this.projectData.Components.First(x => x.Name == "Edge");
-            var param = faceComp.Parameters.OfType<SimDoubleParameter>().First(x => x is SimDoubleParameter && x.NameTaxonomyEntry.Name == "GeometryParam");
+            var param = faceComp.Parameters.OfType<SimDoubleParameter>().First(x => x is SimDoubleParameter && x.NameTaxonomyEntry.Text == "GeometryParam");
 
             //Add parameter source
             param.ValueSource = new SimGeometryParameterSource(SimGeometrySourceProperty.EdgeLength);
@@ -376,7 +376,7 @@ namespace SIMULTAN.Tests.Geometry.GeometryValueSource
 
             //Add instance
             var rightFace = gm.Geometry.Edges.First(x => x.Name == "Edge 2");
-            faceComp.Instances.Add(new SimComponentInstance(SimInstanceType.AttributesEdge, gm.File.Key, rightFace.Id, null));
+            faceComp.Instances.Add(new SimComponentInstance(SimInstanceType.AttributesEdge, gm.File.Key, rightFace.Id));
 
             //Check
             AssertUtil.AssertDoubleEqual(50.0, param.Value);
@@ -390,7 +390,7 @@ namespace SIMULTAN.Tests.Geometry.GeometryValueSource
             LoadProject(geometrySourceProject);
 
             var faceComp = this.projectData.Components.First(x => x.Name == "Edge");
-            var param = faceComp.Parameters.OfType<SimDoubleParameter>().First(x => x is SimDoubleParameter && x.NameTaxonomyEntry.Name == "GeometryParam");
+            var param = faceComp.Parameters.OfType<SimDoubleParameter>().First(x => x is SimDoubleParameter && x.NameTaxonomyEntry.Text == "GeometryParam");
 
             //Add parameter source
             param.ValueSource = new SimGeometryParameterSource(SimGeometrySourceProperty.EdgeLength);
@@ -410,7 +410,7 @@ namespace SIMULTAN.Tests.Geometry.GeometryValueSource
             LoadProject(geometrySourceProject);
 
             var faceComp = this.projectData.Components.First(x => x.Name == "Edge");
-            var param = faceComp.Parameters.OfType<SimDoubleParameter>().First(x => x is SimDoubleParameter && x.NameTaxonomyEntry.Name == "GeometryParam");
+            var param = faceComp.Parameters.OfType<SimDoubleParameter>().First(x => x is SimDoubleParameter && x.NameTaxonomyEntry.Text == "GeometryParam");
 
             //Add parameter source
             param.ValueSource = new SimGeometryParameterSource(SimGeometrySourceProperty.EdgeLength);
@@ -460,18 +460,17 @@ namespace SIMULTAN.Tests.Geometry.GeometryValueSource
             var newComp = new SimComponent()
             {
                 InstanceType = SimInstanceType.AttributesEdge,
-                CurrentSlot = new SimTaxonomyEntryReference(projectData.Taxonomies.GetDefaultSlot(SimDefaultSlotKeys.Undefined))
             };
-
+            newComp.Slots.Add(new SimTaxonomyEntryReference(projectData.Taxonomies.GetDefaultSlot(SimDefaultSlotKeys.Undefined)));
             var param = new SimDoubleParameter("New Param", "", -1.0);
             param.ValueSource = new SimGeometryParameterSource(SimGeometrySourceProperty.EdgeLength);
 
             newComp.Parameters.Add(param);
 
             var edge2 = gm.Geometry.Edges.First(x => x.Name == "Edge 2");
-            newComp.Instances.Add(new SimComponentInstance(SimInstanceType.AttributesEdge, gm.File.Key, edge2.Id, null));
+            newComp.Instances.Add(new SimComponentInstance(SimInstanceType.AttributesEdge, gm.File.Key, edge2.Id));
 
-            faceComp.Components.Add(new SimChildComponentEntry(new SimSlot(new SimTaxonomyEntryReference(newComp.CurrentSlot), ""), newComp));
+            faceComp.Components.Add(new SimChildComponentEntry(new SimSlot(new SimTaxonomyEntryReference(newComp.Slots[0]), ""), newComp));
 
             AssertUtil.AssertDoubleEqual(20.0, param.Value);
             AssertUtil.AssertDoubleEqual(20.0, (double)newComp.Instances[0].InstanceParameterValuesPersistent[param]);
@@ -494,7 +493,7 @@ namespace SIMULTAN.Tests.Geometry.GeometryValueSource
             LoadProject(geometrySourceProject);
 
             var comp = projectData.Components.First(x => x.Name == "Edge");
-            var param = comp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "GeometryParam");
+            var param = comp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Text == "GeometryParam");
 
             //Add parameter source
             var ptrRef = MemoryLeakTestSourceRemoved_Action(param);
@@ -512,7 +511,7 @@ namespace SIMULTAN.Tests.Geometry.GeometryValueSource
         private WeakReference MemoryLeakTestParameterRemoved_Action()
         {
             var comp = projectData.Components.First(x => x.Name == "Edge");
-            var param = comp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "GeometryParam");
+            var param = comp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Text == "GeometryParam");
 
             //Add parameter source
             param.ValueSource = new SimGeometryParameterSource(SimGeometrySourceProperty.EdgeLength);
@@ -556,7 +555,7 @@ namespace SIMULTAN.Tests.Geometry.GeometryValueSource
             var tags = GetFilterTags();
 
             var faceComp = this.projectData.Components.First(x => x.Name == "Edge Filter");
-            var param = faceComp.Parameters.First(x => x.NameTaxonomyEntry.Name == "GeometryParam");
+            var param = faceComp.Parameters.First(x => x.NameTaxonomyEntry.Text == "GeometryParam");
 
             (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
             (var gm2, var resource2) = ProjectUtils.LoadGeometry("Geometry_2.simgeo", projectData, sp);
@@ -580,7 +579,7 @@ namespace SIMULTAN.Tests.Geometry.GeometryValueSource
             var tags = GetFilterTags();
 
             var faceComp = this.projectData.Components.First(x => x.Name == "Edge Filter");
-            var param = faceComp.Parameters.First(x => x.NameTaxonomyEntry.Name == "GeometryParam");
+            var param = faceComp.Parameters.First(x => x.NameTaxonomyEntry.Text == "GeometryParam");
 
             (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
             (var gm2, var resource2) = ProjectUtils.LoadGeometry("Geometry_2.simgeo", projectData, sp);
@@ -628,7 +627,7 @@ namespace SIMULTAN.Tests.Geometry.GeometryValueSource
             var tags = GetFilterTags();
 
             var faceComp = this.projectData.Components.First(x => x.Name == "Edge Filter");
-            var param = faceComp.Parameters.First(x => x.NameTaxonomyEntry.Name == "GeometryParam");
+            var param = faceComp.Parameters.First(x => x.NameTaxonomyEntry.Text == "GeometryParam");
 
             (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
             (var gm2, var resource2) = ProjectUtils.LoadGeometry("Geometry_2.simgeo", projectData, sp);
@@ -668,7 +667,7 @@ namespace SIMULTAN.Tests.Geometry.GeometryValueSource
             var tags = GetFilterTags();
 
             var faceComp = this.projectData.Components.First(x => x.Name == "Edge Filter");
-            var param = faceComp.Parameters.First(x => x.NameTaxonomyEntry.Name == "GeometryParam");
+            var param = faceComp.Parameters.First(x => x.NameTaxonomyEntry.Text == "GeometryParam");
 
             (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
             (var gm2, var resource2) = ProjectUtils.LoadGeometry("Geometry_2.simgeo", projectData, sp);
@@ -687,7 +686,7 @@ namespace SIMULTAN.Tests.Geometry.GeometryValueSource
 
             //Add instance
             var rightFace = gm3.Geometry.Edges.First(x => x.Name == "Edge 2");
-            faceComp.Instances.Add(new SimComponentInstance(SimInstanceType.AttributesEdge, gm3.File.Key, rightFace.Id, null));
+            faceComp.Instances.Add(new SimComponentInstance(SimInstanceType.AttributesEdge, gm3.File.Key, rightFace.Id));
 
             AssertUtil.AssertDoubleEqual(110.0, ((SimDoubleParameter)param).Value);
             AssertUtil.AssertDoubleEqual(0.0, Convert.ToDouble(faceComp.Instances[0].InstanceParameterValuesPersistent[param]));

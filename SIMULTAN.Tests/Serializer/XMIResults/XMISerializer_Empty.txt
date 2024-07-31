@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Simultan xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns="http://tuwien.ac.at/simultan">
+	<globalId>30665bc9-b1f2-4204-adb1-c3e68e60c1c7</globalId>
+	<fileVersion>0</fileVersion>
+</Simultan>

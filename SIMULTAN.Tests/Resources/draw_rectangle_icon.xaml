@@ -1,0 +1,8 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Canvas xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Name="Untitled1" Width="96" Height="96" Clip="F1 M 0,0L 96,0L 96,96L 0,96L 0,0">
+	<Canvas x:Name="Layer_1" Width="96" Height="96" Canvas.Left="0" Canvas.Top="0">
+		<Rectangle x:Name="Rectangle" Width="72.9308" Height="46.4267" Canvas.Left="11.4682" Canvas.Top="23.5179" Stretch="Fill" StrokeThickness="1" StrokeLineJoin="Round" Stroke="#FF000000" Fill="#FFE0E0E0"/>
+		<Path x:Name="Line" Width="1.6" Height="13.7067" Canvas.Left="83.5203" Canvas.Top="62.8258" Stretch="Fill" StrokeThickness="1.6" StrokeLineJoin="Round" Stroke="#FF464646" Data="F1 M 84.3203,63.6258L 84.3203,75.7325"/>
+		<Path x:Name="Line_0" Width="13.7067" Height="1.6" Canvas.Left="77.4802" Canvas.Top="69.2125" Stretch="Fill" StrokeThickness="1.6" StrokeLineJoin="Round" Stroke="#FF464646" Data="F1 M 78.2802,70.0125L 90.3869,70.0125"/>
+	</Canvas>
+</Canvas>

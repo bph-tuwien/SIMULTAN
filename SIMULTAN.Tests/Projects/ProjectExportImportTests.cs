@@ -12,9 +12,9 @@ namespace SIMULTAN.Tests.Projects
     [TestClass]
     public class ProjectExportImportTests : BaseProjectTest
     {
-        private static readonly FileInfo exportProject = new FileInfo(@".\ComponentExportTest.simultan");
-        private static readonly FileInfo emptyProject = new FileInfo(@".\EmptyProject.simultan");
-        private static readonly FileInfo importArchive = new FileInfo(@".\ComponentImportTest.zip");
+        private static readonly FileInfo exportProject = new FileInfo(@"./ComponentExportTest.simultan");
+        private static readonly FileInfo emptyProject = new FileInfo(@"./EmptyProject.simultan");
+        private static readonly FileInfo importArchive = new FileInfo(@"./ComponentImportTest.zip");
 
         #region Export
 
@@ -207,7 +207,7 @@ namespace SIMULTAN.Tests.Projects
             //Check pointer
             var importComp = projectData.Components.First();
             var childTarget2 = importComp.Components.First(x => x.Component.Name == "ChildTarget2").Component;
-            var param = childTarget2.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "from MV");
+            var param = childTarget2.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Text == "from MV");
 
             Assert.AreNotEqual(null, param.ValueSource);
 
@@ -235,9 +235,9 @@ namespace SIMULTAN.Tests.Projects
             //Check if parameters have been found
             Assert.AreEqual(2, calc.InputParams.Count);
             Assert.AreEqual(1, calc.ReturnParams.Count);
-            Assert.AreEqual(nodeChild.Parameters.First(x => x.NameTaxonomyEntry.Name == "b"), calc.InputParams["y"]);
-            Assert.AreEqual(node.Parameters.First(x => x.NameTaxonomyEntry.Name == "a"), calc.InputParams["x"]);
-            Assert.AreEqual(node.Parameters.First(x => x.NameTaxonomyEntry.Name == "c"), calc.ReturnParams["out1"]);
+            Assert.AreEqual(nodeChild.Parameters.First(x => x.NameTaxonomyEntry.Text == "b"), calc.InputParams["y"]);
+            Assert.AreEqual(node.Parameters.First(x => x.NameTaxonomyEntry.Text == "a"), calc.InputParams["x"]);
+            Assert.AreEqual(node.Parameters.First(x => x.NameTaxonomyEntry.Text == "c"), calc.ReturnParams["out1"]);
         }
 
         #endregion

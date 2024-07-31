@@ -1,11 +1,10 @@
-﻿using SIMULTAN.Utils;
+﻿using SIMULTAN.Data.SimMath;
+using SIMULTAN.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Windows.Media;
-using System.Windows.Media.Media3D;
 
 namespace SIMULTAN.Data.Geometry
 {
@@ -27,11 +26,11 @@ namespace SIMULTAN.Data.Geometry
         /// <summary>
         /// A list of triangles vertices
         /// </summary>
-        public List<Point3D> Positions { get; set; }
+        public List<SimPoint3D> Positions { get; set; }
         /// <summary>
         /// A list of vertex normals
         /// </summary>
-        public List<Vector3D> Normals { get; set; }
+        public List<SimVector3D> Normals { get; set; }
         /// <summary>
         /// Index list for the triangle mesh (always three indices form a face)
         /// </summary>
@@ -40,54 +39,54 @@ namespace SIMULTAN.Data.Geometry
         /// <summary>
         /// Gets or sets the size (scaling) of the proxy geometry
         /// </summary>
-        public Vector3D Size
+        public SimVector3D Size
         {
             get { return size; }
             set
             {
                 size = value;
-                OnPropertyChanged(nameof(Size));
+                NotifyPropertyChanged(nameof(Size));
                 OnTransformationChanged();
             }
         }
-        private Vector3D size;
+        private SimVector3D size;
         /// <summary>
         /// Gets or sets the local rotation of the proxy geometry
         /// </summary>
-        public Quaternion Rotation
+        public SimQuaternion Rotation
         {
             get { return rotation; }
             set
             {
                 rotation = value;
-                OnPropertyChanged(nameof(Rotation));
+                NotifyPropertyChanged(nameof(Rotation));
                 OnTransformationChanged();
             }
         }
-        private Quaternion rotation;
+        private SimQuaternion rotation;
 
         /// <summary>
         /// Euler angles of rotation
         /// </summary>
-        public Vector3D EulerAngles
+        public SimVector3D EulerAngles
         {
             get { return Rotation.ToEulerAngles(); }
             set
             {
-                Rotation = QuaternionExtensions.CreateFromYawPitchRoll(value);
+                Rotation = SimQuaternionExtensions.CreateFromYawPitchRoll(value);
             }
         }
         /// <summary>
         /// Returns the full model matrix. Includes Size and the vertex position.
         /// </summary>
-        public Matrix3D Transformation
+        public SimMatrix3D Transformation
         {
             get
             {
-                var mat = Matrix3D.Identity;
+                var mat = SimMatrix3D.Identity;
                 mat.Scale(size);
                 mat.Rotate(rotation);
-                mat.Translate((Vector3D)vertex.Position);
+                mat.Translate((SimVector3D)vertex.Position);
                 return mat;
             }
         }
@@ -111,7 +110,7 @@ namespace SIMULTAN.Data.Geometry
         /// <param name="positions">List of vertex positions, default null</param>
         /// <param name="normals">List of vertex normals, default null</param>
         /// <param name="indices">List of indices, default null</param>
-        public ProxyGeometry(ulong id, Layer layer, string nameFormat, Vertex vertex, List<Point3D> positions = null, List<Vector3D> normals = null, List<int> indices = null)
+        public ProxyGeometry(ulong id, Layer layer, string nameFormat, Vertex vertex, List<SimPoint3D> positions = null, List<SimVector3D> normals = null, List<int> indices = null)
             : base(id, layer)
         {
             if (vertex == null)
@@ -128,14 +127,13 @@ namespace SIMULTAN.Data.Geometry
             this.Indices = indices;
 
             this.vertex.GeometryChanged += Vertex_GeometryChanged;
-            this.size = new Vector3D(1, 1, 1);
-            this.rotation = Quaternion.Identity;
+            this.size = new SimVector3D(1, 1, 1);
+            this.rotation = SimQuaternion.Identity;
+            this.Color = new DerivedColor(vertex.Color.Color, true);
 
             ModelGeometry.ProxyGeometries.Add(this);
 
             MakeConsistent(false, true);
-
-            this.Color = new DerivedColor(Colors.White, vertex, nameof(Vertex.Color));
         }
 
         private void Vertex_GeometryChanged(object sender)
@@ -180,14 +178,14 @@ namespace SIMULTAN.Data.Geometry
         }
 
         /// <inheritdoc />
-        protected override void AssignToLayerColor(Layer layer)
+        protected override void AssignParentColor()
         {
-            //Do nothing. Proxies use the vertex color as parent
+            this.Color.Parent = this.Vertex;
         }
 
         private void OnTransformationChanged()
         {
-            OnPropertyChanged(nameof(Transformation));
+            NotifyPropertyChanged(nameof(Transformation));
             NotifyGeometryChanged();
             vertex.NotifyGeometryChanged();
         }

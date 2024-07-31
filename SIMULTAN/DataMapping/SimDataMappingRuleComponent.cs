@@ -3,12 +3,8 @@ using SIMULTAN.Data.Geometry;
 using SIMULTAN.Data.Taxonomy;
 using SIMULTAN.Utils;
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using System.Security.Cryptography.X509Certificates;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SIMULTAN.DataMapping
 {
@@ -32,7 +28,7 @@ namespace SIMULTAN.DataMapping
         /// <summary>
         /// The name of the component. (string)
         /// </summary>
-        Name = 0, 
+        Name = 0,
         /// <summary>
         /// The slot of the component with extension for child components. (string)
         /// </summary>
@@ -67,7 +63,7 @@ namespace SIMULTAN.DataMapping
     /// Mapping rule for <see cref="SimComponent"/>
     /// </summary>
     public class SimDataMappingRuleComponent :
-        SimDataMappingRuleBase<SimDataMappingComponentMappingProperties, SimDataMappingFilterComponent>, 
+        SimDataMappingRuleBase<SimDataMappingComponentMappingProperties, SimDataMappingFilterComponent>,
         ISimDataMappingComponentRuleChild, ISimDataMappingFaceRuleChild, ISimDataMappingVolumeRuleChild, ISimDataMappingInstanceRuleChild
     {
         /// <summary>
@@ -96,7 +92,7 @@ namespace SIMULTAN.DataMapping
                     state.VisitedObjects.Add(rootComp);
 
                     if (state.IncludeRoot && Filter.All(f => f.Match(rootComp)))
-                        HandleMatch(rootComp, rootComp.CurrentSlot.Target, null, state, data);
+                        HandleMatch(rootComp, rootComp.Slots[0].Target, null, state, data);
                     else
                         Traverse(rootComp, state, data);
 
@@ -142,7 +138,9 @@ namespace SIMULTAN.DataMapping
                 {
                     state.VisitedObjects.Add(instance.Component);
 
-                    HandleMatch(instance.Component, instance.Component.CurrentSlot.Target, null, state, data);
+                    HandleMatch(instance.Component,
+                        instance.Component.ParentContainer != null ? instance.Component.ParentContainer.Slot.SlotBase.Target : instance.Component.Slots[0].Target,
+                        null, state, data);
 
                     state.VisitedObjects.Remove(instance.Component);
                 }
@@ -164,7 +162,7 @@ namespace SIMULTAN.DataMapping
                         state.VisitedObjects.Add(placement.Instance.Component);
 
                         HandleMatch(placement.Instance.Component,
-                            placement.Instance.Component.CurrentSlot.Target,
+                               placement.Instance.Component.ParentContainer != null ? placement.Instance.Component.ParentContainer.Slot.SlotBase.Target : placement.Instance.Component.Slots[0].Target,
                             null, state, data);
 
                         state.VisitedObjects.Remove(placement.Instance.Component);
@@ -217,24 +215,28 @@ namespace SIMULTAN.DataMapping
             state.Depth--;
         }
 
-        private void HandleMatch(SimComponent comp, SimTaxonomyEntry slot, string extension, SimTraversalState state, SimMappedData data)
+        private void HandleMatch(SimComponent comp, SimTaxonomyEntry firstSlot, string extension, SimTraversalState state, SimMappedData data)
         {
+            //Advance position for this rule
+            AdvanceReferencePoint(state);
+
+            //Write properties
             WriteProperties(state, property =>
             {
                 //Store property
                 switch (property)
                 {
                     case SimDataMappingComponentMappingProperties.Id:
-                        data.AddData(this.SheetName, state.CurrentPosition, (int)comp.Id.LocalId);
+                        data.AddData(this.SheetName, state.CurrentPosition, (int)comp.Id.LocalId, this);
                         break;
                     case SimDataMappingComponentMappingProperties.Name:
-                        data.AddData(this.SheetName, state.CurrentPosition, comp.Name);
+                        data.AddData(this.SheetName, state.CurrentPosition, comp.Name, this);
                         break;
                     case SimDataMappingComponentMappingProperties.Slot:
-                        string combSlot = slot.Name;
+                        string combSlot = firstSlot.Key;
                         if (!string.IsNullOrEmpty(extension))
                             combSlot = combSlot + "_" + extension;
-                        data.AddData(this.SheetName, state.CurrentPosition, combSlot);
+                        data.AddData(this.SheetName, state.CurrentPosition, combSlot, this);
                         break;
                     default:
                         throw new NotSupportedException("Unsupported property");
@@ -243,9 +245,6 @@ namespace SIMULTAN.DataMapping
 
             //Handle child rules
             ExecuteChildRules(this.Rules, comp, state, data);
-        
-            //Advance position for next rule
-            AdvanceReferencePoint(state);
         }
 
         /// <inheritdoc />
@@ -271,7 +270,7 @@ namespace SIMULTAN.DataMapping
                 OffsetParent = this.OffsetParent,
                 OffsetConsecutive = this.OffsetConsecutive,
                 MappingDirection = this.MappingDirection,
-                ReferencePoint = this.ReferencePoint,
+                ReferencePointParent = this.ReferencePointParent,
                 TraversalStrategy = this.TraversalStrategy,
             };
 
@@ -305,5 +304,14 @@ namespace SIMULTAN.DataMapping
         }
 
         #endregion
+
+        /// <inheritdoc />
+        public override void RestoreDefaultTaxonomyReferences()
+        {
+            base.RestoreDefaultTaxonomyReferences();
+
+            foreach (var childRule in Rules)
+                childRule.RestoreDefaultTaxonomyReferences();
+        }
     }
 }

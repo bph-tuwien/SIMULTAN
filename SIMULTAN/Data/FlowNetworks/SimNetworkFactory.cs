@@ -1,4 +1,5 @@
-﻿using SIMULTAN.Data.Users;
+﻿using SIMULTAN.Data.SimMath;
+using SIMULTAN.Data.Users;
 using SIMULTAN.Projects;
 using System;
 using System.Collections.Generic;
@@ -55,7 +56,7 @@ namespace SIMULTAN.Data.FlowNetworks
         public SimFlowNetwork CreateEmptyNetwork(string name, SimUserRole _user)
         {
             // create component
-            var network_candidate = new SimFlowNetwork(this.CalledFromLocation, new Point(0, 0), name, "- - -", _user);
+            var network_candidate = new SimFlowNetwork(this.CalledFromLocation, new SimPoint(0, 0), name, "- - -", _user);
             this.NetworkRecord.Add(network_candidate);
             this.OnNetworkAdded(new List<SimFlowNetwork> { network_candidate });
 
@@ -64,7 +65,7 @@ namespace SIMULTAN.Data.FlowNetworks
         }
 
         [Obsolete]
-        internal SimFlowNetwork ReconstructNetwork(Guid _location, long _id, string _name, string _description, bool _is_valid, Point _position,
+        internal SimFlowNetwork ReconstructNetwork(Guid _location, long _id, string _name, string _description, bool _is_valid, SimPoint _position,
                                                 SimUserRole _manager, int _index_of_geom_rep_file,
                                                 IList<SimFlowNetworkNode> _nodes, IList<SimFlowNetworkEdge> _edges, IList<SimFlowNetwork> _subnetworks,
                                                 long _node_start_id, long _node_end_id, bool _is_directed, List<SimFlowNetworkCalcRule> _calc_rules,

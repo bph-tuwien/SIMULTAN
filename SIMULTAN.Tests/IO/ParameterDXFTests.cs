@@ -6,7 +6,6 @@ using SIMULTAN.Serializer.CODXF;
 using SIMULTAN.Serializer.DXF;
 using SIMULTAN.Serializer.PADXF;
 using SIMULTAN.Tests.Properties;
-using SIMULTAN.Tests.Util;
 using SIMULTAN.Tests.TestUtils;
 using System;
 using System.IO;
@@ -78,12 +77,13 @@ namespace SIMULTAN.Tests.IO
             using (DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_PADXF_ReadV12)))
             {
                 var info = new DXFParserInfo(guid, projectData);
+                info.FileVersion = 12;
                 ParameterDxfIO.Read(reader, info);
             }
 
             Assert.AreEqual(2, projectData.ParameterLibraryManager.ParameterRecord.Count);
-            Assert.AreEqual("Parameter X", projectData.ParameterLibraryManager.ParameterRecord[0].NameTaxonomyEntry.Name);
-            Assert.AreEqual("Parameter Y", projectData.ParameterLibraryManager.ParameterRecord[1].NameTaxonomyEntry.Name);
+            Assert.AreEqual("Parameter X", projectData.ParameterLibraryManager.ParameterRecord[0].NameTaxonomyEntry.Text);
+            Assert.AreEqual("Parameter Y", projectData.ParameterLibraryManager.ParameterRecord[1].NameTaxonomyEntry.Text);
         }
 
         [TestMethod]
@@ -102,12 +102,36 @@ namespace SIMULTAN.Tests.IO
             using (DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_PADXF_ReadV11)))
             {
                 var info = new DXFParserInfo(guid, projectData);
+                info.FileVersion = 11;
                 ParameterDxfIO.Read(reader, info);
             }
 
             Assert.AreEqual(2, projectData.ParameterLibraryManager.ParameterRecord.Count);
-            Assert.AreEqual("Parameter X", projectData.ParameterLibraryManager.ParameterRecord[0].NameTaxonomyEntry.Name);
-            Assert.AreEqual("Parameter Y", projectData.ParameterLibraryManager.ParameterRecord[1].NameTaxonomyEntry.Name);
+            Assert.AreEqual("Parameter X", projectData.ParameterLibraryManager.ParameterRecord[0].NameTaxonomyEntry.Text);
+            Assert.AreEqual("Parameter Y", projectData.ParameterLibraryManager.ParameterRecord[1].NameTaxonomyEntry.Text);
+        }
+
+
+        [TestMethod]
+        public void ReadParameterFileV19()
+        {
+            Guid guid = Guid.NewGuid();
+            var otherGuid = Guid.Parse("da7d8f7c-8eec-423b-b127-9d6e17f52522");
+
+            ExtendedProjectData projectData = new ExtendedProjectData();
+            var location = new DummyReferenceLocation(guid);
+            projectData.SetCallingLocation(location);
+
+            using (DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_PADXF_ReadV19)))
+            {
+                var info = new DXFParserInfo(guid, projectData);
+                info.FileVersion = 19;
+                ParameterDxfIO.Read(reader, info);
+            }
+
+            Assert.AreEqual(2, projectData.ParameterLibraryManager.ParameterRecord.Count);
+            Assert.AreEqual("Parameter X", projectData.ParameterLibraryManager.ParameterRecord[0].NameTaxonomyEntry.Text);
+            Assert.AreEqual("Parameter Y", projectData.ParameterLibraryManager.ParameterRecord[1].NameTaxonomyEntry.Text);
         }
     }
 }

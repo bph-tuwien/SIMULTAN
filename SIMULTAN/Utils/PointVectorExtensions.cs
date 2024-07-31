@@ -1,15 +1,15 @@
-﻿using System;
+﻿using SIMULTAN.Data.SimMath;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Media.Media3D;
 
 namespace SIMULTAN.Utils
 {
     /// <summary>
-    /// Usefull extensions for the Point3D class
+    /// Usefull extensions for the SimPoint3D class
     /// </summary>
     public static class PointVectorExtensions
     {
@@ -19,9 +19,9 @@ namespace SIMULTAN.Utils
         /// <param name="p">The point</param>
         /// <param name="d">The scalar</param>
         /// <returns>The multiplied point</returns>
-        public static Point3D Multiply(this Point3D p, double d)
+        public static SimPoint3D Multiply(this SimPoint3D p, double d)
         {
-            return new Point3D(p.X * d, p.Y * d, p.Z * d);
+            return new SimPoint3D(p.X * d, p.Y * d, p.Z * d);
         }
         /// <summary>
         /// Divides the point by a scalar value
@@ -29,9 +29,9 @@ namespace SIMULTAN.Utils
         /// <param name="p">The point</param>
         /// <param name="d">The scalar</param>
         /// <returns>The divided point</returns>
-        public static Point3D Divide(this Point3D p, double d)
+        public static SimPoint3D Divide(this SimPoint3D p, double d)
         {
-            return new Point3D(p.X / d, p.Y / d, p.Z / d);
+            return new SimPoint3D(p.X / d, p.Y / d, p.Z / d);
         }
 
         /// <summary>
@@ -39,9 +39,9 @@ namespace SIMULTAN.Utils
         /// </summary>
         /// <param name="p">Original point</param>
         /// <returns>A point containing only X and Y coordinate</returns>
-        public static Point XY(this Point3D p)
+        public static SimPoint XY(this SimPoint3D p)
         {
-            return new Point(p.X, p.Y);
+            return new SimPoint(p.X, p.Y);
         }
 
         /// <summary>
@@ -49,18 +49,18 @@ namespace SIMULTAN.Utils
         /// </summary>
         /// <param name="v">Original vector</param>
         /// <returns>A vector containing only X and Y coordinate</returns>
-        public static Vector XY(this Vector3D v)
+        public static SimVector XY(this SimVector3D v)
         {
-            return new Vector(v.X, v.Y);
+            return new SimVector(v.X, v.Y);
         }
 
         /// <summary>
-        /// Returns a specific dimension of a Vector3D
+        /// Returns a specific dimension of a SimVector3D
         /// </summary>
-        /// <param name="v">The Vector3D</param>
+        /// <param name="v">The SimVector3D</param>
         /// <param name="idx">Index of the dimension: X: 0, Y: 1, Z: 2</param>
         /// <returns></returns>
-		public static double Get(this Vector3D v, int idx)
+		public static double Get(this SimVector3D v, int idx)
         {
             switch (idx)
             {
@@ -75,12 +75,12 @@ namespace SIMULTAN.Utils
             }
         }
         /// <summary>
-        /// Returns a specific dimension of a Point3D
+        /// Returns a specific dimension of a SimPoint3D
         /// </summary>
-        /// <param name="v">The Point3D</param>
+        /// <param name="v">The SimPoint3D</param>
         /// <param name="idx">Index of the dimension: X: 0, Y: 1, Z: 2</param>
         /// <returns></returns>
-		public static double Get(this Point3D v, int idx)
+		public static double Get(this SimPoint3D v, int idx)
         {
             switch (idx)
             {
@@ -101,7 +101,7 @@ namespace SIMULTAN.Utils
         /// <param name="p">The point</param>
         /// <param name="idx">The index (0=X, 1=Y, 2=Z, 3.. = Exception)</param>
         /// <returns>The desired axis</returns>
-        public static double At(this Point3D p, int idx)
+        public static double At(this SimPoint3D p, int idx)
         {
             switch (idx)
             {

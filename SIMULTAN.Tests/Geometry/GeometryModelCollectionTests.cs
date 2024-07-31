@@ -15,8 +15,8 @@ namespace SIMULTAN.Tests.Geometry
     [TestClass]
     public class GeometryModelCollectionTests : BaseProjectTest
     {
-        private static readonly FileInfo instanceProject = new FileInfo(@".\InstanceTestsProject.simultan");
-        private static readonly FileInfo migrationProject = new FileInfo(@".\LegacyParentMigrationTest.simultan");
+        private static readonly FileInfo instanceProject = new FileInfo(@"./InstanceTestsProject.simultan");
+        private static readonly FileInfo migrationProject = new FileInfo(@"./LegacyParentMigrationTest.simultan");
 
         #region Simple Files
 
@@ -112,6 +112,25 @@ namespace SIMULTAN.Tests.Geometry
             Assert.IsTrue(projectData.GeometryModels.Contains(model.LinkedModels[0]));
         }
 
+        [TestMethod]
+        public void AddWithLinkedRecursive()
+        {
+            LoadProject(instanceProject);
+
+            var resource = (ResourceFileEntry)projectData.AssetManager.Resources.FirstOrDefault(x => x.Name == "A.simgeo");
+
+            var errors = new List<SimGeoIOError>();
+            var model = SimGeoIO.Load(resource, projectData, errors);
+
+            Assert.AreEqual(0, projectData.GeometryModels.Count());
+
+            projectData.GeometryModels.AddGeometryModel(model);
+
+            Assert.AreEqual(3, projectData.GeometryModels.Count());
+            Assert.IsTrue(projectData.GeometryModels.Contains(model));
+            Assert.IsTrue(projectData.GeometryModels.Contains(model.LinkedModels[0]));
+        }
+
         private (WeakReference gmRef, WeakReference childGmRef) RemoveWithLinked_Action()
         {
             var resource = (ResourceFileEntry)projectData.AssetManager.Resources.FirstOrDefault(x => x.Name == "Building.simgeo");
@@ -149,6 +168,155 @@ namespace SIMULTAN.Tests.Geometry
             Assert.IsFalse(gmRef.IsAlive);
             Assert.IsFalse(childGmRef.IsAlive);
         }
+
+        private (WeakReference gmRef, WeakReference childGmRef) RemoveWithLinkedRecursive_Action()
+        {
+            var resource = (ResourceFileEntry)projectData.AssetManager.Resources.FirstOrDefault(x => x.Name == "A.simgeo");
+
+            var errors = new List<SimGeoIOError>();
+            var gm = SimGeoIO.Load(resource, projectData, errors);
+            projectData.GeometryModels.AddGeometryModel(gm);
+            WeakReference gmRef = new WeakReference(gm);
+            WeakReference childGmRef = new WeakReference(gm.LinkedModels[0]);
+
+            return (gmRef, childGmRef);
+        }
+        private void RemoveWithLinkRecursive_Action2(WeakReference gmRef)
+        {
+            projectData.GeometryModels.RemoveGeometryModel((GeometryModel)gmRef.Target);
+        }
+
+        [TestMethod]
+        public void RemoveWithLinkedRecursive()
+        {
+            LoadProject(instanceProject);
+
+            (var gmRef, var childGmRef) = RemoveWithLinkedRecursive_Action();
+
+            Assert.IsTrue(gmRef.IsAlive);
+            Assert.IsTrue(childGmRef.IsAlive);
+
+            RemoveWithLinkRecursive_Action2(gmRef);
+
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+
+            Assert.AreEqual(0, projectData.GeometryModels.Count());
+            Assert.IsFalse(gmRef.IsAlive);
+            Assert.IsFalse(childGmRef.IsAlive);
+        }
+
+        private (WeakReference gmRef, WeakReference childGmRef) RemoveLinkedRecursive_Action()
+        {
+            var resource = (ResourceFileEntry)projectData.AssetManager.Resources.FirstOrDefault(x => x.Name == "A.simgeo");
+
+            var errors = new List<SimGeoIOError>();
+            var gm = SimGeoIO.Load(resource, projectData, errors);
+            projectData.GeometryModels.AddGeometryModel(gm);
+            WeakReference gmRef = new WeakReference(gm);
+            WeakReference childGmRef = new WeakReference(gm.LinkedModels[0]);
+
+            return (gmRef, childGmRef);
+        }
+        private void RemoveLinkRecursive_Action2(WeakReference gmRef, WeakReference gmChildRef)
+        {
+            var gm = (GeometryModel)gmRef.Target;
+            var child = (GeometryModel)gmChildRef.Target;
+            gm.LinkedModels.Remove(child);
+        }
+
+        [TestMethod]
+        public void RemoveLinkedRecursive()
+        {
+            LoadProject(instanceProject);
+
+            (var gmRef, var childGmRef) = RemoveLinkedRecursive_Action();
+
+            Assert.IsTrue(gmRef.IsAlive);
+            Assert.IsTrue(childGmRef.IsAlive);
+            Assert.AreEqual(3, projectData.GeometryModels.Count());
+
+            RemoveLinkRecursive_Action2(gmRef, childGmRef);
+
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+
+            Assert.AreEqual(1, projectData.GeometryModels.Count());
+            Assert.IsTrue(gmRef.IsAlive);
+            Assert.IsFalse(childGmRef.IsAlive);
+        }
+
+        private (WeakReference gmRef, WeakReference childGmRef) RemoveLinkedRecursiveKeep_Action()
+        {
+            var resource = (ResourceFileEntry)projectData.AssetManager.Resources.FirstOrDefault(x => x.Name == "A.simgeo");
+
+            var errors = new List<SimGeoIOError>();
+            var gm = SimGeoIO.Load(resource, projectData, errors);
+            projectData.GeometryModels.AddGeometryModel(gm);
+            WeakReference gmRef = new WeakReference(gm);
+            WeakReference childGmRef = new WeakReference(gm.LinkedModels[0]);
+
+            return (gmRef, childGmRef);
+        }
+        private void RemoveLinkRecursiveKeep_Action2(WeakReference gmRef, WeakReference gmChildRef)
+        {
+            var gm = (GeometryModel)gmRef.Target;
+            var child = (GeometryModel)gmChildRef.Target;
+            gm.LinkedModels.Remove(child);
+        }
+
+        [TestMethod]
+        public void RemoveLinkedRecursiveKeep()
+        {
+            LoadProject(instanceProject);
+
+            (var gmRef, var childGmRef) = RemoveLinkedRecursiveKeep_Action();
+
+            Assert.IsTrue(gmRef.IsAlive);
+            Assert.IsTrue(childGmRef.IsAlive);
+            Assert.AreEqual(3, projectData.GeometryModels.Count());
+
+            // keep models even though one of the referenced to it was removed but is still linked recursivly
+            var keepref = new WeakReference(((GeometryModel)childGmRef.Target).LinkedModels[0]);
+
+            RemoveLinkRecursiveKeep_Action2(childGmRef, keepref);
+
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+
+            Assert.AreEqual(3, projectData.GeometryModels.Count());
+            Assert.IsTrue(gmRef.IsAlive);
+            Assert.IsTrue(childGmRef.IsAlive);
+            Assert.IsTrue(keepref.IsAlive);
+        }
+
+        [TestMethod]
+        public void AddLinkedAsArch()
+        {
+            LoadProject(instanceProject, "arch", "arch");
+
+            var resourceArch = (ResourceFileEntry)projectData.AssetManager.Resources.FirstOrDefault(x => x.Name == "Arch.simgeo");
+            var resource = (ResourceFileEntry)projectData.AssetManager.Resources.FirstOrDefault(x => x.Name == "A.simgeo");
+
+            var errors = new List<SimGeoIOError>();
+            var modelArch = SimGeoIO.Load(resourceArch, projectData, errors);
+            var model = SimGeoIO.Load(resource, projectData, errors);
+
+            Assert.AreEqual(0, projectData.GeometryModels.Count());
+
+            projectData.GeometryModels.AddGeometryModel(modelArch);
+            projectData.GeometryModels.AddGeometryModel(model);
+
+            Assert.AreEqual(4, projectData.GeometryModels.Count());
+            Assert.IsTrue(projectData.GeometryModels.Contains(model));
+            Assert.IsTrue(projectData.GeometryModels.Contains(modelArch));
+
+            modelArch.LinkedModels.Add(model); // This should work even as arch user
+        }
+
 
         #endregion
 

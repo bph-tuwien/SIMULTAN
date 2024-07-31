@@ -5,8 +5,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SIMULTAN.Serializer.SIMLINKS
 {
@@ -24,10 +22,10 @@ namespace SIMULTAN.Serializer.SIMLINKS
             new DXFEntityParserElement<MultiLink>(ParamStructTypes.MULTI_LINK, ParseMultiLink,
                 new DXFEntryParserElement[]
                 {
-                    new DXFStructArrayEntryParserElement<(int, string)>(ParamStructCommonSaveCode.NUMBER_OF, ParseRepresentation,
+                    new DXFStructArrayEntryParserElement<(string, string)>(ParamStructCommonSaveCode.NUMBER_OF, ParseRepresentation,
                         new DXFEntryParserElement[]
                         {
-                            new DXFSingleEntryParserElement<int>(ParamStructCommonSaveCode.COORDS_X),
+                            new DXFSingleEntryParserElement<string>(ParamStructCommonSaveCode.COORDS_X), // before version 29 this was an int
                             new DXFSingleEntryParserElement<string>(ParamStructCommonSaveCode.COORDS_Y),
                         })
                 });
@@ -214,7 +212,7 @@ namespace SIMULTAN.Serializer.SIMLINKS
 
         internal static void WriteMultiLinkSection(IEnumerable<MultiLink> links, DXFStreamWriter writer)
         {
-            writer.StartSection(ParamStructTypes.MULTI_LINK_SECTION);
+            writer.StartSection(ParamStructTypes.MULTI_LINK_SECTION, links.Count());
 
             foreach (var link in links)
                 WriteMultiLink(link, writer);
@@ -240,7 +238,7 @@ namespace SIMULTAN.Serializer.SIMLINKS
 
         private static MultiLink ParseMultiLink(DXFParserResultSet data, DXFParserInfo info)
         {
-            var representations = data.Get<(int key, string value)[]>(ParamStructCommonSaveCode.NUMBER_OF, new (int, string)[0]);
+            var representations = data.Get<(string key, string value)[]>(ParamStructCommonSaveCode.NUMBER_OF, new (string, string)[0]);
 
             try
             {
@@ -257,9 +255,9 @@ namespace SIMULTAN.Serializer.SIMLINKS
             }
         }
 
-        private static (int, string) ParseRepresentation(DXFParserResultSet data, DXFParserInfo info)
+        private static (string, string) ParseRepresentation(DXFParserResultSet data, DXFParserInfo info)
         {
-            int key = data.Get<int>(ParamStructCommonSaveCode.COORDS_X, 0);
+            string key = data.Get<string>(ParamStructCommonSaveCode.COORDS_X, "");
             string value = data.Get<string>(ParamStructCommonSaveCode.COORDS_Y, string.Empty);
 
             return (key, value);

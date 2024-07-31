@@ -1,6 +1,7 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SIMULTAN.Data;
 using SIMULTAN.Data.Components;
+using SIMULTAN.Data.SimMath;
 using SIMULTAN.Data.SimNetworks;
 using SIMULTAN.Data.Taxonomy;
 using SIMULTAN.Data.Users;
@@ -9,6 +10,7 @@ using SIMULTAN.Tests.TestUtils;
 using SIMULTAN.Tests.Util;
 using System;
 using System.ComponentModel;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 
@@ -17,14 +19,14 @@ namespace SIMULTAN.Tests.Parameters
     [TestClass]
     public class EnumParameterTests : BaseProjectTest
     {
-        private static readonly FileInfo parameterProject = new FileInfo(@".\ParameterTestsProject.simultan");
-        private static readonly FileInfo calculationProject = new FileInfo(@".\CalculationTestsProject.simultan");
-        private static readonly FileInfo accessProject = new FileInfo(@".\ComponentAccessTestsProject.simultan");
-        private static readonly FileInfo parameterAccessProject = new FileInfo(@".\AccessTestsProject.simultan");
+        private static readonly FileInfo parameterProject = new FileInfo(@"./ParameterTestsProject.simultan");
+        private static readonly FileInfo calculationProject = new FileInfo(@"./CalculationTestsProject.simultan");
+        private static readonly FileInfo accessProject = new FileInfo(@"./ComponentAccessTestsProject.simultan");
+        private static readonly FileInfo parameterAccessProject = new FileInfo(@"./AccessTestsProject.simultan");
 
-        internal void CheckParameter(SimEnumParameter parameter, string name, SimTaxonomyEntry baseEntry, SimTaxonomyEntry valueEntry, SimParameterOperations op)
+        internal void CheckParameter(SimEnumParameter parameter, string nameOrKey, SimTaxonomyEntry baseEntry, SimTaxonomyEntry valueEntry, SimParameterOperations op)
         {
-            Assert.AreEqual(name, parameter.NameTaxonomyEntry.Name);
+            Assert.AreEqual(nameOrKey, parameter.NameTaxonomyEntry.TextOrKey);
             Assert.AreEqual(baseEntry, parameter.ParentTaxonomyEntryRef.Target);
             if (parameter.Value != null)
             {
@@ -32,9 +34,9 @@ namespace SIMULTAN.Tests.Parameters
             }
             else
             {
-                Assert.AreEqual(valueEntry, parameter.Value);
+                Assert.IsNull(valueEntry);
             }
-            Assert.AreEqual(name, parameter.NameTaxonomyEntry.Name);
+            Assert.AreEqual(nameOrKey, parameter.NameTaxonomyEntry.TextOrKey);
             Assert.AreEqual(op, parameter.AllowedOperations);
         }
 
@@ -42,8 +44,10 @@ namespace SIMULTAN.Tests.Parameters
         public void Ctor()
         {
 
-            var tax = new SimTaxonomy(new SimId(1200)) { Name = "Taxonomy" };
-            var taxEntry = new SimTaxonomyEntry(new SimId(1201)) { Name = "Parameter X", Key = "key" };
+            var tax = new SimTaxonomy(new SimId(1200));
+            tax.Languages.Add(CultureInfo.InvariantCulture);
+            tax.Localization.SetLanguage(new SimTaxonomyLocalizationEntry(CultureInfo.InvariantCulture, "Taxonomy"));
+            var taxEntry = new SimTaxonomyEntry(new SimId(1201), "key", "Parameter X");
             tax.Entries.Add(taxEntry);
 
             var taxonomy = new SimTaxonomy("BaseTax");
@@ -62,7 +66,7 @@ namespace SIMULTAN.Tests.Parameters
                 SimParameterOperations.EditValue | SimParameterOperations.EditName, SimParameterInstancePropagation.PropagateAlways, true);
             parameter.NameTaxonomyEntry = new SimTaxonomyEntryOrString(new SimTaxonomyEntryReference(taxEntry));
             parameter.AllowedOperations = SimParameterOperations.EditName;
-            CheckParameter(parameter, "Parameter X", baseTaxonomyEntry, taxVal1, SimParameterOperations.EditName);
+            CheckParameter(parameter, "key", baseTaxonomyEntry, taxVal1, SimParameterOperations.EditName);
 
         }
 
@@ -73,8 +77,10 @@ namespace SIMULTAN.Tests.Parameters
         {
             LoadProject(parameterProject);
 
-            var tax = new SimTaxonomy(new SimId(1200)) { Name = "Taxonomy" };
-            var taxEntry = new SimTaxonomyEntry(new SimId(1201)) { Name = "Parameter X", Key = "key" };
+            var tax = new SimTaxonomy(new SimId(1200));
+            tax.Languages.Add(CultureInfo.InvariantCulture);
+            tax.Localization.SetLanguage(new SimTaxonomyLocalizationEntry(CultureInfo.InvariantCulture, "Taxonomy"));
+            var taxEntry = new SimTaxonomyEntry(new SimId(1201), "key", "Parameter X");
             tax.Entries.Add(taxEntry);
 
             var taxonomy = new SimTaxonomy("BaseTax");
@@ -121,8 +127,10 @@ namespace SIMULTAN.Tests.Parameters
         {
             LoadProject(parameterProject);
 
-            var tax = new SimTaxonomy(new SimId(1200)) { Name = "Taxonomy" };
-            var taxEntry = new SimTaxonomyEntry(new SimId(1201)) { Name = "Parameter X", Key = "key" };
+            var tax = new SimTaxonomy(new SimId(1200));
+            tax.Languages.Add(CultureInfo.InvariantCulture);
+            tax.Localization.SetLanguage(new SimTaxonomyLocalizationEntry(CultureInfo.InvariantCulture, "Taxonomy"));
+            var taxEntry = new SimTaxonomyEntry(new SimId(1201), "key", "Parameter X");
             tax.Entries.Add(taxEntry);
 
             var taxonomy = new SimTaxonomy("BaseTax");
@@ -171,8 +179,10 @@ namespace SIMULTAN.Tests.Parameters
         private (SimTaxonomyEntry baseTax, SimTaxonomyEntry selected, SimTaxonomy parentTaxonomy) CreateTaxonomyEnumForParam()
         {
 
-            var tax = new SimTaxonomy(new SimId(1200)) { Name = "Taxonomy" };
-            var taxEntry = new SimTaxonomyEntry(new SimId(1201)) { Name = "Parameter X", Key = "key" };
+            var tax = new SimTaxonomy(new SimId(1200));
+            tax.Languages.Add(CultureInfo.InvariantCulture);
+            tax.Localization.SetLanguage(new SimTaxonomyLocalizationEntry(CultureInfo.InvariantCulture, "Taxonomy"));
+            var taxEntry = new SimTaxonomyEntry(new SimId(1201), "key", "Parameter X");
             tax.Entries.Add(taxEntry);
 
             var taxonomy = new SimTaxonomy("BaseTax");
@@ -196,7 +206,9 @@ namespace SIMULTAN.Tests.Parameters
         public void BaseTaxonomyEntryDeleted()
         {
             LoadProject(parameterProject);
-            var taxEntry = new SimTaxonomyEntry(new SimId(1201)) { Name = "Parameter X", Key = "key" };
+            var defaultEnumTaxEntry = projectData.Taxonomies.GetReservedParameter(ReservedParameterKeys.SIMENUMPARAM_DEFAULT);
+            Assert.IsNotNull(defaultEnumTaxEntry);
+            var taxEntry = new SimTaxonomyEntry(new SimId(1201), "key", "Parameter X");
 
             var taxonomy = new SimTaxonomy("BaseTax");
             this.projectData.Taxonomies.Add(taxonomy);
@@ -221,8 +233,7 @@ namespace SIMULTAN.Tests.Parameters
             taxonomy.Entries.Remove(baseTaxonomyEntry);
             Assert.IsNull(enumparam.Value);
             Assert.IsNotNull(enumparam.ParentTaxonomyEntryRef);
-            Assert.IsTrue(enumparam.ParentTaxonomyEntryRef.Target.Name == ReservedParameters.SIMENUMPARAM_DEFAULT);
-
+            Assert.AreEqual(defaultEnumTaxEntry, enumparam.ParentTaxonomyEntryRef.Target);
         }
 
 
@@ -230,7 +241,7 @@ namespace SIMULTAN.Tests.Parameters
         public void ValueTaxonomyEntryDeletedCheck()
         {
             LoadProject(parameterProject);
-            var taxEntry = new SimTaxonomyEntry(new SimId(1201)) { Name = "Parameter X", Key = "key" };
+            var taxEntry = new SimTaxonomyEntry(new SimId(1201), "key", "Parameter X");
 
             var taxonomy = new SimTaxonomy("BaseTax");
             this.projectData.Taxonomies.Add(taxonomy);
@@ -259,7 +270,7 @@ namespace SIMULTAN.Tests.Parameters
         public void SetParentNullExceptionCheck()
         {
             LoadProject(parameterProject);
-            var taxEntry = new SimTaxonomyEntry(new SimId(1201)) { Name = "Parameter X", Key = "key" };
+            var taxEntry = new SimTaxonomyEntry(new SimId(1201), "key", "Parameter X");
 
             var taxonomy = new SimTaxonomy("BaseTax");
             this.projectData.Taxonomies.Add(taxonomy);
@@ -286,7 +297,7 @@ namespace SIMULTAN.Tests.Parameters
             LoadProject(parameterProject);
             var parentComponent = new SimComponent() { InstanceType = SimInstanceType.SimNetworkBlock };
             this.projectData.Components.Add(parentComponent);
-            var taxEntry = new SimTaxonomyEntry(new SimId(1201)) { Name = "Parameter X", Key = "key" };
+            var taxEntry = new SimTaxonomyEntry(new SimId(1201), "key", "Parameter X");
 
             var taxonomy = new SimTaxonomy("BaseTax");
             this.projectData.Taxonomies.Add(taxonomy);
@@ -304,7 +315,7 @@ namespace SIMULTAN.Tests.Parameters
             };
             parentComponent.Parameters.Add(enumparam);
 
-            var networkBlock = new SimNetworkBlock("Block1", new System.Windows.Point(0, 0));
+            var networkBlock = new SimNetworkBlock("Block1", new SimPoint(0, 0));
             var compInstance = new SimComponentInstance(networkBlock);
             parentComponent.Instances.Add(compInstance);
 
@@ -323,7 +334,7 @@ namespace SIMULTAN.Tests.Parameters
         {
             var parentComponent = new SimComponent() { InstanceType = SimInstanceType.SimNetworkBlock };
             projectData.Components.Add(parentComponent);
-            var taxEntry = new SimTaxonomyEntry(new SimId(1201)) { Name = "Parameter X", Key = "key" };
+            var taxEntry = new SimTaxonomyEntry(new SimId(1201), "key", "Parameter X");
 
             var taxonomy = new SimTaxonomy("BaseTax");
             projectData.Taxonomies.Add(taxonomy);
@@ -395,14 +406,14 @@ namespace SIMULTAN.Tests.Parameters
 
         private SimTaxonomyEntry GetExistingBaseTaxEntry()
         {
-            return this.projectData.Taxonomies.FirstOrDefault(p => p.Name == "BASETAX_ENUM").Entries.FirstOrDefault(t => t.Name == "BaseEntry");
+            return this.projectData.Taxonomies.FirstOrDefault(p => p.Localization.Localize().Name == "BASETAX_ENUM").Entries.FirstOrDefault(t => t.Localization.Localize().Name == "BaseEntry");
 
         }
 
 
         private (SimEnumParameter param, SimTaxonomyEntry baseTax, SimTaxonomyEntryReference valueTax, SimTaxonomy parentTaxonomy) CreateEnumParameter(string name = "Parameter X")
         {
-            var taxEntry = new SimTaxonomyEntry(new SimId(1201)) { Name = "Parameter X", Key = "key" };
+            var taxEntry = new SimTaxonomyEntry(new SimId(1201), "key", "Parameter X");
             var taxs = CreateTaxonomyEnumForParam();
 
             var parameter = new SimEnumParameter(99, name,
@@ -438,7 +449,7 @@ namespace SIMULTAN.Tests.Parameters
             created.param.Category = SimCategory.Cooling;
             created.param.Propagation = SimInfoFlow.Output;
             created.param.Description = "description";
-            CheckParameter(created.param, "Parameter X", created.baseTax, created.valueTax.Target, SimParameterOperations.Move);
+            CheckParameter(created.param, "key", created.baseTax, created.valueTax.Target, SimParameterOperations.Move);
 
             Assert.AreEqual(99, created.param.Id.LocalId);
             Assert.AreEqual(SimCategory.Cooling, created.param.Category);
@@ -527,7 +538,7 @@ namespace SIMULTAN.Tests.Parameters
         {
             var taxs = CreateTaxonomyEnumForParam();
             var reference = new SimTaxonomyEntryReference(taxs.selected);
-            var otherRef = new SimTaxonomyEntryReference(taxs.baseTax.Children.FirstOrDefault(t => t.Name != taxs.selected.Name));
+            var otherRef = new SimTaxonomyEntryReference(taxs.baseTax.Children.FirstOrDefault(t => t.Localization.Localize().Name != taxs.selected.Localization.Localize().Name));
             var param = new SimEnumParameter("p1", taxs.baseTax, null, SimParameterOperations.None)
             {
                 Value = reference
@@ -542,7 +553,7 @@ namespace SIMULTAN.Tests.Parameters
         {
             var taxs = CreateTaxonomyEnumForParam();
             var reference = new SimTaxonomyEntryReference(taxs.selected);
-            var otherRef = new SimTaxonomyEntryReference(taxs.baseTax.Children.FirstOrDefault(t => t.Name != taxs.selected.Name));
+            var otherRef = new SimTaxonomyEntryReference(taxs.baseTax.Children.FirstOrDefault(t => t.Localization.Localize().Name != taxs.selected.Localization.Localize().Name));
             var param = new SimEnumParameter("p1", taxs.baseTax, null, SimParameterOperations.None);
             var eventsFired = 0;
             param.PropertyChanged += delegate (object sender, PropertyChangedEventArgs e)
@@ -572,8 +583,8 @@ namespace SIMULTAN.Tests.Parameters
         private void CheckParameterPropertyAccess<T>(string prop, T value)
         {
             LoadProject(accessProject, "bph", "bph");
-            var bphParameter = projectData.Components.First(x => x.Name == "BPHRoot").Parameters.First(x => x.NameTaxonomyEntry.Name == "BPHParameter") as SimDoubleParameter;
-            var archParameter = projectData.Components.First(x => x.Name == "ArchRoot").Parameters.First(x => x.NameTaxonomyEntry.Name == "ArchParameter") as SimDoubleParameter;
+            var bphParameter = projectData.Components.First(x => x.Name == "BPHRoot").Parameters.First(x => x.NameTaxonomyEntry.Text == "BPHParameter") as SimDoubleParameter;
+            var archParameter = projectData.Components.First(x => x.Name == "ArchRoot").Parameters.First(x => x.NameTaxonomyEntry.Text == "ArchParameter") as SimDoubleParameter;
 
             PropertyTestUtils.CheckPropertyAccess(bphParameter, archParameter, prop, value);
         }
@@ -645,7 +656,7 @@ namespace SIMULTAN.Tests.Parameters
             LoadProject(accessProject, "bph", "bph");
 
             var bphComponent = projectData.Components.First(x => x.Name == "BPHRoot");
-            var bphParameter = bphComponent.Parameters.First(x => x.NameTaxonomyEntry.Name == "BPHParameter");
+            var bphParameter = bphComponent.Parameters.First(x => x.NameTaxonomyEntry.Text == "BPHParameter");
 
             PropertyTestUtils.CheckPropertyChanges(bphParameter, prop, value, SimUserRole.BUILDING_PHYSICS, bphComponent, projectData.Components);
         }
@@ -723,7 +734,7 @@ namespace SIMULTAN.Tests.Parameters
         {
 
             var param = CreateEnumParameter();
-            var simTaxonomyEntry = new SimTaxonomyEntry();
+            var simTaxonomyEntry = new SimTaxonomyEntry("demokey");
 
             Assert.IsTrue(param.param.IsSameValue(param.valueTax, param.valueTax));
             Assert.IsTrue(param.param.IsSameValue(new SimTaxonomyEntryReference(param.valueTax), param.valueTax));
@@ -777,7 +788,7 @@ namespace SIMULTAN.Tests.Parameters
             var comp = projectData.Components.FirstOrDefault(x => x.Name == "WithReference");
 
             var baseTax = this.GetExistingBaseTaxEntry();
-            var taxVal = baseTax.Children.FirstOrDefault(t => t.Name == "EnumVal2");
+            var taxVal = baseTax.Children.FirstOrDefault(t => t.Localization.Localize().Name == "EnumVal2");
 
             var param = new SimEnumParameter("B", baseTax)
             {
@@ -817,7 +828,7 @@ namespace SIMULTAN.Tests.Parameters
             LoadProject(parameterProject);
 
             var baseTax = this.GetExistingBaseTaxEntry();
-            var taxVal = baseTax.Children.FirstOrDefault(t => t.Name == "EnumVal2");
+            var taxVal = baseTax.Children.FirstOrDefault(t => t.Localization.Localize().Name == "EnumVal2");
 
             var taxs = CreateTaxonomyEnumForParam();
             var param = new SimEnumParameter("Enum_A", baseTax)
@@ -857,7 +868,7 @@ namespace SIMULTAN.Tests.Parameters
         {
             LoadProject(parameterProject);
             var comp = projectData.Components.First(x => x.Name == "NotEmpty");
-            var param = comp.Parameters.First(x => x.NameTaxonomyEntry.Name == "a");
+            var param = comp.Parameters.First(x => x.NameTaxonomyEntry.Text == "a");
 
             Assert.IsTrue(param.HasAccess(projectData.UsersManager.Users.First(x => x.Name == "admin"), SimComponentAccessPrivilege.Read));
             Assert.IsTrue(param.HasAccess(projectData.UsersManager.Users.First(x => x.Name == "arch"), SimComponentAccessPrivilege.Read));
@@ -878,7 +889,7 @@ namespace SIMULTAN.Tests.Parameters
 
 
             var baseTax = this.GetExistingBaseTaxEntry();
-            var taxVal = baseTax.Children.FirstOrDefault(t => t.Name == "EnumVal2");
+            var taxVal = baseTax.Children.FirstOrDefault(t => t.Localization.Localize().Name == "EnumVal2");
 
             var param = new SimEnumParameter("B", baseTax)
             {
@@ -888,7 +899,7 @@ namespace SIMULTAN.Tests.Parameters
 
             Assert.ThrowsException<InvalidOperationException>(() => { param.GetReferencedParameter(); });
 
-            var refTarget = projectData.Components.First(x => x.Name == "ReferenceSource").Parameters.First(x => x.NameTaxonomyEntry.Name == "Enum_A");
+            var refTarget = projectData.Components.First(x => x.Name == "ReferenceSource").Parameters.First(x => x.NameTaxonomyEntry.Text == "Enum_A");
 
             var refComp = projectData.Components.First(x => x.Name == "RefParent")
                 .Components.First(x => x.Component != null && x.Component.Name == "RefChild").Component;
@@ -926,7 +937,7 @@ namespace SIMULTAN.Tests.Parameters
 
             comp.Parameters.Add(param);
 
-            Assert.AreEqual("EnumVal1", param.Value.Target.Name);
+            Assert.AreEqual("EnumVal1", param.Value.Target.Localization.Localize().Name);
         }
 
 
@@ -966,7 +977,7 @@ namespace SIMULTAN.Tests.Parameters
 
             var taxs = CreateTaxonomyEnumForParam();
 
-            var baseTaxonomy = this.projectData.Taxonomies.FirstOrDefault(t => t.Name == "BASETAX_ENUM");
+            var baseTaxonomy = this.projectData.Taxonomies.FirstOrDefault(t => t.Localization.Localize().Name == "BASETAX_ENUM");
             var valueTaxEntry = baseTaxonomy.Entries.FirstOrDefault().Children.FirstOrDefault();
 
             var param = new SimEnumParameter("Enum_A", baseTaxonomy.Entries.FirstOrDefault())
@@ -984,7 +995,7 @@ namespace SIMULTAN.Tests.Parameters
 
             param.Propagation = SimInfoFlow.FromReference;
 
-            Assert.AreEqual("EnumVal2", param.Value.Target.Name);
+            Assert.AreEqual("EnumVal2", param.Value.Target.Localization.Localize().Name);
         }
 
         /// <summary>
@@ -1000,7 +1011,8 @@ namespace SIMULTAN.Tests.Parameters
             projectData.Taxonomies.Add(taxonomy);
 
             var entryName = "TestEntry";
-            var taxEntry = new SimTaxonomyEntry("key", entryName);
+            var entryKey = "key";
+            var taxEntry = new SimTaxonomyEntry(entryKey, entryName);
             taxonomy.Entries.Add(taxEntry);
 
             var comp = projectData.Components.FirstOrDefault(x => x.Name == "Empty");
@@ -1012,16 +1024,16 @@ namespace SIMULTAN.Tests.Parameters
             var parameter = new SimEnumParameter(taxEntry, taxs.selected.Parent);
 
 
-            Assert.AreEqual(entryName, parameter.NameTaxonomyEntry.Name);
+            Assert.AreEqual(entryKey, parameter.NameTaxonomyEntry.TextOrKey);
             Assert.AreEqual(taxEntry, parameter.NameTaxonomyEntry.TaxonomyEntryReference.Target);
             comp.Parameters.Add(parameter);
 
             // now deleting the taxonomy entry should keep the name of the parameter but remove the entry reference
             taxonomy.Entries.Remove(taxEntry);
 
-            Assert.AreEqual(entryName, parameter.NameTaxonomyEntry.Name);
-            Assert.IsFalse(parameter.NameTaxonomyEntry.HasTaxonomyEntry());
-            Assert.IsFalse(parameter.NameTaxonomyEntry.HasTaxonomyEntryReference());
+            Assert.AreEqual(entryKey, parameter.NameTaxonomyEntry.TextOrKey);
+            Assert.IsFalse(parameter.NameTaxonomyEntry.HasTaxonomyEntry);
+            Assert.IsFalse(parameter.NameTaxonomyEntry.HasTaxonomyEntryReference);
         }
 
         private WeakReference KeepNameOnTaxonomyEntryDeleteMemoryLeak_Action()

@@ -1,12 +1,13 @@
 ﻿using Microsoft.VisualBasic.FileIO;
 using SIMULTAN.Data.MultiValues;
+using SIMULTAN.Utils;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using System.Windows.Threading;
 
 namespace SIMULTAN.Serializer.CSV
 {
@@ -101,7 +102,7 @@ namespace SIMULTAN.Serializer.CSV
         /// <returns>The imported table</returns>
         public static SimMultiValueBigTable Import(SimMultiValueCollection collection, FileInfo file, CSVToValueFieldImporterSettings settings,
             string unitRows, string unitColumns, string rowHeaderFormat, string rowHeaderUnit, string columnHeaderFormat, string columnHeaderUnit,
-            Dispatcher dispatcher = null)
+            ISynchronizeInvoke dispatcher = null)
         {
             var components = ConvertCsvToMultiValueBigTableComponents(file, settings,
                 rowHeaderFormat, rowHeaderUnit, columnHeaderFormat, columnHeaderUnit);
@@ -114,7 +115,7 @@ namespace SIMULTAN.Serializer.CSV
             }
             else
             {
-                dispatcher.Invoke(() => collection.Add(result));
+                dispatcher.Invoke(() => collection.Add(result), null);
             }
             return result;
         }

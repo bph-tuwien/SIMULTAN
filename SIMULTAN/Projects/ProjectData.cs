@@ -11,7 +11,11 @@ using SIMULTAN.Data.ValueMappings;
 using SIMULTAN.DataMapping;
 using SIMULTAN.Excel;
 using SIMULTAN.Exchange;
+using SIMULTAN.Utils;
+using System;
+using System.ComponentModel;
 using System.IO;
+using System.Threading;
 using static SIMULTAN.Data.SimNetworks.SimNetwork;
 
 namespace SIMULTAN.Projects
@@ -24,7 +28,15 @@ namespace SIMULTAN.Projects
         /// <summary>
         /// The owner of the project data. Usually the project.
         /// </summary>
-        public abstract IReferenceLocation Owner { get; }
+        public IReferenceLocation Owner 
+        { 
+            get { return this.owner; } 
+            internal set 
+            {
+                this.SetCallingLocation(value);
+            } 
+        }
+        private IReferenceLocation owner;
 
         #region PROPERTIES: Managers
 
@@ -114,6 +126,19 @@ namespace SIMULTAN.Projects
         /// </summary>
         public SimGeometryRelationCollection GeometryRelations { get; }
 
+        /// <summary>
+        /// Dispatcher timer factory used for the OffsetSurfaceGenerator. This will be remove once the OffsetSurfaceGenerator is reworked.
+        /// </summary>
+        [Obsolete("Temporary solution for the offset surface generator, will be removed once the generator is reworked")]
+        public IDispatcherTimerFactory DispatcherTimerFactory { get; set; }
+
+        /// <summary>
+        /// Synchronization context used to run events on the main thread for thread safety.
+        /// Does not synchronize by default and needs to be set with a platform specific implementation 
+        /// in case synchronization is required.
+        /// </summary>
+        public ISynchronizeInvoke SynchronizationContext { get; set; }
+
         #endregion
 
 
@@ -122,8 +147,18 @@ namespace SIMULTAN.Projects
         /// <summary>
         /// Initializes all data managers and attaches their respective event handlers.
         /// </summary>
-        public ProjectData()
+        /// <param name="synchronizationContext">Synchronization context used to run events on the main thread for thread safety.</param>
+        /// <param name="dispatcherTimer">Dispatcher timer factory used for the OffsetSurfaceGenerator.</param>
+        public ProjectData(ISynchronizeInvoke synchronizationContext, IDispatcherTimerFactory dispatcherTimer)
         {
+            if (synchronizationContext == null)
+                throw new ArgumentNullException(nameof(synchronizationContext));
+            if (dispatcherTimer == null)
+                throw new ArgumentNullException(nameof(dispatcherTimer));
+
+            this.SynchronizationContext = synchronizationContext;
+            this.DispatcherTimerFactory = dispatcherTimer;
+
             this.UsersManager = new SimUsersManager();
             this.MultiLinkManager = new MultiLinkManager();
 
@@ -154,6 +189,7 @@ namespace SIMULTAN.Projects
             this.ComponentGeometryExchange = new ComponentGeometryExchange(this);
         }
 
+
         /// <summary>
         /// Clears all managers in the project data
         /// </summary>
@@ -163,6 +199,8 @@ namespace SIMULTAN.Projects
 
             using (AccessCheckingDisabler.Disable(this.Components))
             {
+                this.Taxonomies.IsClosing = true;
+
                 this.SitePlannerManager.ClearRecord();
                 this.SitePlannerManager.SetCallingLocation(null);
 
@@ -195,6 +233,8 @@ namespace SIMULTAN.Projects
                 this.GeometryRelations.SetCallingLocation(null);
 
                 this.IdGenerator.Reset();
+
+                this.Taxonomies.IsClosing = false;
             }
         }
 
@@ -206,6 +246,7 @@ namespace SIMULTAN.Projects
         /// <param name="caller">The caller</param>
         public void SetCallingLocation(IReferenceLocation caller)
         {
+            this.owner = caller;
             this.ValueManager.SetCallingLocation(caller);
             this.NetworkManager.SetCallingLocation(caller);
             this.Components.SetCallingLocation(caller);
@@ -221,5 +262,18 @@ namespace SIMULTAN.Projects
         /// Log file which contains errors and warnings generated during import
         /// </summary>
         public FileInfo ImportLogFile { get; set; }
+
+        /// <summary>
+        /// Looks up taxonomy entries for default slot by their name.
+        /// Do this if the default taxonomies changed, could mean that the project is migrated.
+        /// </summary>
+        /// <param name="taxonomyFileVersion">The file version of the loaded managed taxonomy file</param>
+        public void RestoreDefaultTaxonomyReferences(ulong taxonomyFileVersion = 0)
+        {
+            Components.RestoreDefaultTaxonomyReferences(taxonomyFileVersion);
+            AssetManager.RestoreDefaultTaxonomyReferences();
+            GeometryRelations.RestoreDefaultTaxonomyReferences();
+            DataMappingTools.RestoreDefaultTaxonomyReferences();
+        }
     }
 }

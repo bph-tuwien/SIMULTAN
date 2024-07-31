@@ -4,7 +4,7 @@ using SIMULTAN.Data.Geometry;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Windows.Media.Media3D;
+using SIMULTAN.Data.SimMath;
 
 namespace SIMULTAN.Exchange.NetworkConnectors
 {
@@ -12,7 +12,7 @@ namespace SIMULTAN.Exchange.NetworkConnectors
     /// Handles the connection between a <see cref="GeometryModel"/> and a <see cref="SimFlowNetwork"/>.
     /// Manages <see cref="NetworkEdgeConnector"/> and <see cref="NetworkNodeConnector"/>.
     /// Only works with GeometryModels created by the 
-    /// <see cref="ComponentGeometryExchange.ConvertNetwork(SimFlowNetwork, System.IO.FileInfo)"/> method.
+    /// <see cref="ComponentGeometryExchange.ConvertNetwork(SimFlowNetwork, System.IO.FileInfo, Utils.IDispatcherTimerFactory)"/> method.
     /// </summary>
     internal class NetworkGeometryModelConnector
     {
@@ -234,7 +234,7 @@ namespace SIMULTAN.Exchange.NetworkConnectors
             if (geometry == null)
             {
                 geometry = new Vertex(this.GeometryModel.Geometry.Layers.First(), node.Name,
-                    new Point3D(node.Position.X / 100.0, 0, node.Position.Y / 100.0));
+                    new SimPoint3D(node.Position.X / 100.0, 0, node.Position.Y / 100.0));
             }
 
             if (existingConnectors != null && existingConnectors.TryGetValue(geometry.Id, out var con))

@@ -27,15 +27,10 @@ namespace SIMULTAN.Data.Taxonomy
             get
             {
                 if (Target == null)
-                    return taxonomyEntryId;
+                    return SimId.Empty;
                 return Target.Id;
             }
-            private set
-            {
-                taxonomyEntryId = value;
-            }
         }
-        private SimId taxonomyEntryId;
 
         #endregion
 
@@ -47,16 +42,7 @@ namespace SIMULTAN.Data.Taxonomy
         /// <param name="other">The reference to copy</param>
         public SimTaxonomyEntryReference(SimTaxonomyEntryReference other)
         {
-            if (other.Target == null)
-            {
-                TaxonomyEntryId = other.TaxonomyEntryId;
-                Target = null;
-            }
-            else
-            {
-                Target = other.Target;
-                TaxonomyEntryId = Target.Id;
-            }
+            this.Target = other.Target;
         }
 
         /// <summary>
@@ -69,19 +55,13 @@ namespace SIMULTAN.Data.Taxonomy
                 throw new ArgumentNullException(nameof(target));
 
             Target = target;
-            TaxonomyEntryId = target.Id;
         }
 
         /// <summary>
-        /// Creates a reference to the Id of an <see cref="SimTaxonomyEntry"/>
-        /// Used for loading.
+        /// Creates a reference to a <see cref="SimTaxonomyEntry"/>
         /// </summary>
-        /// <param name="taxonomyEntryId">The id of the entry</param>
-        public SimTaxonomyEntryReference(SimId taxonomyEntryId)
-        {
-            TaxonomyEntryId = taxonomyEntryId;
-            Target = null;
-        }
+        protected SimTaxonomyEntryReference() { Target = null; }
+
 
         #endregion
 
@@ -109,12 +89,17 @@ namespace SIMULTAN.Data.Taxonomy
         }
 
         /// <summary>
+        /// Obsolete, use localized names instead.
         /// Only compares the <see cref="Target"/>, have a look at <see cref="SimTaxonomyEntry.CompareTo(SimTaxonomyEntry)"/>
         /// </summary>
         /// <param name="other">The other reference to compare to</param>
         /// <returns>See <see cref="SimTaxonomyEntry.CompareTo(SimTaxonomyEntry)"/></returns>
+        [Obsolete("Use compare manually using localized names")]
         public int CompareTo(SimTaxonomyEntryReference other)
         {
+            if (Debugger.IsAttached)
+                throw new NotImplementedException("Should not be used anymore, replace with localized compare");
+
             return Target.CompareTo(other.Target);
         }
 
@@ -188,5 +173,18 @@ namespace SIMULTAN.Data.Taxonomy
         /// Delegate type for delete handlers
         /// </summary>
         internal delegate void TaxonomyReferenceDeleter(SimTaxonomyEntry caller);
+
+        /// <summary>
+        /// Returns true when the entry key as well as the taxonomy key of this entry match the parameters
+        /// </summary>
+        /// <param name="taxonomyKey">The key of the taxonomy</param>
+        /// <param name="entryKey">The key of the entry</param>
+        /// <returns>Returns true when the entry key as well as the taxonomy key of this entry match the parameters, otherwise False</returns>
+        public bool Matches(string taxonomyKey, string entryKey)
+        {
+            if (Target == null)
+                return false;
+            return Target.Matches(taxonomyKey, entryKey);
+        }
     }
 }

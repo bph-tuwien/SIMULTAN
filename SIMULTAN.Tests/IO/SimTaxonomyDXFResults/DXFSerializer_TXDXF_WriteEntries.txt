@@ -2,16 +2,20 @@
 SECTION
 2
 VERSION_SECTION
+901
+-1
 0
 FILE_VERSION
 10
-21
+29
 0
 ENDSEC
 0
 SECTION
 2
 TAXONOMY_SECTION
+901
+-1
 0
 TAXONOMY
 899
@@ -20,14 +24,30 @@ TAXONOMY
 1
 22004
 TaxKey 1
-2
-Taxonomy 1
-22002
-Description
 22005
 0
 22006
 1
+22100
+2
+22101
+
+22101
+de
+22102
+2
+22103
+
+22104
+Taxonomy 1
+22105
+Description
+22103
+de
+22104
+Taxonomy 1 de
+22105
+Description de
 22001
 1
 0
@@ -38,9 +58,19 @@ TAXONOMY_ENTRY
 Key 1
 900
 3
+22102
 2
+22103
+
+22104
 Entry 1
-22002
+22105
+
+22103
+de
+22104
+
+22105
 
 22001
 2
@@ -52,10 +82,20 @@ TAXONOMY_ENTRY
 Key 2
 900
 4
+22102
 2
+22103
+
+22104
 Entry 2
-22002
+22105
 Description
+22103
+de
+22104
+Entry 2 de
+22105
+Description de
 22001
 0
 0
@@ -66,10 +106,20 @@ TAXONOMY_ENTRY
 Key 3
 900
 5
+22102
 2
-Entry 3
-22002
+22103
 
+22104
+Entry 3
+22105
+
+22103
+de
+22104
+Entry 3 de
+22105
+Description de
 22001
 0
 0
@@ -94,14 +144,22 @@ TAXONOMY
 2
 22004
 TaxKey 2
-2
-Taxonomy 2
-22002
-
 22005
 0
 22006
 1
+22100
+1
+22101
+
+22102
+1
+22103
+
+22104
+Taxonomy 2
+22105
+
 22001
 0
 0

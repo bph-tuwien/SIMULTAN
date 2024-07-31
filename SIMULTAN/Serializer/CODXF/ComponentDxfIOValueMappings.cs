@@ -1,8 +1,7 @@
 ﻿
 using SIMULTAN.Data;
+using SIMULTAN.Data.SimMath;
 using SIMULTAN.Data.MultiValues;
-using SIMULTAN.Data.SimNetworks;
-using SIMULTAN.Data.SitePlanner;
 using SIMULTAN.Data.ValueMappings;
 using SIMULTAN.Serializer.DXF;
 using System;
@@ -10,7 +9,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Windows.Media;
 
 namespace SIMULTAN.Serializer.CODXF
 {
@@ -34,7 +32,7 @@ namespace SIMULTAN.Serializer.CODXF
                             new DXFEntryParserElement[]
                             {
                                 new DXFSingleEntryParserElement<double>(ValueMappingSaveCode.VALUE_MAPPING_COLOR_MAP_MARKER_VALUE),
-                                new DXFSingleEntryParserElement<Color>(ValueMappingSaveCode.VALUE_MAPPING_COLOR_MAP_MARKER_COLOR),
+                                new DXFSingleEntryParserElement<SimColor>(ValueMappingSaveCode.VALUE_MAPPING_COLOR_MAP_MARKER_COLOR),
                             }),
                     }));
 
@@ -51,7 +49,7 @@ namespace SIMULTAN.Serializer.CODXF
                             new DXFEntryParserElement[]
                             {
                                 new DXFSingleEntryParserElement<double>(ValueMappingSaveCode.VALUE_MAPPING_COLOR_MAP_MARKER_VALUE),
-                                new DXFSingleEntryParserElement<Color>(ValueMappingSaveCode.VALUE_MAPPING_COLOR_MAP_MARKER_COLOR),
+                                new DXFSingleEntryParserElement<SimColor>(ValueMappingSaveCode.VALUE_MAPPING_COLOR_MAP_MARKER_COLOR),
                             }),
                     }));
 
@@ -135,7 +133,6 @@ namespace SIMULTAN.Serializer.CODXF
 
 
         #region Section
-
         /// <summary>
         /// Reads a value mapping section. The results are stored in <see cref="DXFParserInfo.ProjectData"/>
         /// </summary>
@@ -160,7 +157,7 @@ namespace SIMULTAN.Serializer.CODXF
         /// <param name="writer">The writer into which the data should be written</param>
         internal static void WriteValueMappingSection(IEnumerable<SimValueMapping> collection, DXFStreamWriter writer)
         {
-            writer.StartSection(ParamStructTypes.SIMVALUEMAPPING_SECTION);
+            writer.StartSection(ParamStructTypes.SIMVALUEMAPPING_SECTION, collection.Count());
 
             foreach (var item in collection)
             {
@@ -263,7 +260,7 @@ namespace SIMULTAN.Serializer.CODXF
         private static SimColorMarker ParseColorMarker(DXFParserResultSet data, DXFParserInfo info)
         {
             var value = data.Get<double>(ValueMappingSaveCode.VALUE_MAPPING_COLOR_MAP_MARKER_VALUE, 0.0);
-            var color = data.Get<Color>(ValueMappingSaveCode.VALUE_MAPPING_COLOR_MAP_MARKER_COLOR, Colors.White);
+            var color = data.Get<SimColor>(ValueMappingSaveCode.VALUE_MAPPING_COLOR_MAP_MARKER_COLOR, SimColors.White);
 
             return new SimColorMarker(value, color);
         }
@@ -293,7 +290,7 @@ namespace SIMULTAN.Serializer.CODXF
                 (marker, mw) =>
                 {
                     mw.Write<double>(ValueMappingSaveCode.VALUE_MAPPING_COLOR_MAP_MARKER_VALUE, marker.Value);
-                    mw.Write<Color>(ValueMappingSaveCode.VALUE_MAPPING_COLOR_MAP_MARKER_COLOR, marker.Color);
+                    mw.Write<SimColor>(ValueMappingSaveCode.VALUE_MAPPING_COLOR_MAP_MARKER_COLOR, marker.Color);
                 });
         }
 

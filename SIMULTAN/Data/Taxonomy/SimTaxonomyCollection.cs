@@ -5,6 +5,7 @@ using SIMULTAN.Utils;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -27,6 +28,10 @@ namespace SIMULTAN.Data.Taxonomy
         /// If the taxonomy collection is being merged into another one
         /// </summary>
         public bool IsMergeInProgress { get; private set; }
+        /// <summary>
+        /// Disables certain notifications while a project is closed
+        /// </summary>
+        public bool IsClosing { get; set; }
 
         /// <summary>
         /// Creates a new <see cref="SimTaxonomyCollection"/>
@@ -60,7 +65,7 @@ namespace SIMULTAN.Data.Taxonomy
         {
             var oldItem = this[index];
             if (!ignoreIsDeletable && !oldItem.IsDeletable)
-                throw new InvalidOperationException(String.Format("Cannot delete taxonomy \"{0}\" because it is not deletable.", oldItem.Name));
+                throw new InvalidOperationException(String.Format("Cannot delete taxonomy \"{0}\" because it is not deletable.", oldItem.Localization.Localize().Name));
 
             UnsetValues(oldItem);
             base.RemoveItem(index);
@@ -192,9 +197,11 @@ namespace SIMULTAN.Data.Taxonomy
         /// <param name="taxonomies">lookup taxonomies</param>
         /// <param name="key">Key to look for</param>
         /// <param name="name">Name to look for</param>
+        /// <param name="culture">Culture used to compare names, uses invariant culture if null</param>
         /// <returns>A taxonomy matching either the key or the name. Key takes precedence. Null if not found.</returns>
-        public static SimTaxonomy GetTaxonomyByKeyOrName(IEnumerable<SimTaxonomy> taxonomies, String key, String name = null)
+        public static SimTaxonomy GetTaxonomyByKeyOrName(IEnumerable<SimTaxonomy> taxonomies, String key, String name = null, CultureInfo culture = null)
         {
+            culture = culture ?? CultureInfo.InvariantCulture;
             SimTaxonomy tax = null;
             if (!String.IsNullOrEmpty(key))
             {
@@ -203,7 +210,7 @@ namespace SIMULTAN.Data.Taxonomy
 
             if (tax == null && !String.IsNullOrEmpty(name))
             {
-                tax = taxonomies.FirstOrDefault(x => x.Name == name);
+                tax = taxonomies.FirstOrDefault(x => x.Localization.Localize(culture).Name == name);
             }
 
             return tax;
@@ -216,10 +223,11 @@ namespace SIMULTAN.Data.Taxonomy
         /// </summary>
         /// <param name="key">Key to look for</param>
         /// <param name="name">Name to look for</param>
+        /// <param name="culture">Culture used to compare names, uses invariant culture if null</param>
         /// <returns>A taxonomy matching either the key or the name. Key takes precedence. Null if not found.</returns>
-        public SimTaxonomy GetTaxonomyByKeyOrName(String key, String name = null)
+        public SimTaxonomy GetTaxonomyByKeyOrName(String key, String name = null, CultureInfo culture = null)
         {
-            return GetTaxonomyByKeyOrName(this, key, name);
+            return GetTaxonomyByKeyOrName(this, key, name, culture);
         }
 
         /// <summary>
@@ -346,7 +354,15 @@ namespace SIMULTAN.Data.Taxonomy
             var newTaxonomies = new List<SimTaxonomy>();
             foreach (var tax in other)
             {
-                var mergeTax = GetTaxonomyByKeyOrName(tax.Key, tax.Name);
+                SimTaxonomy mergeTax = null;
+                // check all localizations if we find a match in one
+                foreach (var loc in tax.Localization.Entries.Values)
+                {
+                    mergeTax = GetTaxonomyByKeyOrName(tax.Key, loc.Name, loc.Culture);
+                    if (mergeTax != null)
+                        break;
+                }
+
                 if (mergeTax != null && mergeTax.IsIdentical(tax))
                 {
                     existingTaxonomies.Add(tax, mergeTax);
@@ -439,7 +455,7 @@ namespace SIMULTAN.Data.Taxonomy
         /// </summary>
         /// <param name="entry">The <see cref="SimTaxonomyEntry"/> in which the property has been changed</param>
         /// <param name="property">The name of the modified property</param>
-        internal void NotifyTaxonomyEntryPropertyChanged(SimTaxonomyEntry entry, [CallerMemberName] string property = null)
+        internal void NotifyTaxonomyEntryPropertyChanged(object entry, [CallerMemberName] string property = null)
         {
             TaxonomyEntryPropertyChanged?.Invoke(entry, new PropertyChangedEventArgs(property));
         }

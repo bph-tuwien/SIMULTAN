@@ -1,5 +1,4 @@
-﻿using Assimp.Unmanaged;
-using SIMULTAN.Data;
+﻿using SIMULTAN.Data;
 using SIMULTAN.Data.MultiValues;
 using SIMULTAN.Data.SitePlanner;
 using SIMULTAN.Data.ValueMappings;
@@ -7,12 +6,10 @@ using SIMULTAN.Projects;
 using SIMULTAN.Serializer.DXF;
 using SIMULTAN.Utils;
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Windows.Media;
+using SIMULTAN.Data.SimMath;
 
 namespace SIMULTAN.Serializer.SPDXF
 {
@@ -90,7 +87,7 @@ namespace SIMULTAN.Serializer.SPDXF
                             new DXFSingleEntryParserElement<Guid>(SitePlannerSaveCode.BUILDING_GEOMETRYMODEL_PROJECT_ID){MinVersion = 12},
                             new DXFSingleEntryParserElement<long>(SitePlannerSaveCode.BUILDING_GEOMETRYMODEL_RESOURCE_ID){MinVersion = 12},
                             new DXFSingleEntryParserElement<String>(SitePlannerSaveCode.BUILDING_CUSTOM_COLOR){MaxVersion = 11},
-                            new DXFSingleEntryParserElement<Color>(SitePlannerSaveCode.BUILDING_CUSTOM_COLOR){MinVersion = 12},
+                            new DXFSingleEntryParserElement<SimColor>(SitePlannerSaveCode.BUILDING_CUSTOM_COLOR){MinVersion = 12},
                         }),
                     new DXFStructArrayEntryParserElement<SimId>(SitePlannerSaveCode.VALUE_MAPPING_ASSOCIATIONS, ParseValueMappingV12,
                         new DXFEntryParserElement[]
@@ -116,7 +113,7 @@ namespace SIMULTAN.Serializer.SPDXF
                                                 new DXFEntryParserElement[]
                                                 {
                                                     new DXFSingleEntryParserElement<double>(SitePlannerSaveCode.VALUE_MAPPING_COLOR_MAP_MARKER_VALUE),
-                                                    new DXFSingleEntryParserElement<Color>(SitePlannerSaveCode.VALUE_MAPPING_COLOR_MAP_MARKER_COLOR),
+                                                    new DXFSingleEntryParserElement<SimColor>(SitePlannerSaveCode.VALUE_MAPPING_COLOR_MAP_MARKER_COLOR),
                                                 })
                                         })),
                                     // MultiLinearGradientColorMap
@@ -128,7 +125,7 @@ namespace SIMULTAN.Serializer.SPDXF
                                                 new DXFEntryParserElement[]
                                                 {
                                                     new DXFSingleEntryParserElement<double>(SitePlannerSaveCode.VALUE_MAPPING_COLOR_MAP_MARKER_VALUE),
-                                                    new DXFSingleEntryParserElement<Color>(SitePlannerSaveCode.VALUE_MAPPING_COLOR_MAP_MARKER_COLOR),
+                                                    new DXFSingleEntryParserElement<SimColor>(SitePlannerSaveCode.VALUE_MAPPING_COLOR_MAP_MARKER_COLOR),
                                                 })
                                         })),
                                 }) {MinVersion = 12}, // End of Color Maps
@@ -277,7 +274,7 @@ namespace SIMULTAN.Serializer.SPDXF
             writer.WriteVersionSection();
 
             // Data
-            writer.StartSection(ParamStructTypes.SITEPLANNER_SECTION);
+            writer.StartSection(ParamStructTypes.SITEPLANNER_SECTION, -1);
 
             writer.Write(ParamStructCommonSaveCode.ENTITY_START, ParamStructTypes.SITEPLANNER);
 
@@ -335,12 +332,12 @@ namespace SIMULTAN.Serializer.SPDXF
         {
             var colorMapMarkers = new List<SimColorMarker>();
             string[] markers = obj.Split(';');
-            ColorConverter colorConverter = new ColorConverter();
+            SimColorConverter colorConverter = new SimColorConverter();
             foreach (var m in markers)
             {
                 var parameters = m.Split('|');
                 var val = double.Parse(parameters[0], System.Globalization.CultureInfo.InvariantCulture);
-                var col = (Color)colorConverter.ConvertFromInvariantString(parameters[1]);
+                var col = (SimColor)colorConverter.ConvertFromInvariantString(parameters[1]);
                 colorMapMarkers.Add(new SimColorMarker(val, col));
             }
             return colorMapMarkers;
@@ -549,18 +546,18 @@ namespace SIMULTAN.Serializer.SPDXF
         {
             ResourceReference geoRes = null;
             ulong id = result.Get<ulong>(SitePlannerSaveCode.BUILDING_ID, 0L);
-            Color color;
+            SimColor color;
             if (info.FileVersion < 12)
             {
                 geoRes = result.Get<ResourceReference>(SitePlannerSaveCode.BUILDING_GEOMETRYMODEL_PATH, null);
                 var colorString = result.Get<String>(SitePlannerSaveCode.BUILDING_CUSTOM_COLOR, "0 0 0");
                 var splitColor = colorString.Split(' ');
-                color = Color.FromRgb(byte.Parse(splitColor[0]), byte.Parse(splitColor[1]), byte.Parse(splitColor[2]));
+                color = SimColor.FromRgb(byte.Parse(splitColor[0]), byte.Parse(splitColor[1]), byte.Parse(splitColor[2]));
             }
             else
             {
                 geoRes = ParseResourceReference(result, SitePlannerSaveCode.BUILDING_GEOMETRYMODEL_PROJECT_ID, SitePlannerSaveCode.BUILDING_GEOMETRYMODEL_RESOURCE_ID, info);
-                color = result.Get<Color>(SitePlannerSaveCode.BUILDING_CUSTOM_COLOR, Colors.Black);
+                color = result.Get<SimColor>(SitePlannerSaveCode.BUILDING_CUSTOM_COLOR, SimColors.Black);
             }
 
             var building = new SitePlannerBuilding(id, geoRes)
@@ -632,7 +629,7 @@ namespace SIMULTAN.Serializer.SPDXF
         private static SimColorMarker ParseColorMapMarker(DXFParserResultSet data, DXFParserInfo info)
         {
             double value = data.Get<double>(SitePlannerSaveCode.VALUE_MAPPING_COLOR_MAP_MARKER_VALUE, 0);
-            Color color = data.Get<Color>(SitePlannerSaveCode.VALUE_MAPPING_COLOR_MAP_MARKER_COLOR, Colors.Black);
+            SimColor color = data.Get<SimColor>(SitePlannerSaveCode.VALUE_MAPPING_COLOR_MAP_MARKER_COLOR, SimColors.Black);
             return new SimColorMarker(value, color);
         }
 

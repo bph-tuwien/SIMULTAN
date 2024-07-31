@@ -2,6 +2,7 @@
 using SIMULTAN.Data.Assets;
 using SIMULTAN.Data.Components;
 using SIMULTAN.Data.Geometry;
+using SIMULTAN.Data.SimMath;
 using SIMULTAN.Data.MultiValues;
 using SIMULTAN.Data.Users;
 using SIMULTAN.Exceptions;
@@ -21,8 +22,7 @@ using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Windows.Media;
-using System.Windows.Threading;
+using System.Diagnostics;
 
 namespace SIMULTAN.Projects
 {
@@ -129,7 +129,6 @@ namespace SIMULTAN.Projects
         public DirectoryInfo ProjectUnpackFolder { get; protected set; }
         private FileSystemWatcher projectUnpackFolderWatcher;
         private Dictionary<string, DateTime> projectUnpackFolderLastChange;
-        private Dispatcher localDispatcher;
 
         /// <summary>
         /// Internal field for the Property <see cref="ContainsUnsavedChanges"/>.
@@ -956,6 +955,7 @@ namespace SIMULTAN.Projects
         /// </summary>
         /// <param name="_target">the target folder, can be Null</param>
         /// <param name="_initial_file_name">the initial name of the file</param>
+        /// <param name="dispatcherTimer">The dispatcher timer factory</param>
         /// /// <param name="nameCollisionFormat">Format used for the name of a copied resource.
         /// Arguments:
         ///   {0}: The original filename without extension
@@ -963,7 +963,7 @@ namespace SIMULTAN.Projects
         /// </param>
         /// <returns>the created resource</returns>
         public ResourceFileEntry AddEmptyGeometryResource(DirectoryInfo _target, string _initial_file_name,
-            string nameCollisionFormat)
+            string nameCollisionFormat, IDispatcherTimerFactory dispatcherTimer)
         {
             DisableProjectUnpackFolderWatcher();
 
@@ -978,8 +978,8 @@ namespace SIMULTAN.Projects
 
             var resource = AddEmptyResource(uniqueFile);
 
-            var geometry = new GeometryModelData();
-            geometry.Layers.Add(new Layer(geometry, "0") { Color = new DerivedColor(Colors.White) });
+            var geometry = new GeometryModelData(dispatcherTimer);
+            geometry.Layers.Add(new Layer(geometry, "0") { Color = new DerivedColor(SimColor.FromRgb(255, 255, 255)) });//white
             var model = new GeometryModel(_initial_file_name, resource, OperationPermission.DefaultWallModelPermissions, geometry);
 
             try
@@ -989,8 +989,8 @@ namespace SIMULTAN.Projects
             catch (Exception e)
             {
                 ExceptionToFileWriter.Write(e);
-                Console.WriteLine(e.Message);
-                Console.WriteLine(e.StackTrace);
+                Debug.WriteLine(e.Message);
+                Debug.WriteLine(e.StackTrace);
                 throw;
             }
 
@@ -998,6 +998,45 @@ namespace SIMULTAN.Projects
 
             return resource;
         }
+
+
+        /// <summary>
+        /// Similar to the <see cref="AddEmptyGeometryResource"/> but without file name collision check
+        /// </summary>
+        /// <param name="_target">the target folder, can be Null</param>
+        /// <param name="file_name">the initial name of the file</param>
+        /// <returns>the created resource</returns>
+        public ResourceFileEntry AddEmptyGeometryResourceWithoutCollisionCheck(DirectoryInfo _target, string file_name)
+        {
+            DisableProjectUnpackFolderWatcher();
+
+            DirectoryInfo parent = (_target == null) ? this.ProjectUnpackFolder : _target;
+            var targetPath = Path.Combine(parent.FullName, file_name + ParamStructFileExtensions.FILE_EXT_GEOMETRY_INTERNAL);
+
+            var uniqueFile = new FileInfo(targetPath);
+            var resource = AddEmptyResource(uniqueFile);
+
+            var geometry = new GeometryModelData(this.AllProjectDataManagers.DispatcherTimerFactory);
+            geometry.Layers.Add(new Layer(geometry, "0") { Color = new DerivedColor(SimColors.White) });
+            var model = new GeometryModel(file_name, resource, OperationPermission.DefaultWallModelPermissions, geometry);
+
+            try
+            {
+                SimGeoIO.Save(model, resource, SimGeoIO.WriteMode.Plaintext);
+            }
+            catch (Exception e)
+            {
+                ExceptionToFileWriter.Write(e);
+                Debug.WriteLine(e.Message);
+                Debug.WriteLine(e.StackTrace);
+                throw;
+            }
+
+            EnableProjectUnpackFolderWatcher();
+
+            return resource;
+        }
+
 
         /// <summary>
         /// Adds an empty site planner resource to the given folder. If the folder is Null, it adds it directly 
@@ -1231,11 +1270,19 @@ namespace SIMULTAN.Projects
 
             DisableProjectUnpackFolderWatcher();
             DirectoryInfo target_folder = (_target == null) ? null : new DirectoryInfo(_target.CurrentFullPath);
-            if (_resource is ResourceDirectoryEntry)
+            if (_resource is ResourceDirectoryEntry directory && target_folder != null)
             {
-                if (string.Equals((_resource as ResourceDirectoryEntry).CurrentFullPath, target_folder.FullName, StringComparison.InvariantCultureIgnoreCase))
-                    return;
+                //Make sure that folders aren't moved into itself or any of its children
+                var targetTesting = target_folder;
+                while (targetTesting != null)
+                {
+                    if (targetTesting.FullName == directory.CurrentFullPath)
+                        return;
+
+                    targetTesting = targetTesting.Parent;
+                }
             }
+
             _resource.ChangeLocation(target_folder, nameCollisionFormat, _check_admissibility);
             EnableProjectUnpackFolderWatcher();
         }
@@ -1591,7 +1638,7 @@ namespace SIMULTAN.Projects
             {
                 if (this.AllProjectDataManagers.DataMappingTools.Any())
                 {
-                    if (this.ManagedFiles.ExcelToolEntries.Any())
+                    if (!this.ManagedFiles.ExcelToolEntries.Any())
                     {
                         // an excel tool library file needs to be created and saved
                         string file_path_excel_lib = Path.Combine(this.ProjectUnpackFolder.FullName, "ExcelToolLibrary" + ParamStructFileExtensions.FILE_EXT_EXCEL_TOOL_COLLECTION);
@@ -1646,9 +1693,11 @@ namespace SIMULTAN.Projects
         private void InitializeProjectUnpackFolderWatcher()
         {
             projectUnpackFolderLastChange = new Dictionary<string, DateTime>();
-            localDispatcher = Dispatcher.CurrentDispatcher;
 
-            projectUnpackFolderWatcher = new FileSystemWatcher();
+            projectUnpackFolderWatcher = new FileSystemWatcher()
+            {
+                SynchronizingObject = AllProjectDataManagers.SynchronizationContext
+            };
             projectUnpackFolderWatcher.Path = ProjectUnpackFolder.FullName;
             projectUnpackFolderWatcher.Filter = "";
             // Name filters required for the Renamed event to work
@@ -1692,10 +1741,7 @@ namespace SIMULTAN.Projects
             var resource = this.AllProjectDataManagers.AssetManager.GetResource(key);
             if (resource != null)
             {
-                localDispatcher.Invoke(new Action(() =>
-                {
-                    ResourceDeletedExternally(resource);
-                }));
+                ResourceDeletedExternally(resource);
             }
         }
 
@@ -1709,13 +1755,10 @@ namespace SIMULTAN.Projects
                 ResourceFileEntry resource = this.AllProjectDataManagers.AssetManager.GetResource(key) as ResourceFileEntry;
                 if (resource != null)
                 {
-                    localDispatcher.Invoke(new Action(() =>
+                    if (resource is ContainedResourceFileEntry cre)
                     {
-                        if (resource is ContainedResourceFileEntry cre)
-                        {
-                            cre.IsMissing = false;
-                        }
-                    }));
+                        cre.IsMissing = false;
+                    }
                 }
             }
         }
@@ -1730,17 +1773,14 @@ namespace SIMULTAN.Projects
                 ResourceFileEntry resource = this.AllProjectDataManagers.AssetManager.GetResource(key) as ResourceFileEntry;
                 if (resource != null)
                 {
-                    localDispatcher.Invoke(new Action(() =>
+                    if (resource is ContainedResourceFileEntry cre)
                     {
-                        if (resource is ContainedResourceFileEntry cre)
-                        {
-                            // Do not rename the resource or change its path, just mark it as missing
-                            // This is because some programs do a whole "rename file -> recreate file as temp -> rename temp file to original -> delete backup"
-                            // cycle when saving. so when it get renamed back to the original we just set it to not missing again.
-                            // If that does not happen it is simply missing.
-                            cre.IsMissing = true;
-                        }
-                    }));
+                        // Do not rename the resource or change its path, just mark it as missing
+                        // This is because some programs do a whole "rename file -> recreate file as temp -> rename temp file to original -> delete backup"
+                        // cycle when saving. so when it get renamed back to the original we just set it to not missing again.
+                        // If that does not happen it is simply missing.
+                        cre.IsMissing = true;
+                    }
                 }
             }
 
@@ -1752,13 +1792,10 @@ namespace SIMULTAN.Projects
                 ResourceFileEntry resource = this.AllProjectDataManagers.AssetManager.GetResource(key) as ResourceFileEntry;
                 if (resource != null)
                 {
-                    localDispatcher.Invoke(new Action(() =>
+                    if (resource is ContainedResourceFileEntry cre)
                     {
-                        if (resource is ContainedResourceFileEntry cre)
-                        {
-                            cre.IsMissing = false;
-                        }
-                    }));
+                        cre.IsMissing = false;
+                    }
                 }
             }
         }
@@ -1772,10 +1809,7 @@ namespace SIMULTAN.Projects
                 try
                 {
                     FileState.WaitFile(resource_file);
-                    localDispatcher.Invoke(new Action(() =>
-                    {
-                        resource.NotifyResourceChanged();
-                    }));
+                    resource.NotifyResourceChanged();
                 }
                 catch (TimeoutException)
                 {
@@ -1851,7 +1885,10 @@ namespace SIMULTAN.Projects
             var duplicate = this.associatedWatchers.FirstOrDefault(x => string.Equals(x.Key.Path, _file.Directory.FullName, StringComparison.InvariantCultureIgnoreCase));
             if (duplicate.Key == null)
             {
-                var watcher = new FileSystemWatcher();
+                var watcher = new FileSystemWatcher()
+                {
+                    SynchronizingObject = AllProjectDataManagers.SynchronizationContext
+                };
                 watcher.Path = _file.Directory.FullName;
                 watcher.Renamed += Watcher_Renamed;
                 watcher.Deleted += Watcher_Deleted;
@@ -1897,7 +1934,10 @@ namespace SIMULTAN.Projects
             var duplicate = this.associatedDeletedWatchers.FirstOrDefault(x => string.Equals(x.Key.Path, _file.Directory.FullName, StringComparison.InvariantCultureIgnoreCase));
             if (duplicate.Key == null)
             {
-                var watcher = new FileSystemWatcher();
+                var watcher = new FileSystemWatcher()
+                {
+                    SynchronizingObject = AllProjectDataManagers.SynchronizationContext
+                };
                 watcher.Path = _file.Directory.FullName;
                 watcher.Created += Watcher_Created;
                 watcher.EnableRaisingEvents = true;
@@ -1963,10 +2003,7 @@ namespace SIMULTAN.Projects
                 LinkedResourceFileEntry resource = this.AllProjectDataManagers.AssetManager.GetResource(key) as LinkedResourceFileEntry;
                 if (resource != null)
                 {
-                    localDispatcher.Invoke(new Action(() =>
-                    {
-                        this.AllProjectDataManagers.AssetManager.ReLinkLinkedFileEntry(resource, new FileInfo(e.FullPath), true);
-                    }));
+                    this.AllProjectDataManagers.AssetManager.ReLinkLinkedFileEntry(resource, new FileInfo(e.FullPath), true);
                 }
             }
         }
@@ -1989,10 +2026,7 @@ namespace SIMULTAN.Projects
                 LinkedResourceFileEntry resource = this.AllProjectDataManagers.AssetManager.GetResource(key) as LinkedResourceFileEntry;
                 if (resource != null)
                 {
-                    localDispatcher.Invoke(new Action(() =>
-                    {
-                        this.AllProjectDataManagers.AssetManager.UnLinkLinkedFileEntry(resource);
-                    }));
+                    this.AllProjectDataManagers.AssetManager.UnLinkLinkedFileEntry(resource);
                 }
             }
         }
@@ -2014,10 +2048,7 @@ namespace SIMULTAN.Projects
                 LinkedResourceFileEntry resource = this.AllProjectDataManagers.AssetManager.GetResource(key) as LinkedResourceFileEntry;
                 if (resource != null)
                 {
-                    localDispatcher.Invoke(new Action(() =>
-                    {
-                        this.AllProjectDataManagers.AssetManager.ReLinkLinkedFileEntry(resource, new FileInfo(e.FullPath));
-                    }));
+                    this.AllProjectDataManagers.AssetManager.ReLinkLinkedFileEntry(resource, new FileInfo(e.FullPath));
                 }
             }
         }
@@ -2154,7 +2185,7 @@ namespace SIMULTAN.Projects
                 {
                     version = ((ManagedTaxonomyFile)managedTaxonomyFile).LoadedFileVersion;
                 }
-                _data_manager.Components.RestoreDefaultTaxonomyReferences(version);
+                _data_manager.RestoreDefaultTaxonomyReferences(version);
             }
 
             // done
@@ -2164,7 +2195,7 @@ namespace SIMULTAN.Projects
 
         /// <summary>
         /// Loads the default taxonomies into the provided <see cref="ExtendedProjectData"/>.
-        /// The imported default taxonomies are merged with the existing ones. It also retrun if changes to the existing default
+        /// The imported default taxonomies are merged with the existing ones. It also returns if changes to the existing default
         /// taxonomies were made. If changes were made, existing references need to be restored on components by calling <see cref="SimComponentCollection.RestoreDefaultTaxonomyReferences"/>
         /// </summary>
         /// <param name="projectData">The project data to load the taxonomies into.</param>
@@ -2175,7 +2206,7 @@ namespace SIMULTAN.Projects
             bool hasChanged = false;
             using (var default_tax_stream = assembly.GetManifestResourceStream("SIMULTAN.Data.Taxonomy.Default.default_taxonomies.txdxf"))
             {
-                var dummyProjectData = new ExtendedProjectData();
+                var dummyProjectData = new ExtendedProjectData(projectData.SynchronizationContext, projectData.DispatcherTimerFactory);
                 dummyProjectData.SetCallingLocation(new DummyReferenceLocation(Guid.Empty));
                 var tmpParserInfo = new DXFParserInfo(Guid.Empty, dummyProjectData);
                 SimTaxonomyDxfIO.Import(new DXFStreamReader(default_tax_stream), tmpParserInfo);

@@ -1,10 +1,11 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SIMULTAN.Data.Components;
+using SIMULTAN.Data.SimMath;
 using SIMULTAN.Data.MultiValues;
 using SIMULTAN.Data.SimNetworks;
 using SIMULTAN.Tests.TestUtils;
 using SIMULTAN.Tests.Values;
-using System.Windows;
+
 
 namespace SIMULTAN.Tests.Parameters
 {
@@ -22,7 +23,7 @@ namespace SIMULTAN.Tests.Parameters
             {
                 InstanceType = SimInstanceType.SimNetworkBlock,
             };
-            var block = new SimNetworkBlock("BLOCK", new Point(0, 0));
+            var block = new SimNetworkBlock("BLOCK", new SimPoint(0, 0));
 
             var ptr = new SimMultiValueBigTableParameterSource(data.table, 1, 2);
             var parameter = new SimDoubleParameter("asdf", "", 0.0);
@@ -61,7 +62,7 @@ namespace SIMULTAN.Tests.Parameters
             {
                 InstanceType = SimInstanceType.SimNetworkBlock,
             };
-            var block = new SimNetworkBlock("BLOCK", new Point(0, 0));
+            var block = new SimNetworkBlock("BLOCK", new SimPoint(0, 0));
 
             var ptr = new SimMultiValueBigTableParameterSource(data.table, 1, 2);
             var parameter = new SimIntegerParameter("asdf", "", 0);
@@ -102,7 +103,7 @@ namespace SIMULTAN.Tests.Parameters
             {
                 InstanceType = SimInstanceType.SimNetworkBlock,
             };
-            var block = new SimNetworkBlock("BLOCK", new Point(0, 0));
+            var block = new SimNetworkBlock("BLOCK", new SimPoint(0, 0));
 
             var ptr = new SimMultiValueBigTableParameterSource(data.table, 1, 2);
             var parameter = new SimStringParameter("asdf", "ASD");
@@ -143,7 +144,7 @@ namespace SIMULTAN.Tests.Parameters
             {
                 InstanceType = SimInstanceType.SimNetworkBlock,
             };
-            var block = new SimNetworkBlock("BLOCK", new Point(0, 0));
+            var block = new SimNetworkBlock("BLOCK", new SimPoint(0, 0));
 
             var ptr = new SimMultiValueBigTableParameterSource(data.table, 1, 2);
             var parameter = new SimBoolParameter("asdf", false);

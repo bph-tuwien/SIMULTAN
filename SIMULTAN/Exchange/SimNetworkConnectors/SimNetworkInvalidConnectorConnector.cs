@@ -23,6 +23,9 @@ namespace SIMULTAN.Exchange.SimNetworkConnectors
         internal List<SimNetworkConnector> SimNetworkConnectors { get; }
 
         /// <inheritdoc />
+        internal override IEnumerable<ISimNetworkElement> SimNetworkElement => SimNetworkConnectors;
+
+        /// <inheritdoc />
 
         internal override BaseGeometry Geometry => Polyline;
 

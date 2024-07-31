@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 
 namespace SIMULTAN.Data.Components
 {
@@ -13,6 +14,8 @@ namespace SIMULTAN.Data.Components
         /// </summary>
         public class SimParameterCollection : ObservableCollection<SimBaseParameter>
         {
+            private bool supressNotification = false;
+
             private SimComponent owner;
             /// <summary>
             /// Initializes a new instance of the SimParameterCollection class
@@ -36,10 +39,15 @@ namespace SIMULTAN.Data.Components
 
                 this.owner.RecordWriteAccess();
 
+                supressNotification = true;
+
                 SetValues(item, true);
                 base.InsertItem(index, item);
-
                 SynchronizeParameterAdd(item);
+
+                supressNotification = false;
+                //The event is delayed so that listeners find correct instance parameter
+                OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, item, index));
             }
             /// <inheritdoc />
             protected override void RemoveItem(int index)
@@ -47,6 +55,8 @@ namespace SIMULTAN.Data.Components
                 var oldItem = this[index];
 
                 this.owner.RecordWriteAccess();
+
+                supressNotification = true;
 
                 if (owner.Factory != null && oldItem is SimDoubleParameter numeric && numeric.ValueSource is SimGeometryParameterSource gpsAdd)
                     owner.Factory.ProjectData.ComponentGeometryExchange.OnParameterSourceRemoved(gpsAdd);
@@ -56,6 +66,10 @@ namespace SIMULTAN.Data.Components
 
                 SynchronizeParameterRemove(oldItem);
 
+                supressNotification = false;
+
+                //The event is delayed so that listeners find correct instance parameter
+                OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, oldItem, index));
             }
             /// <inheritdoc />
             protected override void ClearItems()
@@ -87,6 +101,8 @@ namespace SIMULTAN.Data.Components
                 if (owner.Factory != null && oldItem is SimDoubleParameter numeric && numeric.ValueSource is SimGeometryParameterSource gpsAdd)
                     owner.Factory.ProjectData.ComponentGeometryExchange.OnParameterSourceRemoved(gpsAdd);
 
+                supressNotification = true;
+
                 UnsetValues(oldItem, owner.Factory?.ProjectData.IdGenerator, true);
                 SynchronizeParameterRemove(oldItem);
 
@@ -94,6 +110,16 @@ namespace SIMULTAN.Data.Components
                 base.SetItem(index, item);
 
                 SynchronizeParameterAdd(item);
+
+                supressNotification = false;
+                OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Replace, oldItem, item, index));
+            }
+
+            /// <inheritdoc />
+            protected override void OnCollectionChanged(NotifyCollectionChangedEventArgs e)
+            {
+                if (!supressNotification)
+                    base.OnCollectionChanged(e);
             }
 
             #endregion

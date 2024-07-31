@@ -1,10 +1,7 @@
-﻿using SIMULTAN.Data.Components;
-using SIMULTAN.Data.FlowNetworks;
+﻿using SIMULTAN.Data.FlowNetworks;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SIMULTAN.Data.Components
 {
@@ -40,9 +37,22 @@ namespace SIMULTAN.Data.Components
         /// <param name="fileId">The key of the resource file</param>
         /// <param name="geometryId">The id of the geometry</param>
         /// <param name="state">State of the placement</param>
-        /// <param name="relatedIds">A list of related Ids</param>
-        public SimInstancePlacementGeometry(int fileId, ulong geometryId, SimInstancePlacementState state = SimInstancePlacementState.Valid, IEnumerable<ulong> relatedIds = null)
+        /// <param name = "instanceType" > The instance type of this placement. Must be one of
+        /// <see cref="SimInstanceType.AttributesPoint"/>, <see cref="SimInstanceType.AttributesEdge"/>, 
+        /// <see cref="SimInstanceType.AttributesFace"/>, <see cref="SimInstanceType.Entity3D"/>,
+        /// <see cref="SimInstanceType.BuiltStructure"/>.
+        /// Also supports <see cref="SimInstanceType.None"/>, but then the InstanceType has to be set by the
+        /// <see cref="RestoreReferences(Dictionary{SimObjectId, SimFlowNetworkElement})"/> method.
+        /// </param>
+        public SimInstancePlacementGeometry(int fileId, ulong geometryId, SimInstanceType instanceType,
+            SimInstancePlacementState state = SimInstancePlacementState.Valid)
+            : base(instanceType)
         {
+            if (instanceType != SimInstanceType.AttributesPoint && instanceType != SimInstanceType.AttributesEdge &&
+                instanceType != SimInstanceType.AttributesFace && instanceType != SimInstanceType.Entity3D &&
+                instanceType != SimInstanceType.BuiltStructure && instanceType != SimInstanceType.None)
+                throw new ArgumentException("Instance type not supported for this placement type");
+
             this.FileId = fileId;
             this.GeometryId = geometryId;
             this.State = state;
@@ -61,7 +71,20 @@ namespace SIMULTAN.Data.Components
 
         internal override bool RestoreReferences(Dictionary<SimObjectId, SimFlowNetworkElement> networkElements)
         {
-            //No init to do
+            if (this.InstanceType == SimInstanceType.None)
+            {
+                //Check if the instance has a valid type. Valid means there is a single geometry type
+                var geometryFlags = SimInstanceType.AttributesPoint | SimInstanceType.AttributesEdge | SimInstanceType.AttributesFace
+                    | SimInstanceType.Entity3D | SimInstanceType.BuiltStructure;
+                var geometryFlagsFromInstance = this.Instance.Component.InstanceType & geometryFlags;
+
+                if (((geometryFlagsFromInstance - 1) & geometryFlagsFromInstance) == 0)
+                    this.InstanceType = geometryFlagsFromInstance;
+                else
+                    throw new Exception("Instance type for SimPlacementGeometry could not be restored");
+            }
+
+            //No further initialization to do
             return true;
         }
     }

@@ -2,6 +2,7 @@
 using SIMULTAN.Data.Geometry;
 using SIMULTAN.Data.Taxonomy;
 using SIMULTAN.Data.Users;
+using SIMULTAN.Projects;
 using SIMULTAN.Utils.Files;
 using System;
 using System.Collections.Generic;
@@ -221,10 +222,7 @@ namespace SIMULTAN.Data.Assets
         /// <summary>
         /// Tags of the resource.
         /// </summary>
-        public SimTaxonomyEntryReferenceCollection Tags
-        {
-            get;
-        }
+        public SimTaxonomyEntryReferenceCollection Tags { get; }
 
         #endregion
 
@@ -314,6 +312,14 @@ namespace SIMULTAN.Data.Assets
             }
         }
 
+        /// <summary>
+        /// Restores all taxonomy entry references after the default taxonomies were updated.
+        /// </summary>
+        /// <param name="projectData">The ProjectData</param>
+        public void RestoreDefaultTaxonomyReferences(ProjectData projectData)
+        {
+            Tags.RestoreDefaultTaxonomyReferences(projectData);
+        }
 
         #region METHODS: Path handling
 
@@ -477,10 +483,7 @@ namespace SIMULTAN.Data.Assets
         /// </param>
         /// <param name="_check_admissibility">if true, call the <see cref="CanChangePath(FileSystemInfo, string)"/> function first and use the alternative name, if necessary</param>
         /// <returns>a list of directory resources if a structural change was necessary</returns>
-        internal virtual List<ResourceDirectoryEntry> ChangePath_Internal(FileSystemInfo _new_data, string nameCollisionFormat, bool _check_admissibility)
-        {
-            return null;
-        }
+        internal virtual void ChangePath_Internal(FileSystemInfo _new_data, string nameCollisionFormat, bool _check_admissibility) { }
 
         /// <summary>
         /// Changes the name of the resources, *not* the extension or the entire path.

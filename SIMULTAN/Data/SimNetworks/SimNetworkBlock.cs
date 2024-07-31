@@ -1,12 +1,11 @@
 ﻿using SIMULTAN.Data.Components;
-using SIMULTAN.Data.Geometry;
+using SIMULTAN.Data.SimMath;
 using SIMULTAN.Data.Taxonomy;
 using SIMULTAN.Exchange;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
-using System.Windows.Media;
 using static SIMULTAN.Data.SimNetworks.SimNetworkPort;
 
 namespace SIMULTAN.Data.SimNetworks
@@ -19,22 +18,6 @@ namespace SIMULTAN.Data.SimNetworks
         private bool componentIsDeleted = false;
         private bool isBeingDeleted = false;
         private bool isBeingAssignedToComponent = false;
-
-
-
-        /// <summary>
-        /// Color of the Block
-        /// </summary>
-        public DerivedColor Color
-        {
-            get { return this.color; }
-            set
-            {
-                this.color = value;
-                this.NotifyPropertyChanged(nameof(this.Color));
-            }
-        }
-        private DerivedColor color;
 
         /// <summary>
         /// Representing an attached component to the network block element
@@ -68,24 +51,24 @@ namespace SIMULTAN.Data.SimNetworks
 
         #region .CTOR
         /// <summary>
-        /// Constructs a new SimNetworkBlock
+        /// Constructs a new instance of the SimNetworkBlock
         /// </summary>
-        public SimNetworkBlock(string name, Point position)
+        /// <param name="name">Name of the block</param>
+        /// <param name="position">The optional position</param>
+        /// <exception cref="ArgumentNullException">Exception whenever no name is given</exception>
+        public SimNetworkBlock(string name, SimPoint position)
         {
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
-            if (position == null)
-                throw new ArgumentNullException(nameof(position));
 
             this.RepresentationReference = GeometricReference.Empty;
             this.Name = name;
             this.Position = position;
             this.Id = SimId.Empty;
             this.Ports = new SimNetworkPortCollection(this);
-            this.PropertyChanged += this.SimNetworkBlock_PropertyChanged;
             this.IsBeingDeleted += this.SimNetworkBlock_IsBeingDeleted;
             this.IsDeleted += this.SimNetworkBlock_IsDeleted;
-            this.Color = new DerivedColor(Colors.DarkGray);
+            this.Color = SimColors.DarkGray;
         }
 
         /// <summary>
@@ -96,16 +79,12 @@ namespace SIMULTAN.Data.SimNetworks
         /// <param name="id">ID of the SimNetworkBlock</param>
         /// <param name="ports">The ports which belong to this block</param>
         /// <param name="color">Color of the block</param>
-        public SimNetworkBlock(string name, Point position, SimId id, IEnumerable<SimNetworkPort> ports, DerivedColor color)
+        public SimNetworkBlock(string name, SimPoint position, SimId id, IEnumerable<SimNetworkPort> ports, SimColor color)
         {
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
-            if (position == null)
-                throw new ArgumentNullException(nameof(position));
             if (ports == null)
                 throw new ArgumentNullException(nameof(ports));
-            if (color == null)
-                throw new ArgumentNullException(nameof(color));
 
             this.Name = name;
             this.Position = position;
@@ -124,7 +103,7 @@ namespace SIMULTAN.Data.SimNetworks
         /// </summary>
         public void AttachEvents()
         {
-            this.PropertyChanged += this.SimNetworkBlock_PropertyChanged;
+            SubscribeToComponentEvents();
             this.IsBeingDeleted += this.SimNetworkBlock_IsBeingDeleted;
             this.IsDeleted += this.SimNetworkBlock_IsDeleted;
         }
@@ -141,14 +120,16 @@ namespace SIMULTAN.Data.SimNetworks
             this.Id = this.Id = SimId.Empty;
             this.RepresentationReference = GeometricReference.Empty;
             this.Ports = new SimNetworkPortCollection(this);
-
-
-
-            this.PropertyChanged += this.SimNetworkBlock_PropertyChanged;
+            this.Width = sourceBlock.Width;
+            this.Height = sourceBlock.Height;
             this.IsBeingDeleted += this.SimNetworkBlock_IsBeingDeleted;
             this.IsDeleted += this.SimNetworkBlock_IsDeleted;
         }
 
+        #endregion
+
+
+        #region Functions
         /// <summary>
         /// Clones this SimNetworkBlock
         /// </summary>
@@ -165,6 +146,11 @@ namespace SIMULTAN.Data.SimNetworks
                 cloned.Ports.Add(newPort);
                 portIdPairs.Add(port.Id, newPort.Id);
             }
+            if (this.componentInstance != null)
+            {
+                cloned.AssignComponent(this.componentInstance.Component, true);
+            }
+
 
             return (cloned, portIdPairs);
         }
@@ -176,7 +162,6 @@ namespace SIMULTAN.Data.SimNetworks
         }
         private void SimNetworkBlock_IsDeleted(object sender)
         {
-            this.PropertyChanged -= this.SimNetworkBlock_PropertyChanged;
             this.IsDeleted -= this.SimNetworkBlock_IsDeleted;
             this.isBeingDeleted = false;
         }
@@ -186,11 +171,15 @@ namespace SIMULTAN.Data.SimNetworks
         /// </summary>
         public void RemoveComponentInstance()
         {
-            var portComponents = this.componentInstance.Component.Components.Select(c => c.Component).Where(c => c.InstanceType == SimInstanceType.InPort || c.InstanceType == SimInstanceType.OutPort);
+            var portComponents = this.componentInstance.Component.Components.Select(c => c.Component).Where(c => c.InstanceType.HasFlag(SimInstanceType.InPort) || c.InstanceType.HasFlag(SimInstanceType.OutPort));
             foreach (var portComponent in portComponents)
             {
                 var correspondingPort = this.Ports.FirstOrDefault(p => p.ComponentInstance != null && p.ComponentInstance.Component == portComponent);
-                portComponent.Instances.Remove(correspondingPort.ComponentInstance);
+                if (correspondingPort != null)
+                {
+                    portComponent.Instances.Remove(correspondingPort.ComponentInstance);
+                }
+
             }
             this.ComponentInstance.Component.Instances.Remove(this.ComponentInstance);
         }
@@ -205,8 +194,14 @@ namespace SIMULTAN.Data.SimNetworks
                     //For a new port, create a subcomponent in the associated component, and only one
                     if (port.ComponentInstance == null)
                     {
-                        var newSlot = this.ComponentInstance.Component.Components.FindAvailableSlot(this.ComponentInstance.Component.CurrentSlot.Target);
-                        var newComp = new SimComponent() { CurrentSlot = new SimTaxonomyEntryReference(this.ComponentInstance.Component.CurrentSlot) };
+                        var newSlot = this.ComponentInstance.Component.Components
+                            .FindAvailableSlot(this.ComponentInstance.Component.ParentContainer != null
+                            ? this.ComponentInstance.Component.ParentContainer.Slot.SlotBase.Target
+                            : this.ComponentInstance.Component.Slots[0].Target);
+
+                        var newComp = new SimComponent();
+                        newComp.AccessLocal = this.ComponentInstance.Component.AccessLocal;
+                        newComp.Slots.Add(new SimTaxonomyEntryReference(newSlot.SlotBase));
                         if (port.PortType == PortType.Input)
                         {
                             newComp.InstanceType = SimInstanceType.InPort;
@@ -265,7 +260,53 @@ namespace SIMULTAN.Data.SimNetworks
             };
         }
 
+        /// <summary>
+        /// Method to assign a component to the block. Updates the ports as well.
+        /// </summary>
+        /// <param name="component">The component which is being assigned</param>
+        /// <param name="syncBlockToComp">Shows whether the assignment should synchronize from the block to the component as well (meaning, that SubComponents are created during assignment for each port)</param>
+        /// <exception cref="ArgumentNullException">Thrown whenever the component is null</exception>
+        /// <exception cref="NotSupportedException">Thrown whenever the component does not have the proper InstanceType</exception>
+        public void AssignComponent(SimComponent component, bool syncBlockToComp)
+        {
+            if (component == null)
+                throw new ArgumentNullException("Component which should be assigned can not be null");
+            if (component.InstanceType != SimInstanceType.SimNetworkBlock)
+                throw new NotSupportedException("Only components with InstanceType SimInstanceType.SimNetworkBlock are allowed");
+            this.isBeingAssignedToComponent = true;
 
+            //Handle older components assigned to the block
+            if (this.ComponentInstance != null)
+            {
+                this.RemoveComponentInstance();
+            }
+
+            //Assign the component (an instance of the component) to the network Element
+            var componentInstance = new SimComponentInstance(this);
+            component.Instances.Add(componentInstance);
+
+            InitializePorts(component, syncBlockToComp);
+            SubscribeToComponentEvents();
+            this.isBeingAssignedToComponent = false;
+        }
+
+        private void SubscribeToComponentEvents()
+        {
+            if (this.ComponentInstance != null)
+            {
+                this.ComponentInstance.IsBeingDeleted += this.ComponentInstance_IsBeingDeleted;
+                this.ComponentInstance.Component.IsBeingDeleted += this.Component_IsBeingDeleted;
+                this.ComponentInstance.Component.Components.CollectionChanged += this.Components_CollectionChanged;
+
+                if (this.ComponentInstance.Component.Components.Count > 0)
+                {
+                    foreach (var child in this.ComponentInstance.Component.Components)
+                    {
+                        child.Component.PropertyChanged += this.SubComps_PropertyChanged;
+                    }
+                }
+            }
+        }
         /// <summary>
         /// Creates the according Taxonomy records <see cref="Taxonomy"/> to the block´s ports´ components(X,Y,Z)
         /// </summary>
@@ -274,7 +315,7 @@ namespace SIMULTAN.Data.SimNetworks
         /// <exception cref="ArgumentException">If the SimComponent is not <see cref="SimInstanceType.InPort"/> or  <see cref="SimInstanceType.OutPort"/></exception>
         public void AddRelativPositionToPortComp(SimComponent portComponent, SimNetworkPort port)
         {
-            if (!(portComponent.InstanceType == SimInstanceType.OutPort || portComponent.InstanceType == SimInstanceType.InPort))
+            if (!(portComponent.InstanceType.HasFlag(SimInstanceType.OutPort) || portComponent.InstanceType.HasFlag(SimInstanceType.InPort)))
                 throw new ArgumentException(nameof(portComponent));
 
             ExchangeHelpers.CreateParameterIfNotExists(portComponent, ReservedParameterKeys.SIMNW_STATIC_PORT_POSITION_X, "X",
@@ -286,49 +327,15 @@ namespace SIMULTAN.Data.SimNetworks
 
         }
 
-        private void SimNetworkBlock_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
-        {
-            if (e.PropertyName == nameof(this.ComponentInstance))
-            {
-
-                if (this.ComponentInstance != null)
-                {
-                    this.ComponentInstance.IsBeingDeleted += this.ComponentInstance_IsBeingDeleted;
-                    this.ComponentInstance.Component.IsBeingDeleted += this.Component_IsBeingDeleted;
-                    this.ComponentInstance.Component.Components.CollectionChanged += this.Components_CollectionChanged;
-
-                    if (this.ComponentInstance.Component.Components.Count > 0)
-                    {
-                        foreach (var child in this.ComponentInstance.Component.Components)
-                        {
-                            child.Component.PropertyChanged += this.SubComps_PropertyChanged;
-                        }
-                    }
-                }
-
-
-                if (this.ComponentInstance != null)
-                {
-                    this.isBeingAssignedToComponent = true;
-                    this.InitializePorts(this.ComponentInstance.Component);
-                    this.isBeingAssignedToComponent = false;
-                }
-            }
-        }
-
-
         /// <summary>
         /// Whenever a new Component is assigned, new ports are created for each subcomponent of the component which has a port type (InPort or OutPort)
         /// </summary>
-        private void InitializePorts(SimComponent component)
+        private void InitializePorts(SimComponent component, bool syncBlockToComp)
         {
             var components = component.Components.ToList();
-            foreach (var item in this.Ports)
-            {
-                item.ComponentInstance = null;
-            }
 
-            foreach (var child in components.Where(c => c.Component.InstanceType == SimInstanceType.OutPort || c.Component.InstanceType == SimInstanceType.InPort))
+            foreach (var child in components.Where(c => c.Component.InstanceType.HasFlag(SimInstanceType.OutPort) ||
+                c.Component.InstanceType.HasFlag(SimInstanceType.InPort)))
             {
                 if (!this.Ports.Any(p => p.ComponentInstance != null && p.ComponentInstance.Component == child.Component))
                 {
@@ -348,6 +355,20 @@ namespace SIMULTAN.Data.SimNetworks
                     {
                         var portComponentInstance = new SimComponentInstance(newPort);
                         child.Component.Instances.Add(portComponentInstance);
+                    }
+                }
+            }
+            // when it is the "first assignment" the ports are synchronized both ways (form block --> component and vice-versa)
+            if (syncBlockToComp)
+            {
+                foreach (var prt in this.Ports)
+                {
+                    if (prt.ComponentInstance == null)
+                    {
+                        if (prt.ComponentInstance == null)
+                        {
+                            OnPortAdded(prt);
+                        }
                     }
                 }
             }
@@ -403,44 +424,75 @@ namespace SIMULTAN.Data.SimNetworks
                     {
                         if (item is SimChildComponentEntry child)
                         {
-                            child.Component.PropertyChanged += this.SubComps_PropertyChanged;
-                            child.Component.IsBeingDeleted += this.Component_IsBeingDeleted;
-
-                            if (this.Ports.Any(port => port.ComponentInstance != null && port.ComponentInstance.Component == child.Component))
+                            if (child.Component != null)
                             {
-                                return;
+                                UpdatePortComponents(child.Component);
                             }
-                            if (child.Component.InstanceType == SimInstanceType.InPort || child.Component.InstanceType == SimInstanceType.OutPort)
+                            if (child.Component.InstanceType.HasFlag(SimInstanceType.InPort) || child.Component.InstanceType.HasFlag(SimInstanceType.OutPort))
                             {
-                                //Look for existing empty ports which can be associated with the new component
-                                SimNetworkPort newPort = this.FindAvailableEmptyPortForCompInstance(child.Component);
-                                if (newPort == null)
-                                {
-                                    newPort = this.AddPortForComponent(child.Component);
-                                    var portComponentInstance = new SimComponentInstance(newPort);
-                                    child.Component.Instances.Add(portComponentInstance);
-
-                                    this.Ports.Add(newPort);
-                                }
-                                else
-                                {
-                                    var portComponentInstance = new SimComponentInstance(newPort);
-                                    child.Component.Instances.Add(portComponentInstance);
-                                }
+                                child.PropertyChanged += this.Child_PropertyChanged;
                             }
+
                         }
                     };
                     break;
                 case System.Collections.Specialized.NotifyCollectionChangedAction.Remove:
                     foreach (var item in e.OldItems)
                     {
-                        if (item is SimChildComponentEntry child && child.Component != null)
+                        if (item is SimChildComponentEntry child)
                         {
-                            child.Component.PropertyChanged -= this.SubComps_PropertyChanged;
-                            child.Component.IsBeingDeleted -= this.Component_IsBeingDeleted;
+                            if (child.Component != null)
+                            {
+                                child.Component.PropertyChanged -= this.SubComps_PropertyChanged;
+                                child.Component.IsBeingDeleted -= this.Component_IsBeingDeleted;
+                            }
+                            else
+                            {
+                                child.PropertyChanged -= this.Child_PropertyChanged;
+                            }
                         }
                     };
                     break;
+            }
+        }
+
+        private void Child_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(SimChildComponentEntry.Component))
+            {
+                if (((SimChildComponentEntry)sender).Component != null)
+                {
+                    UpdatePortComponents(((SimChildComponentEntry)sender).Component);
+                    ((SimChildComponentEntry)sender).PropertyChanged -= this.Child_PropertyChanged;
+                }
+            }
+        }
+
+        private void UpdatePortComponents(SimComponent component)
+        {
+            component.PropertyChanged += this.SubComps_PropertyChanged;
+            component.IsBeingDeleted += this.Component_IsBeingDeleted;
+            if (this.Ports.Any(port => port.ComponentInstance != null && port.ComponentInstance.Component == component))
+            {
+                return;
+            }
+            if (component.InstanceType == SimInstanceType.InPort || component.InstanceType == SimInstanceType.OutPort)
+            {
+                //Look for existing empty ports which can be associated with the new component
+                SimNetworkPort newPort = this.FindAvailableEmptyPortForCompInstance(component);
+                if (newPort == null)
+                {
+                    newPort = this.AddPortForComponent(component);
+                    var portComponentInstance = new SimComponentInstance(newPort);
+                    component.Instances.Add(portComponentInstance);
+
+                    this.Ports.Add(newPort);
+                }
+                else
+                {
+                    var portComponentInstance = new SimComponentInstance(newPort);
+                    component.Instances.Add(portComponentInstance);
+                }
             }
         }
 
@@ -473,11 +525,11 @@ namespace SIMULTAN.Data.SimNetworks
         private SimNetworkPort FindAvailableEmptyPortForCompInstance(SimComponent comp)
         {
             PortType type = PortType.Input;
-            if (comp.InstanceType == SimInstanceType.InPort)
+            if (comp.InstanceType.HasFlag(SimInstanceType.InPort))
             {
                 type = PortType.Input;
             }
-            if (comp.InstanceType == SimInstanceType.OutPort)
+            if (comp.InstanceType.HasFlag(SimInstanceType.OutPort))
             {
                 type = PortType.Output;
             }
@@ -494,11 +546,11 @@ namespace SIMULTAN.Data.SimNetworks
         {
             PortType type = PortType.Input;
 
-            if (comp.InstanceType == SimInstanceType.InPort)
+            if (comp.InstanceType.HasFlag(SimInstanceType.InPort))
             {
                 type = PortType.Input;
             }
-            if (comp.InstanceType == SimInstanceType.OutPort)
+            if (comp.InstanceType.HasFlag(SimInstanceType.OutPort))
             {
                 type = PortType.Output;
             }
@@ -515,11 +567,11 @@ namespace SIMULTAN.Data.SimNetworks
             }
             if (e.PropertyName == nameof(SimComponent.InstanceType))
             {
-                if (sender is SimComponent comp && (comp.InstanceType == SimInstanceType.InPort || comp.InstanceType == SimInstanceType.OutPort))
+                if (sender is SimComponent comp && (comp.InstanceType.HasFlag(SimInstanceType.InPort) || comp.InstanceType.HasFlag(SimInstanceType.OutPort)))
                 {
                     //Look for existing empty ports which can be associated with the new component
                     SimNetworkPort newPort = this.FindAvailableEmptyPortForCompInstance(comp);
-                    comp.CurrentSlot = new SimTaxonomyEntryReference(this.ComponentInstance.Component.CurrentSlot);
+                    comp.Slots.Add(new SimTaxonomyEntryReference(this.ComponentInstance.Component.Slots[0]));
                     if (newPort == null)
                     {
                         newPort = this.AddPortForComponent(comp);
@@ -535,13 +587,13 @@ namespace SIMULTAN.Data.SimNetworks
                     //We check if thre are components with "X", "Y", "Z" parameres and if yes, we also give these parameters to the newly created componnet, but
                     //we do it only once, hence we also check the new componentInstnace´s Component of it already contains the "X", "Y", "Z" parameters
                     if (this.Ports.Any(p => p.ComponentInstance != null
-                        && p.ComponentInstance.Component.Parameters.Any(n => n.NameTaxonomyEntry.TaxonomyEntryReference.Target.Key == ReservedParameterKeys.SIMNW_STATIC_PORT_POSITION_X)
-                        && p.ComponentInstance.Component.Parameters.Any(t => t.NameTaxonomyEntry.TaxonomyEntryReference.Target.Key == ReservedParameterKeys.SIMNW_STATIC_PORT_POSITION_Y)
-                        && p.ComponentInstance.Component.Parameters.Any(k => k.NameTaxonomyEntry.TaxonomyEntryReference.Target.Key == ReservedParameterKeys.SIMNW_STATIC_PORT_POSITION_Z))
+                        && p.ComponentInstance.Component.Parameters.Any(n => n.HasReservedTaxonomyEntry(ReservedParameterKeys.SIMNW_STATIC_PORT_POSITION_X))
+                        && p.ComponentInstance.Component.Parameters.Any(t => t.HasReservedTaxonomyEntry(ReservedParameterKeys.SIMNW_STATIC_PORT_POSITION_Y))
+                        && p.ComponentInstance.Component.Parameters.Any(k => k.HasReservedTaxonomyEntry(ReservedParameterKeys.SIMNW_STATIC_PORT_POSITION_Z)))
                         && newPort.ComponentInstance.Component != null
-                        && !newPort.ComponentInstance.Component.Parameters.Any(n => n.NameTaxonomyEntry.TaxonomyEntryReference.Target.Key == ReservedParameterKeys.SIMNW_STATIC_PORT_POSITION_X)
-                        && !newPort.ComponentInstance.Component.Parameters.Any(t => t.NameTaxonomyEntry.TaxonomyEntryReference.Target.Key == ReservedParameterKeys.SIMNW_STATIC_PORT_POSITION_Y)
-                        && !newPort.ComponentInstance.Component.Parameters.Any(k => k.NameTaxonomyEntry.TaxonomyEntryReference.Target.Key == ReservedParameterKeys.SIMNW_STATIC_PORT_POSITION_Z))
+                        && !newPort.ComponentInstance.Component.Parameters.Any(n => n.HasReservedTaxonomyEntry(ReservedParameterKeys.SIMNW_STATIC_PORT_POSITION_X))
+                        && !newPort.ComponentInstance.Component.Parameters.Any(t => t.HasReservedTaxonomyEntry(ReservedParameterKeys.SIMNW_STATIC_PORT_POSITION_Y))
+                        && !newPort.ComponentInstance.Component.Parameters.Any(k => k.HasReservedTaxonomyEntry(ReservedParameterKeys.SIMNW_STATIC_PORT_POSITION_Z)))
                     {
                         AddRelativPositionToPortComp(newPort.ComponentInstance.Component, newPort);
                     }

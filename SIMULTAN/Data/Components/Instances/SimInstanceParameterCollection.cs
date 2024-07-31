@@ -2,6 +2,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Windows.Input;
 
 namespace SIMULTAN.Data.Components
 {
@@ -87,9 +88,34 @@ namespace SIMULTAN.Data.Components
             }
             set
             {
-                SetWithoutNotify(key, value);
-                NotifyGeometryExchange(key);
+                if (!data.ContainsKey(key))
+                    throw new KeyNotFoundException("operator may not be used to add additional entries");
+
+                this.NotifyWriteAccess();
+
+                var currentValue = data[key];
+                //Either values are different, or (because equal can only be called when old value exists) the new value is not null
+                // while the old value is
+                if ((currentValue == null && value != null) || (currentValue != null && !currentValue.Equals(value)))
+                {
+                    data[key] = value;
+
+                    key.NotifyValueChanged(this.Owner);
+                    NotifyGeometryExchange(key);
+                }
             }
+        }
+
+        //Doesn't notify the ComponentGeometryExchange. Prevents updating twice when the parameter value itself is changed
+        internal void SetWithoutNotify(SimBaseParameter parameter, object value)
+        {
+            this.NotifyWriteAccess();
+
+            if (!data.ContainsKey(parameter))
+                throw new KeyNotFoundException("operator may not be used to add additional entries");
+            data[parameter] = value;
+
+            parameter.NotifyValueChanged(this.Owner);
         }
 
         /// <summary>
@@ -205,19 +231,6 @@ namespace SIMULTAN.Data.Components
         /// </summary>
         /// <param name="parameter">The modified parameter</param>
         protected abstract void NotifyGeometryExchange(SimBaseParameter parameter);
-
-        internal void SetWithoutNotify(SimBaseParameter key, object value)
-        {
-            if (key == null)
-                throw new ArgumentNullException(nameof(key));
-
-            this.NotifyWriteAccess();
-
-            if (!data.ContainsKey(key))
-                throw new KeyNotFoundException("operator may not be used to add additional entries");
-
-            data[key] = value;
-        }
     }
 
     public partial class SimComponentInstance

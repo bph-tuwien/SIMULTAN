@@ -1,12 +1,7 @@
-﻿using SIMULTAN.Serializer.DXF;
-using SIMULTAN.Utils;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SIMULTAN.Serializer.DXF
 {
@@ -29,9 +24,18 @@ namespace SIMULTAN.Serializer.DXF
     public abstract class DXFEntityParserElementBase<T> : DXFParserElement, IDXFEntityParserElementBase
     {
         /// <summary>
+        /// The version to which this ParserElement was updated
+        /// </summary>
+        private ulong latestVersion { get; set; }
+        /// <summary>
         /// The entries in the entity
         /// </summary>
         public IEnumerable<DXFEntryParserElement> Entries { get; }
+
+        /// <summary>
+        /// A dictionary storing the entries. For each key there can be more than one DXFEntryParserElement, due to version differences
+        /// </summary>
+        private Dictionary<int, DXFEntryParserElement> EntriesDict { get; set; }
 
         /// <summary>
         /// Name of the Entity
@@ -47,8 +51,12 @@ namespace SIMULTAN.Serializer.DXF
         {
             this.EntityName = entityName;
             this.Entries = entries;
-            this.Entries.ForEach(x => x.Parent = this);
+            foreach (DXFEntryParserElement entry in entries)
+            {
+                entry.Parent = this;
+            }
         }
+
         /// <summary>
         /// Parses the content of the entity. Should be called from derived classes which are later on responsible for parsing the result
         /// </summary>
@@ -72,12 +80,23 @@ namespace SIMULTAN.Serializer.DXF
 
                 if (key != (int)ParamStructCommonSaveCode.ENTITY_START)
                 {
-                    var entry = Entries.FirstOrDefault(e => e.Code == key && e.MinVersion <= info.FileVersion && e.MaxVersion >= info.FileVersion);
-                    if (entry != null)
-                        entry.Parse(reader, resultSet, info);
+                    if (this.EntriesDict != null || this.latestVersion != info.FileVersion)
+                    {
+                        if (this.latestVersion != info.FileVersion)
+                        {
+                            this.UpdateParseCodes(info);
+                        }
+                        if (EntriesDict.TryGetValue(key, out var entry))
+                        {
+                            entry.Parse(reader, resultSet, info);
+                        }
+                    }
                     else
                     {
-                        //Debug.WriteLine("Skipping element {0}", key);
+                        var entry = this.Entries.FirstOrDefault(e => e.Code == key && e.MinVersion <= info.FileVersion && info.FileVersion <= e.MaxVersion);
+                        if (entry != null)
+                            entry.Parse(reader, resultSet, info);
+
                     }
                     //Ignore all entries that are not in the expected set
                 }
@@ -94,7 +113,26 @@ namespace SIMULTAN.Serializer.DXF
         /// <param name="info">Supporting information for the parsing</param>
         /// <returns>The parsed object</returns>
         internal abstract T Parse(DXFStreamReader reader, DXFParserInfo info);
+
+        /// <inheritdoc />
+        private void UpdateParseCodes(DXFParserInfo info)
+        {
+            this.latestVersion = info.FileVersion;
+            this.EntriesDict = new Dictionary<int, DXFEntryParserElement>();
+            foreach (var entry in this.Entries)
+            {
+                if (entry.MinVersion <= info.FileVersion && info.FileVersion <= entry.MaxVersion)
+                {
+                    entry.Parent = this;
+                    if (!EntriesDict.TryGetValue(entry.Code, out var existingKey))
+                    {
+                        EntriesDict.Add(entry.Code, entry);
+                    }
+                }
+            }
+        }
     }
+
 
     /// <summary>
     /// Parser element for a DXF entity. Handles reading and parsing of the entity content

@@ -17,7 +17,7 @@ namespace SIMULTAN.Tests.Components
     [TestClass]
     public class ReferenceManagementTests : BaseProjectTest
     {
-        private static readonly FileInfo referencesProject = new FileInfo(@".\ReferencesTestProject.simultan");
+        private static readonly FileInfo referencesProject = new FileInfo(@"./ReferencesTestProject.simultan");
 
         #region Operations
 
@@ -495,6 +495,52 @@ namespace SIMULTAN.Tests.Components
 
             Assert.AreEqual(null, root2.ReferencedComponents.First().Target);
             Assert.AreEqual(0, child1.ReferencedBy.Count);
+        }
+
+        #endregion
+
+        #region Referencing Parameters
+
+        [TestMethod]
+        public void UpdateParameterOnAddReference()
+        {
+            LoadProject(referencesProject, "admin", "admin");
+
+            var slot = new SimSlot(new SimTaxonomyEntryReference(projectData.Taxonomies.GetDefaultSlot(SimDefaultSlotKeys.Cost)), "a1");
+            var owner = projectData.Components.First(x => x.Name == "RootWithParam1");
+            var target = projectData.Components.First(x => x.Name == "RootWithParam2");
+
+            var ownerParam = (SimDoubleParameter)owner.Parameters.First(x => x.NameTaxonomyEntry.Text == "A");
+            var targetParam = (SimDoubleParameter)target.Parameters.First(x => x.NameTaxonomyEntry.Text == "A");
+
+            Assert.AreEqual(0, ownerParam.Value);
+
+            var ref1 = new SimComponentReference(slot, target);
+            owner.ReferencedComponents.Add(ref1);
+
+            Assert.AreEqual(15.8, ownerParam.Value);
+        }
+
+        [TestMethod]
+        public void UpdateParameterOnChangeReference()
+        {
+            LoadProject(referencesProject, "admin", "admin");
+
+            var slot = new SimSlot(new SimTaxonomyEntryReference(projectData.Taxonomies.GetDefaultSlot(SimDefaultSlotKeys.Cost)), "a1");
+            var owner = projectData.Components.First(x => x.Name == "RootWithParam1");
+            var target = projectData.Components.First(x => x.Name == "RootWithParam2");
+            var target2 = projectData.Components.First(x => x.Name == "RootWithParam3");
+
+            var ownerParam = (SimDoubleParameter)owner.Parameters.First(x => x.NameTaxonomyEntry.Text == "A");
+
+            var ref1 = new SimComponentReference(slot, target);
+            owner.ReferencedComponents.Add(ref1);
+
+            Assert.AreEqual(15.8, ownerParam.Value);
+
+            ref1.Target = target2;
+
+            Assert.AreEqual(123.456, ownerParam.Value);
         }
 
         #endregion

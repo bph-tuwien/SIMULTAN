@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Media.Media3D;
+using SIMULTAN.Data.SimMath;
 
 namespace SIMULTAN.Data.SitePlanner
 {
@@ -24,7 +24,7 @@ namespace SIMULTAN.Data.SitePlanner
         /// <summary>
         /// Normalized image positions in the range [0, 1]
         /// </summary>
-        public Point ImagePosition
+        public SimPoint ImagePosition
         {
             get => imagePosition;
             set
@@ -34,12 +34,12 @@ namespace SIMULTAN.Data.SitePlanner
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ImagePosition)));
             }
         }
-        private Point imagePosition;
+        private SimPoint imagePosition;
 
         /// <summary>
         /// GeoReference coordinates (WGS84)
         /// </summary>
-        public Point3D ReferencePoint
+        public SimPoint3D ReferencePoint
         {
             get => geoReference;
             set
@@ -49,14 +49,14 @@ namespace SIMULTAN.Data.SitePlanner
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ReferencePoint)));
             }
         }
-        private Point3D geoReference;
+        private SimPoint3D geoReference;
 
         /// <summary>
         /// Initializes a new instance of the ImageGeoReference class
         /// </summary>
         /// <param name="imagePosition">Pixel position in the map image</param>
         /// <param name="geoReference">GeoReference coordinates (WGS84)</param>
-        public ImageGeoReference(Point imagePosition, Point3D geoReference)
+        public ImageGeoReference(SimPoint imagePosition, SimPoint3D geoReference)
         {
             ImagePosition = imagePosition;
             ReferencePoint = geoReference;
@@ -66,7 +66,7 @@ namespace SIMULTAN.Data.SitePlanner
         /// Initializes a new instance of the ImageGeoReference class with default values
         /// </summary>
         public ImageGeoReference()
-            : this(new Point(0.0, 0.0), new Point3D(0.0, 0.0, 0.0))
+            : this(new SimPoint(0.0, 0.0), new SimPoint3D(0.0, 0.0, 0.0))
         {
         }
     }

@@ -1,4 +1,5 @@
 ﻿using SIMULTAN.Exceptions;
+using SIMULTAN.Utils.Files;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -13,9 +14,9 @@ namespace SIMULTAN.Serializer.DXF
     public sealed class DXFStreamWriter : IDisposable
     {
         /// <summary>
-        /// The DXF file version
+        /// The DXF file version ( FileVersion )
         /// </summary>
-        public static ulong CurrentFileFormatVersion { get => 21L; }
+        public static ulong CurrentFileFormatVersion { get => 29L; }
 
         internal static readonly string NEWLINE_PLACEHOLDER = "[NewLine]";
 
@@ -286,6 +287,16 @@ namespace SIMULTAN.Serializer.DXF
             writer.WriteLine(DXFDataConverter<T>.P.ToDXFString(content));
         }
 
+        /// <summary>
+        /// Writes a code-value pair to the stream. This overload uses the <see cref="DXFDataConverter"/> to serialize the data
+        /// </summary>
+        /// <param name="code">The code</param>
+        /// <param name="content">The value</param>
+        public void WritePath(ResourceSaveCode code, string content)
+        {
+            Write((int)code, FileSystemNavigation.SanitizeWritePath(content));
+        }
+
         #endregion
 
         #region WriteBase64
@@ -314,6 +325,18 @@ namespace SIMULTAN.Serializer.DXF
 
         #region WriteArray
 
+        /// <summary>
+        /// Writes an array to the stream. The first entry is the count, followed by the entries in the array.
+        /// Uses the <see cref="DXFDataConverter"/> to serialize the data
+        /// </summary>
+        /// <typeparam name="T">Type of the data entry</typeparam>
+        /// <param name="code">The code</param>
+        /// <param name="collection">The collection to serialize</param>
+        /// <param name="itemSerializer">A function that writes an item of the collection to the stream</param>
+        public void WriteArray<T>(TaxonomySaveCode code, IEnumerable<T> collection, Action<T, DXFStreamWriter> itemSerializer)
+        {
+            WriteArray((int)code, collection, itemSerializer);
+        }
         /// <summary>
         /// Writes an array to the stream. The first entry is the count, followed by the entries in the array.
         /// Uses the <see cref="DXFDataConverter"/> to serialize the data
@@ -503,6 +526,18 @@ namespace SIMULTAN.Serializer.DXF
         /// <param name="collection">The collection to serialize</param>
         /// <param name="itemSerializer">A function that writes an item of the collection to the stream</param>
         public void WriteArray<T>(ValueMappingSaveCode code, IEnumerable<T> collection, Action<T, DXFStreamWriter> itemSerializer)
+        {
+            WriteArray((int)code, collection, itemSerializer);
+        }
+        /// <summary>
+        /// Writes an array to the stream. The first entry is the count, followed by the entries in the array.
+        /// Uses the <see cref="DXFDataConverter"/> to serialize the data
+        /// </summary>
+        /// <typeparam name="T">Type of the data entry</typeparam>
+        /// <param name="code">The code</param>
+        /// <param name="collection">The collection to serialize</param>
+        /// <param name="itemSerializer">A function that writes an item of the collection to the stream</param>
+        public void WriteArray<T>(SimNetworkSaveCode code, IEnumerable<T> collection, Action<T, DXFStreamWriter> itemSerializer)
         {
             WriteArray((int)code, collection, itemSerializer);
         }
@@ -851,7 +886,7 @@ namespace SIMULTAN.Serializer.DXF
         /// <param name="currentProject">The current project</param>
         public void WriteGlobalId(SitePlannerSaveCode code, Guid globalId, Guid currentProject)
         {
-            if (currentProject != null && globalId == currentProject)
+            if (globalId == currentProject)
                 Write(code, Guid.Empty);
             else
                 Write(code, globalId);
@@ -864,7 +899,7 @@ namespace SIMULTAN.Serializer.DXF
         /// <param name="currentProject">The current project</param>
         public void WriteGlobalId(GeoMapSaveCode code, Guid globalId, Guid currentProject)
         {
-            if (currentProject != null && globalId == currentProject)
+            if (globalId == currentProject)
                 Write(code, Guid.Empty);
             else
                 Write(code, globalId);
@@ -891,7 +926,7 @@ namespace SIMULTAN.Serializer.DXF
         }
         private void WriteGlobalId(int code, Guid globalId, Guid currentProject)
         {
-            if (currentProject != null && globalId == currentProject)
+            if (globalId == currentProject)
                 Write(code, Guid.Empty);
             else
                 Write(code, globalId);
@@ -928,7 +963,7 @@ namespace SIMULTAN.Serializer.DXF
         /// </code>
         public void WriteVersionSection()
         {
-            StartSection(ParamStructTypes.VERSION_SECTION);
+            StartSection(ParamStructTypes.VERSION_SECTION, -1);
 
             Write(ParamStructCommonSaveCode.ENTITY_START, ParamStructTypes.FILE_VERSION);
             Write(ParamStructCommonSaveCode.COORDS_X, CurrentFileFormatVersion);
@@ -947,7 +982,8 @@ namespace SIMULTAN.Serializer.DXF
         /// </code>
         /// </summary>
         /// <param name="sectionName">Name of the section</param>
-        public void StartSection(string sectionName)
+        /// <param name="numberOfElements">Number of elements in the section</param>
+        public void StartSection(string sectionName, int numberOfElements)
         {
             if (isInSection)
                 throw new InvalidStateException("Section inside another Section is not allowed. Did you forget to end the previous Section?");
@@ -955,6 +991,7 @@ namespace SIMULTAN.Serializer.DXF
             isInSection = true;
             Write(ParamStructCommonSaveCode.ENTITY_START, ParamStructTypes.SECTION_START);
             Write(ParamStructCommonSaveCode.ENTITY_NAME, sectionName);
+            Write(ParamStructCommonSaveCode.NUMBER_OF, numberOfElements);
         }
         /// <summary>
         /// Writes an end section entry

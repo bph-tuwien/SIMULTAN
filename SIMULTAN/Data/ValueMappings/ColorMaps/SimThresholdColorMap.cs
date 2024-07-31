@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Windows.Media;
+using SIMULTAN.Data.SimMath;
 
 namespace SIMULTAN.Data.ValueMappings
 {
@@ -34,7 +34,7 @@ namespace SIMULTAN.Data.ValueMappings
         }
 
         /// <inheritdoc />
-        public override Color Map(double value)
+        public override SimColor Map(double value)
         {
             for (int i = 0; i < ColorMarkers.Count - 1; i++)
             {

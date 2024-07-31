@@ -1,9 +1,8 @@
 ﻿using SIMULTAN.Data.Components;
-using SIMULTAN.Data.Geometry;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Windows.Media;
+using SIMULTAN.Data.SimMath;
 
 namespace SIMULTAN.Data.SimNetworks
 {
@@ -25,14 +24,14 @@ namespace SIMULTAN.Data.SimNetworks
     /// <summary>
     /// Represents a port in a SimNetworkBlock. SimNetworkPorts can be connected with SimNetworkConnector <see cref="SimNetworkConnector"/>
     /// </summary>
-    public partial class SimNetworkPort : SimNamedObject<ISimManagedCollection>, IElementWithComponent, IDisposable
+    public partial class SimNetworkPort : SimNamedObject<ISimManagedCollection>, IElementWithComponent, ISimNetworkElement, IDisposable
     {
 
         #region Properties
         /// <summary>
         /// Color of the Port
         /// </summary>
-        public DerivedColor Color
+        public SimColor Color
         {
             get { return this.color; }
             set
@@ -41,7 +40,21 @@ namespace SIMULTAN.Data.SimNetworks
                 this.NotifyPropertyChanged(nameof(this.Color));
             }
         }
-        private DerivedColor color;
+        private SimColor color;
+
+        /// <summary>
+        /// Position of the port relative to the position of the ParentNetworkElement
+        /// </summary>
+        public SimPoint Position
+        {
+            get { return this.position; }
+            set
+            {
+                this.position = value;
+                this.NotifyPropertyChanged(nameof(this.Position));
+            }
+        }
+        private SimPoint position;
 
         /// <summary>
         /// The type of the port, it can be an input or an output port
@@ -145,6 +158,12 @@ namespace SIMULTAN.Data.SimNetworks
             }
         }
         private SimComponentInstance componentInstance;
+        
+        /// <summary>
+        /// The network to which this port belongs
+        /// </summary>
+        public SimNetwork ParentNetwork { get { return this.ParentNetworkElement.ParentNetwork; } }
+        
         #endregion
 
         #region .CTOR
@@ -153,14 +172,14 @@ namespace SIMULTAN.Data.SimNetworks
         /// </summary>
         /// <param name="portType">The type of the port (input or output)</param>
         /// <param name="name">Name of the port</param>
-        public SimNetworkPort(PortType portType, string name = "")
+        /// <param name="position">relative position of the position of it´s parent</param>
+        public SimNetworkPort(PortType portType, string name = "", SimPoint position = default(SimPoint))
         {
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
 
-
             this.Name = name;
-            this.Color = new DerivedColor(Colors.DarkGray);
+            this.Color = SimColors.DarkGray;
             this.PortType = portType;
             this.Id = SimId.Empty;
             this.RepresentationReference = GeometricReference.Empty;
@@ -176,6 +195,7 @@ namespace SIMULTAN.Data.SimNetworks
             this.Color = basePort.Color;
             this.PortType = basePort.PortType;
             this.Id = SimId.Empty;
+            this.Position = basePort.Position;
             this.RepresentationReference = GeometricReference.Empty;
         }
 
@@ -186,21 +206,20 @@ namespace SIMULTAN.Data.SimNetworks
         /// <param name="id">The loaded id of the SimNetworkPort</param>
         /// <param name="color">Color of the port</param>
         /// <param name="portType">The type of the SimNetworkPort <see cref="PortType"/></param>
-        internal SimNetworkPort(string name, SimId id, PortType portType, DerivedColor color)
+        /// <param name="position">Relative position to the parent</param>
+        internal SimNetworkPort(string name, SimId id, PortType portType, SimColor color, SimPoint position)
         {
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
-            if (id == null)
-                throw new ArgumentNullException(nameof(id));
-            if (color == null)
-                throw new ArgumentNullException(nameof(color));
 
             this.Color = color;
             this.Name = name;
             this.PortType = portType;
             this.Id = id;
+            this.Position = position;
         }
         #endregion
+
 
 
         /// <summary>
@@ -288,7 +307,7 @@ namespace SIMULTAN.Data.SimNetworks
         /// <summary>
         /// Removes all connections to the given port
         /// </summary>
-        public bool RemoveConnections()
+        public void RemoveConnections()
         {
             if (this.ParentNetworkElement is SimNetwork subNw)
             {
@@ -301,7 +320,6 @@ namespace SIMULTAN.Data.SimNetworks
             }
             var connector = this.ParentNetworkElement.ParentNetwork.ContainedConnectors.Where(t => t.Source == this || t.Target == this).FirstOrDefault();
             this.ParentNetworkElement.ParentNetwork.ContainedConnectors.Remove(connector);
-            return false;
         }
 
 

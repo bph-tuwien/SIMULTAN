@@ -1,16 +1,16 @@
 ﻿using SIMULTAN;
+using SIMULTAN.Data.SimMath;
 using SIMULTAN.Utils.UndoRedo;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Windows.Media.Media3D;
 
 namespace SIMULTAN.Data.Geometry
 {
     /// <summary>
     /// Provides algorithms that operate on edges
     /// </summary>
-    public class EdgeAlgorithms
+    public static class EdgeAlgorithms
     {
         /// <summary>
         /// Determines whether two edges describe the same information
@@ -47,14 +47,14 @@ namespace SIMULTAN.Data.Geometry
         /// <param name="e1">The edge</param>
         /// <param name="p">The point</param>
         /// <returns>Distance of the point to the line (d) and the line equation parameter of the closed point (t)</returns>
-        public static (double d, double t) EdgePointIntersection(Edge e1, Point3D p)
+        public static (double d, double t) EdgePointIntersection(Edge e1, SimPoint3D p)
         {
             var a = p - e1.Vertices[0].Position;
             var b = e1.Vertices[1].Position - e1.Vertices[0].Position;
             var l = b.Length;
 
-            var t = Vector3D.DotProduct(a, b) / (l * l);
-            var d = Vector3D.CrossProduct(b, a).Length / l;
+            var t = SimVector3D.DotProduct(a, b) / (l * l);
+            var d = SimVector3D.CrossProduct(b, a).Length / l;
             return (d, t);
         }
 
@@ -65,8 +65,9 @@ namespace SIMULTAN.Data.Geometry
         /// <param name="e2">Second edge</param>
         /// <param name="endLineTolerance">Defines which region at start and end of lines are considered outside.
         /// The line parameter t has to be in [tolerance, 1-tolerance] to be considered intersecting</param>
+        /// <param name="tolerance">The numerical tolerance for comparisons</param>
         /// <returns>A bool indicating whether the two edges intersect and the line parameters t1 for e1 and t2 for e2</returns>
-        public static (bool isIntersecting, double t1, double t2) EdgeEdgeIntersection(Edge e1, Edge e2, double endLineTolerance = 0)
+        public static (bool isIntersecting, double t1, double t2) EdgeEdgeIntersection(Edge e1, Edge e2, double tolerance, double endLineTolerance = 0)
         {
             // Source: http://paulbourke.net/geometry/pointlineplane/calclineline.cs
             var p1 = e1.Vertices[0].Position;
@@ -84,11 +85,11 @@ namespace SIMULTAN.Data.Geometry
                 return (false, double.NaN, double.NaN);
 
             var p13 = p1 - p3;
-            var d1343 = Vector3D.DotProduct(p13, p43);
-            var d4321 = Vector3D.DotProduct(p43, p21);
-            var d1321 = Vector3D.DotProduct(p13, p21);
-            var d4343 = Vector3D.DotProduct(p43, p43);
-            var d2121 = Vector3D.DotProduct(p21, p21);
+            var d1343 = SimVector3D.DotProduct(p13, p43);
+            var d4321 = SimVector3D.DotProduct(p43, p21);
+            var d1321 = SimVector3D.DotProduct(p13, p21);
+            var d4343 = SimVector3D.DotProduct(p43, p43);
+            var d2121 = SimVector3D.DotProduct(p21, p21);
 
             var denom = d2121 * d4343 - d4321 * d4321;
             if (Math.Abs(denom) < 0.00001)
@@ -109,7 +110,7 @@ namespace SIMULTAN.Data.Geometry
                     var ip1 = p1 + p21 * mua;
                     var ip2 = p3 + p43 * mub;
 
-                    if ((ip2 - ip1).LengthSquared < 0.0001)
+                    if ((ip2 - ip1).LengthSquared < tolerance * tolerance)
                         return (true, mua, mub);
                 }
             }
@@ -131,10 +132,10 @@ namespace SIMULTAN.Data.Geometry
             var AB = e1.Vertices[1].Position - e1.Vertices[0].Position;
             var AC = e2.Vertices[0].Position - e1.Vertices[0].Position;
 
-            if (Vector3D.CrossProduct(AB, AC).LengthSquared <= t2)
+            if (SimVector3D.CrossProduct(AB, AC).LengthSquared <= t2)
             {
                 var AD = e2.Vertices[1].Position - e1.Vertices[0].Position;
-                if (Vector3D.CrossProduct(AB, AD).LengthSquared <= t2)
+                if (SimVector3D.CrossProduct(AB, AD).LengthSquared <= t2)
                     return true;
                 return false;
             }
@@ -146,9 +147,9 @@ namespace SIMULTAN.Data.Geometry
         /// </summary>
         /// <param name="e">The edge</param>
         /// <returns>The direction of the edge</returns>
-        public static Vector3D Direction(PEdge e)
+        public static SimVector3D Direction(PEdge e)
         {
-            Vector3D d;
+            SimVector3D d;
 
             if (e.Orientation == GeometricOrientation.Forward || e.Orientation == GeometricOrientation.Undefined)
                 d = e.Edge.Vertices[1].Position - e.Edge.Vertices[0].Position;
@@ -163,12 +164,12 @@ namespace SIMULTAN.Data.Geometry
         /// </summary>
         /// <param name="e">The edge</param>
         /// <returns>One of the two possible directions of the edge</returns>
-        public static Vector3D Direction(Edge e)
+        public static SimVector3D Direction(Edge e)
         {
-            Vector3D d = e.Vertices[1].Position - e.Vertices[0].Position;
+            SimVector3D d = e.Vertices[1].Position - e.Vertices[0].Position;
 
             if (d.LengthSquared < 0.000001)
-                return new Vector3D(0, 0, 0);
+                return new SimVector3D(0, 0, 0);
 
             d.Normalize();
             return d;
@@ -187,7 +188,23 @@ namespace SIMULTAN.Data.Geometry
         }
 
         /// <summary>
+        /// Gets all adjacent faces of the edge and adds them to the faces list.
+        /// </summary>
+        /// <param name="e">The edge</param>
+        /// <param name="faces">The faces list</param>
+        public static void AdjacentFaces(this Edge e, ref HashSet<Face> faces)
+        {
+            var f = e.PEdges.SelectMany(x => x.Parent.Faces);
+            foreach (var face in f)
+            {
+                if (!faces.Contains(face))
+                    faces.Add(face);
+            }
+        }
+
+        /// <summary>
         /// Tries to order the edges such that they form a closed loop by following the edges.
+        /// Self intersecting loops will return false.
         /// </summary>
         /// <param name="edges">The edges</param>
         /// <returns>A bool indicating if the edges form a closed loop. The list contains the ordered edges or null when they don't form a loop.</returns>
@@ -205,6 +222,7 @@ namespace SIMULTAN.Data.Geometry
             List<Edge> loop = new List<Edge>();
             var startVertex = notHandled[0].Vertices[0];
             var currentVertex = startVertex;
+            var addedVertices = new HashSet<Vertex>();
 
             while (notHandled.Count > 0)
             {
@@ -218,6 +236,9 @@ namespace SIMULTAN.Data.Geometry
                 loop.Add(nextEdge);
 
                 currentVertex = nextEdge.Vertices.First(x => x != currentVertex);
+                if (addedVertices.Contains(currentVertex))
+                    return (false, null);
+                addedVertices.Add(currentVertex);
             }
 
             //Check if last point == first point
@@ -268,7 +289,7 @@ namespace SIMULTAN.Data.Geometry
         /// <param name="edges">The edges</param>
         /// <param name="matrix">An optional mapping matrix. Only used to transform the resulting point list.</param>
         /// <returns></returns>
-        public static List<Point3D> OrderedPointLoop(IEnumerable<Edge> edges, Matrix3D matrix)
+        public static List<SimPoint3D> OrderedPointLoop(IEnumerable<Edge> edges, SimMatrix3D matrix)
         {
             var vertices = OrderedVertexLoop(edges);
 
@@ -279,10 +300,10 @@ namespace SIMULTAN.Data.Geometry
         /// Orders a list of edges and returns an ordered list of vertices
         /// </summary>
         /// <param name="edges">The edges</param>
-        /// <returns></returns>
+        /// <returns>The ordered list of vertices, or an empty list if no loop could be found</returns>
         public static List<Vertex> OrderedVertexLoop(IEnumerable<Edge> edges)
         {
-            if (edges.Count() == 0)
+            if (!edges.Any())
                 return new List<Vertex>();
 
             HashSet<Edge> hedges = new HashSet<Edge>(edges);
@@ -296,7 +317,7 @@ namespace SIMULTAN.Data.Geometry
                 var nextEdge = currentVertex.Edges.FirstOrDefault(x => hedges.Contains(x));
 
                 if (nextEdge == null)
-                    return null;
+                    return new List<Vertex>();
 
                 hedges.Remove(nextEdge);
                 currentVertex = nextEdge.Vertices.First(x => x != currentVertex);
@@ -318,7 +339,7 @@ namespace SIMULTAN.Data.Geometry
         /// <param name="tolerance">Tolerance for calculations</param>
         /// <returns>True when the two edges intersect, False otherwise.
         /// t1 is intersection parameter along first line, t2 is intersection parameter along second line</returns>
-        public static (bool isIntersecting, double t1, double t2) EdgeEdgeIntersection2D(Point3D e0p0, Point3D e0p1, Point3D e1p0, Point3D e1p1, double tolerance)
+        public static (bool isIntersecting, double t1, double t2) EdgeEdgeIntersection2D(SimPoint3D e0p0, SimPoint3D e0p1, SimPoint3D e1p0, SimPoint3D e1p1, double tolerance)
         {
             double s1_x = e0p1.X - e0p0.X;
             double s1_y = e0p1.Y - e0p0.Y;
@@ -392,7 +413,7 @@ namespace SIMULTAN.Data.Geometry
 
             List<IUndoItem> undoItems = new List<IUndoItem>();
 
-            var intersection = EdgeEdgeIntersection(edge1, edge2);
+            var intersection = EdgeEdgeIntersection(edge1, edge2, tolerance);
             if (!intersection.isIntersecting)
                 return (null, null, null);
 
@@ -408,38 +429,23 @@ namespace SIMULTAN.Data.Geometry
 
             Vertex v = new Vertex(edge1.Layer, "", pointOnLine)
             {
-                Color = new DerivedColor(edge1.Color.LocalColor, edge1.Color.Parent, edge1.Color.PropertyName)
-                {
-                    IsFromParent = edge1.Color.IsFromParent
-                }
+                Color = new DerivedColor(edge1.Color)
             };
             Edge e11 = new Edge(edge1.Layer, "", new Vertex[] { edge1.Vertices[0], v })
             {
-                Color = new DerivedColor(edge1.Color.LocalColor, edge1.Color.Parent, edge1.Color.PropertyName)
-                {
-                    IsFromParent = edge1.Color.IsFromParent
-                }
+                Color = new DerivedColor(edge1.Color)
             };
             Edge e12 = new Edge(edge1.Layer, "", new Vertex[] { v, edge1.Vertices[1] })
             {
-                Color = new DerivedColor(edge1.Color.LocalColor, edge1.Color.Parent, edge1.Color.PropertyName)
-                {
-                    IsFromParent = edge1.Color.IsFromParent
-                }
+                Color = new DerivedColor(edge1.Color)
             };
             Edge e21 = new Edge(edge2.Layer, "", new Vertex[] { edge2.Vertices[0], v })
             {
-                Color = new DerivedColor(edge2.Color.LocalColor, edge2.Color.Parent, edge2.Color.PropertyName)
-                {
-                    IsFromParent = edge2.Color.IsFromParent
-                }
+                Color = new DerivedColor(edge2.Color)
             };
             Edge e22 = new Edge(edge2.Layer, "", new Vertex[] { v, edge2.Vertices[1] })
             {
-                Color = new DerivedColor(edge2.Color.LocalColor, edge2.Color.Parent, edge2.Color.PropertyName)
-                {
-                    IsFromParent = edge2.Color.IsFromParent
-                }
+                Color = new DerivedColor(edge2.Color)
             };
 
             undoItems.Add(new GeometryAddUndoItem(new List<BaseGeometry>() { v, e11, e12, e21, e22 }, edge1.ModelGeometry));
@@ -480,13 +486,13 @@ namespace SIMULTAN.Data.Geometry
         /// </summary>
         /// <param name="e">The edge</param>
         /// <param name="splitPosition">The position for the split (should be close to the line)</param>
-        public static (Vertex v, Edge[] edges, IUndoItem undoItem) SplitEdge(Edge e, Point3D splitPosition)
+        public static (Vertex v, Edge[] edges, IUndoItem undoItem) SplitEdge(Edge e, SimPoint3D splitPosition)
         {
             List<IUndoItem> undoItems = new List<IUndoItem>();
 
             //Find closest point on edge
             var dp = EdgePointIntersection(e, splitPosition);
-            var pointOnLine = (Point3D)((1.0 - dp.t) * (Vector3D)e.Vertices[0].Position + dp.t * (Vector3D)e.Vertices[1].Position);
+            var pointOnLine = (SimPoint3D)((1.0 - dp.t) * (SimVector3D)e.Vertices[0].Position + dp.t * (SimVector3D)e.Vertices[1].Position);
 
             e.ModelGeometry.StartBatchOperation();
 
@@ -495,24 +501,15 @@ namespace SIMULTAN.Data.Geometry
 
             Vertex v = new Vertex(e.Layer, "", pointOnLine)
             {
-                Color = new DerivedColor(e.Color.LocalColor, e.Color.Parent, e.Color.PropertyName)
-                {
-                    IsFromParent = e.Color.IsFromParent
-                }
+                Color = new DerivedColor(e.Color)
             };
             Edge e1 = new Edge(e.Layer, "", new Vertex[] { e.Vertices[0], v })
             {
-                Color = new DerivedColor(e.Color.LocalColor, e.Color.Parent, e.Color.PropertyName)
-                {
-                    IsFromParent = e.Color.IsFromParent
-                }
+                Color = new DerivedColor(e.Color)
             };
             Edge e2 = new Edge(e.Layer, "", new Vertex[] { v, e.Vertices[1] })
             {
-                Color = new DerivedColor(e.Color.LocalColor, e.Color.Parent, e.Color.PropertyName)
-                {
-                    IsFromParent = e.Color.IsFromParent
-                }
+                Color = new DerivedColor(e.Color)
             };
 
             undoItems.Add(new GeometryAddUndoItem(new List<BaseGeometry>() { v, e1, e2 }, e.ModelGeometry));

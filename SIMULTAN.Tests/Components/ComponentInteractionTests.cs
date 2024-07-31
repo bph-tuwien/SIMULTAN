@@ -3,19 +3,14 @@ using SIMULTAN.Data;
 using SIMULTAN.Data.Components;
 using SIMULTAN.Data.Taxonomy;
 using SIMULTAN.Tests.TestUtils;
-using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SIMULTAN.Tests.Components
 {
     [TestClass]
     public class ComponentInteractionTests : BaseProjectTest
     {
-        private static readonly FileInfo emptyProject = new FileInfo(@".\EmptyProject.simultan");
+        private static readonly FileInfo emptyProject = new FileInfo(@"./EmptyProject.simultan");
 
         #region Move
 
@@ -30,7 +25,7 @@ namespace SIMULTAN.Tests.Components
 
             SimComponent child = new SimComponent();
             var childSlot = new SimSlot(projectData.Taxonomies.GetDefaultSlot(SimDefaultSlotKeys.Cost), "3");
-            child.CurrentSlot = new SimTaxonomyEntryReference(childSlot.SlotBase);
+            child.Slots.Add(new SimTaxonomyEntryReference(childSlot.SlotBase));
 
             var childEntry = new SimChildComponentEntry(childSlot, child);
             root.Components.Add(childEntry);
@@ -74,7 +69,7 @@ namespace SIMULTAN.Tests.Components
 
             SimComponent child = new SimComponent();
             var childSlot = new SimSlot(projectData.Taxonomies.GetDefaultSlot(SimDefaultSlotKeys.Cost), "3");
-            child.CurrentSlot = new SimTaxonomyEntryReference(childSlot.SlotBase);
+            child.Slots.Add(new SimTaxonomyEntryReference(childSlot.SlotBase));
 
             var childEntry = new SimChildComponentEntry(childSlot, child);
             root.Components.Add(childEntry);
@@ -115,7 +110,7 @@ namespace SIMULTAN.Tests.Components
 
             SimComponent child = new SimComponent();
             var childSlot = new SimSlot(projectData.Taxonomies.GetDefaultSlot(SimDefaultSlotKeys.Cost), "3");
-            child.CurrentSlot = new SimTaxonomyEntryReference(childSlot.SlotBase);
+            child.Slots.Add(new SimTaxonomyEntryReference(childSlot.SlotBase));
 
             var childEntry = new SimChildComponentEntry(childSlot, child);
             root.Components.Add(childEntry);
@@ -159,7 +154,7 @@ namespace SIMULTAN.Tests.Components
 
             SimComponent child = new SimComponent();
             var childSlot = new SimSlot(projectData.Taxonomies.GetDefaultSlot(SimDefaultSlotKeys.Cost), "3");
-            child.CurrentSlot = new SimTaxonomyEntryReference(childSlot.SlotBase);
+            child.Slots.Add(new SimTaxonomyEntryReference(childSlot.SlotBase));
 
             var childEntry = new SimChildComponentEntry(childSlot, child);
             root.Components.Add(childEntry);
@@ -203,7 +198,7 @@ namespace SIMULTAN.Tests.Components
 
             SimComponent child = new SimComponent();
             var childSlot = new SimSlot(projectData.Taxonomies.GetDefaultSlot(SimDefaultSlotKeys.Cost), "3");
-            child.CurrentSlot = new SimTaxonomyEntryReference(childSlot.SlotBase);
+            child.Slots.Add(new SimTaxonomyEntryReference(childSlot.SlotBase));
 
             var childEntry = new SimChildComponentEntry(childSlot, child);
             root.Components.Add(childEntry);
@@ -242,7 +237,7 @@ namespace SIMULTAN.Tests.Components
             projectData.Components.Add(child);
 
             var childSlot = new SimSlot(projectData.Taxonomies.GetDefaultSlot(SimDefaultSlotKeys.Cost), "3");
-            child.CurrentSlot = new SimTaxonomyEntryReference(childSlot.SlotBase);
+            child.Slots.Add(new SimTaxonomyEntryReference(childSlot.SlotBase));
 
             var childEntry = new SimChildComponentEntry(childSlot);
             root.Components.Add(childEntry);
@@ -281,7 +276,7 @@ namespace SIMULTAN.Tests.Components
             projectData.Components.Add(child);
 
             var childSlot = new SimSlot(projectData.Taxonomies.GetDefaultSlot(SimDefaultSlotKeys.Cost), "3");
-            child.CurrentSlot = new SimTaxonomyEntryReference(childSlot.SlotBase);
+            child.Slots.Add(new SimTaxonomyEntryReference(childSlot.SlotBase));
 
             int counter = 0;
             child.IsBeingDeleted += (s) => counter++;

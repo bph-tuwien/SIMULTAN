@@ -34,7 +34,7 @@ namespace SIMULTAN.Data.Geometry
         public UndoExecutionResult Execute()
         {
             // first create the new instance and remember the placement
-            instance = new SimComponentInstance(component.InstanceType, geometry.ModelGeometry.Model.File.Key, geometry.Id, new ulong[] { });
+            instance = new SimComponentInstance(component.InstanceType, geometry.ModelGeometry.Model.File.Key, geometry.Id);
             placement = instance.Placements.FirstOrDefault() as SimInstancePlacementGeometry;
             Redo();
             return UndoExecutionResult.Executed;

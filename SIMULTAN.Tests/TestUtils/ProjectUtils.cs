@@ -41,7 +41,7 @@ namespace SIMULTAN.Tests.TestUtils
         public static (GeometryModel geometryModel, ResourceEntry resource)
             LoadGeometry(string resourceName, ExtendedProjectData dataManager, IServicesProvider serviceProvider)
         {
-            var resource = (ResourceFileEntry)dataManager.AssetManager.Resources.FirstOrDefault(x => x.Name == resourceName);
+            var resource = (ResourceFileEntry)FindResource(dataManager.AssetManager.Resources, resourceName);
 
             var errors = new List<SimGeoIOError>();
             var model = SimGeoIO.Load(resource, dataManager, errors);
@@ -50,12 +50,30 @@ namespace SIMULTAN.Tests.TestUtils
             return (model, resource);
         }
 
+        private static ResourceEntry FindResource(IEnumerable<ResourceEntry> entries, string resourceName)
+        {
+            foreach (var res in entries)
+            {
+                if (res.Name == resourceName)
+                    return res;
+
+                if (res is ResourceDirectoryEntry dir)
+                {
+                    var childResult = FindResource(dir.Children, resourceName);
+                    if (childResult != null)
+                        return childResult;
+                }
+            }
+
+            return null;
+        }
+
         public static void CleanupTestData(ref HierarchicalProject project, ref ExtendedProjectData dataManager)
         {
             if (project != null)
             {
                 if (project.IsOpened)
-                    ZipProjectIO.Close(project, false, true);
+                    ZipProjectIO.Close(project, true);
                 if (project.IsLoaded)
                     ZipProjectIO.Unload(project);
 
@@ -75,7 +93,7 @@ namespace SIMULTAN.Tests.TestUtils
             Dictionary<string, SimBaseParameter> result = new Dictionary<string, SimBaseParameter>();
 
             foreach (var param in comp.Parameters)
-                result.Add(param.NameTaxonomyEntry.Name, param);
+                result.Add(param.NameTaxonomyEntry.Text, param);
 
             return result;
         }
@@ -90,7 +108,7 @@ namespace SIMULTAN.Tests.TestUtils
             foreach (var param in comp.Parameters)
                 if (param is T casted)
                 {
-                    result.Add(param.NameTaxonomyEntry.Name, casted);
+                    result.Add(param.NameTaxonomyEntry.Text, casted);
                 }
 
 

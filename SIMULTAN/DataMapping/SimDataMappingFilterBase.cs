@@ -1,13 +1,9 @@
 ﻿using SIMULTAN.Data.Components;
 using SIMULTAN.Data.Taxonomy;
-using SIMULTAN.Projects.ManagedFiles;
-using System;
-using System.Collections.Generic;
+using SIMULTAN.Projects;
 using System.ComponentModel;
-using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
+using static Assimp.Metadata;
 
 namespace SIMULTAN.DataMapping
 {
@@ -57,6 +53,10 @@ namespace SIMULTAN.DataMapping
         /// A <see cref="SimDataMappingFaceType"/>
         /// </summary>
         WallType = 9,
+        /// <summary>
+        /// Used whenever the <see cref="SimDataMappingFilterBase.Value"/> is Null
+        /// </summary>
+        Null = 10,
     }
 
     /// <summary>
@@ -111,6 +111,25 @@ namespace SIMULTAN.DataMapping
         {
             this.Value = null;
         }
+
+        /// <summary>
+        /// Looks up taxonomy entries for default slot by their name.
+        /// Do this if the default taxonomies changed, could mean that the project is migrated.
+        /// </summary>
+        /// <param name="projectData">The project data in which the taxonomy entry is found</param>
+        internal void RestoreDefaultTaxonomyReferences(ProjectData projectData)
+        {
+            if (Value is SimTaxonomyEntryReference tref)
+            {
+                var entry = projectData.IdGenerator.GetById<SimTaxonomyEntry>(tref.TaxonomyEntryId);
+                this.Value = new SimTaxonomyEntryReference(entry);
+            }
+            else if (Value is SimSlot slot)
+            {
+                var entry = projectData.IdGenerator.GetById<SimTaxonomyEntry>(slot.SlotBase.TaxonomyEntryId);
+                this.Value = new SimSlot(new SimTaxonomyEntryReference(entry), slot.SlotExtension);
+            }
+        }
     }
 
     /// <summary>
@@ -140,7 +159,7 @@ namespace SIMULTAN.DataMapping
         /// <param name="filterValue">The filter value</param>
         /// <returns>A copy of the filter value</returns>
         protected static object CloneFilterValue(object filterValue)
-        { 
+        {
             switch (filterValue)
             {
                 case SimTaxonomyEntryReference tref:

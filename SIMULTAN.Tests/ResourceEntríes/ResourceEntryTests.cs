@@ -6,6 +6,8 @@ using SIMULTAN.Projects;
 using SIMULTAN.Tests.TestUtils;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Text;
 
 namespace SIMULTAN.Tests.ResourceEntries
@@ -23,7 +25,9 @@ namespace SIMULTAN.Tests.ResourceEntries
             var otherGuid = Guid.Parse("da7d8f7c-8eec-423b-b127-9d6e17f52522");
 
             ExtendedProjectData projectData = new ExtendedProjectData();
-            projectData.AssetManager.WorkingDirectory = "C:\\";
+            var workdir = Path.Combine(Directory.GetCurrentDirectory(), "TestWorkDir");
+            Directory.CreateDirectory(workdir);
+            projectData.AssetManager.WorkingDirectory = workdir;
 
             ContainedResourceFileEntry file = new ContainedResourceFileEntry(projectData.AssetManager,
                 SimUserRole.BUILDING_DEVELOPER, "MyContainedFile.txt", false, 11, false);
@@ -37,7 +41,7 @@ namespace SIMULTAN.Tests.ResourceEntries
             Assert.IsTrue(weakRef.IsAlive);
 
             // keep the file alive
-            Console.WriteLine(file.Tags[0].Target.Name);
+            Debug.WriteLine(file.Tags[0].Target.Localization.Localize().Name);
 
             return weakRef;
         }

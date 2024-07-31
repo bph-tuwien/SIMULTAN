@@ -6,7 +6,6 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Windows;
 
 
 namespace SIMULTAN.Serializer.CSV
@@ -17,43 +16,6 @@ namespace SIMULTAN.Serializer.CSV
     /// </summary>
     public static class BigTableToCSVExporter
     {
-        /// <summary>
-        /// Function which makes the export of BigTable to CSV file format.
-        /// </summary>
-        public static void Export(SimMultiValueBigTable data, bool exportUnits, bool showDialog, string folderPath)
-        {
-            FileInfo info = new FileInfo(data.Name);
-
-            // Configure save file dialog box
-            var dlg = new Microsoft.Win32.SaveFileDialog()
-            {
-
-                OverwritePrompt = true,
-                FileName = info.Name, // Default file name
-                DefaultExt = ".csv", // Default file extension
-                Filter = "csv files|*.csv" // Filter files by extension
-
-            };
-
-            // Show save file dialog box
-            Nullable<bool> result = new Nullable<bool>();
-            if (showDialog == true)
-                result = dlg.ShowDialog();
-            else
-            {
-                result = false;
-                dlg.FileName = folderPath + "/" + info.Name + ".csv";
-            }
-
-            // Process save file dialog box results
-            if (result.HasValue && result == true || showDialog == false)
-            {
-                ExportToCSV(data, dlg.FileName, ";", ".", "Timestamp", true, true, false, false);
-            }
-
-        }
-
-
         /// <summary>
         /// Exports a MultiValueBigTable to a CSV file.
         /// </summary>

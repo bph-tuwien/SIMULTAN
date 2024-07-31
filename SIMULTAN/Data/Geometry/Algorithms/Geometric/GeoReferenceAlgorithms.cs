@@ -1,14 +1,11 @@
 ﻿using SIMULTAN;
+using SIMULTAN.Data.SimMath;
 using SIMULTAN.Exceptions;
 using SIMULTAN.Utils;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Media.Media3D;
 
 namespace SIMULTAN.Data.Geometry
 {
@@ -30,20 +27,40 @@ namespace SIMULTAN.Data.Geometry
         /// <summary>
         /// This searches for the best georeferences to form a 2D coordinate system (3 points) used for interpolation.
         /// Criteria are: axis are close to orthogonal, points span a wide distance, area covered by triangle is maximal
+        /// All the points have distinct positions at least on XY and XZ plane
         /// </summary>
         /// <param name="geoReferences">List of georeferences to search</param>
         /// <param name="pOS">Point in object space to find transformation for</param>
         /// <returns>Transformation used for interpolation of WGS84 coordinates</returns>
-        private static GeoRefTransform FindBestGeoReferences(List<GeoRefPoint> geoReferences, Point3D pOS)
+        private static GeoRefTransform FindBestGeoReferences(List<GeoRefPoint> geoReferences, SimPoint3D pOS)
         {
             // find nearest georef -> first point
-            (GeoRefPoint nearestGeoRef, _, _) = geoReferences.ArgMin(x => (x.OS - pOS).LengthSquared);
+            (GeoRefPoint nearestGeoRef, _, _) = geoReferences.Where(t =>
+                     (t.OS.X != pOS.X || t.OS.Y != pOS.Y || t.OS.Z != pOS.Z)).ArgMin(x => (x.OS - pOS).LengthSquared);
 
+
+            var distinctFarthersPoints = geoReferences.Where(t =>
+                     (t.OS.X != nearestGeoRef.OS.X || t.OS.Z != nearestGeoRef.OS.Z));
+            if (distinctFarthersPoints.Count() < 1)
+            {
+                //The geo references must have at least three plane-wise-distinct points
+                throw new InvalidGeoReferencingException();
+            }
             // find farthest point from first point -> second point
-            (GeoRefPoint farthestPoint, _, _) = geoReferences.ArgMax(x => (x.OS - nearestGeoRef.OS).LengthSquared);
+            (GeoRefPoint farthestPoint, _, _) = distinctFarthersPoints.ArgMax(x => (x.OS - nearestGeoRef.OS).LengthSquared);
 
+
+            var distinctPoints = geoReferences.Where(t =>
+                      (t.OS.X != farthestPoint.OS.X || t.OS.Z != farthestPoint.OS.Z) &&
+                      (t.OS.X != nearestGeoRef.OS.X || t.OS.Z != nearestGeoRef.OS.Z));
+            if (distinctPoints.Count() < 1)
+            {
+                //The geo references must have at least three plane-wise-distinct points
+                throw new InvalidGeoReferencingException();
+            }
             // find third point which forms a triangle with maximum area
-            (GeoRefPoint anglePoint, _, _) = geoReferences.ArgMax(x => Vector3D.CrossProduct(nearestGeoRef.OS - x.OS, nearestGeoRef.OS - farthestPoint.OS).LengthSquared);
+            (GeoRefPoint anglePoint, _, _) = distinctPoints.ArgMax(x => SimVector3D.CrossProduct(nearestGeoRef.OS - x.OS, nearestGeoRef.OS - farthestPoint.OS).LengthSquared);
+
 
             return new GeoRefTransform(nearestGeoRef, farthestPoint, anglePoint);
         }
@@ -76,16 +93,16 @@ namespace SIMULTAN.Data.Geometry
         /// <param name="positions">List of points to geo-reference.</param>
         /// <param name="geoReferences">List of known georeferences</param>
         /// <returns>Transformed list of points in Cartesian WGS84 space. Transformed list of points in WGS84 space (longitude/latitude/height).</returns>
-        public static (List<Point3D> positionsWS, List<Point3D> positionsWGS) GeoReferenceMesh(List<Point3D> positions, List<GeoRefPoint> geoReferences)
+        public static (List<SimPoint3D> positionsWS, List<SimPoint3D> positionsWGS) GeoReferenceMesh(List<SimPoint3D> positions, List<GeoRefPoint> geoReferences)
         {
             if (!ValidateGeoReferences(geoReferences))
                 throw new InvalidGeoReferencingException();
 
             // transform from obj space to WGS space, extrapolate non-linearly
-            List<Point3D> posWGS = EstimateWGSNonLinear(positions, geoReferences);
+            List<SimPoint3D> posWGS = EstimateWGSNonLinear(positions, geoReferences);
 
             // transform from ellipsoidal coordinates to cartesian space
-            List<Point3D> posWS = posWGS.Select(x => VertexAlgorithms.FromMathematicalCoordinateSystem(WGS84ToCart(x))).ToList();
+            List<SimPoint3D> posWS = posWGS.Select(x => VertexAlgorithms.FromMathematicalCoordinateSystem(WGS84ToCart(x))).ToList();
 
             return (posWS, posWGS);
         }
@@ -104,16 +121,16 @@ namespace SIMULTAN.Data.Geometry
         /// <param name="positions">List of positions to assign WGS84 coordinates to</param>
         /// <param name="geoReferences">List of known georeferenced points</param>
         /// <returns>Georeferenced points (WGS84) in same order as in given point list. </returns>
-        private static List<Point3D> EstimateWGSNonLinear(List<Point3D> positions, List<GeoRefPoint> geoReferences)
+        public static List<SimPoint3D> EstimateWGSNonLinear(List<SimPoint3D> positions, List<GeoRefPoint> geoReferences)
         {
-            Point3D[] tfPoints = new Point3D[positions.Count];
+            SimPoint3D[] tfPoints = new SimPoint3D[positions.Count];
 
             // compute average height of georeferences
             var avgGeoRefHeight = geoReferences.Average(x => x.OS.Y);
 
             // group positions such that every group makes up a column, i.e. has the same x and z coordinates
-            List<List<(Point3D p, int idx)>> groupedPositions = new List<List<(Point3D p, int idx)>>();
-            List<(Point3D grp, int grpIdx)> groups = new List<(Point3D grp, int grpIdx)>();
+            List<List<(SimPoint3D p, int idx)>> groupedPositions = new List<List<(SimPoint3D p, int idx)>>();
+            List<(SimPoint3D grp, int grpIdx)> groups = new List<(SimPoint3D grp, int grpIdx)>();
 
             for (int i = 0; i < positions.Count; i++)
             {
@@ -121,7 +138,7 @@ namespace SIMULTAN.Data.Geometry
                 // check if group already exists
                 for (int j = 0; j < groups.Count; j++)
                 {
-                    if (VertexAlgorithms.IsEqual(new Point3D(positions[i].X, 0.0, positions[i].Z), groups[j].grp))
+                    if (VertexAlgorithms.IsEqual(new SimPoint3D(positions[i].X, 0.0, positions[i].Z), groups[j].grp))
                     {
                         grpIdx = groups[j].grpIdx;
                         break;
@@ -130,8 +147,8 @@ namespace SIMULTAN.Data.Geometry
 
                 if (grpIdx == -1) // add new group
                 {
-                    groups.Add((new Point3D(positions[i].X, 0.0, positions[i].Z), groupedPositions.Count));
-                    groupedPositions.Add(new List<(Point3D p, int idx)>() { (positions[i], i) });
+                    groups.Add((new SimPoint3D(positions[i].X, 0.0, positions[i].Z), groupedPositions.Count));
+                    groupedPositions.Add(new List<(SimPoint3D p, int idx)>() { (positions[i], i) });
                 }
                 else // add to group
                 {
@@ -144,7 +161,7 @@ namespace SIMULTAN.Data.Geometry
             {
                 // check for existing georefs
                 int referenceFound = -1;
-                Point3D wgs = new Point3D();
+                SimPoint3D wgs = new SimPoint3D();
                 for (int i = 0; i < group.Count; i++)
                 {
                     bool found = false;
@@ -160,10 +177,10 @@ namespace SIMULTAN.Data.Geometry
                 {
                     for (int i = 0; i < group.Count; i++)
                     {
-                        Point3D pWGS = wgs;
+                        SimPoint3D pWGS = wgs;
                         if (i != referenceFound)
                         {
-                            pWGS += new Vector3D(0.0, 0.0, group[i].p.Y - group[referenceFound].p.Y);
+                            pWGS += new SimVector3D(0.0, 0.0, group[i].p.Y - group[referenceFound].p.Y);
                         }
                         tfPoints[group[i].idx] = pWGS;
                     }
@@ -186,10 +203,10 @@ namespace SIMULTAN.Data.Geometry
 
                         for (int i = 0; i < group.Count; i++)
                         {
-                            Point3D pWGS = wgs;
+                            SimPoint3D pWGS = wgs;
                             if (i != minIdx)
                             {
-                                pWGS += new Vector3D(0.0, 0.0, group[i].p.Y - avgPOS.p.Y);
+                                pWGS += new SimVector3D(0.0, 0.0, group[i].p.Y - avgPOS.p.Y);
                             }
                             tfPoints[group[i].idx] = pWGS;
                         }
@@ -200,41 +217,39 @@ namespace SIMULTAN.Data.Geometry
             return tfPoints.ToList();
         }
 
-        private static (bool success, Point3D wgs) CheckForExistingGeoReference(Point3D position, List<GeoRefPoint> geoRefs)
+        private static (bool success, SimPoint3D wgs) CheckForExistingGeoReference(SimPoint3D position, List<GeoRefPoint> geoRefs, double epsilon = 1e-8)
         {
             for (int j = 0; j < geoRefs.Count; j++)
             {
-                if (VertexAlgorithms.IsEqual(
-                    new Point3D(position.X, 0.0, position.Z),
-                    new Point3D(geoRefs[j].OS.X, 0.0, geoRefs[j].OS.Z)))
+                if (Math.Abs(position.X - geoRefs[j].OS.X) <= epsilon &&
+                    Math.Abs(position.Z - geoRefs[j].OS.Z) <= epsilon)
                 {
-                    return (true, geoRefs[j].WGS + new Vector3D(0.0, 0.0, position.Y - geoRefs[j].OS.Y));
+                    return (true, geoRefs[j].WGS + new SimVector3D(0.0, 0.0, position.Y - geoRefs[j].OS.Y));
                 }
             }
 
-            return (false, new Point3D());
+            return (false, new SimPoint3D());
         }
 
-        private static Point3D InterpolateWGSCoords(GeoRefTransform transform, Point3D pOS)
+        private static SimPoint3D InterpolateWGSCoords(GeoRefTransform transform, SimPoint3D pOS)
         {
-            Point3D oObj = transform.RefOrigin.OS;
-            Point3D p1Obj = transform.RefP1.OS;
-            Point3D p2Obj = transform.RefP2.OS;
+            SimPoint3D oObj = transform.RefOrigin.OS;
+            SimPoint3D p1Obj = transform.RefP1.OS;
+            SimPoint3D p2Obj = transform.RefP2.OS;
 
             // directions in object space of georeferenced points
-            Vector dirObj1 = new Vector(p1Obj.X - oObj.X, p1Obj.Z - oObj.Z);
-            Vector dirObj2 = new Vector(p2Obj.X - oObj.X, p2Obj.Z - oObj.Z);
+            SimVector dirObj1 = new SimVector(p1Obj.X - oObj.X, p1Obj.Z - oObj.Z);
+            SimVector dirObj2 = new SimVector(p2Obj.X - oObj.X, p2Obj.Z - oObj.Z);
+
             dirObj1.Normalize();
             dirObj2.Normalize();
-
-            Vector dir = new Vector(pOS.X - oObj.X, pOS.Z - oObj.Z);
+            SimVector dir = new SimVector(pOS.X - oObj.X, pOS.Z - oObj.Z);
             double l = dir.Length;
-            dir.Normalize();
 
+            dir.Normalize();
             // interpolate between azimuths according to object space angles
             double alpha = DetectionAlgorithms.SignedAngle(dirObj1, dirObj2);
             double beta = DetectionAlgorithms.SignedAngle(dir, dirObj2);
-
             var azimuthSpan = DetectionAlgorithms.ShortAngleDist(transform.Azimuth2, transform.Azimuth1);
             double azimuth = transform.Azimuth2 + beta * (azimuthSpan / alpha);
             if (azimuth < 0.0) azimuth += 360.0;
@@ -242,17 +257,17 @@ namespace SIMULTAN.Data.Geometry
 
             // use interpolated azimuth and object space distance to move (vincenty)
             (var pWGS, _) = VincentyDirect(transform.RefOrigin.WGS, azimuth, l);
-            return pWGS + new Vector3D(0.0, 0.0, pOS.Y - oObj.Y);
+            return pWGS + new SimVector3D(0.0, 0.0, pOS.Y - oObj.Y);
         }
 
         /// <summary>
-        /// Transforms a point with WGS coordinates into the cartesian coordinate system of the WGS reference ellipsoid.
+        /// Transforms a point with WGS coordinates into the Cartesian coordinate system of the WGS reference ellipsoid.
         /// https://gssc.esa.int/navipedia/index.php/Ellipsoidal_and_Cartesian_Coordinates_Conversion
         /// https://en.wikipedia.org/wiki/World_Geodetic_System
         /// </summary>
         /// <param name="p">A point consisting of longitude (x), latitude (y) and height relative to surface (z)</param>
-        /// <returns>The point in the cartesian coordinate system of the WGS reference ellipsoid.</returns>
-        public static Point3D WGS84ToCart(Point3D p)
+        /// <returns>The point in the Cartesian coordinate system of the WGS reference ellipsoid.</returns>
+        public static SimPoint3D WGS84ToCart(SimPoint3D p)
         {
             double a = WGS_a;
             double f = WGS_f;
@@ -266,7 +281,7 @@ namespace SIMULTAN.Data.Geometry
             double Y = (N + h) * Math.Cos(phi) * Math.Sin(lambda);
             double Z = ((1.0 - e2) * N + h) * Math.Sin(phi);
 
-            return new Point3D(X, Y, Z);
+            return new SimPoint3D(X, Y, Z);
         }
 
         /// <summary>
@@ -277,7 +292,7 @@ namespace SIMULTAN.Data.Geometry
         /// <param name="point">A point in the catesian space with [0,0,0] being the earths center.</param>
         /// <param name="precision">The precision of the calculation.</param>
         /// <returns>The point in the WGS coordinate system.</returns>
-        public static Point3D CartToWGS84(Point3D point, double precision = 0.0000001)
+        public static SimPoint3D CartToWGS84(SimPoint3D point, double precision = 0.0000001)
         {
             double lng = Math.Atan2(point.Y, point.X);
             double p = Math.Sqrt(point.X * point.X + point.Y * point.Y);
@@ -298,7 +313,7 @@ namespace SIMULTAN.Data.Geometry
                 phi0 = phiNew;
             } while (Math.Abs(phiOld - phiNew) > precision);
 
-            return new Point3D(lng * radToDeg, phiNew * radToDeg, h);
+            return new SimPoint3D(lng * radToDeg, phiNew * radToDeg, h);
         }
 
         /// <summary>
@@ -306,7 +321,7 @@ namespace SIMULTAN.Data.Geometry
         /// </summary>
         /// <param name="p">WGS coordinates of point</param>
         /// <returns>Tangent frame (tangent, bitangent, normal) for given point</returns>
-        public static (Vector3D T, Vector3D B, Vector3D N) TangentFrame(Point3D p)
+        public static (SimVector3D T, SimVector3D B, SimVector3D N) TangentFrame(SimPoint3D p)
         {
             // maybe replace with analytic? but works fine so far
             (var pT, _) = VincentyDirect(p, 90.0, 1.0);
@@ -316,11 +331,11 @@ namespace SIMULTAN.Data.Geometry
             var pT_WS = VertexAlgorithms.FromMathematicalCoordinateSystem(WGS84ToCart(pT));
             var pB_WS = VertexAlgorithms.FromMathematicalCoordinateSystem(WGS84ToCart(pB));
 
-            Vector3D T = pT_WS - p_WS;
+            SimVector3D T = pT_WS - p_WS;
             T.Normalize();
-            Vector3D B = -(pB_WS - p_WS);
+            SimVector3D B = -(pB_WS - p_WS);
             B.Normalize();
-            Vector3D N = -Vector3D.CrossProduct(T, B);
+            SimVector3D N = -SimVector3D.CrossProduct(T, B);
 
             return (T, B, N);
         }
@@ -336,7 +351,7 @@ namespace SIMULTAN.Data.Geometry
         /// <param name="maxIterations">Max iterations used as fallback if tolerance cannot be reached to prevent infinite loops.</param>
         /// <returns>A point (longitude/latitude) which has a geodesic distance to the start point equal to the given input distance and it's final bearing (azimuth). 
         /// Note, that this point has the same height as the input point.</returns>
-        public static (Point3D dest, double bearing) VincentyDirect(Point3D p, double azimuth, double distance, double tolerance = 1e-17 /* 1e-18 caused infinite loops in some cases */
+        public static (SimPoint3D dest, double bearing) VincentyDirect(SimPoint3D p, double azimuth, double distance, double tolerance = 1e-17 /* 1e-18 caused infinite loops in some cases */
             , int maxIterations = 1000000)
         {
             double h = p.Z;
@@ -412,7 +427,7 @@ namespace SIMULTAN.Data.Geometry
                 finalBrg = finalBrg - 360;
             }
 
-            return (new Point3D(lon2, lat2, p.Z), finalBrg);
+            return (new SimPoint3D(lon2, lat2, p.Z), finalBrg);
         }
 
         /// <summary>
@@ -423,7 +438,7 @@ namespace SIMULTAN.Data.Geometry
         /// <param name="dest">End point with with longitude (x), latitude (y) and height in m (z)</param>
         /// <param name="tolerance">Tolerance for the iterative algorithm. Default is 1e-12.</param>
         /// <returns>Geodesic distance between the two given points as well as it's final bearing (azimuth in [0, 360)).</returns>
-        public static (double distance, double bearing) VincentyIndirect(Point3D source, Point3D dest, double tolerance = 1e-18)
+        public static (double distance, double bearing) VincentyIndirect(SimPoint3D source, SimPoint3D dest, double tolerance = 1e-18)
         {
             // averaging the height on which we measure since it is impossible to measure geodesic distance across 2 different ellipsoids
             double h = (source.Z + dest.Z) * 0.5;
@@ -512,7 +527,7 @@ namespace SIMULTAN.Data.Geometry
         /// </summary>
         /// <param name="utm">UTM coordinates</param>
         /// <returns>WGS84 coordinates</returns>
-        public static Point3D ConvertUTMToWGS84(UTMCoord utm)
+        public static SimPoint3D ConvertUTMToWGS84(UTMCoord utm)
         {
             double falseEasting = 500e3;
             double falseNorthing = 10000e3;
@@ -602,7 +617,7 @@ namespace SIMULTAN.Data.Geometry
             double convergence = gamma * radToDeg;
             double scale = kappa * radToDeg;
 
-            return new Point3D(lon, lat, utm.Height);
+            return new SimPoint3D(lon, lat, utm.Height);
         }
 
         /// <summary>
@@ -617,7 +632,7 @@ namespace SIMULTAN.Data.Geometry
         /// <param name="spacingY"></param>
         /// <param name="toCartesian">if true, WGS coordinates are converted into Cartesian coordinates</param>
         /// <returns></returns>
-        public static Point3D[,] CreateAlignedWGSGrid(Point3D midPoint, double widthInM, double heightInM, double spacingX, double spacingY, bool toCartesian = false)
+        public static SimPoint3D[,] CreateAlignedWGSGrid(SimPoint3D midPoint, double widthInM, double heightInM, double spacingX, double spacingY, bool toCartesian = false)
         {
             const int MIN_VERTICES = 3;
             const int MAX_VERTICES = 1000;
@@ -625,7 +640,7 @@ namespace SIMULTAN.Data.Geometry
             int numVerticesX = Math.Min(MAX_VERTICES, Math.Max(MIN_VERTICES, (int)Math.Floor(widthInM / spacingX)));
             int numVerticesY = Math.Min(MAX_VERTICES, Math.Max(MIN_VERTICES, (int)Math.Floor(heightInM / spacingY)));
 
-            Point3D[,] vertices = new Point3D[numVerticesX, numVerticesY];
+            SimPoint3D[,] vertices = new SimPoint3D[numVerticesX, numVerticesY];
 
             for (int i = 0; i < numVerticesX; i++)
             {
@@ -643,8 +658,8 @@ namespace SIMULTAN.Data.Geometry
                         double azimuthX = x < 0 ? 270.0 : 90.0;
                         double azimuthY = y < 0 ? 0.0 : 180.0;
 
-                        (Point3D v_x, _) = GeoReferenceAlgorithms.VincentyDirect(midPoint, azimuthX, Math.Abs(spacingX * x));
-                        (Point3D v, _) = GeoReferenceAlgorithms.VincentyDirect(v_x, azimuthY, Math.Abs(spacingY * y));
+                        (SimPoint3D v_x, _) = GeoReferenceAlgorithms.VincentyDirect(midPoint, azimuthX, Math.Abs(spacingX * x));
+                        (SimPoint3D v, _) = GeoReferenceAlgorithms.VincentyDirect(v_x, azimuthY, Math.Abs(spacingY * y));
 
                         vertices[i, j] = toCartesian ? VertexAlgorithms.FromMathematicalCoordinateSystem(WGS84ToCart(v)) : v;
                     }
@@ -662,6 +677,35 @@ namespace SIMULTAN.Data.Geometry
         private static double Atanh(double X)
         {
             return Math.Log((1.0 + X) / (1.0 - X)) / 2.0;
+        }
+
+        /// <summary>
+        /// Converts building geometry with GeoReferences to a "flat" cartesian frame centered around wgsOrigin with 
+        ///  X containing the East direction, 
+        ///  Y containing the height
+        ///  Z containing the North direction
+        ///  
+        /// The method assumes that Longitude and Latitude form a cartesian frame which should hold as long as the affected area is small and the area
+        /// is not too close to a pole.
+        /// This algorithm may not be seen as a proof that earth is actually flat!
+        /// </summary>
+        /// <param name="wgsCoordinates">
+        /// The coordinates in WGS coordinates as returned by <see cref="EstimateWGSNonLinear(List{SimPoint3D}, List{GeoRefPoint})"/>
+        /// (X: Longitude, Y: Latitude, Z: height)
+        /// </param>
+        /// <param name="wgsOrigin">The origin of the reference system, given in WGS coordinates (X: Longitude, Y: Latitude, Z: height)</param>
+        /// <returns>The wgsCoordinates convert to a cartesian frame centered around wgsOrigin</returns>
+        public static IEnumerable<SimPoint3D> ConvertToFlatEarth(IEnumerable<SimPoint3D> wgsCoordinates, SimPoint3D wgsOrigin)
+        {
+            foreach (var point in wgsCoordinates)
+            {
+                var pointOnEllipsoide = new SimPoint3D(point.X, point.Y, wgsOrigin.Z); //Project point onto the Ellipsoid height defined by wgsOrigin
+                var wgsDir = GeoReferenceAlgorithms.VincentyIndirect(wgsOrigin, pointOnEllipsoide);
+                var flatCoordinate = new SimPoint3D(Math.Sin(wgsDir.bearing * degToRad) * wgsDir.distance,
+                    point.Z - wgsOrigin.Z,
+                    Math.Cos(wgsDir.bearing * degToRad) * wgsDir.distance);
+                yield return flatCoordinate;
+            }
         }
     }
 }

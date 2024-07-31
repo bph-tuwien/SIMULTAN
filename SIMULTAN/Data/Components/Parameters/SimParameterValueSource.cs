@@ -1,5 +1,6 @@
 ﻿using SIMULTAN.Data.Geometry;
 using SIMULTAN.Data.MultiValues;
+using SIMULTAN.Projects;
 using System;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
@@ -103,5 +104,12 @@ namespace SIMULTAN.Data.Components
         /// </summary>
         /// <param name="newComponent"></param>
         internal virtual void OnParameterComponentChanged(SimComponent newComponent) { }
+
+        /// <summary>
+        /// Restores all taxonomy entry references after the default taxonomies were updated.
+        /// </summary>
+        /// <param name="project">The ProjectData</param>
+        public virtual void RestoreDefaultTaxonomyReferences(ProjectData project)
+        { }
     }
 }

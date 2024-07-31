@@ -1,11 +1,11 @@
 ﻿using SIMULTAN.Data.FlowNetworks;
+using SIMULTAN.Data.SimMath;
 using SIMULTAN.Data.Users;
 using SIMULTAN.Serializer.DXF;
+using SIMULTAN.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 
 namespace SIMULTAN.Serializer.CODXF
@@ -124,7 +124,7 @@ namespace SIMULTAN.Serializer.CODXF
         /// <param name="writer">The writer into which the data should be written</param>
         internal static void WriteNetworkSection(IEnumerable<SimFlowNetwork> networks, DXFStreamWriter writer)
         {
-            writer.StartSection(ParamStructTypes.NETWORK_SECTION);
+            writer.StartSection(ParamStructTypes.NETWORK_SECTION, networks.Count());
 
             foreach (var network in networks)
             {
@@ -133,6 +133,7 @@ namespace SIMULTAN.Serializer.CODXF
 
             writer.EndSection();
         }
+
         /// <summary>
         /// Reads a network section. The results are stored in <see cref="DXFParserInfo.ProjectData"/>
         /// </summary>
@@ -141,11 +142,7 @@ namespace SIMULTAN.Serializer.CODXF
         internal static void ReadNetworkSection(DXFStreamReader reader, DXFParserInfo info)
         {
             var networks = ComponentDxfIONetworks.NetworkSectionEntityElement.Parse(reader, info);
-
-            foreach (var network in networks)
-            {
-                info.ProjectData.NetworkManager.NetworkRecord.Add(network);
-            }
+            info.ProjectData.NetworkManager.NetworkRecord.AddRange(networks);
         }
 
         /// <summary>
@@ -206,7 +203,7 @@ namespace SIMULTAN.Serializer.CODXF
             try
             {
                 var network = new SimFlowNetwork(info.GlobalId, id, name, description, isValid,
-                    new Point(posX, posY), manager, geomRepFile, containedNodes, containedEdges, containedNetworks,
+                    new SimPoint(posX, posY), manager, geomRepFile, containedNodes, containedEdges, containedNetworks,
                     startNode, endNode, isDirected, calcRules.Where(x => x.HasValue).Select(x => x.Value))
                 {
                     RepresentationReference = new Data.GeometricReference(geomFile, geomId)
@@ -256,7 +253,7 @@ namespace SIMULTAN.Serializer.CODXF
             try
             {
                 return new SimFlowNetworkNode(info.GlobalId, id, name, description, isValid,
-                    new System.Windows.Point(posX, posY),
+                    new SimPoint(posX, posY),
                     calcRules.Where(x => x.HasValue).Select(x => x.Value))
                 {
                     RepresentationReference = new Data.GeometricReference(geomFile, geomId)

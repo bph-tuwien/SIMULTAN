@@ -116,9 +116,6 @@ namespace SIMULTAN.Data.Components
 
             private void SetValues(SimComponentInstance item)
             {
-                if (this.owner.InstanceType != item.InstanceType)
-                    throw new InvalidStateException("Instance type has to match component's instance type");
-
                 if (this.owner.Factory != null) //Ids are only possible when the component is already attached to a parent/factory.
                                                 //If not the case, Id's have to be handed out when the component get's attached
                 {

@@ -1,10 +1,10 @@
-﻿using SIMULTAN.Utils;
+﻿using SIMULTAN.Data.SimMath;
+using SIMULTAN.Utils;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows;
-using System.Windows.Media.Media3D;
 
 namespace SIMULTAN.Data.MultiValues
 {
@@ -107,8 +107,8 @@ namespace SIMULTAN.Data.MultiValues
                 owner.NotifyChanged();
 
                 owner.Range = new Range3D(
-                    new Point3D(owner.Range.Minimum.X, owner.Range.Minimum.Y, this.Min()),
-                    new Point3D(owner.Range.Maximum.X, owner.Range.Maximum.Y, this.Max())
+                    new SimPoint3D(owner.Range.Minimum.X, owner.Range.Minimum.Y, this.Min()),
+                    new SimPoint3D(owner.Range.Maximum.X, owner.Range.Maximum.Y, this.Max())
                     );
             }
             /// <inheritdoc />
@@ -133,8 +133,8 @@ namespace SIMULTAN.Data.MultiValues
                     base.RemoveItem(index);
 
                 owner.Range = new Range3D(
-                    new Point3D(owner.Range.Minimum.X, owner.Range.Minimum.Y, this.Min()),
-                    new Point3D(owner.Range.Maximum.X, owner.Range.Maximum.Y, this.Max())
+                    new SimPoint3D(owner.Range.Minimum.X, owner.Range.Minimum.Y, this.Min()),
+                    new SimPoint3D(owner.Range.Maximum.X, owner.Range.Maximum.Y, this.Max())
                     );
             }
             /// <inheritdoc />
@@ -152,7 +152,7 @@ namespace SIMULTAN.Data.MultiValues
                 {
                     for (int i = 0; i < g.Points.Count; ++i)
                     {
-                        g.Points[i] = new Point3D(g.Points[i].X, g.Points[i].Y, item);
+                        g.Points[i] = new SimPoint3D(g.Points[i].X, g.Points[i].Y, item);
                     }
                 }
 
@@ -177,8 +177,8 @@ namespace SIMULTAN.Data.MultiValues
                     base.SetItem(index, item);
 
                 owner.Range = new Range3D(
-                    new Point3D(owner.Range.Minimum.X, owner.Range.Minimum.Y, this.Min()),
-                    new Point3D(owner.Range.Maximum.X, owner.Range.Maximum.Y, this.Max())
+                    new SimPoint3D(owner.Range.Minimum.X, owner.Range.Minimum.Y, this.Min()),
+                    new SimPoint3D(owner.Range.Maximum.X, owner.Range.Maximum.Y, this.Max())
                     );
             }
             /// <inheritdoc />
@@ -190,8 +190,8 @@ namespace SIMULTAN.Data.MultiValues
                 this.Add(0.0);
 
                 owner.Range = new Range3D(
-                    new Point3D(owner.Range.Minimum.X, owner.Range.Minimum.Y, 0),
-                    new Point3D(owner.Range.Maximum.X, owner.Range.Maximum.Y, 0)
+                    new SimPoint3D(owner.Range.Minimum.X, owner.Range.Minimum.Y, 0),
+                    new SimPoint3D(owner.Range.Maximum.X, owner.Range.Maximum.Y, 0)
                     );
             }
         }
@@ -213,8 +213,8 @@ namespace SIMULTAN.Data.MultiValues
                 if (range != value)
                 {
                     range = new Range3D(
-                        new Point3D(value.Minimum.X, value.Minimum.Y, ZAxis.Min()),
-                        new Point3D(value.Maximum.X, value.Maximum.Y, ZAxis.Max())
+                        new SimPoint3D(value.Minimum.X, value.Minimum.Y, ZAxis.Min()),
+                        new SimPoint3D(value.Maximum.X, value.Maximum.Y, ZAxis.Max())
                         );
                     ClampPointsToValidXYRange();
                     NotifyPropertyChanged(nameof(Range));
@@ -258,7 +258,7 @@ namespace SIMULTAN.Data.MultiValues
         /// <param name="zaxis">Discrete values along the Z axis</param>
         /// <param name="graphs">List of all graphs in the field</param>
         public SimMultiValueFunction(string name,
-                                    string unitX, string unitY, string unitZ, Rect bounds,
+                                    string unitX, string unitY, string unitZ, SimRect bounds,
                                     IEnumerable<double> zaxis, IEnumerable<SimMultiValueFunctionGraph> graphs)
             : base(name, unitX, unitY, unitZ)
         {
@@ -270,7 +270,7 @@ namespace SIMULTAN.Data.MultiValues
                 throw new ArgumentNullException(string.Format("{0} may not be null", nameof(graphs)));
 
             this.ZAxis = new ZAxisCollection(this, zaxis);
-            this.Range = new Range3D(new Point3D(bounds.Left, bounds.Top, this.ZAxis.Min()), new Point3D(bounds.Right, bounds.Bottom, this.ZAxis.Max()));
+            this.Range = new Range3D(new SimPoint3D(bounds.Left, bounds.Top, this.ZAxis.Min()), new SimPoint3D(bounds.Right, bounds.Bottom, this.ZAxis.Max()));
 
             this.Graphs = new GraphsCollection(this, graphs);
         }
@@ -287,7 +287,7 @@ namespace SIMULTAN.Data.MultiValues
         /// <param name="zaxis">Discrete values along the Z axis</param>
         /// <param name="graphs">List of all graphs in the field</param>
         public SimMultiValueFunction(long id, string name,
-                                    string unitX, string unitY, string unitZ, Rect bounds,
+                                    string unitX, string unitY, string unitZ, SimRect bounds,
                                     IEnumerable<double> zaxis, IEnumerable<SimMultiValueFunctionGraph> graphs)
             : base(id, name, unitX, unitY, unitZ)
         {
@@ -299,7 +299,7 @@ namespace SIMULTAN.Data.MultiValues
                 throw new ArgumentNullException(string.Format("{0} may not be null", nameof(graphs)));
 
             this.ZAxis = new ZAxisCollection(this, zaxis);
-            this.Range = new Range3D(new Point3D(bounds.Left, bounds.Top, this.ZAxis.Min()), new Point3D(bounds.Right, bounds.Bottom, this.ZAxis.Max()));
+            this.Range = new Range3D(new SimPoint3D(bounds.Left, bounds.Top, this.ZAxis.Min()), new SimPoint3D(bounds.Right, bounds.Bottom, this.ZAxis.Max()));
 
             this.Graphs = new GraphsCollection(this, graphs);
         }
@@ -362,7 +362,7 @@ namespace SIMULTAN.Data.MultiValues
         /// </summary>
         /// <param name="position">The position at which the value should be returned</param>
         /// <returns>The (Y-) value on the graph, Or NaN when there is no graph at that point</returns>
-        public double GetValue(Point3D position)
+        public double GetValue(SimPoint3D position)
         {
             return GetValue(position, 0.001);
         }
@@ -372,7 +372,7 @@ namespace SIMULTAN.Data.MultiValues
         /// <param name="position">The position at which the value should be returned</param>
         /// <param name="tolerance">The maximum distance between the point and the graph until no match is found</param>
         /// <returns>The (Y-) value on the graph, Or NaN when there is no graph at that point</returns>
-        public double GetValue(Point3D position, double tolerance)
+        public double GetValue(SimPoint3D position, double tolerance)
         {
             return GetValue(position, tolerance, out var isValid, out var cp, out var cg);
         }
@@ -385,10 +385,10 @@ namespace SIMULTAN.Data.MultiValues
         /// <param name="closestPoint">Returns the closest point on the graph (only valid when isValid equals True)</param>
         /// <param name="closestGraph">Returns the graph on which the closest point is located</param>
         /// <returns>The (Y-) value on the graph, Or NaN when there is no graph at that point</returns>
-        public double GetValue(Point3D position, double tolerance, out bool isValid, out Point3D closestPoint, out SimMultiValueFunctionGraph closestGraph)
+        public double GetValue(SimPoint3D position, double tolerance, out bool isValid, out SimPoint3D closestPoint, out SimMultiValueFunctionGraph closestGraph)
         {
             isValid = false;
-            closestPoint = new Point3D(double.NaN, double.NaN, double.NaN);
+            closestPoint = new SimPoint3D(double.NaN, double.NaN, double.NaN);
             closestGraph = null;
 
             if (this.Graphs.Count == 0)
@@ -396,7 +396,7 @@ namespace SIMULTAN.Data.MultiValues
 
             double minDistance = double.PositiveInfinity;
             double minValue = double.NaN;
-            Point3D minPoint = new Point3D(double.NaN, double.NaN, double.NaN);
+            SimPoint3D minPoint = new SimPoint3D(double.NaN, double.NaN, double.NaN);
             SimMultiValueFunctionGraph minGraph = null;
 
             foreach (var graph in Graphs)
@@ -440,7 +440,7 @@ namespace SIMULTAN.Data.MultiValues
                         var p = graph.Points[i];
                         if (p.X < this.Range.Minimum.X || p.X > this.Range.Maximum.X || p.Y < this.Range.Minimum.Y || p.Y > this.Range.Maximum.Y)
                         {
-                            graph.Points[i] = new Point3D(
+                            graph.Points[i] = new SimPoint3D(
                                 p.X.Clamp(this.Range.Minimum.X, this.Range.Maximum.X),
                                 p.Y.Clamp(this.Range.Minimum.Y, this.Range.Maximum.Y),
                                 p.Z);

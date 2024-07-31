@@ -1,6 +1,7 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SIMULTAN.Data.Components;
 using SIMULTAN.Data.Geometry;
+using SIMULTAN.Data.SimMath;
 using SIMULTAN.Tests.TestUtils;
 using SIMULTAN.Utils;
 using SIMULTAN.Utils.UndoRedo;
@@ -13,7 +14,8 @@ namespace SIMULTAN.Tests.Geometry.Algorithms
     [TestClass]
     public class ModelCleanupAlgorithmsTests : BaseProjectTest
     {
-        private static readonly FileInfo testProject = new FileInfo(@".\ModelCleanupAlgorithmsTestProject.simultan");
+        private static readonly FileInfo testProject = new FileInfo(@"./ModelCleanupAlgorithmsTestProject.simultan");
+        private static readonly FileInfo testProject2 = new FileInfo(@"./CleanupTests.simultan");
 
         private void DoReAssociation(GeometryModelData newGeom, GeometryModel model, List<(BaseGeometry, SimComponent)> toReassociate, HashSet<SimInstancePlacementGeometry> toDeassociate)
         {
@@ -713,5 +715,112 @@ namespace SIMULTAN.Tests.Geometry.Algorithms
                 }
             }
         }
+
+
+        [TestMethod]
+        public void SplitFaceFaceCylceDetectionFails()
+        {
+            LoadProject(testProject2);
+
+            (var gm, var resource) = ProjectUtils.LoadGeometry("CycleDetectionFail1.simgeo", projectData, sp);
+
+            AABBGrid vertexGrid = null, edgeGrid = null;
+            var result = ModelCleanupAlgorithms.SplitFaces(gm.Geometry, 0.01, ref vertexGrid, ref edgeGrid, "", "", null, null);
+
+            Assert.IsTrue(result.success);
+
+            //No cleanup performed
+            Assert.IsTrue(gm.Geometry.Faces.All(x => x.Holes.Count == 0));
+
+            //Warning geometry is set
+            Assert.AreEqual(1, result.warningGeometry.Count);
+            Assert.AreEqual(gm.Geometry.Faces.First(f => f.Name == "13"), result.warningGeometry[0]);
+        }
+
+        [TestMethod]
+        public void SplitFaceLoopCylceDetectionFails()
+        {
+            LoadProject(testProject2);
+
+            (var gm, var resource) = ProjectUtils.LoadGeometry("CycleDetectionFail2.simgeo", projectData, sp);
+
+            AABBGrid vertexGrid = null, edgeGrid = null;
+            var result = ModelCleanupAlgorithms.SplitFaces(gm.Geometry, 0.01, ref vertexGrid, ref edgeGrid, "", "", null, null);
+
+            Assert.IsTrue(result.success);
+
+            //Warning geometry is set
+            Assert.AreEqual(1, result.warningGeometry.Count);
+            Assert.AreEqual(gm.Geometry.EdgeLoops.First(f => f.Name == "27"), result.warningGeometry[0]);
+        }
+
+
+        [TestMethod]
+        public void SplitFaceFace1()
+        {
+            LoadProject(testProject2);
+
+            (var gm, var resource) = ProjectUtils.LoadGeometry("SplitFaces2.simgeo", projectData, sp);
+
+            AABBGrid vertexGrid = null, faceGrid = null;
+            var result = ModelCleanupAlgorithms.SplitFaces(gm.Geometry, 0.01, ref vertexGrid, ref faceGrid, "");
+
+            Assert.AreEqual(3, gm.Geometry.Faces.Count);
+            Assert.AreEqual(7, gm.Geometry.Vertices.Count);
+
+            //Vertices
+            AssertUtil.ContainEqualValuesDifferentStart(
+                new SimPoint3D[] {
+                    new SimPoint3D(0,0,0), new SimPoint3D(10,0,0),
+                    new SimPoint3D(10,5,0), new SimPoint3D(5,5,0),
+                    new SimPoint3D(5,10,0), new SimPoint3D(0,10,0)
+                },
+                gm.Geometry.Faces.First(x => x.Name == "Face 1 (1)").Boundary.Edges.Select(x => x.StartVertex.Position));
+
+            AssertUtil.ContainEqualValuesDifferentStart(
+                new SimPoint3D[] {
+                    new SimPoint3D(5,5,0), new SimPoint3D(10,5,0),
+                    new SimPoint3D(10,10,0), new SimPoint3D(5,10,0),
+                },
+                gm.Geometry.Faces.First(x => x.Name == "Face 1 (2)").Boundary.Edges.Select(x => x.StartVertex.Position));
+
+            AssertUtil.ContainEqualValuesDifferentStart(
+                new SimPoint3D[] {
+                    new SimPoint3D(5,5,0), new SimPoint3D(10,5,0),
+                    new SimPoint3D(10,10,0), new SimPoint3D(5,10,0),
+                },
+                gm.Geometry.Faces.First(x => x.Name == "Face 2").Boundary.Edges.Select(x => x.StartVertex.Position));
+        }
+
+
+        [TestMethod]
+        public void SplitContainedFaces1()
+        {
+            LoadProject(testProject2);
+
+            (var gm, var resource) = ProjectUtils.LoadGeometry("SplitFaces1.simgeo", projectData, sp);
+
+            AABBGrid faceGrid = null;
+            ModelCleanupAlgorithms.SplitContainedFaces(gm.Geometry, 0.01, ref faceGrid, null);
+
+            Assert.AreEqual(2, gm.Geometry.Faces.Count);
+            Assert.AreEqual(1, gm.Geometry.Faces.First(x => x.Name == "Face 1").Holes.Count);
+            Assert.AreEqual(gm.Geometry.Faces.First(x => x.Name == "Face 2").Boundary, gm.Geometry.Faces.First(x => x.Name == "Face 1").Holes[0]);
+        }
+
+        [TestMethod]
+        public void CleanupVertexOnlyCrash()
+        {
+            LoadProject(testProject2);
+            var exchange = projectData.ComponentGeometryExchange;
+            AABBGrid vertexGrid = null;
+            AABBGrid edgeGrid = null;
+            (var gm, var resource) = ProjectUtils.LoadGeometry("Empty 2.simgeo", projectData, sp);
+
+            ModelCleanupAlgorithms.SplitEdgeEdgeIntersections(gm.Geometry, 0.01, ref edgeGrid);
+            ModelCleanupAlgorithms.SplitEdgeVertexIntersections(gm.Geometry, 0.01,
+                            ref vertexGrid, ref edgeGrid);
+        }
+
     }
 }

@@ -1,6 +1,7 @@
 ﻿using SIMULTAN.Data.Assets;
 using SIMULTAN.Data.SitePlanner;
 using SIMULTAN.Serializer.DXF;
+using SIMULTAN.Serializer.GMDXF;
 using SIMULTAN.Serializer.Projects;
 using System;
 using System.Collections.Specialized;
@@ -37,7 +38,9 @@ namespace SIMULTAN.Projects.ManagedFiles
         /// <inheritdoc />
         public override void Save()
         {
-            ProjectIO.SaveGeoMapFile(this.File, ProjectData.SitePlannerManager, ProjectData);
+            GeoMapDxfIO.Write(this.File, ProjectData.SitePlannerManager.GetGeoMapByFile(this.File), ProjectData);
+            this.File.LastWriteTime = DateTime.Now;
+
             this.OnFileUpToDateChanged(true);
         }
 

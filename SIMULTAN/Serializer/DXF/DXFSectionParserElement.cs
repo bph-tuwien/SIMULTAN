@@ -1,11 +1,8 @@
-﻿using SIMULTAN.Serializer.DXF;
-using SIMULTAN.Utils;
+﻿using SIMULTAN.Utils;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SIMULTAN.Serializer.DXF
 {
@@ -113,10 +110,27 @@ namespace SIMULTAN.Serializer.DXF
                     "Expected Section Name \"{0}\", but found \"{1}\"", this.SectionName, entityName));
             }
 
-            //Entities in Section
             List<T> results = new List<T>();
+            //Section Name
+            (key, entityName) = reader.Read();
+            if (key != (int)ParamStructCommonSaveCode.NUMBER_OF)
+            {
+                //Old files do not have this saved
+            }
+            else
+            {
+                //Move to next, afterwards done by the entity
+                if (int.TryParse(entityName, out var number) && number > 0)
+                {
+                    results = new List<T>(number);
+                }
+                reader.Read();
+            }
+
+            //Entities in Section
+            //List<T> results = new List<T>();
             //Move to next, afterwards done by the entity
-            reader.Read();
+            //reader.Read();
 
             while (key != (int)ParamStructCommonSaveCode.ENTITY_START || entityName != ParamStructTypes.SECTION_END)
             {

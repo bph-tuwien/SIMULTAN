@@ -4,6 +4,7 @@ using SIMULTAN.Data.Users;
 using SIMULTAN.Exceptions;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
@@ -17,6 +18,33 @@ namespace SIMULTAN.Tests.TestUtils
         {
             CheckProperty(obj, prop, value, new List<string> { prop });
 
+        }
+
+        public static void CheckCollectionProperty<T>(INotifyPropertyChanged obj, string prop, Collection<T> values)
+        {
+            var expectedEventsCount = values.Count();
+
+            var propInfo = obj.GetType().GetProperties().FirstOrDefault(t => t.Name == prop);
+            var property = propInfo.GetValue(obj);
+
+            Assert.AreNotEqual(null, propInfo);
+            Assert.AreNotEqual(null, property);
+
+            PropertyChangedEventCounter cc = new PropertyChangedEventCounter(obj);
+            foreach (var item in values)
+            {
+                ((Collection<T>)property).Add(item);
+                Assert.IsTrue(((Collection<T>)property).Contains(item));
+            }
+
+
+            cc.AssertEventCount(expectedEventsCount);
+
+            for (int i = 0; i < expectedEventsCount; i++)
+            {
+                Assert.IsTrue(cc.PropertyChangedArgs.Contains(prop));
+            }
+            cc.Release();
         }
 
         public static void CheckProperty<T>(INotifyPropertyChanged obj, string prop, T value, List<string> expectedEvents)
@@ -49,6 +77,44 @@ namespace SIMULTAN.Tests.TestUtils
             //Failing
             var exception = Assert.ThrowsException<TargetInvocationException>(() => propInfo.SetValue(failingObject, value));
             Assert.IsInstanceOfType(exception.InnerException, typeof(AccessDeniedException));
+        }
+
+
+        public static void CheckCollectionProeprtyChanges<T>(object obj, string prop, Collection<T> values, SimUserRole writeRole,
+            SimComponent owningComponent, SimComponentCollection collection)
+        {
+            //Property
+            var propInfo = obj.GetType().GetProperties().FirstOrDefault(t => t.Name == prop);
+            var property = propInfo.GetValue(obj);
+            Assert.AreNotEqual(null, prop);
+
+            //Setup
+            var startAccess = owningComponent.AccessLocal.LastAccess(SimComponentAccessPrivilege.Write);
+            var startCollectionAccess = collection.LastChange;
+
+            Assert.AreNotEqual(writeRole, startAccess.role);
+            Assert.IsFalse(collection.HasChanges);
+
+            Thread.Sleep(5);
+
+            //Action
+            foreach (var item in values)
+            {
+                ((Collection<T>)property).Add(item);
+                Assert.IsTrue(((Collection<T>)property).Contains(item));
+            }
+
+
+            //Checks
+            Assert.IsTrue(collection.HasChanges);
+            Assert.IsTrue(collection.LastChange > startCollectionAccess);
+            Assert.IsTrue(collection.LastChange <= DateTime.Now);
+
+            var endAccess = owningComponent.AccessLocal.LastAccess(SimComponentAccessPrivilege.Write);
+            Assert.IsTrue(endAccess.lastAccess > startAccess.lastAccess);
+            Assert.IsTrue(endAccess.lastAccess <= DateTime.Now);
+            Assert.AreEqual(writeRole, endAccess.role);
+
         }
 
         public static void CheckPropertyChanges<T>(object obj, string prop, T value, SimUserRole writeRole,

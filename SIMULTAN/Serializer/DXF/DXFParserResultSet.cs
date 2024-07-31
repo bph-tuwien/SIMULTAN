@@ -451,11 +451,12 @@ namespace SIMULTAN.Serializer.DXF
         /// <param name="extensionSaveCode">Save code for the extension</param>
         /// <param name="taxonomyEntryGlobalIdSaveCode">Save code for the global id of the <see cref="SimTaxonomyEntry"/></param>
         /// <param name="taxonomyEntrySaveCode">Save code for the <see cref="SimTaxonomyEntry"/> local id</param>
-        /// <param name="projectId">The id of the project, used to make the SimId for the <see cref="SimTaxonomyEntryReference"/></param>
+        /// <param name="info">The parser info (needs to contain a valid global id)</param>
         /// <returns>The <see cref="SimSlot"/> with the slot extension and taxonomy entry reference containing only the taxonomy entry id</returns>
-        internal SimSlot GetSlot(ParamStructCommonSaveCode extensionSaveCode, ComponentSaveCode taxonomyEntryGlobalIdSaveCode, ComponentSaveCode taxonomyEntrySaveCode, Guid projectId)
+        internal SimSlot GetSlot(ParamStructCommonSaveCode extensionSaveCode, ComponentSaveCode taxonomyEntryGlobalIdSaveCode,
+            ComponentSaveCode taxonomyEntrySaveCode, DXFParserInfo info)
         {
-            return GetSlot((int)extensionSaveCode, (int)taxonomyEntryGlobalIdSaveCode, (int)taxonomyEntrySaveCode, projectId);
+            return GetSlot((int)extensionSaveCode, (int)taxonomyEntryGlobalIdSaveCode, (int)taxonomyEntrySaveCode, info);
         }
 
         /// <summary>
@@ -464,15 +465,20 @@ namespace SIMULTAN.Serializer.DXF
         /// <param name="extensionSaveCode">Save code for the extension</param>
         /// <param name="taxonomyEntryGlobalIdSaveCode">Save code for the global id of the <see cref="SimTaxonomyEntry"/></param>
         /// <param name="taxonomyEntrySaveCode">Save code for the <see cref="SimTaxonomyEntry"/> local id</param>
-        /// <param name="projectId">The id of the project, used to make the SimId for the <see cref="SimTaxonomyEntryReference"/></param>
+        /// <param name="info">The parser info (needs to contain a valid global id)</param>
         /// <returns>The <see cref="SimSlot"/> with the slot extension and taxonomy entry reference containing only the taxonomy entry id</returns>
-        internal SimSlot GetSlot(int extensionSaveCode, int taxonomyEntryGlobalIdSaveCode, int taxonomyEntrySaveCode, Guid projectId)
+        private SimSlot GetSlot(int extensionSaveCode, int taxonomyEntryGlobalIdSaveCode, int taxonomyEntrySaveCode, DXFParserInfo info)
         {
             var extension = Get<String>(extensionSaveCode, "");
-            var taxEntId = GetSimId(taxonomyEntryGlobalIdSaveCode, taxonomyEntrySaveCode, projectId);
+            var taxEntId = GetSimId(taxonomyEntryGlobalIdSaveCode, taxonomyEntrySaveCode, info.GlobalId);
             if (taxEntId.LocalId == 0)
                 throw new Exception("Slot taxonomy entry local id cannot be zero");
-            var taxRef = new SimTaxonomyEntryReference(taxEntId);
+
+            var taxEntry = info.ProjectData.IdGenerator.GetById<SimTaxonomyEntry>(taxEntId);
+            if (taxEntry == null)
+                throw new Exception("Unable to find taxonomy entry");
+
+            var taxRef = new SimTaxonomyEntryReference(taxEntry);
             return new SimSlot(taxRef, extension);
         }
 

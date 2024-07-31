@@ -1,6 +1,8 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SIMULTAN.Data;
+using SIMULTAN.Data.Components;
 using SIMULTAN.Data.MultiValues;
+using SIMULTAN.Data.Taxonomy;
 using SIMULTAN.DataMapping;
 using SIMULTAN.Projects;
 using SIMULTAN.Tests.TestUtils;
@@ -11,6 +13,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace SIMULTAN.Tests.DataMapping
@@ -18,8 +21,9 @@ namespace SIMULTAN.Tests.DataMapping
     [TestClass]
     public class DataMappingToolTests : BaseProjectTest
     {
-        private static readonly FileInfo emptyProject = new FileInfo(@".\EmptyProject.simultan");
-        private static readonly FileInfo mappingProject = new FileInfo(@".\ExcelMappingTests.simultan");
+        private static readonly FileInfo emptyProject = new FileInfo(@"./EmptyProject.simultan");
+        private static readonly FileInfo mappingProject = new FileInfo(@"./ExcelMappingTests.simultan");
+        private static readonly FileInfo examplesProject = new FileInfo(@"./DataMappingDemo.simultan");
 
         [TestMethod]
         public void Ctor()
@@ -276,15 +280,15 @@ namespace SIMULTAN.Tests.DataMapping
             LoadProject(mappingProject);
 
             var componentRule = new SimDataMappingRuleComponent("Sheet A");
-            componentRule.OffsetParent = new IntIndex2D(1, 2);
-            componentRule.OffsetConsecutive = new IntIndex2D(0, 1);
+            componentRule.OffsetParent = new RowColumnIndex(2, 1);
+            componentRule.OffsetConsecutive = new RowColumnIndex(0, 1);
             componentRule.MaxDepth = int.MaxValue;
             componentRule.MaxMatches = int.MaxValue;
             componentRule.Properties.Add(SimDataMappingComponentMappingProperties.Name);
 
             var childComponentRule = new SimDataMappingRuleComponent("Sheet A");
-            childComponentRule.OffsetParent = new IntIndex2D(2, 0);
-            childComponentRule.OffsetConsecutive = new IntIndex2D(0, 1);
+            childComponentRule.OffsetParent = new RowColumnIndex(0, 2);
+            childComponentRule.OffsetConsecutive = new RowColumnIndex(1, 0);
             childComponentRule.MaxDepth = int.MaxValue;
             childComponentRule.MaxMatches = int.MaxValue;
             childComponentRule.Properties.Add(SimDataMappingComponentMappingProperties.Name);
@@ -323,15 +327,15 @@ namespace SIMULTAN.Tests.DataMapping
             LoadProject(mappingProject);
 
             var componentRule1 = new SimDataMappingRuleComponent("Sheet A");
-            componentRule1.OffsetParent = new IntIndex2D(1, 2);
-            componentRule1.OffsetConsecutive = new IntIndex2D(0, 1);
+            componentRule1.OffsetParent = new RowColumnIndex(2, 1);
+            componentRule1.OffsetConsecutive = new RowColumnIndex(1, 0);
             componentRule1.MaxDepth = int.MaxValue;
             componentRule1.MaxMatches = int.MaxValue;
             componentRule1.Properties.Add(SimDataMappingComponentMappingProperties.Name);
 
             var childComponentRule1 = new SimDataMappingRuleComponent("Sheet A");
-            childComponentRule1.OffsetParent = new IntIndex2D(2, 0);
-            childComponentRule1.OffsetConsecutive = new IntIndex2D(0, 1);
+            childComponentRule1.OffsetParent = new RowColumnIndex(0, 2);
+            childComponentRule1.OffsetConsecutive = new RowColumnIndex(1, 0);
             childComponentRule1.MaxDepth = int.MaxValue;
             childComponentRule1.MaxMatches = int.MaxValue;
             childComponentRule1.Properties.Add(SimDataMappingComponentMappingProperties.Name);
@@ -339,15 +343,15 @@ namespace SIMULTAN.Tests.DataMapping
 
 
             var componentRule2 = new SimDataMappingRuleComponent("Sheet A");
-            componentRule2.OffsetParent = new IntIndex2D(4, 2);
-            componentRule2.OffsetConsecutive = new IntIndex2D(0, 1);
+            componentRule2.OffsetParent = new RowColumnIndex(2, 4);
+            componentRule2.OffsetConsecutive = new RowColumnIndex(1, 0);
             componentRule2.MaxDepth = int.MaxValue;
             componentRule2.MaxMatches = int.MaxValue;
             componentRule2.Properties.Add(SimDataMappingComponentMappingProperties.Name);
 
             var childComponentRule2 = new SimDataMappingRuleComponent("Sheet A");
-            childComponentRule2.OffsetParent = new IntIndex2D(1, 0);
-            childComponentRule2.OffsetConsecutive = new IntIndex2D(0, 1);
+            childComponentRule2.OffsetParent = new RowColumnIndex(0, 1);
+            childComponentRule2.OffsetConsecutive = new RowColumnIndex(1, 0);
             childComponentRule2.MaxDepth = int.MaxValue;
             childComponentRule2.MaxMatches = int.MaxValue;
             childComponentRule2.Properties.Add(SimDataMappingComponentMappingProperties.Name);
@@ -389,15 +393,15 @@ namespace SIMULTAN.Tests.DataMapping
             LoadProject(mappingProject);
 
             var componentRule1 = new SimDataMappingRuleComponent("Sheet A");
-            componentRule1.OffsetParent = new IntIndex2D(1, 2);
-            componentRule1.OffsetConsecutive = new IntIndex2D(0, 1);
+            componentRule1.OffsetParent = new RowColumnIndex(2, 1);
+            componentRule1.OffsetConsecutive = new RowColumnIndex(1, 0);
             componentRule1.MaxDepth = int.MaxValue;
             componentRule1.MaxMatches = int.MaxValue;
             componentRule1.Properties.Add(SimDataMappingComponentMappingProperties.Name);
 
             var childComponentRule1 = new SimDataMappingRuleComponent("Sheet A");
-            childComponentRule1.OffsetParent = new IntIndex2D(2, 0);
-            childComponentRule1.OffsetConsecutive = new IntIndex2D(0, 1);
+            childComponentRule1.OffsetParent = new RowColumnIndex(0, 2);
+            childComponentRule1.OffsetConsecutive = new RowColumnIndex(1, 0);
             childComponentRule1.MaxDepth = int.MaxValue;
             childComponentRule1.MaxMatches = int.MaxValue;
             childComponentRule1.Properties.Add(SimDataMappingComponentMappingProperties.Name);
@@ -405,15 +409,15 @@ namespace SIMULTAN.Tests.DataMapping
 
 
             var componentRule2 = new SimDataMappingRuleComponent("Sheet B");
-            componentRule2.OffsetParent = new IntIndex2D(4, 2);
-            componentRule2.OffsetConsecutive = new IntIndex2D(0, 1);
+            componentRule2.OffsetParent = new RowColumnIndex(2, 4);
+            componentRule2.OffsetConsecutive = new RowColumnIndex(1, 0);
             componentRule2.MaxDepth = int.MaxValue;
             componentRule2.MaxMatches = int.MaxValue;
             componentRule2.Properties.Add(SimDataMappingComponentMappingProperties.Name);
 
             var childComponentRule2 = new SimDataMappingRuleComponent("Sheet B");
-            childComponentRule2.OffsetParent = new IntIndex2D(1, 0);
-            childComponentRule2.OffsetConsecutive = new IntIndex2D(0, 1);
+            childComponentRule2.OffsetParent = new RowColumnIndex(0, 1);
+            childComponentRule2.OffsetConsecutive = new RowColumnIndex(1, 0);
             childComponentRule2.MaxDepth = int.MaxValue;
             childComponentRule2.MaxMatches = int.MaxValue;
             childComponentRule2.Properties.Add(SimDataMappingComponentMappingProperties.Name);
@@ -470,15 +474,15 @@ namespace SIMULTAN.Tests.DataMapping
             LoadProject(mappingProject);
 
             var componentRule = new SimDataMappingRuleComponent("Sheet A");
-            componentRule.OffsetParent = new IntIndex2D(1, 2);
-            componentRule.OffsetConsecutive = new IntIndex2D(0, 1);
+            componentRule.OffsetParent = new RowColumnIndex(2, 1);
+            componentRule.OffsetConsecutive = new RowColumnIndex(1, 0);
             componentRule.MaxDepth = int.MaxValue;
             componentRule.MaxMatches = int.MaxValue;
             componentRule.Properties.Add(SimDataMappingComponentMappingProperties.Name);
 
             var childComponentRule = new SimDataMappingRuleComponent("Sheet A");
-            childComponentRule.OffsetParent = new IntIndex2D(2, 0);
-            childComponentRule.OffsetConsecutive = new IntIndex2D(0, 1);
+            childComponentRule.OffsetParent = new RowColumnIndex(0, 2);
+            childComponentRule.OffsetConsecutive = new RowColumnIndex(1, 0);
             childComponentRule.MaxDepth = int.MaxValue;
             childComponentRule.MaxMatches = int.MaxValue;
             childComponentRule.Properties.Add(SimDataMappingComponentMappingProperties.Name);
@@ -518,6 +522,369 @@ namespace SIMULTAN.Tests.DataMapping
 
         #endregion
 
+        #region Component-Rule Mappings
+
+        [TestMethod]
+        public void AddMapping()
+        {
+            LoadProject(mappingProject);
+
+            var componentRule = new SimDataMappingRuleComponent("Sheet A");
+            SimDataMappingTool tool = new SimDataMappingTool("Tool1");
+            tool.Rules.Add(componentRule);
+
+            var comp1 = projectData.Components.First(x => x.Name == "Geometry");
+            tool.Rules.AddMapping(componentRule, comp1);
+
+            var mappings = tool.Rules.GetMappings(componentRule).ToList();
+            Assert.AreEqual(1, mappings.Count);
+            Assert.AreEqual(comp1, mappings[0]);
+        }
+
+        [TestMethod]
+        public void AddMappingDuplicate()
+        {
+            LoadProject(mappingProject);
+
+            var componentRule = new SimDataMappingRuleComponent("Sheet A");
+            SimDataMappingTool tool = new SimDataMappingTool("Tool1");
+            tool.Rules.Add(componentRule);
+
+            var comp1 = projectData.Components.First(x => x.Name == "Geometry");
+            tool.Rules.AddMapping(componentRule, comp1);
+
+            //Duplicate add
+            tool.Rules.AddMapping(componentRule, comp1);
+
+            var mappings = tool.Rules.GetMappings(componentRule).ToList();
+            Assert.AreEqual(1, mappings.Count);
+            Assert.AreEqual(comp1, mappings[0]);
+        }
+
+        [TestMethod]
+        public void AddMappings()
+        {
+            LoadProject(mappingProject);
+
+            var componentRule = new SimDataMappingRuleComponent("Sheet A");
+            SimDataMappingTool tool = new SimDataMappingTool("Tool1");
+            tool.Rules.Add(componentRule);
+
+            var comp1 = projectData.Components.First(x => x.Name == "Geometry");
+            var comp2 = projectData.Components.First(x => x.Name == "Geometry (Additional)");
+
+            tool.Rules.AddMappings(componentRule, new SimComponent[]
+            {
+                comp1,
+                comp2,
+            });
+
+            var mappings = tool.Rules.GetMappings(componentRule).ToList();
+            Assert.AreEqual(2, mappings.Count);
+            Assert.IsTrue(mappings.Contains(comp1));
+            Assert.IsTrue(mappings.Contains(comp2));
+        }
+
+        [TestMethod]
+        public void RemoveMapping()
+        {
+            LoadProject(mappingProject);
+
+            var componentRule = new SimDataMappingRuleComponent("Sheet A");
+            SimDataMappingTool tool = new SimDataMappingTool("Tool1");
+            tool.Rules.Add(componentRule);
+
+            var comp1 = projectData.Components.First(x => x.Name == "Geometry");
+            var comp2 = projectData.Components.First(x => x.Name == "Geometry (Additional)");
+
+            tool.Rules.AddMappings(componentRule, new SimComponent[]
+            {
+                comp1,
+                comp2,
+            });
+
+            tool.Rules.RemoveMapping(componentRule, comp1);
+
+            var mappings = tool.Rules.GetMappings(componentRule).ToList();
+            Assert.AreEqual(1, mappings.Count);
+            Assert.IsTrue(mappings.Contains(comp2));
+        }
+
+
+        [TestMethod]
+        public void RemoveMappingOnRemoverRootComponent()
+        {
+            LoadProject(mappingProject);
+
+            var componentRule = new SimDataMappingRuleComponent("Sheet A");
+            SimDataMappingTool tool = new SimDataMappingTool("Tool1");
+            tool.Rules.Add(componentRule);
+            projectData.DataMappingTools.Add(tool);
+
+            var comp1 = projectData.Components.First(x => x.Name == "Geometry");
+            var comp2 = projectData.Components.First(x => x.Name == "Geometry (Additional)").Components.First(x => x.Component.Name == "Room1").Component;
+
+            tool.Rules.AddMappings(componentRule, new SimComponent[]
+            {
+                comp1,
+                comp2,
+            });
+
+            //Delete component
+            projectData.Components.Remove(comp1);
+
+            var mappings = tool.Rules.GetMappings(componentRule).ToList();
+            Assert.AreEqual(1, mappings.Count);
+            Assert.IsTrue(mappings.Contains(comp2));
+        }
+
+        [TestMethod]
+        public void RemoveMappingOnClearRootComponent()
+        {
+            LoadProject(mappingProject);
+
+            var componentRule = new SimDataMappingRuleComponent("Sheet A");
+            SimDataMappingTool tool = new SimDataMappingTool("Tool1");
+            tool.Rules.Add(componentRule);
+            projectData.DataMappingTools.Add(tool);
+
+            var comp1 = projectData.Components.First(x => x.Name == "Geometry");
+            var comp2 = projectData.Components.First(x => x.Name == "Geometry (Additional)").Components.First(x => x.Component.Name == "Room1").Component;
+
+            tool.Rules.AddMappings(componentRule, new SimComponent[]
+            {
+                comp1,
+                comp2,
+            });
+
+            //Delete component
+            projectData.Components.Clear();
+
+            var mappings = tool.Rules.GetMappings(componentRule).ToList();
+            Assert.AreEqual(0, mappings.Count);
+        }
+
+        [TestMethod]
+        public void RemoveMappingOnReplaceRootComponent()
+        {
+            LoadProject(mappingProject);
+
+            var componentRule = new SimDataMappingRuleComponent("Sheet A");
+            SimDataMappingTool tool = new SimDataMappingTool("Tool1");
+            tool.Rules.Add(componentRule);
+            projectData.DataMappingTools.Add(tool);
+
+            var comp1 = projectData.Components.First(x => x.Name == "Geometry");
+            var comp2 = projectData.Components.First(x => x.Name == "Geometry (Additional)").Components.First(x => x.Component.Name == "Room1").Component;
+
+            tool.Rules.AddMappings(componentRule, new SimComponent[]
+            {
+                comp1,
+                comp2,
+            });
+
+            SimComponent newComponent = new SimComponent();
+
+            //Delete component
+            projectData.Components[projectData.Components.IndexOf(comp1)] = newComponent;
+
+            var mappings = tool.Rules.GetMappings(componentRule).ToList();
+            Assert.AreEqual(1, mappings.Count);
+            Assert.IsTrue(mappings.Contains(comp2));
+        }
+
+
+        [TestMethod]
+        public void RemoveMappingOnRemoveChildEntry()
+        {
+            LoadProject(mappingProject);
+
+            var componentRule = new SimDataMappingRuleComponent("Sheet A");
+            SimDataMappingTool tool = new SimDataMappingTool("Tool1");
+            tool.Rules.Add(componentRule);
+            projectData.DataMappingTools.Add(tool);
+
+            var comp1 = projectData.Components.First(x => x.Name == "Geometry");
+            var comp2Owner = projectData.Components.First(x => x.Name == "Geometry (Additional)");
+            var comp2 = comp2Owner.Components.First(x => x.Component.Name == "Room1");
+
+            tool.Rules.AddMappings(componentRule, new SimComponent[]
+            {
+                comp1,
+                comp2.Component,
+            });
+
+            //Delete component
+            comp2Owner.Components.Remove(comp2);
+
+            var mappings = tool.Rules.GetMappings(componentRule).ToList();
+            Assert.AreEqual(1, mappings.Count);
+            Assert.IsTrue(mappings.Contains(comp1));
+        }
+
+        [TestMethod]
+        public void RemoveMappingOnRemoveChildComponent()
+        {
+            LoadProject(mappingProject);
+
+            var componentRule = new SimDataMappingRuleComponent("Sheet A");
+            SimDataMappingTool tool = new SimDataMappingTool("Tool1");
+            tool.Rules.Add(componentRule);
+            projectData.DataMappingTools.Add(tool);
+
+            var comp1 = projectData.Components.First(x => x.Name == "Geometry");
+            var comp2Owner = projectData.Components.First(x => x.Name == "Geometry (Additional)");
+            var comp2 = comp2Owner.Components.First(x => x.Component.Name == "Room1");
+
+            tool.Rules.AddMappings(componentRule, new SimComponent[]
+            {
+                comp1,
+                comp2.Component,
+            });
+
+            //Delete component
+            comp2.Component = null;
+
+            var mappings = tool.Rules.GetMappings(componentRule).ToList();
+            Assert.AreEqual(1, mappings.Count);
+            Assert.IsTrue(mappings.Contains(comp1));
+        }
+
+        [TestMethod]
+        public void RemoveMappingOnClearChildComponent()
+        {
+            LoadProject(mappingProject);
+
+            var componentRule = new SimDataMappingRuleComponent("Sheet A");
+            SimDataMappingTool tool = new SimDataMappingTool("Tool1");
+            tool.Rules.Add(componentRule);
+            projectData.DataMappingTools.Add(tool);
+
+            var comp1 = projectData.Components.First(x => x.Name == "Geometry");
+            var comp2Owner = projectData.Components.First(x => x.Name == "Geometry (Additional)");
+            var comp2 = comp2Owner.Components.First(x => x.Component.Name == "Room1");
+
+            tool.Rules.AddMappings(componentRule, new SimComponent[]
+            {
+                comp1,
+                comp2.Component,
+            });
+
+            //Delete component
+            comp2Owner.Components.Remove(comp2);
+
+            var mappings = tool.Rules.GetMappings(componentRule).ToList();
+            Assert.AreEqual(1, mappings.Count);
+            Assert.IsTrue(mappings.Contains(comp1));
+        }
+
+        [TestMethod]
+        public void RemoveMappingOnReplaceChildEntry()
+        {
+            LoadProject(mappingProject);
+
+            var componentRule = new SimDataMappingRuleComponent("Sheet A");
+            SimDataMappingTool tool = new SimDataMappingTool("Tool1");
+            tool.Rules.Add(componentRule);
+            projectData.DataMappingTools.Add(tool);
+
+            var comp1 = projectData.Components.First(x => x.Name == "Geometry");
+            var comp2Owner = projectData.Components.First(x => x.Name == "Geometry (Additional)");
+            var comp2 = comp2Owner.Components.First(x => x.Component.Name == "Room1");
+
+            tool.Rules.AddMappings(componentRule, new SimComponent[]
+            {
+                comp1,
+                comp2.Component,
+            });
+
+            //Delete component
+            var newComp = new SimComponent();
+            newComp.Slots.Add(new SimTaxonomyEntryReference(comp2.Slot.SlotBase));
+            comp2Owner.Components[comp2Owner.Components.IndexOf(comp2)] = new SimChildComponentEntry(
+                new SimSlot(new SimTaxonomyEntryReference(newComp.Slots[0]), "2"));
+
+            var mappings = tool.Rules.GetMappings(componentRule).ToList();
+            Assert.AreEqual(1, mappings.Count);
+            Assert.IsTrue(mappings.Contains(comp1));
+        }
+
+        [TestMethod]
+        public void RemoveMappingOnReplaceChildComponent()
+        {
+            LoadProject(mappingProject);
+
+            var componentRule = new SimDataMappingRuleComponent("Sheet A");
+            SimDataMappingTool tool = new SimDataMappingTool("Tool1");
+            tool.Rules.Add(componentRule);
+            projectData.DataMappingTools.Add(tool);
+
+            var comp1 = projectData.Components.First(x => x.Name == "Geometry");
+            var comp2Owner = projectData.Components.First(x => x.Name == "Geometry (Additional)");
+            var comp2 = comp2Owner.Components.First(x => x.Component.Name == "Room1");
+
+            tool.Rules.AddMappings(componentRule, new SimComponent[]
+            {
+                comp1,
+                comp2.Component,
+            });
+
+            //Delete component
+            var newComp = new SimComponent();
+            newComp.Slots.Add(new SimTaxonomyEntryReference(comp2.Slot.SlotBase));
+            comp2.Component = newComp;
+
+            var mappings = tool.Rules.GetMappings(componentRule).ToList();
+            Assert.AreEqual(1, mappings.Count);
+            Assert.IsTrue(mappings.Contains(comp1));
+        }
+
+        [TestMethod]
+        public void RemoveMappingOnRemoveParentComponent()
+        {
+            LoadProject(mappingProject);
+
+            var componentRule = new SimDataMappingRuleComponent("Sheet A");
+            SimDataMappingTool tool = new SimDataMappingTool("Tool1");
+            tool.Rules.Add(componentRule);
+            projectData.DataMappingTools.Add(tool);
+
+            var comp1 = projectData.Components.First(x => x.Name == "Geometry");
+            var comp2Owner = projectData.Components.First(x => x.Name == "Geometry (Additional)");
+            var comp2 = comp2Owner.Components.First(x => x.Component.Name == "Room1");
+
+            tool.Rules.AddMappings(componentRule, new SimComponent[]
+            {
+                comp1,
+                comp2.Component,
+            });
+
+            //Delete component
+            projectData.Components.Remove(comp2Owner);
+
+            var mappings = tool.Rules.GetMappings(componentRule).ToList();
+            Assert.AreEqual(1, mappings.Count);
+            Assert.IsTrue(mappings.Contains(comp1));
+        }
+
+        #endregion
+
+        [TestMethod]
+        public void CombinedRules()
+        {
+            LoadProject(examplesProject);
+
+            var expected = (SimMultiValueBigTable)projectData.ValueManager.First();
+
+            var tool = projectData.DataMappingTools.First();
+            var buildingComponent = projectData.Components.First(x => x.Name == "Building");
+            (var actualTables, var mappedData) = tool.Execute(new HashSet<Data.Components.SimComponent> { buildingComponent }, "result", false, false);
+
+            Assert.IsNotNull(mappedData);
+            Assert.AreEqual(1, actualTables.Count);
+            AssertUtil.ContainEqualValues(expected, actualTables[0].table);
+        }
+
         [TestMethod]
         public void CloneTest()
         {
@@ -538,5 +905,25 @@ namespace SIMULTAN.Tests.DataMapping
 
             Assert.AreEqual(2, clonedTool.ReadRules.Count);
         }
+
+        #region HasChanges
+
+        [TestMethod]
+        public void AddTool_HasChanges()
+        {
+            LoadProject(emptyProject);
+
+            Assert.IsFalse(projectData.DataMappingTools.HasChanges);
+            var dt = projectData.DataMappingTools.LastChange;
+
+            SimDataMappingTool tool = new SimDataMappingTool("asdf");
+            this.projectData.DataMappingTools.Add(tool);
+            Thread.Sleep(5);
+
+            Assert.IsTrue(projectData.DataMappingTools.HasChanges);
+            Assert.IsTrue(projectData.DataMappingTools.LastChange > dt);
+        }
+
+        #endregion
     }
 }

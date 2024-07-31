@@ -1,12 +1,11 @@
-﻿using SIMULTAN.Data.Components;
-using SIMULTAN.Data.Geometry;
+﻿using SIMULTAN.Data.Geometry;
+using SIMULTAN.Data.SimMath;
 using SIMULTAN.Data.SimNetworks;
 using SIMULTAN.Serializer.Geometry;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Windows.Media.Media3D;
 
 namespace SIMULTAN.Exchange.SimNetworkConnectors
 {
@@ -16,6 +15,10 @@ namespace SIMULTAN.Exchange.SimNetworkConnectors
     internal class SimNetworkNetworkConnector : SimNetworkBaseNetworkElementConnector
     {
 
+        /// <summary>
+        /// used to prevent the size/rotation transfer between proxy and instance from endless looping
+        /// </summary>
+        internal bool transformInProgress { get; set; } = false;
 
         private static readonly HashSet<string> proxyResourceExtensions = new HashSet<string> {
             ".obj", ".fbx"
@@ -25,7 +28,11 @@ namespace SIMULTAN.Exchange.SimNetworkConnectors
         /// </summary>
         internal SimNetwork Network { get; }
 
+        /// <inheritdoc />
         internal override BaseSimNetworkElement NetworkElement => Network;
+
+        /// <inheritdoc />
+        internal override IEnumerable<ISimNetworkElement> SimNetworkElement => new List<ISimNetworkElement> { Network };
 
         /// <inheritdoc />
         internal override BaseGeometry Geometry => Vertex;
@@ -39,8 +46,9 @@ namespace SIMULTAN.Exchange.SimNetworkConnectors
         /// <param name="vertex">The vertex which represents the SimNetwork in the 3D geometry</param>
         /// <param name="network">The network</param>
         /// <param name="connector">The main connector</param>
+        /// <param name="rotation">The rotation</param>
         /// <exception cref="ArgumentNullException"></exception>
-        public SimNetworkNetworkConnector(Vertex vertex, SimNetwork network, SimNetworkGeometryModelConnector connector)
+        public SimNetworkNetworkConnector(Vertex vertex, SimNetwork network, SimNetworkGeometryModelConnector connector, SimQuaternion rotation)
         {
             if (vertex == null)
                 throw new ArgumentNullException(nameof(vertex));
@@ -55,14 +63,12 @@ namespace SIMULTAN.Exchange.SimNetworkConnectors
             this.ModelConnector = connector;
             this.Network.RepresentationReference = new Data.GeometricReference(vertex.ModelGeometry.Model.File.Key, vertex.Id);
 
-
             UpdateProxyGeometry();
-            UpdateProxyTransformation();
-
-
-
+            UpdateProxyTransformation(rotation);
             UpdateColor();
         }
+
+
 
 
         #region BaseSimnetworkGeometryConnector
@@ -92,11 +98,11 @@ namespace SIMULTAN.Exchange.SimNetworkConnectors
 
         private void Network_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
-            if (e.PropertyName == nameof(SimNetworkBlock.Name))
+            if (e.PropertyName == nameof(SimNetwork.Name))
                 Vertex.Name = Network.Name;
+            if (e.PropertyName == nameof(SimNetwork.Color))
+                UpdateColor();
         }
-
-
 
         private void UpdateProxyGeometry()
         {
@@ -105,9 +111,9 @@ namespace SIMULTAN.Exchange.SimNetworkConnectors
             //Check if proxy assets exist
             List<FileInfo> proxyAssets = new List<FileInfo>();
 
+
             //Check if proxy already exists
             var proxy = Vertex.ProxyGeometries.FirstOrDefault();
-
             //Update proxy geometry
             if (proxyAssets.Count > 0)
             {
@@ -146,11 +152,12 @@ namespace SIMULTAN.Exchange.SimNetworkConnectors
                 if (proxy == null)
                 {
                     proxy = ProxyShapeGenerator.GenerateCube(Vertex.ModelGeometry.Layers.First(),
-                        Vertex.Name, Vertex, new Point3D(1, 1, 1));
+                        Vertex.Name, Vertex, new SimPoint3D(1, 1, 1));
+
                 }
                 else
                 {
-                    ProxyShapeGenerator.UpdateCube(proxy, new Point3D(1, 1, 1));
+                    ProxyShapeGenerator.UpdateCube(proxy, new SimPoint3D(1, 1, 1));
                 }
             }
 
@@ -158,27 +165,27 @@ namespace SIMULTAN.Exchange.SimNetworkConnectors
                 ModelConnector.Exchange.ProjectData.GeometryModels.OnImporterWarning(messages);
         }
 
-        private void UpdateProxyTransformation()
+
+        private void UpdateProxyTransformation(SimQuaternion rotation)
         {
             var proxy = Vertex.ProxyGeometries.FirstOrDefault();
 
             //Update proxy size
             if (proxy != null)
             {
-                var size = SimInstanceSize.Default;
-                var rotation = Quaternion.Identity;
+                this.transformInProgress = true;
 
-                proxy.Size = size.Max;
+                rotation = proxy.Rotation;
                 proxy.Rotation = rotation;
 
+                this.transformInProgress = false;
             }
         }
 
 
-
         private void UpdateColor()
         {
-            Vertex.Color.IsFromParent = true;
+            Vertex.Color = new DerivedColor(Network.Color);
         }
     }
 }

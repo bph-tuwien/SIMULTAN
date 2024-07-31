@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Windows.Media.Media3D;
+using SIMULTAN.Data.SimMath;
 
 namespace SIMULTAN.Utils
 {
@@ -15,18 +15,18 @@ namespace SIMULTAN.Utils
         /// <summary>
         /// The minimum value along each axis
         /// </summary>
-        public Point3D Minimum { get; }
+        public SimPoint3D Minimum { get; }
         /// <summary>
         /// The maximum value along each axis
         /// </summary>
-        public Point3D Maximum { get; }
+        public SimPoint3D Maximum { get; }
 
         /// <summary>
         /// Initializes a new instance of the Range3D class
         /// </summary>
         /// <param name="minimum">The minimum value along each axis</param>
         /// <param name="maximum">The maximum value along each axis</param>
-        public Range3D(Point3D minimum, Point3D maximum)
+        public Range3D(SimPoint3D minimum, SimPoint3D maximum)
         {
             this.Minimum = minimum;
             this.Maximum = maximum;
@@ -46,7 +46,7 @@ namespace SIMULTAN.Utils
         /// </summary>
         /// <param name="position">The position</param>
         /// <returns>True when the position lies between minimum and maximum, otherwise False</returns>
-        public bool Contains(Point3D position)
+        public bool Contains(SimPoint3D position)
         {
             return position.X.InRange(Minimum.X, Maximum.X) && position.Y.InRange(Minimum.Y, Maximum.Y) && position.Z.InRange(Minimum.Z, Maximum.Z);
         }

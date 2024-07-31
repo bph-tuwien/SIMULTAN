@@ -218,9 +218,8 @@ namespace SIMULTAN.Data.Assets
         // ------------------------------------------------ UTILS --------------------------------------------------- //
 
         /// <inheritdoc/>
-        internal override List<ResourceDirectoryEntry> ChangePath_Internal(FileSystemInfo _new_data, string nameCollisionFormat, bool _check_admissibility)
+        internal override void ChangePath_Internal(FileSystemInfo _new_data, string nameCollisionFormat, bool _check_admissibility)
         {
-            List<ResourceDirectoryEntry> new_dirs = new List<ResourceDirectoryEntry>();
             FileInfo file_new = null;
             if (_check_admissibility)
             {
@@ -262,14 +261,15 @@ namespace SIMULTAN.Data.Assets
                     throw new Exception("Inconsistency with the resource parent. This should not happen!");
 
                 // 2.  before making structural changes...
+
+                // 2b. actually rename the file
+                System.IO.File.Move(this.CurrentFullPath, file_new.FullName);
+
                 // 2a. remove from the old parent
                 if (parent_old_check.is_working_dir)
                     this.manager.RemoveAsTopLevelResource(this);
                 else
                     (this.Parent as ResourceDirectoryEntry).Children.Remove(this);
-
-                // 2b. actually rename the file
-                System.IO.File.Move(this.CurrentFullPath, file_new.FullName);
 
                 // 2c. change the entry itself
                 this.SetFullPath(file_new.FullName);
@@ -290,7 +290,6 @@ namespace SIMULTAN.Data.Assets
                         if (p_new != null)
                         {
                             p_new.Children.Add(this);
-                            new_dirs.AddRange(all_new);
                         }
                     }
                     else
@@ -299,8 +298,6 @@ namespace SIMULTAN.Data.Assets
                     }
                 }
             }
-            // done
-            return new_dirs;
         }
 
         /// <inheritdoc/>
@@ -338,12 +335,7 @@ namespace SIMULTAN.Data.Assets
         /// <inheritdoc/>
         public override void ChangePath(FileSystemInfo _new_data, string nameCollisionFormat, bool _check_admissibility)
         {
-            FileInfo file_old = new FileInfo(this.CurrentFullPath);
-            List<ResourceDirectoryEntry> additional_dir_res = this.ChangePath_Internal(_new_data, nameCollisionFormat, _check_admissibility);
-            IEnumerable<DirectoryInfo> additional_dirs = additional_dir_res.Select(x => new DirectoryInfo(x.CurrentFullPath));
-            FileInfo file_new = new FileInfo(this.CurrentFullPath);
-            //if (this.manager != null)
-            //    this.manager.OnResourceManipulated(new ManipulatedResourceEventArgs(file_old, file_new, additional_dirs));
+            this.ChangePath_Internal(_new_data, nameCollisionFormat, _check_admissibility);
         }
 
         /// <inheritdoc/>

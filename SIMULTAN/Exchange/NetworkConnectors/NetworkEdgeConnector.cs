@@ -3,7 +3,7 @@ using SIMULTAN.Data.FlowNetworks;
 using SIMULTAN.Data.Geometry;
 using System;
 using System.Linq;
-using System.Windows.Media;
+using SIMULTAN.Data.SimMath;
 
 namespace SIMULTAN.Exchange.NetworkConnectors
 {
@@ -122,7 +122,7 @@ namespace SIMULTAN.Exchange.NetworkConnectors
         private void UpdateColor()
         {
             bool fromParent = true;
-            Color color = NetworkColors.COL_NEUTRAL;
+            SimColor color = NetworkColors.COL_NEUTRAL;
 
             if (Edge.Content == null)
             {
@@ -140,7 +140,7 @@ namespace SIMULTAN.Exchange.NetworkConnectors
                     UpdateColor(EdgeGeometry.Edges[i].StartVertex, color, fromParent);
             }
         }
-        private void UpdateColor(BaseGeometry geo, Color color, bool fromParent)
+        private void UpdateColor(BaseGeometry geo, SimColor color, bool fromParent)
         {
             geo.Color.Color = color;
             geo.Color.IsFromParent = fromParent;

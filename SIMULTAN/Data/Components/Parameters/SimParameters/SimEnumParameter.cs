@@ -51,8 +51,8 @@ namespace SIMULTAN.Data.Components
                 this.Value = null;
                 foreach (var instance in this.Component.Instances)
                 {
-                    instance.InstanceParameterValuesPersistent.SetWithoutNotify(this, null);
-                    instance.InstanceParameterValuesTemporary.SetWithoutNotify(this, null);
+                    instance.InstanceParameterValuesPersistent[this] = null;
+                    instance.InstanceParameterValuesTemporary[this] = null;
                 }
             }
         }
@@ -105,8 +105,8 @@ namespace SIMULTAN.Data.Components
                 this.Value = null;
                 foreach (var instance in this.Component.Instances)
                 {
-                    instance.InstanceParameterValuesPersistent.SetWithoutNotify(this, null);
-                    instance.InstanceParameterValuesTemporary.SetWithoutNotify(this, null);
+                    instance.InstanceParameterValuesPersistent[this] = null;
+                    instance.InstanceParameterValuesTemporary[this] = null;
                 }
             }
         }
@@ -209,6 +209,21 @@ namespace SIMULTAN.Data.Components
 
 
         #endregion
+
+        /// <inheritdoc/>
+        public override void RestoreDefaultTaxonomyReferences(ulong taxonomyFileVersion)
+        {
+            base.RestoreDefaultTaxonomyReferences(taxonomyFileVersion);
+
+            var entry = Factory.ProjectData.IdGenerator.GetById<SimTaxonomyEntry>(ParentTaxonomyEntryRef.TaxonomyEntryId);
+            ParentTaxonomyEntryRef = new SimTaxonomyEntryReference(entry);
+
+            if (Value != null)
+            {
+                entry = Factory.ProjectData.IdGenerator.GetById<SimTaxonomyEntry>(Value.TaxonomyEntryId);
+                Value = new SimTaxonomyEntryReference(entry);
+            }
+        }
 
 
         /// <summary>

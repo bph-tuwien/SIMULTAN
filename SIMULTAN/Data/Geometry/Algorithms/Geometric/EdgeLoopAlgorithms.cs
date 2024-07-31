@@ -1,8 +1,8 @@
-﻿using System;
+﻿using SIMULTAN.Data.SimMath;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
-using System.Windows.Media.Media3D;
 
 namespace SIMULTAN.Data.Geometry
 {
@@ -18,7 +18,7 @@ namespace SIMULTAN.Data.Geometry
         /// </summary>
         /// <param name="loop">The EdgeLoop to operate on</param>
         /// <returns>The normal vector</returns>
-        public static Vector3D NormalCCW(EdgeLoop loop)
+        public static SimVector3D NormalCCW(EdgeLoop loop)
         {
             return NormalCCW(loop.Edges.Select(x => x.StartVertex.Position).ToList());
         }
@@ -30,22 +30,22 @@ namespace SIMULTAN.Data.Geometry
         /// </summary>
         /// <param name="edgeLoopPositions">The set of positions in the EdgeLoop to operate on</param>
         /// <returns>The normal vector</returns>
-        public static Vector3D NormalCCW(List<Point3D> edgeLoopPositions)
+        public static SimVector3D NormalCCW(List<SimPoint3D> edgeLoopPositions)
         {
-            Vector3D sumNormal = new Vector3D(0, 0, 0);
+            SimVector3D sumNormal = new SimVector3D(0, 0, 0);
 
             for (int i = 0; i < edgeLoopPositions.Count; i++)
             {
-                Point3D p = edgeLoopPositions[i];
-                Point3D np = edgeLoopPositions[(i + 1) % edgeLoopPositions.Count];
-                sumNormal += Vector3D.CrossProduct((Vector3D)np, (Vector3D)p);
+                SimPoint3D p = edgeLoopPositions[i];
+                SimPoint3D np = edgeLoopPositions[(i + 1) % edgeLoopPositions.Count];
+                sumNormal += SimVector3D.CrossProduct((SimVector3D)np, (SimVector3D)p);
             }
 
             sumNormal.Normalize();
 
             if (double.IsNaN(sumNormal.X) || double.IsNaN(sumNormal.Y) || double.IsNaN(sumNormal.Z) ||
                 double.IsInfinity(sumNormal.X) || double.IsInfinity(sumNormal.Y) || double.IsInfinity(sumNormal.Z))
-                return new Vector3D(0, 0, 0);
+                return new SimVector3D(0, 0, 0);
 
             return sumNormal;
         }
@@ -60,7 +60,7 @@ namespace SIMULTAN.Data.Geometry
         {
             //Basic idea: Start with edge count. Reduce by 1 for every angle close to 90°
             int count = loop.Edges.Count;
-            var angles = loop.Edges.Select(x => Vector3D.DotProduct(EdgeAlgorithms.Direction(x), EdgeAlgorithms.Direction(x.Next)));
+            var angles = loop.Edges.Select(x => SimVector3D.DotProduct(EdgeAlgorithms.Direction(x), EdgeAlgorithms.Direction(x.Next)));
             count = count - angles.Count(x => x > 1 - tolerance);
 
             return count;
@@ -97,20 +97,20 @@ namespace SIMULTAN.Data.Geometry
         /// </summary>
         /// <param name="boundary">A list of boundary points</param>
         /// <returns>The area (always positive)</returns>
-        public static double Area(IEnumerable<Point3D> boundary)
+        public static double Area(IEnumerable<SimPoint3D> boundary)
         {
             //Strategy: Choose arbitrary point (X), for each edge (AB) calucate signed area of triangle XAB
             double sumArea = 0;
 
 
-            Vector3D normal = new Vector3D(0, 0, 0);
+            SimVector3D normal = new SimVector3D(0, 0, 0);
 
             //Minimize error for normal by taking the largest one
             var np0 = boundary.First();
             var np1 = boundary.ElementAt(1);
             foreach (var np2 in boundary.Skip(2))
             {
-                var triNorm = Vector3D.CrossProduct(np1 - np0, np2 - np0);
+                var triNorm = SimVector3D.CrossProduct(np1 - np0, np2 - np0);
                 if (triNorm.LengthSquared > normal.LengthSquared)
                     normal = triNorm;
             }
@@ -123,13 +123,13 @@ namespace SIMULTAN.Data.Geometry
             var lastPoint = boundary.ElementAt(1);
             foreach (var currentPoint in boundary.Skip(2))
             {
-                var triNorm = Vector3D.CrossProduct(lastPoint - referencePoint, currentPoint - referencePoint);
+                var triNorm = SimVector3D.CrossProduct(lastPoint - referencePoint, currentPoint - referencePoint);
                 double triArea = triNorm.Length;
                 triNorm.Normalize();
 
                 if (triArea > 0.0001)
                 {
-                    sumArea += triArea * Math.Sign(Vector3D.DotProduct(triNorm, normal));
+                    sumArea += triArea * Math.Sign(SimVector3D.DotProduct(triNorm, normal));
                 }
 
                 lastPoint = currentPoint;
@@ -143,14 +143,14 @@ namespace SIMULTAN.Data.Geometry
         /// </summary>
         /// <param name="loop"></param>
         /// <returns></returns>
-        public static Size Size(EdgeLoop loop)
+        public static SimSize Size(EdgeLoop loop)
         {
-            Vector3D normal = NormalCCW(loop);
+            SimVector3D normal = NormalCCW(loop);
             var mapping = SizeMapping(loop, normal);
             return Size(loop.Edges.Select(x => x.StartVertex.Position), mapping);
         }
 
-        internal static Matrix3D SizeMapping(EdgeLoop loop, Vector3D normal)
+        internal static SimMatrix3D SizeMapping(EdgeLoop loop, SimVector3D normal)
         {
             if (FaceAlgorithms.IsFloor(normal) || FaceAlgorithms.IsCeiling(normal))
             {
@@ -187,10 +187,10 @@ namespace SIMULTAN.Data.Geometry
                 }
 
                 var wDirection = EdgeAlgorithms.Direction(refEdge.Edge);
-                var hDirection = Vector3D.CrossProduct(wDirection, normal);
+                var hDirection = SimVector3D.CrossProduct(wDirection, normal);
                 hDirection.Normalize();
 
-                return new Matrix3D(
+                return new SimMatrix3D(
                     wDirection.X, hDirection.X, normal.X, 0,
                     wDirection.Y, hDirection.Y, normal.Y, 0,
                     wDirection.Z, hDirection.Z, normal.Z, 0,
@@ -199,12 +199,12 @@ namespace SIMULTAN.Data.Geometry
             }
             else
             {
-                var wDirection = Vector3D.CrossProduct(normal, new Vector3D(0, 1, 0));
+                var wDirection = SimVector3D.CrossProduct(normal, new SimVector3D(0, 1, 0));
                 wDirection.Normalize();
-                var hDirection = Vector3D.CrossProduct(wDirection, normal);
+                var hDirection = SimVector3D.CrossProduct(wDirection, normal);
                 hDirection.Normalize();
 
-                return new Matrix3D(
+                return new SimMatrix3D(
                     wDirection.X, hDirection.X, normal.X, 0,
                     wDirection.Y, hDirection.Y, normal.Y, 0,
                     wDirection.Z, hDirection.Z, normal.Z, 0,
@@ -212,7 +212,7 @@ namespace SIMULTAN.Data.Geometry
                     );
             }
         }
-        internal static Size Size(IEnumerable<Point3D> points, Matrix3D mapping)
+        internal static SimSize Size(IEnumerable<SimPoint3D> points, SimMatrix3D mapping)
         {
             var projectedPoints = points.Select(x => mapping.Transform(x));
 
@@ -222,7 +222,7 @@ namespace SIMULTAN.Data.Geometry
             var minH = projectedPoints.Min(x => x.Y);
             var maxH = projectedPoints.Max(x => x.Y);
 
-            return new Size(maxW - minW, maxH - minH);
+            return new SimSize(maxW - minW, maxH - minH);
         }
 
         /// <summary>
@@ -246,9 +246,9 @@ namespace SIMULTAN.Data.Geometry
 
 
         /// <summary>
-        /// Flips an edge loop
+        /// Flips an <see cref="EdgeLoop"/>
         /// </summary>
-        /// <param name="loop">The edge loop</param>
+        /// <param name="loop">The <see cref="EdgeLoop"/></param>
         public static void Flip(EdgeLoop loop)
         {
             var reversed = loop.Edges.Reverse().ToList();
@@ -262,14 +262,14 @@ namespace SIMULTAN.Data.Geometry
         }
 
         /// <summary>
-        /// Tests if an edge-loop contains a point
+        /// Tests if an <see cref="EdgeLoop"/> contains a point
         /// </summary>
         /// <param name="l">The loop</param>
         /// <param name="v">The point</param>
         /// <param name="tolerance">Tolerance to edges</param>
-        /// <param name="zTolerance">Tolerance between point and the plane spanned by the edgeloop</param>
-        /// <returns></returns>
-        public static GeometricRelation Contains(EdgeLoop l, Point3D v, double tolerance, double zTolerance)
+        /// <param name="zTolerance">Tolerance between point and the plane spanned by the <see cref="EdgeLoop"/></param>
+        /// <returns>The geometric relation</returns>
+        public static GeometricRelation Contains(EdgeLoop l, SimPoint3D v, double tolerance, double zTolerance)
         {
             var (polygon, mapping) = MapToXY(l);
 
@@ -279,7 +279,54 @@ namespace SIMULTAN.Data.Geometry
                 return GeometricRelation.None;
         }
 
-        private static (List<Point3D> polygon, Matrix3D mapping) MapToXY(EdgeLoop l)
+        /// <summary>
+        /// Tests if an <see cref="EdgeLoop"/> contains another <see cref="EdgeLoop"/>
+        /// </summary>
+        /// <param name="loop">The <see cref="EdgeLoop"/></param>
+        /// <param name="other">The other <see cref="EdgeLoop"/></param>
+        /// <param name="tolerance">Tolerance to the edges</param>
+        /// <param name="zTolerance">Tolerance between point and the plane spanned by the <see cref="EdgeLoop"/></param>
+        /// <returns>The geometric relation</returns>
+        public static GeometricRelation Contains(EdgeLoop loop, EdgeLoop other, double tolerance, double zTolerance)
+        {
+            var (polygon, mapping) = MapToXY(loop);
+
+            var contains = other.Edges.Select(x => x.StartVertex.Position).Select(v => (Contains2D(polygon, mapping.Transform(v), tolerance, zTolerance)));
+
+            if (contains.All(x => x))
+                return GeometricRelation.Contained;
+            else if (contains.Any(x => x))
+                return GeometricRelation.Intersecting;
+            else
+                return GeometricRelation.None;
+        }
+
+        /// <summary>
+        /// Tests if an <see cref="EdgeLoop"/> contains another <see cref="EdgeLoop"/>
+        /// </summary>
+        /// <param name="loop">The <see cref="EdgeLoop"/></param>
+        /// <param name="other">The other <see cref="EdgeLoop"/></param>
+        /// <param name="mapping">Matrix used to map the vertices into the XY-plane</param>
+        /// <param name="tolerance">Tolerance to the edges</param>
+        /// <param name="zTolerance">Tolerance between point and the plane spanned by the <see cref="EdgeLoop"/></param>
+        /// <returns>The geometric relation</returns>
+        public static GeometricRelation Contains(List<Edge> loop, List<Edge> other, SimMatrix3D mapping, double tolerance, double zTolerance)
+        {
+            var verts = EdgeAlgorithms.OrderedVertexLoop(loop);
+            var polygon = verts.Select(x => mapping.Transform(x.Position)).ToList();
+            var otherVerts = EdgeAlgorithms.OrderedVertexLoop(other);
+
+            var contains = otherVerts.Select(x => x.Position).Select(v => (Contains2D(polygon, mapping.Transform(v), tolerance, zTolerance)));
+
+            if (contains.All(x => x))
+                return GeometricRelation.Contained;
+            else if (contains.Any(x => x))
+                return GeometricRelation.Intersecting;
+            else
+                return GeometricRelation.None;
+        }
+
+        private static (List<SimPoint3D> polygon, SimMatrix3D mapping) MapToXY(EdgeLoop l)
         {
             var mapping = LoopToXYMapping(l);
             return (
@@ -289,25 +336,98 @@ namespace SIMULTAN.Data.Geometry
         }
 
         /// <summary>
+        /// Extrudes an <see cref="EdgeLoop"/> by distance in normal direction.
+        /// </summary>
+        /// <param name="inputLoop">Loop to extrude</param>
+        /// <param name="distance">Distance to extrude</param>
+        /// <param name="normal">Normal direction to extrude to</param>
+        /// <returns>All the generated geometry and the resulting end <see cref="EdgeLoop"/></returns>
+        public static (List<BaseGeometry> generated, EdgeLoop endEdgeloop) Extrude(EdgeLoop inputLoop, double distance, SimVector3D normal)
+        {
+            List<BaseGeometry> result = new List<BaseGeometry>();
+
+            Dictionary<Vertex, Vertex> vertexLookup = new Dictionary<Vertex, Vertex>();
+            Dictionary<Vertex, Edge> edgeLookup = new Dictionary<Vertex, Edge>();
+            List<Edge> topEdges = new List<Edge>();
+
+            var edges = inputLoop.Edges.Select(x => x.Edge);
+
+            edges.First().ModelGeometry.StartBatchOperation();
+
+            //Duplicate edges
+            foreach (var e in edges)
+            {
+                List<Edge> newEdges = new List<Edge>();
+
+                foreach (var v in e.Vertices)
+                {
+                    if (!vertexLookup.ContainsKey(v))
+                    {
+                        var vClone = new Vertex(v.Layer, "Vertex", v.Position + normal * distance) { Color = new DerivedColor(v.Color) };
+                        vertexLookup.Add(v, vClone);
+                        result.Add(vClone);
+                    }
+
+                    if (!edgeLookup.ContainsKey(v))
+                    {
+
+                        var vNew = vertexLookup[v];
+                        Edge vEdge = new Edge(e.Layer, "Edge",
+                            new List<Vertex> { v, vNew })
+                        { Color = new DerivedColor(e.Color) };
+                        result.Add(vEdge);
+                        edgeLookup.Add(v, vEdge);
+                    }
+
+                    newEdges.Add(edgeLookup[v]);
+                }
+
+                Edge edge = new Edge(e.Layer, "Edge",
+                    new List<Vertex> { vertexLookup[e.Vertices[0]], vertexLookup[e.Vertices[1]] })
+                {
+                    Color = new DerivedColor(e.Color)
+                };
+                newEdges.Insert(1, edge);
+                result.Add(edge);
+                topEdges.Add(edge);
+
+                newEdges.Insert(0, e);
+                EdgeLoop loop = new EdgeLoop(e.Layer, "EdgeLoop",
+                    newEdges)
+                { Color = new DerivedColor(e.Color) };
+                result.Add(loop);
+
+                Face face = new Face(e.Layer, "Face", loop) { Color = new DerivedColor(e.Color) };
+                result.Add(face);
+            }
+
+            var topEdgeloop = new EdgeLoop(inputLoop.Layer, "EdgeLoop", topEdges);
+
+            edges.First().ModelGeometry.EndBatchOperation();
+
+            return (result, topEdgeloop);
+        }
+
+        /// <summary>
         /// Calculates the mapping of a EdgeLoop into the XY plane
         /// </summary>
         /// <param name="loop"></param>
         /// <returns></returns>
-        public static Matrix3D LoopToXYMapping(EdgeLoop loop)
+        public static SimMatrix3D LoopToXYMapping(EdgeLoop loop)
         {
-            var normal = new Vector3D(0, 0, 0);
+            var normal = new SimVector3D(0, 0, 0);
             int i = 1;
             while (normal.LengthSquared < 0.001 && i < loop.Edges.Count)
             {
-                normal = Vector3D.CrossProduct(EdgeAlgorithms.Direction(loop.Edges[0]), EdgeAlgorithms.Direction(loop.Edges[i]));
+                normal = SimVector3D.CrossProduct(EdgeAlgorithms.Direction(loop.Edges[0]), EdgeAlgorithms.Direction(loop.Edges[i]));
                 i++;
             }
 
             var z_dir = normal;
             var x_dir = EdgeAlgorithms.Direction(loop.Edges[0]);
-            var y_dir = Vector3D.CrossProduct(z_dir, x_dir);
+            var y_dir = SimVector3D.CrossProduct(z_dir, x_dir);
 
-            return new Matrix3D(
+            return new SimMatrix3D(
                 x_dir.X, y_dir.X, z_dir.X, 0,
                 x_dir.Y, y_dir.Y, z_dir.Y, 0,
                 x_dir.Z, y_dir.Z, z_dir.Z, 0,
@@ -322,7 +442,7 @@ namespace SIMULTAN.Data.Geometry
         /// This method assumes that the polygon lies in the XY plane.
         /// </summary>
         /// http://geomalgorithms.com/a03-_inclusion.html
-        internal static bool Contains2D(List<Point3D> polygon, Point3D point, double tolerance, double zTolerance)
+        public static bool Contains2D(List<SimPoint3D> polygon, SimPoint3D point, double tolerance, double zTolerance)
         {
             if (Math.Abs(polygon[0].Z - point.Z) > zTolerance)
                 return false;
@@ -348,7 +468,8 @@ namespace SIMULTAN.Data.Geometry
 
             return (windingNumber != 0);
         }
-        private static double IsLeft(Point3D p0, Point3D p1, Point3D p2)
+
+        private static double IsLeft(SimPoint3D p0, SimPoint3D p1, SimPoint3D p2)
         {
             return ((p1.X - p0.X) * (p2.Y - p0.Y)) - ((p2.X - p0.X) * (p1.Y - p0.Y));
         }
@@ -376,7 +497,7 @@ namespace SIMULTAN.Data.Geometry
         /// </summary>
         /// <param name="polygon">The polygon</param>
         /// <returns>The perimeter length</returns>
-        public static double Perimeter(List<Point3D> polygon)
+        public static double Perimeter(List<SimPoint3D> polygon)
         {
             double peri = 0.0;
 

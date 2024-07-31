@@ -1,5 +1,7 @@
 ﻿using SIMULTAN.Data.MultiValues;
+using SIMULTAN.Serializer.MVDXF;
 using SIMULTAN.Serializer.Projects;
+using System;
 using System.IO;
 
 namespace SIMULTAN.Projects.ManagedFiles
@@ -51,7 +53,9 @@ namespace SIMULTAN.Projects.ManagedFiles
         public override void Save()
         {
             // general save
-            ProjectIO.SaveMultiValueFile(this.File, ProjectData.ValueManager);
+            MultiValueDxfIO.Write(this.File, ProjectData.ValueManager);
+            this.File.LastWriteTime = DateTime.Now;
+
             this.OnFileUpToDateChanged(true);
             // public save
             if (this.PublicCounterpart != null && System.IO.File.Exists(this.PublicCounterpart.File.FullName))

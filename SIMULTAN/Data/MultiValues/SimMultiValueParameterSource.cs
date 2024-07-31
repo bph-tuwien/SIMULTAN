@@ -186,7 +186,7 @@ namespace SIMULTAN.Data.MultiValues
                     if (paramEntry.Value == null)
                     {
                         var param = new SimDoubleParameter(
-                            string.Format(paramEntry.Key, this.TargetParameter.NameTaxonomyEntry.Name),
+                            string.Format(paramEntry.Key, this.TargetParameter.NameTaxonomyEntry.TextOrKey),
                             valuePointerParameterUnits[paramEntry.Key],
                             0.0, SimParameterOperations.EditValue);
                         comp.Parameters.Add(param);
@@ -245,9 +245,9 @@ namespace SIMULTAN.Data.MultiValues
             {
                 foreach (var key in valuePointerParameters.Keys.ToList())
                 {
-                    var paramName = string.Format(key, TargetParameter.NameTaxonomyEntry.Name);
+                    var paramName = string.Format(key, TargetParameter.NameTaxonomyEntry.TextOrKey);
                     ReplaceValuePointerParameter(key, targetParameter.Component.Parameters
-                        .OfType<SimBaseParameter>().FirstOrDefault(x => x.NameTaxonomyEntry.Name == paramName));
+                        .OfType<SimBaseParameter>().FirstOrDefault(x => !x.NameTaxonomyEntry.HasTaxonomyEntry && x.NameTaxonomyEntry.Text == paramName));
                 }
             }
         }
@@ -273,7 +273,7 @@ namespace SIMULTAN.Data.MultiValues
                     foreach (var item in e.NewItems)
                     {
                         var itemParam = (SimBaseParameter)item;
-                        var key = valuePointerParameters.Keys.FirstOrDefault(x => string.Format(x, TargetParameter.NameTaxonomyEntry.Name) == itemParam.NameTaxonomyEntry.Name);
+                        var key = valuePointerParameters.Keys.FirstOrDefault(x => string.Format(x, TargetParameter.NameTaxonomyEntry.TextOrKey) == itemParam.NameTaxonomyEntry.Text);
                         if (key != null)
                             ReplaceValuePointerParameter(key, itemParam);
                     }
@@ -283,7 +283,7 @@ namespace SIMULTAN.Data.MultiValues
                     foreach (var item in e.OldItems)
                     {
                         var itemParam = (SimBaseParameter)item;
-                        var key = valuePointerParameters.Keys.FirstOrDefault(x => string.Format(x, TargetParameter.NameTaxonomyEntry.Name) == itemParam.NameTaxonomyEntry.Name);
+                        var key = valuePointerParameters.Keys.FirstOrDefault(x => string.Format(x, TargetParameter.NameTaxonomyEntry.TextOrKey) == itemParam.NameTaxonomyEntry.Text);
                         if (key != null)
                             ReplaceValuePointerParameter(key, null);
                     }
