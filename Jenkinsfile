@@ -45,7 +45,7 @@ pipeline {
     	}
     	stage ('Test') {
     	    steps {
-    	        vsTest testFiles: 'SIMULTAN.Tests\\bin\\Release\\SIMULTAN.Tests.dll'
+    	        vsTest testFiles: 'SIMULTAN.Tests\\bin\\Release\\net7.0\\SIMULTAN.Tests.dll'
     	    }
     	}
       /* Don't build nuget for now, settings not finalized
