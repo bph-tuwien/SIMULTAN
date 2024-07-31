@@ -4,7 +4,7 @@ using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Windows.Media.Media3D;
+using SIMULTAN.Data.SimMath;
 
 namespace SIMULTAN.Data.Geometry
 {
@@ -20,7 +20,7 @@ namespace SIMULTAN.Data.Geometry
         /// <summary>
         /// The geo location, x = long (degrees), y = lat (degrees), z = height (meter) 
         /// </summary>
-        public Point3D ReferencePoint
+        public SimPoint3D ReferencePoint
         {
             get { return referencePoint; }
             set
@@ -29,14 +29,14 @@ namespace SIMULTAN.Data.Geometry
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ReferencePoint)));
             }
         }
-        private Point3D referencePoint;
+        private SimPoint3D referencePoint;
 
         /// <summary>
         /// Initializes a new instance of the GeoReference class
         /// </summary>
         /// <param name="vertex">The vertex</param>
         /// <param name="reference">The reference location</param>
-        public GeoReference(Vertex vertex, Point3D reference)
+        public GeoReference(Vertex vertex, SimPoint3D reference)
         {
             this.Vertex = vertex;
             this.ReferencePoint = reference;

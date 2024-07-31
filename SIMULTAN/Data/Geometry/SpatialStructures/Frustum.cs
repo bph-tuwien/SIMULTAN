@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Windows.Media.Media3D;
+using SIMULTAN.Data.SimMath;
 
 namespace SIMULTAN.Data.Geometry
 {
@@ -31,7 +31,7 @@ namespace SIMULTAN.Data.Geometry
         /// </summary>
         /// <param name="p">Point to check</param>
         /// <returns>True, if point is contained in the frustum volume</returns>
-        public bool IsPointInside(Point3D p)
+        public bool IsPointInside(SimPoint3D p)
         {
             return Planes.All(x => x.IsInside(p));
         }
@@ -43,7 +43,7 @@ namespace SIMULTAN.Data.Geometry
         /// <param name="ngon">Polygon to test</param>
         /// <param name="allowPartially">If true, at least 1 vertex of the polygon has to remain in the frustum after clipping</param>
         /// <returns>True, if the polygon is inside the frustum</returns>
-        public bool IsNgonInside(List<Point3D> ngon, bool allowPartially = false)
+        public bool IsNgonInside(List<SimPoint3D> ngon, bool allowPartially = false)
         {
             var clippedNgon = Clip(ngon);
 
@@ -58,13 +58,13 @@ namespace SIMULTAN.Data.Geometry
         /// </summary>
         /// <param name="ngon">List of polygon vertices</param>
         /// <returns>List of vertices resulting after clipping</returns>
-        public List<Point3D> Clip(List<Point3D> ngon)
+        public List<SimPoint3D> Clip(List<SimPoint3D> ngon)
         {
-            List<Point3D> outputList = new List<Point3D>(ngon);
+            List<SimPoint3D> outputList = new List<SimPoint3D>(ngon);
 
             foreach (var clipPlane in Planes)
             {
-                List<Point3D> inputList = new List<Point3D>(outputList);
+                List<SimPoint3D> inputList = new List<SimPoint3D>(outputList);
                 outputList.Clear();
 
                 for (int i = 0; i < inputList.Count; i++)

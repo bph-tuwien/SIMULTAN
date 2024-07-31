@@ -3,6 +3,7 @@ using SIMULTAN.Data.Taxonomy;
 using SIMULTAN.Data.Users;
 using System;
 using System.Linq;
+using System.Security.Permissions;
 
 namespace SIMULTAN.Data.Components
 {
@@ -32,9 +33,12 @@ namespace SIMULTAN.Data.Components
                     this.NotifyWriteAccess();
 
                     this.value = value;
+                    this.SendInstanceValueChanges = false;
                     this.NotifyPropertyChanged(nameof(Value));
+                    this.NotifyValueChanged();
                     UpdateState();
                     this.NotifyChanged();
+                    this.SendInstanceValueChanges = true;
 
                     //Notify geometry exchange
                     if (this.Component != null && this.Component.Factory != null)
@@ -327,14 +331,14 @@ namespace SIMULTAN.Data.Components
             {
                 NotifyWriteAccess();
 
-                if (taxonomyEntry.HasTaxonomyEntryReference())
+                if (taxonomyEntry.HasTaxonomyEntryReference)
                 {
                     NameTaxonomyEntry.TaxonomyEntryReference.RemoveDeleteAction();
                 }
 
                 taxonomyEntry = value;
 
-                if (taxonomyEntry.HasTaxonomyEntry())
+                if (taxonomyEntry.HasTaxonomyEntry)
                 {
                     taxonomyEntry.TaxonomyEntryReference.SetDeleteAction(TaxonomyEntryDeleted);
                 }
@@ -444,20 +448,7 @@ namespace SIMULTAN.Data.Components
         /// </summary>
         private void TaxonomyEntryDeleted(SimTaxonomyEntry caller)
         {
-            this.NameTaxonomyEntry = new SimTaxonomyEntryOrString(this.NameTaxonomyEntry.Name);
-        }
-
-        /// <summary>
-        /// Restores references to other connected parts, f.e. TaxonomyEntries
-        /// </summary>
-        /// <param name="idGenerator">The idGenerator used to look up the references</param>
-        public void RestoreReferences(SimIdGenerator idGenerator)
-        {
-            if (NameTaxonomyEntry.HasTaxonomyEntryReference())
-            {
-                var entry = idGenerator.GetById<SimTaxonomyEntry>(NameTaxonomyEntry.TaxonomyEntryReference.TaxonomyEntryId);
-                NameTaxonomyEntry = new SimTaxonomyEntryOrString(new SimTaxonomyEntryReference(entry));
-            }
+            this.NameTaxonomyEntry = new SimTaxonomyEntryOrString(NameTaxonomyEntry.TextOrKey);
         }
 
 
@@ -467,15 +458,14 @@ namespace SIMULTAN.Data.Components
         /// </summary>
         /// <param name="taxonomyFileVersion">The file version of the loaded managed taxonomy file</param>
         /// <exception cref="Exception">If the default taxonomy entry could not be found.</exception>
-        public void RestoreDefaultTaxonomyReferences(ulong taxonomyFileVersion)
+        public virtual void RestoreDefaultTaxonomyReferences(ulong taxonomyFileVersion)
         {
-            if (!NameTaxonomyEntry.HasTaxonomyEntryReference() && taxonomyFileVersion <= 17)
+            if (!NameTaxonomyEntry.HasTaxonomyEntryReference && taxonomyFileVersion <= 17)
             {
                 if (Component.InstanceType != SimInstanceType.None || Component.Name == "Cumulative")
                 {
-                    if (ReservedParameterKeys.NameToKeyLookup.TryGetValue(NameTaxonomyEntry.Name, out var key))
+                    if (ReservedParameterKeys.NameToKeyLookup.TryGetValue(NameTaxonomyEntry.Text, out var key))
                     {
-
                         var taxonomy = Factory.ProjectData.Taxonomies.GetTaxonomyByKeyOrName(ReservedParameterKeys.RP_TAXONOMY_KEY);
                         var entry = taxonomy.GetTaxonomyEntryByKey(key);
                         if (entry != null)
@@ -484,11 +474,18 @@ namespace SIMULTAN.Data.Components
                         }
                         else
                         {
-                            throw new Exception("Could not find reserved taxonomy entry for parameter " + NameTaxonomyEntry.Name);
+                            throw new Exception("Could not find reserved taxonomy entry for parameter " + NameTaxonomyEntry.Text);
                         }
                     }
                 }
             }
+            else if (NameTaxonomyEntry.HasTaxonomyEntryReference)
+            {
+                var entry = Factory.ProjectData.IdGenerator.GetById<SimTaxonomyEntry>(NameTaxonomyEntry.TaxonomyEntryReference.TaxonomyEntryId);
+                NameTaxonomyEntry = new SimTaxonomyEntryOrString(entry);
+            }
+
+            ValueSource?.RestoreDefaultTaxonomyReferences(Factory.ProjectData);
         }
 
 
@@ -499,7 +496,7 @@ namespace SIMULTAN.Data.Components
         /// <returns>if the parameter has a default reserved taxonomy entry of the provided key.</returns>
         public bool HasReservedTaxonomyEntry(String entryKey)
         {
-            return taxonomyEntry.HasTaxonomyEntry() &&
+            return taxonomyEntry.HasTaxonomyEntry &&
                 taxonomyEntry.TaxonomyEntryReference.Target.Taxonomy.Key == ReservedParameterKeys.RP_TAXONOMY_KEY &&
                 taxonomyEntry.TaxonomyEntryReference.Target.Key == entryKey;
         }
@@ -531,6 +528,7 @@ namespace SIMULTAN.Data.Components
         #endregion
 
         #region EVENTS
+        
         /// <summary>
         /// Handler for the IsBeingDelted event.
         /// </summary>
@@ -559,6 +557,78 @@ namespace SIMULTAN.Data.Components
                 this.Component.Parameters.OnParameterPropertyChanged(this, property);
             }
         }
+        
+        /// <summary>
+        /// Source of the parameter value change
+        /// </summary>
+        public enum ValueChangedSource 
+        {
+            /// <summary>
+            /// The value of the parameter itself has changed
+            /// </summary>
+            Parameter,
+            /// <summary>
+            /// The instance value of the parameter has changed
+            /// </summary>
+            Instance 
+        }
+        /// <summary>
+        /// EventArgs for the <see cref="ValueChanged"/> event
+        /// </summary>
+        public class ValueChangedEventArgs : EventArgs
+        {
+            /// <summary>
+            /// The source of the parameter value change
+            /// </summary>
+            public ValueChangedSource Source { get; }
+            /// <summary>
+            /// The instance in which the parameter value has been changed. 
+            /// Null when the <see cref="Source"/> is <see cref="ValueChangedSource.Parameter"/>
+            /// </summary>
+            public SimComponentInstance Instance { get; }
+
+            /// <summary>
+            /// Initializes a new instance of the <see cref="ValueChangedEventArgs"/> class
+            /// </summary>
+            /// <param name="source">Source of the parameter change</param>
+            /// <param name="instance">Instance affected by the change. Has to be null when the source is set 
+            /// to <see cref="ValueChangedSource.Parameter"/></param>
+            public ValueChangedEventArgs(ValueChangedSource source, SimComponentInstance instance)
+            {
+                this.Source = source;
+                this.Instance = instance;
+            }
+        }
+
+        /// <summary>
+        /// EventHandler for the <see cref="ValueChanged"/> event
+        /// </summary>
+        /// <param name="sender">The sender</param>
+        /// <param name="args">Arguments for the event</param>
+        public delegate void ValueChangedEventHandler(object sender, ValueChangedEventArgs args);
+        /// <summary>
+        /// Invoked when the value of the parameter has changed. Happens either when the parameter value itself has changed or
+        /// when the instance value of the parameter has changed.
+        /// </summary>
+        public event ValueChangedEventHandler ValueChanged;
+
+        /// <summary>
+        /// When set to True, value changes in instances send a <see cref="ValueChanged"/> event. When set to False, the event gets suppressed
+        /// </summary>
+        protected bool SendInstanceValueChanges { get; set; } = true;
+        internal void NotifyValueChanged(SimComponentInstance instance)
+        {
+            if (this.SendInstanceValueChanges)
+                this.ValueChanged?.Invoke(this, new ValueChangedEventArgs(ValueChangedSource.Instance, instance));
+        }
+        /// <summary>
+        /// Invokes the <see cref="ValueChanged"/> event for the change of the parameter value
+        /// </summary>
+        protected void NotifyValueChanged()
+        {
+            this.ValueChanged?.Invoke(this, new ValueChangedEventArgs(ValueChangedSource.Parameter, null));
+        }
+
         #endregion
 
         /// <summary>

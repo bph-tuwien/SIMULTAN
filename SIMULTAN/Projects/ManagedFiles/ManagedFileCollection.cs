@@ -180,7 +180,7 @@ namespace SIMULTAN.Projects.ManagedFiles
 
             this.GeometryEntry = this.files.FirstOrDefault(x => x is ManagedGeometryFile) as ManagedGeometryFile;
             this.GeometryEntries = this.files.Where(x => x is ManagedGeometryFile).Select(x => x as ManagedGeometryFile).ToList();
-            
+
             this.GeometryRelationsEntry = this.files.FirstOrDefault(x => x is ManagedGeometryRelationsFile) as ManagedGeometryRelationsFile;
             this.GeometryRelationsEntries = this.files.Where(x => x is ManagedGeometryRelationsFile).Select(x => x as ManagedGeometryRelationsFile).ToList();
 
@@ -395,7 +395,9 @@ namespace SIMULTAN.Projects.ManagedFiles
                 foreach (var sp in SitePlannerEntries)
                     sp.Open(_clear_before_open);
 
-            if (GeometryRelationsEntry != null) 
+            if (GeometryRelationsEntry == null)
+                ProjectIO.CreateInitialGeometryRelationsFile(this.Project);
+            if (GeometryRelationsEntry != null)
                 GeometryRelationsEntry.Open(_clear_before_open);
 
             // 9. check for linked resources of type geometry, site planner or geomaps

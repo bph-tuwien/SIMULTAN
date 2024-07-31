@@ -1,9 +1,4 @@
-﻿using SIMULTAN.Serializer.DXF;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System;
 
 namespace SIMULTAN.Serializer.DXF
 {
@@ -41,6 +36,13 @@ namespace SIMULTAN.Serializer.DXF
         /// <param name="elementCode">The code for the data elements</param>
         internal DXFArrayEntryParserElement(int code, int elementCode) : base(code, elementCode)
         { }
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DXFArrayEntryParserElement{T}"/> class
+        /// </summary>
+        /// <param name="code">The code of the count entry</param>
+        /// <param name="elementCode">The code for the data elements</param>
+        internal DXFArrayEntryParserElement(TaxonomySaveCode code, TaxonomySaveCode elementCode)
+            : this((int)code, (int)elementCode) { }
         /// <summary>
         /// Initializes a new instance of the <see cref="DXFArrayEntryParserElement{T}"/> class
         /// </summary>

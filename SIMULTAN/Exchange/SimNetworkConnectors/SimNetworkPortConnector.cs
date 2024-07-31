@@ -1,10 +1,10 @@
 ﻿using SIMULTAN.Data.Components;
 using SIMULTAN.Data.Geometry;
+using SIMULTAN.Data.SimMath;
 using SIMULTAN.Data.SimNetworks;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Windows.Media.Media3D;
 
 namespace SIMULTAN.Exchange.SimNetworkConnectors
 {
@@ -23,6 +23,11 @@ namespace SIMULTAN.Exchange.SimNetworkConnectors
         /// The Port
         /// </summary>
         internal SimNetworkPort Port { get; }
+
+        /// <inheritdoc />
+        internal override IEnumerable<ISimNetworkElement> SimNetworkElement => new List<ISimNetworkElement> { Port };
+
+
         private SimComponentInstance portContent;
 
         /// <summary>
@@ -98,10 +103,13 @@ namespace SIMULTAN.Exchange.SimNetworkConnectors
                     portContent.PropertyChanged += PortContent_PropertyChanged;
                 }
 
-                UpdateColor();
+
             }
             else if (e.PropertyName == nameof(SimNetworkBlock.Name))
                 Vertex.Name = Port.Name;
+
+            else if (e.PropertyName == nameof(SimNetworkBlock.Color))
+                UpdateColor();
         }
 
 
@@ -147,7 +155,7 @@ namespace SIMULTAN.Exchange.SimNetworkConnectors
                 this.transformInProgress = true;
 
                 var size = SimInstanceSize.Default;
-                var rotation = Quaternion.Identity;
+                var rotation = SimQuaternion.Identity;
 
                 if (Port.ComponentInstance != null)
                 {
@@ -184,6 +192,8 @@ namespace SIMULTAN.Exchange.SimNetworkConnectors
 
         private void UpdateColor()
         {
+            this.Vertex.Color = new DerivedColor(this.Port.Color);
+
             if (Port.ComponentInstance == null)
             {
                 Vertex.Color.IsFromParent = false;

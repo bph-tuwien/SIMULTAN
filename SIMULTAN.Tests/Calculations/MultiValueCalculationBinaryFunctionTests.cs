@@ -9,7 +9,7 @@ namespace SIMULTAN.Tests.Calculations
     [TestClass]
     public class MultiValueCalculationBinaryFunctionTests : BaseProjectTest
     {
-        private static readonly FileInfo calculationProject = new FileInfo(@".\CalculationTestsProject.simultan");
+        private static readonly FileInfo calculationProject = new FileInfo(@"./CalculationTestsProject.simultan");
 
         #region General
 

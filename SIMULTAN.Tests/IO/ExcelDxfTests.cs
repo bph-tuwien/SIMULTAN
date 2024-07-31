@@ -1,25 +1,25 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SIMULTAN.Data;
 using SIMULTAN.Data.Components;
+using SIMULTAN.Data.Taxonomy;
+using SIMULTAN.DataMapping;
 using SIMULTAN.Excel;
 using SIMULTAN.Projects;
 using SIMULTAN.Serializer;
 using SIMULTAN.Serializer.DXF;
 using SIMULTAN.Tests.Properties;
-using SIMULTAN.Tests.Util;
 using SIMULTAN.Tests.TestUtils;
+using SIMULTAN.Tests.Util;
+using SIMULTAN.Utils;
 using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Media.Media3D;
-using SIMULTAN.DataMapping;
 using System.Text.RegularExpressions;
-using SIMULTAN.Data.Taxonomy;
+using System.Threading.Tasks;
+
+
+using TaxonomyUtils = SIMULTAN.Tests.TestUtils.TaxonomyUtils;
 
 namespace SIMULTAN.Tests.IO
 {
@@ -30,11 +30,14 @@ namespace SIMULTAN.Tests.IO
         {
             projectData.Components.StartLoading();
 
+            var ut = projectData.Taxonomies.GetDefaultSlot(SimDefaultSlotKeys.Undefined);
+
             //Project
             SimComponent component = new SimComponent()
             {
-                Name = "ParameterHost",
+                Name = "ParameterHost"
             };
+            component.Slots.Add(new SimTaxonomyEntryReference(ut));
 
             SimDoubleParameter parameter = new SimDoubleParameter("Param", "unit", 3.4)
             {
@@ -53,27 +56,37 @@ namespace SIMULTAN.Tests.IO
             projectData.DataMappingTools.StartLoading();
 
             var parameter = projectData.Components.First(x => x.Name == "ParameterHost")
-                .Parameters.First(x => x.NameTaxonomyEntry.Name == "Param");
+                .Parameters.First(x => x.NameTaxonomyEntry.Text == "Param");
 
             //Tool
             var rule = new SimDataMappingRuleComponent("SheetA")
             {
                 Name = "Demo Rule",
-                OffsetParent = new Utils.IntIndex2D(1, 2),
-                OffsetConsecutive = new Utils.IntIndex2D(3, 4),
+                OffsetParent = new RowColumnIndex(2, 1),
+                OffsetConsecutive = new RowColumnIndex(4, 3),
                 MaxMatches = 99,
                 MaxDepth = 101,
                 MappingDirection = SimDataMappingDirection.Vertical,
-                ReferencePoint = SimDataMappingReferencePoint.TopRight,
+                ReferencePointParent = SimDataMappingReferencePoint.TopRight,
+                ReferencePointConsecutive = SimDataMappingReferencePoint.TopLeft,
                 TraversalStrategy = SimDataMappingRuleTraversalStrategy.References,
             };
             rule.Properties.Add(SimDataMappingComponentMappingProperties.Name);
             rule.Properties.Add(SimDataMappingComponentMappingProperties.Slot);
             rule.Properties.Add(SimDataMappingComponentMappingProperties.Id);
 
+            var taxonomies = projectData.Taxonomies;
+            var tax = new SimTaxonomy("test");
+            taxonomies.Add(tax);
+            var entry = new SimTaxonomyEntry(new SimId(5566), "key", "name");
+            taxonomies.StartLoading();
+            tax.Entries.Add(entry);
+            taxonomies.StopLoading();
+
+
             rule.Filter.Add(new SimDataMappingFilterComponent(SimDataMappingComponentFilterProperties.Name, "filtername"));
             rule.Filter.Add(new SimDataMappingFilterComponent(SimDataMappingComponentFilterProperties.Slot,
-                new SimSlot(new SimTaxonomyEntry(new SimId(5566)), "exten")));
+                new SimSlot(entry, "exten")));
             rule.Filter.Add(new SimDataMappingFilterComponent(SimDataMappingComponentFilterProperties.InstanceIsRealized, true));
             rule.Filter.Add(new SimDataMappingFilterComponent(SimDataMappingComponentFilterProperties.InstanceType, SimInstanceType.AttributesFace));
 
@@ -142,14 +155,14 @@ namespace SIMULTAN.Tests.IO
             var rule = tool.Rules[0];
             Assert.AreEqual("Demo Rule", rule.Name);
             Assert.AreEqual("SheetA", rule.SheetName);
-            Assert.AreEqual(1, rule.OffsetParent.X);
-            Assert.AreEqual(2, rule.OffsetParent.Y);
-            Assert.AreEqual(3, rule.OffsetConsecutive.X);
-            Assert.AreEqual(4, rule.OffsetConsecutive.Y);
+            Assert.AreEqual(1, rule.OffsetParent.Column);
+            Assert.AreEqual(2, rule.OffsetParent.Row);
+            Assert.AreEqual(3, rule.OffsetConsecutive.Column);
+            Assert.AreEqual(4, rule.OffsetConsecutive.Row);
             Assert.AreEqual(99, rule.MaxMatches);
             Assert.AreEqual(101, rule.MaxDepth);
             Assert.AreEqual(SimDataMappingDirection.Vertical, rule.MappingDirection);
-            Assert.AreEqual(SimDataMappingReferencePoint.TopRight, rule.ReferencePoint);
+            Assert.AreEqual(SimDataMappingReferencePoint.TopRight, rule.ReferencePointParent);
             Assert.AreEqual(SimDataMappingRuleTraversalStrategy.References, rule.TraversalStrategy);
 
             Assert.AreEqual(3, rule.Properties.Count);
@@ -192,7 +205,7 @@ namespace SIMULTAN.Tests.IO
 
             rrule = tool.ReadRules[1];
             var parameter = projectData.Components.First(x => x.Name == "ParameterHost")
-                .Parameters.First(x => x.NameTaxonomyEntry.Name == "Param");
+                .Parameters.First(x => x.NameTaxonomyEntry.Text == "Param");
             Assert.AreEqual("SheetB", rrule.SheetName);
             Assert.AreEqual(parameter, rrule.Parameter);
             Assert.AreEqual(30, rrule.Range.ColumnStart);
@@ -209,6 +222,7 @@ namespace SIMULTAN.Tests.IO
             var guid = Guid.NewGuid();
             ExtendedProjectData projectData = new ExtendedProjectData();
             projectData.SetCallingLocation(new DummyReferenceLocation(guid));
+            TaxonomyUtils.LoadDefaultTaxonomies(projectData);
 
             var tool = CreateTestTool(projectData);
 
@@ -238,20 +252,21 @@ namespace SIMULTAN.Tests.IO
 
             ExtendedProjectData projectData = new ExtendedProjectData();
             projectData.SetCallingLocation(new DummyReferenceLocation(guid));
+            TaxonomyUtils.LoadDefaultTaxonomies(projectData);
 
             var costTax = TaxonomyUtils.GetDefaultTaxonomies().GetDefaultSlot(SimDefaultSlotKeys.Cost);
 
             SimComponent childComponent = new SimComponent()
             {
-                CurrentSlot = new SimTaxonomyEntryReference(costTax),
                 Id = new SimId(guid, 9997),
             };
+            childComponent.Slots.Add(new SimTaxonomyEntryReference(costTax));
 
             SimComponent rootComponent = new SimComponent()
             {
-                CurrentSlot = new SimTaxonomyEntryReference(costTax),
                 Id = new SimId(guid, 9998),
             };
+            rootComponent.Slots.Add(new SimTaxonomyEntryReference(costTax));
             rootComponent.Components.Add(new SimChildComponentEntry(new SimSlot(costTax, "0"), childComponent));
 
             projectData.Components.StartLoading();
@@ -288,11 +303,12 @@ namespace SIMULTAN.Tests.IO
 
             ExtendedProjectData projectData = new ExtendedProjectData();
             projectData.SetCallingLocation(new DummyReferenceLocation(guid));
+            TaxonomyUtils.LoadDefaultTaxonomies(projectData);
 
             CreateTestProjectData(projectData);
 
             var demoTax = new SimTaxonomy("demotax");
-            var taxEntry = new SimTaxonomyEntry(new SimId(5566)) { Key = "demokey" };
+            var taxEntry = new SimTaxonomyEntry(new SimId(5566), "demokey");
             projectData.Taxonomies.StartLoading();
             demoTax.Entries.Add(taxEntry);
             projectData.Taxonomies.Add(demoTax);
@@ -325,19 +341,20 @@ namespace SIMULTAN.Tests.IO
             ExtendedProjectData projectData = new ExtendedProjectData();
             projectData.SetCallingLocation(new DummyReferenceLocation(guid));
 
-            var costTax = TaxonomyUtils.GetDefaultTaxonomies().GetDefaultSlot(SimDefaultSlotKeys.Cost);
+            TaxonomyUtils.LoadDefaultTaxonomies(projectData);
+            var costTax = projectData.Taxonomies.GetDefaultSlot(SimDefaultSlotKeys.Cost);
 
             SimComponent childComponent = new SimComponent()
             {
-                CurrentSlot = new SimTaxonomyEntryReference(costTax),
                 Id = new SimId(guid, 9997),
             };
+            childComponent.Slots.Add(new SimTaxonomyEntryReference(costTax));
 
             SimComponent rootComponent = new SimComponent()
             {
-                CurrentSlot = new SimTaxonomyEntryReference(costTax),
                 Id = new SimId(guid, 9998),
             };
+            rootComponent.Slots.Add(new SimTaxonomyEntryReference(costTax));
             rootComponent.Components.Add(new SimChildComponentEntry(new SimSlot(costTax, "0"), childComponent));
 
             projectData.Components.StartLoading();
@@ -373,15 +390,24 @@ namespace SIMULTAN.Tests.IO
         [TestMethod]
         public void WriteDataMappingRuleComponent()
         {
+            var taxonomies = TaxonomyUtils.GetDefaultTaxonomies();
+            var tax = new SimTaxonomy("test");
+            taxonomies.Add(tax);
+            var entry = new SimTaxonomyEntry(new SimId(5566), "key", "name");
+            taxonomies.StartLoading();
+            tax.Entries.Add(entry);
+            taxonomies.StopLoading();
+
             var rule = new SimDataMappingRuleComponent("SheetA")
             {
                 Name = "Demo Rule",
-                OffsetParent = new Utils.IntIndex2D(1, 2),
-                OffsetConsecutive = new Utils.IntIndex2D(3, 4),
+                OffsetParent = new RowColumnIndex(2, 1),
+                OffsetConsecutive = new RowColumnIndex(4, 3),
                 MaxMatches = 99,
                 MaxDepth = 101,
                 MappingDirection = SimDataMappingDirection.Vertical,
-                ReferencePoint = SimDataMappingReferencePoint.TopRight,
+                ReferencePointParent = SimDataMappingReferencePoint.TopRight,
+                ReferencePointConsecutive = SimDataMappingReferencePoint.TopLeft,
                 TraversalStrategy = SimDataMappingRuleTraversalStrategy.References,
             };
             rule.Properties.Add(SimDataMappingComponentMappingProperties.Name);
@@ -390,7 +416,7 @@ namespace SIMULTAN.Tests.IO
 
             rule.Filter.Add(new SimDataMappingFilterComponent(SimDataMappingComponentFilterProperties.Name, "filtername"));
             rule.Filter.Add(new SimDataMappingFilterComponent(SimDataMappingComponentFilterProperties.Slot,
-                new SimSlot(new SimTaxonomyEntry(new SimId(5566)), "exten")));
+                new SimSlot(entry, "exten")));
             rule.Filter.Add(new SimDataMappingFilterComponent(SimDataMappingComponentFilterProperties.InstanceIsRealized, true));
             rule.Filter.Add(new SimDataMappingFilterComponent(SimDataMappingComponentFilterProperties.InstanceType, SimInstanceType.AttributesFace));
 
@@ -418,15 +444,24 @@ namespace SIMULTAN.Tests.IO
         [TestMethod]
         public void WriteDataMappingRuleComponentChildren()
         {
+            var taxonomies = TaxonomyUtils.GetDefaultTaxonomies();
+            var tax = new SimTaxonomy("test");
+            taxonomies.Add(tax);
+            var entry = new SimTaxonomyEntry(new SimId(5566), "key", "name");
+            taxonomies.StartLoading();
+            tax.Entries.Add(entry);
+            taxonomies.StopLoading();
+
             var rule = new SimDataMappingRuleComponent("SheetA")
             {
                 Name = "Demo Rule",
-                OffsetParent = new Utils.IntIndex2D(1, 2),
-                OffsetConsecutive = new Utils.IntIndex2D(3, 4),
+                OffsetParent = new RowColumnIndex(2, 1),
+                OffsetConsecutive = new RowColumnIndex(4, 3),
                 MaxMatches = 99,
                 MaxDepth = 101,
                 MappingDirection = SimDataMappingDirection.Vertical,
-                ReferencePoint = SimDataMappingReferencePoint.TopRight,
+                ReferencePointParent = SimDataMappingReferencePoint.TopRight,
+                ReferencePointConsecutive = SimDataMappingReferencePoint.TopLeft,
                 TraversalStrategy = SimDataMappingRuleTraversalStrategy.References,
             };
             rule.Properties.Add(SimDataMappingComponentMappingProperties.Name);
@@ -435,7 +470,7 @@ namespace SIMULTAN.Tests.IO
 
             rule.Filter.Add(new SimDataMappingFilterComponent(SimDataMappingComponentFilterProperties.Name, "filtername"));
             rule.Filter.Add(new SimDataMappingFilterComponent(SimDataMappingComponentFilterProperties.Slot,
-                new SimSlot(new SimTaxonomyEntry(new SimId(5566)), "exten")));
+                new SimSlot(entry, "exten")));
             rule.Filter.Add(new SimDataMappingFilterComponent(SimDataMappingComponentFilterProperties.InstanceIsRealized, true));
             rule.Filter.Add(new SimDataMappingFilterComponent(SimDataMappingComponentFilterProperties.InstanceType, SimInstanceType.AttributesFace));
 
@@ -487,7 +522,7 @@ namespace SIMULTAN.Tests.IO
             projectData.SetCallingLocation(new DummyReferenceLocation(guid));
 
             var demoTax = new SimTaxonomy("demotax");
-            var taxEntry = new SimTaxonomyEntry(new SimId(5566)) { Key = "demokey" };
+            var taxEntry = new SimTaxonomyEntry(new SimId(5566), "demokey");
             projectData.Taxonomies.StartLoading();
             demoTax.Entries.Add(taxEntry);
             projectData.Taxonomies.Add(demoTax);
@@ -512,14 +547,14 @@ namespace SIMULTAN.Tests.IO
 
             Assert.AreEqual("Demo Rule", rule.Name);
             Assert.AreEqual("SheetA", rule.SheetName);
-            Assert.AreEqual(1, rule.OffsetParent.X);
-            Assert.AreEqual(2, rule.OffsetParent.Y);
-            Assert.AreEqual(3, rule.OffsetConsecutive.X);
-            Assert.AreEqual(4, rule.OffsetConsecutive.Y);
+            Assert.AreEqual(1, rule.OffsetParent.Column);
+            Assert.AreEqual(2, rule.OffsetParent.Row);
+            Assert.AreEqual(3, rule.OffsetConsecutive.Column);
+            Assert.AreEqual(4, rule.OffsetConsecutive.Row);
             Assert.AreEqual(99, rule.MaxMatches);
             Assert.AreEqual(101, rule.MaxDepth);
             Assert.AreEqual(SimDataMappingDirection.Vertical, rule.MappingDirection);
-            Assert.AreEqual(SimDataMappingReferencePoint.TopRight, rule.ReferencePoint);
+            Assert.AreEqual(SimDataMappingReferencePoint.TopRight, rule.ReferencePointParent);
             Assert.AreEqual(SimDataMappingRuleTraversalStrategy.References, rule.TraversalStrategy);
 
             Assert.AreEqual(3, rule.Properties.Count);
@@ -550,7 +585,7 @@ namespace SIMULTAN.Tests.IO
             projectData.SetCallingLocation(new DummyReferenceLocation(guid));
 
             var demoTax = new SimTaxonomy("demotax");
-            var taxEntry = new SimTaxonomyEntry(new SimId(5566)) { Key = "demokey" };
+            var taxEntry = new SimTaxonomyEntry(new SimId(5566), "demokey");
             projectData.Taxonomies.StartLoading();
             demoTax.Entries.Add(taxEntry);
             projectData.Taxonomies.Add(demoTax);
@@ -575,14 +610,14 @@ namespace SIMULTAN.Tests.IO
 
             Assert.AreEqual("Demo Rule", rule.Name);
             Assert.AreEqual("SheetA", rule.SheetName);
-            Assert.AreEqual(1, rule.OffsetParent.X);
-            Assert.AreEqual(2, rule.OffsetParent.Y);
-            Assert.AreEqual(3, rule.OffsetConsecutive.X);
-            Assert.AreEqual(4, rule.OffsetConsecutive.Y);
+            Assert.AreEqual(1, rule.OffsetParent.Column);
+            Assert.AreEqual(2, rule.OffsetParent.Row);
+            Assert.AreEqual(3, rule.OffsetConsecutive.Column);
+            Assert.AreEqual(4, rule.OffsetConsecutive.Row);
             Assert.AreEqual(99, rule.MaxMatches);
             Assert.AreEqual(101, rule.MaxDepth);
             Assert.AreEqual(SimDataMappingDirection.Vertical, rule.MappingDirection);
-            Assert.AreEqual(SimDataMappingReferencePoint.TopRight, rule.ReferencePoint);
+            Assert.AreEqual(SimDataMappingReferencePoint.TopRight, rule.ReferencePointParent);
             Assert.AreEqual(SimDataMappingRuleTraversalStrategy.References, rule.TraversalStrategy);
 
             Assert.AreEqual(3, rule.Properties.Count);
@@ -617,12 +652,13 @@ namespace SIMULTAN.Tests.IO
             var rule = new SimDataMappingRuleParameter("SheetA")
             {
                 Name = "Demo Rule",
-                OffsetParent = new Utils.IntIndex2D(1, 2),
-                OffsetConsecutive = new Utils.IntIndex2D(3, 4),
+                OffsetParent = new RowColumnIndex(2, 1),
+                OffsetConsecutive = new RowColumnIndex(4, 3),
                 MaxMatches = 99,
                 MaxDepth = 101,
                 MappingDirection = SimDataMappingDirection.Vertical,
-                ReferencePoint = SimDataMappingReferencePoint.TopRight,
+                ReferencePointParent = SimDataMappingReferencePoint.TopRight,
+                ReferencePointConsecutive = SimDataMappingReferencePoint.TopLeft,
                 ParameterRange = SimDataMappingParameterRange.Table,
             };
             rule.Properties.Add(SimDataMappingParameterMappingProperties.Name);
@@ -683,14 +719,14 @@ namespace SIMULTAN.Tests.IO
 
             Assert.AreEqual("Demo Rule", rule.Name);
             Assert.AreEqual("SheetA", rule.SheetName);
-            Assert.AreEqual(1, rule.OffsetParent.X);
-            Assert.AreEqual(2, rule.OffsetParent.Y);
-            Assert.AreEqual(3, rule.OffsetConsecutive.X);
-            Assert.AreEqual(4, rule.OffsetConsecutive.Y);
+            Assert.AreEqual(1, rule.OffsetParent.Column);
+            Assert.AreEqual(2, rule.OffsetParent.Row);
+            Assert.AreEqual(3, rule.OffsetConsecutive.Column);
+            Assert.AreEqual(4, rule.OffsetConsecutive.Row);
             Assert.AreEqual(99, rule.MaxMatches);
             Assert.AreEqual(101, rule.MaxDepth);
             Assert.AreEqual(SimDataMappingDirection.Vertical, rule.MappingDirection);
-            Assert.AreEqual(SimDataMappingReferencePoint.TopRight, rule.ReferencePoint);
+            Assert.AreEqual(SimDataMappingReferencePoint.TopRight, rule.ReferencePointParent);
             Assert.AreEqual(SimDataMappingParameterRange.Table, rule.ParameterRange);
 
             Assert.AreEqual(7, rule.Properties.Count);
@@ -720,12 +756,13 @@ namespace SIMULTAN.Tests.IO
             var rule = new SimDataMappingRuleInstance("SheetA")
             {
                 Name = "Demo Rule",
-                OffsetParent = new Utils.IntIndex2D(1, 2),
-                OffsetConsecutive = new Utils.IntIndex2D(3, 4),
+                OffsetParent = new RowColumnIndex(2, 1),
+                OffsetConsecutive = new RowColumnIndex(4, 3),
                 MaxMatches = 99,
                 MaxDepth = 101,
                 MappingDirection = SimDataMappingDirection.Vertical,
-                ReferencePoint = SimDataMappingReferencePoint.TopRight,
+                ReferencePointParent = SimDataMappingReferencePoint.TopRight,
+                ReferencePointConsecutive = SimDataMappingReferencePoint.TopLeft,
             };
             rule.Properties.Add(SimDataMappingInstanceMappingProperties.Name);
             rule.Properties.Add(SimDataMappingInstanceMappingProperties.Id);
@@ -757,12 +794,13 @@ namespace SIMULTAN.Tests.IO
             var rule = new SimDataMappingRuleInstance("SheetA")
             {
                 Name = "Demo Rule",
-                OffsetParent = new Utils.IntIndex2D(1, 2),
-                OffsetConsecutive = new Utils.IntIndex2D(3, 4),
+                OffsetParent = new RowColumnIndex(2, 1),
+                OffsetConsecutive = new RowColumnIndex(4, 3),
                 MaxMatches = 99,
                 MaxDepth = 101,
                 MappingDirection = SimDataMappingDirection.Vertical,
-                ReferencePoint = SimDataMappingReferencePoint.TopRight,
+                ReferencePointParent = SimDataMappingReferencePoint.TopRight,
+                ReferencePointConsecutive = SimDataMappingReferencePoint.TopLeft,
             };
             rule.Properties.Add(SimDataMappingInstanceMappingProperties.Name);
             rule.Properties.Add(SimDataMappingInstanceMappingProperties.Id);
@@ -833,14 +871,14 @@ namespace SIMULTAN.Tests.IO
 
             Assert.AreEqual("Demo Rule", rule.Name);
             Assert.AreEqual("SheetA", rule.SheetName);
-            Assert.AreEqual(1, rule.OffsetParent.X);
-            Assert.AreEqual(2, rule.OffsetParent.Y);
-            Assert.AreEqual(3, rule.OffsetConsecutive.X);
-            Assert.AreEqual(4, rule.OffsetConsecutive.Y);
+            Assert.AreEqual(1, rule.OffsetParent.Column);
+            Assert.AreEqual(2, rule.OffsetParent.Row);
+            Assert.AreEqual(3, rule.OffsetConsecutive.Column);
+            Assert.AreEqual(4, rule.OffsetConsecutive.Row);
             Assert.AreEqual(99, rule.MaxMatches);
             Assert.AreEqual(101, rule.MaxDepth);
             Assert.AreEqual(SimDataMappingDirection.Vertical, rule.MappingDirection);
-            Assert.AreEqual(SimDataMappingReferencePoint.TopRight, rule.ReferencePoint);
+            Assert.AreEqual(SimDataMappingReferencePoint.TopRight, rule.ReferencePointParent);
 
             Assert.AreEqual(2, rule.Properties.Count);
             Assert.AreEqual(SimDataMappingInstanceMappingProperties.Name, rule.Properties[0]);
@@ -881,14 +919,14 @@ namespace SIMULTAN.Tests.IO
 
             Assert.AreEqual("Demo Rule", rule.Name);
             Assert.AreEqual("SheetA", rule.SheetName);
-            Assert.AreEqual(1, rule.OffsetParent.X);
-            Assert.AreEqual(2, rule.OffsetParent.Y);
-            Assert.AreEqual(3, rule.OffsetConsecutive.X);
-            Assert.AreEqual(4, rule.OffsetConsecutive.Y);
+            Assert.AreEqual(1, rule.OffsetParent.Column);
+            Assert.AreEqual(2, rule.OffsetParent.Row);
+            Assert.AreEqual(3, rule.OffsetConsecutive.Column);
+            Assert.AreEqual(4, rule.OffsetConsecutive.Row);
             Assert.AreEqual(99, rule.MaxMatches);
             Assert.AreEqual(101, rule.MaxDepth);
             Assert.AreEqual(SimDataMappingDirection.Vertical, rule.MappingDirection);
-            Assert.AreEqual(SimDataMappingReferencePoint.TopRight, rule.ReferencePoint);
+            Assert.AreEqual(SimDataMappingReferencePoint.TopRight, rule.ReferencePointParent);
 
             Assert.AreEqual(2, rule.Properties.Count);
             Assert.AreEqual(SimDataMappingInstanceMappingProperties.Name, rule.Properties[0]);
@@ -913,12 +951,13 @@ namespace SIMULTAN.Tests.IO
             var rule = new SimDataMappingRuleFace("SheetA")
             {
                 Name = "Demo Rule",
-                OffsetParent = new Utils.IntIndex2D(1, 2),
-                OffsetConsecutive = new Utils.IntIndex2D(3, 4),
+                OffsetParent = new RowColumnIndex(2, 1),
+                OffsetConsecutive = new RowColumnIndex(4, 3),
                 MaxMatches = 99,
                 MaxDepth = 101,
                 MappingDirection = SimDataMappingDirection.Vertical,
-                ReferencePoint = SimDataMappingReferencePoint.TopRight,
+                ReferencePointParent = SimDataMappingReferencePoint.TopRight,
+                ReferencePointConsecutive = SimDataMappingReferencePoint.TopLeft,
             };
             rule.Properties.Add(SimDataMappingFaceMappingProperties.Name);
             rule.Properties.Add(SimDataMappingFaceMappingProperties.Id);
@@ -954,12 +993,13 @@ namespace SIMULTAN.Tests.IO
             var rule = new SimDataMappingRuleFace("SheetA")
             {
                 Name = "Demo Rule",
-                OffsetParent = new Utils.IntIndex2D(1, 2),
-                OffsetConsecutive = new Utils.IntIndex2D(3, 4),
+                OffsetParent = new RowColumnIndex(2, 1),
+                OffsetConsecutive = new RowColumnIndex(4, 3),
                 MaxMatches = 99,
                 MaxDepth = 101,
                 MappingDirection = SimDataMappingDirection.Vertical,
-                ReferencePoint = SimDataMappingReferencePoint.TopRight,
+                ReferencePointParent = SimDataMappingReferencePoint.TopRight,
+                ReferencePointConsecutive = SimDataMappingReferencePoint.TopLeft,
             };
             rule.Properties.Add(SimDataMappingFaceMappingProperties.Name);
             rule.Properties.Add(SimDataMappingFaceMappingProperties.Id);
@@ -1042,14 +1082,14 @@ namespace SIMULTAN.Tests.IO
 
             Assert.AreEqual("Demo Rule", rule.Name);
             Assert.AreEqual("SheetA", rule.SheetName);
-            Assert.AreEqual(1, rule.OffsetParent.X);
-            Assert.AreEqual(2, rule.OffsetParent.Y);
-            Assert.AreEqual(3, rule.OffsetConsecutive.X);
-            Assert.AreEqual(4, rule.OffsetConsecutive.Y);
+            Assert.AreEqual(1, rule.OffsetParent.Column);
+            Assert.AreEqual(2, rule.OffsetParent.Row);
+            Assert.AreEqual(3, rule.OffsetConsecutive.Column);
+            Assert.AreEqual(4, rule.OffsetConsecutive.Row);
             Assert.AreEqual(99, rule.MaxMatches);
             Assert.AreEqual(101, rule.MaxDepth);
             Assert.AreEqual(SimDataMappingDirection.Vertical, rule.MappingDirection);
-            Assert.AreEqual(SimDataMappingReferencePoint.TopRight, rule.ReferencePoint);
+            Assert.AreEqual(SimDataMappingReferencePoint.TopRight, rule.ReferencePointParent);
 
             Assert.AreEqual(5, rule.Properties.Count);
             Assert.AreEqual(SimDataMappingFaceMappingProperties.Name, rule.Properties[0]);
@@ -1095,14 +1135,14 @@ namespace SIMULTAN.Tests.IO
 
             Assert.AreEqual("Demo Rule", rule.Name);
             Assert.AreEqual("SheetA", rule.SheetName);
-            Assert.AreEqual(1, rule.OffsetParent.X);
-            Assert.AreEqual(2, rule.OffsetParent.Y);
-            Assert.AreEqual(3, rule.OffsetConsecutive.X);
-            Assert.AreEqual(4, rule.OffsetConsecutive.Y);
+            Assert.AreEqual(1, rule.OffsetParent.Column);
+            Assert.AreEqual(2, rule.OffsetParent.Row);
+            Assert.AreEqual(3, rule.OffsetConsecutive.Column);
+            Assert.AreEqual(4, rule.OffsetConsecutive.Row);
             Assert.AreEqual(99, rule.MaxMatches);
             Assert.AreEqual(101, rule.MaxDepth);
             Assert.AreEqual(SimDataMappingDirection.Vertical, rule.MappingDirection);
-            Assert.AreEqual(SimDataMappingReferencePoint.TopRight, rule.ReferencePoint);
+            Assert.AreEqual(SimDataMappingReferencePoint.TopRight, rule.ReferencePointParent);
 
             Assert.AreEqual(5, rule.Properties.Count);
             Assert.AreEqual(SimDataMappingFaceMappingProperties.Name, rule.Properties[0]);
@@ -1133,12 +1173,13 @@ namespace SIMULTAN.Tests.IO
             var rule = new SimDataMappingRuleVolume("SheetA")
             {
                 Name = "Demo Rule",
-                OffsetParent = new Utils.IntIndex2D(1, 2),
-                OffsetConsecutive = new Utils.IntIndex2D(3, 4),
+                OffsetParent = new RowColumnIndex(2, 1),
+                OffsetConsecutive = new RowColumnIndex(4, 3),
                 MaxMatches = 99,
                 MaxDepth = 101,
                 MappingDirection = SimDataMappingDirection.Vertical,
-                ReferencePoint = SimDataMappingReferencePoint.TopRight,
+                ReferencePointParent = SimDataMappingReferencePoint.TopRight,
+                ReferencePointConsecutive = SimDataMappingReferencePoint.TopLeft,
             };
             rule.Properties.Add(SimDataMappingVolumeMappingProperties.Name);
             rule.Properties.Add(SimDataMappingVolumeMappingProperties.Id);
@@ -1175,12 +1216,13 @@ namespace SIMULTAN.Tests.IO
             var rule = new SimDataMappingRuleVolume("SheetA")
             {
                 Name = "Demo Rule",
-                OffsetParent = new Utils.IntIndex2D(1, 2),
-                OffsetConsecutive = new Utils.IntIndex2D(3, 4),
+                OffsetParent = new RowColumnIndex(2, 1),
+                OffsetConsecutive = new RowColumnIndex(4, 3),
                 MaxMatches = 99,
                 MaxDepth = 101,
                 MappingDirection = SimDataMappingDirection.Vertical,
-                ReferencePoint = SimDataMappingReferencePoint.TopRight,
+                ReferencePointParent = SimDataMappingReferencePoint.TopRight,
+                ReferencePointConsecutive = SimDataMappingReferencePoint.TopLeft,
             };
             rule.Properties.Add(SimDataMappingVolumeMappingProperties.Name);
             rule.Properties.Add(SimDataMappingVolumeMappingProperties.Id);
@@ -1264,14 +1306,14 @@ namespace SIMULTAN.Tests.IO
 
             Assert.AreEqual("Demo Rule", rule.Name);
             Assert.AreEqual("SheetA", rule.SheetName);
-            Assert.AreEqual(1, rule.OffsetParent.X);
-            Assert.AreEqual(2, rule.OffsetParent.Y);
-            Assert.AreEqual(3, rule.OffsetConsecutive.X);
-            Assert.AreEqual(4, rule.OffsetConsecutive.Y);
+            Assert.AreEqual(1, rule.OffsetParent.Column);
+            Assert.AreEqual(2, rule.OffsetParent.Row);
+            Assert.AreEqual(3, rule.OffsetConsecutive.Column);
+            Assert.AreEqual(4, rule.OffsetConsecutive.Row);
             Assert.AreEqual(99, rule.MaxMatches);
             Assert.AreEqual(101, rule.MaxDepth);
             Assert.AreEqual(SimDataMappingDirection.Vertical, rule.MappingDirection);
-            Assert.AreEqual(SimDataMappingReferencePoint.TopRight, rule.ReferencePoint);
+            Assert.AreEqual(SimDataMappingReferencePoint.TopRight, rule.ReferencePointParent);
 
             Assert.AreEqual(7, rule.Properties.Count);
             Assert.AreEqual(SimDataMappingVolumeMappingProperties.Name, rule.Properties[0]);
@@ -1317,14 +1359,14 @@ namespace SIMULTAN.Tests.IO
 
             Assert.AreEqual("Demo Rule", rule.Name);
             Assert.AreEqual("SheetA", rule.SheetName);
-            Assert.AreEqual(1, rule.OffsetParent.X);
-            Assert.AreEqual(2, rule.OffsetParent.Y);
-            Assert.AreEqual(3, rule.OffsetConsecutive.X);
-            Assert.AreEqual(4, rule.OffsetConsecutive.Y);
+            Assert.AreEqual(1, rule.OffsetParent.Column);
+            Assert.AreEqual(2, rule.OffsetParent.Row);
+            Assert.AreEqual(3, rule.OffsetConsecutive.Column);
+            Assert.AreEqual(4, rule.OffsetConsecutive.Row);
             Assert.AreEqual(99, rule.MaxMatches);
             Assert.AreEqual(101, rule.MaxDepth);
             Assert.AreEqual(SimDataMappingDirection.Vertical, rule.MappingDirection);
-            Assert.AreEqual(SimDataMappingReferencePoint.TopRight, rule.ReferencePoint);
+            Assert.AreEqual(SimDataMappingReferencePoint.TopRight, rule.ReferencePointParent);
 
             Assert.AreEqual(7, rule.Properties.Count);
             Assert.AreEqual(SimDataMappingVolumeMappingProperties.Name, rule.Properties[0]);
@@ -1374,7 +1416,7 @@ namespace SIMULTAN.Tests.IO
             var rule = new SimDataMappingReadRule()
             {
                 SheetName = "SheetA",
-                Range = new Utils.RowColumnRange(4,3,6,5),
+                Range = new Utils.RowColumnRange(4, 3, 6, 5),
                 Parameter = parameter,
             };
 
@@ -1463,10 +1505,10 @@ namespace SIMULTAN.Tests.IO
             }
 
             AssertUtil.AreEqualMultiline(
-                "6017\r\n"+
-                "0\r\n" +
-                "6018\r\n" +
-                "stringvalue\r\n"
+                "6017" + Environment.NewLine + "" +
+                "0" + Environment.NewLine + "" +
+                "6018" + Environment.NewLine + "" +
+                "stringvalue" + Environment.NewLine + ""
                 , exportedString);
         }
 
@@ -1489,10 +1531,10 @@ namespace SIMULTAN.Tests.IO
             }
 
             AssertUtil.AreEqualMultiline(
-                "6017\r\n" +
-                "1\r\n" +
-                "6018\r\n" +
-                ".*asdf.?\r\n"
+                "6017" + Environment.NewLine + "" +
+                "1" + Environment.NewLine + "" +
+                "6018" + Environment.NewLine + "" +
+                ".*asdf.?" + Environment.NewLine + ""
                 , exportedString);
         }
 
@@ -1504,7 +1546,7 @@ namespace SIMULTAN.Tests.IO
             {
                 using (DXFStreamWriter writer = new DXFStreamWriter(stream, true))
                 {
-                    ExcelDxfIO.WriteFilterValue(new SimTaxonomyEntryReference(new SimTaxonomyEntry(new SimId(5566))), writer);
+                    ExcelDxfIO.WriteFilterValue(new SimTaxonomyEntryReference(new SimTaxonomyEntry(new SimId(5566), "key")), writer);
                 }
 
                 stream.Flush();
@@ -1515,24 +1557,31 @@ namespace SIMULTAN.Tests.IO
             }
 
             AssertUtil.AreEqualMultiline(
-                "6017\r\n" +
-                "2\r\n" +
-                "6018\r\n" +
-                "5566\r\n"
+                "6017" + Environment.NewLine + "" +
+                "2" + Environment.NewLine + "" +
+                "6018" + Environment.NewLine + "" +
+                "5566" + Environment.NewLine + ""
                 , exportedString);
         }
 
         [TestMethod]
         public void FilterValueSlot()
         {
+            var taxonomis = TaxonomyUtils.GetDefaultTaxonomies();
+            var tax = new SimTaxonomy("test");
+            taxonomis.Add(tax);
             string exportedString = null;
             using (MemoryStream stream = new MemoryStream())
             {
                 using (DXFStreamWriter writer = new DXFStreamWriter(stream, true))
                 {
+                    var entry = new SimTaxonomyEntry(new SimId(5566), "testkey", "testname");
+                    taxonomis.StartLoading();
+                    tax.Entries.Add(entry);
+                    taxonomis.StopLoading();
                     ExcelDxfIO.WriteFilterValue(
-                        new SimSlot(new SimTaxonomyEntry(new SimId(5566)), "exten")
-                        , writer); ;
+                        new SimSlot(entry, "exten")
+                        , writer);
                 }
 
                 stream.Flush();
@@ -1543,12 +1592,12 @@ namespace SIMULTAN.Tests.IO
             }
 
             AssertUtil.AreEqualMultiline(
-                "6017\r\n" +
-                "3\r\n" +
-                "6019\r\n" +
-                "exten\r\n" +
-                "6018\r\n" +
-                "5566\r\n"
+                "6017" + Environment.NewLine + "" +
+                "3" + Environment.NewLine + "" +
+                "6019" + Environment.NewLine + "" +
+                "exten" + Environment.NewLine + "" +
+                "6018" + Environment.NewLine + "" +
+                "5566" + Environment.NewLine + ""
                 , exportedString);
         }
 
@@ -1571,10 +1620,10 @@ namespace SIMULTAN.Tests.IO
             }
 
             AssertUtil.AreEqualMultiline(
-                "6017\r\n" +
-                "4\r\n" +
-                "6018\r\n" +
-                "1\r\n"
+                "6017" + Environment.NewLine + "" +
+                "4" + Environment.NewLine + "" +
+                "6018" + Environment.NewLine + "" +
+                "1" + Environment.NewLine + ""
                 , exportedString);
         }
 
@@ -1597,10 +1646,10 @@ namespace SIMULTAN.Tests.IO
             }
 
             AssertUtil.AreEqualMultiline(
-                "6017\r\n" +
-                "5\r\n" +
-                "6018\r\n" +
-                "1\r\n"
+                "6017" + Environment.NewLine + "" +
+                "5" + Environment.NewLine + "" +
+                "6018" + Environment.NewLine + "" +
+                "1" + Environment.NewLine + ""
                 , exportedString);
         }
 
@@ -1623,10 +1672,10 @@ namespace SIMULTAN.Tests.IO
             }
 
             AssertUtil.AreEqualMultiline(
-                "6017\r\n" +
-                "6\r\n" +
-                "6018\r\n" +
-                "6\r\n"
+                "6017" + Environment.NewLine + "" +
+                "6" + Environment.NewLine + "" +
+                "6018" + Environment.NewLine + "" +
+                "6" + Environment.NewLine + ""
                 , exportedString);
         }
 
@@ -1649,10 +1698,10 @@ namespace SIMULTAN.Tests.IO
             }
 
             AssertUtil.AreEqualMultiline(
-                "6017\r\n" +
-                "7\r\n" +
-                "6018\r\n" +
-                "192\r\n"
+                "6017" + Environment.NewLine + "" +
+                "7" + Environment.NewLine + "" +
+                "6018" + Environment.NewLine + "" +
+                "192" + Environment.NewLine + ""
                 , exportedString);
         }
 
@@ -1668,6 +1717,7 @@ namespace SIMULTAN.Tests.IO
 
             ExtendedProjectData projectData = new ExtendedProjectData();
             projectData.SetCallingLocation(new DummyReferenceLocation(guid));
+            TaxonomyUtils.LoadDefaultTaxonomies(projectData);
 
             var tool = CreateTestTool(projectData);
 
@@ -1698,11 +1748,12 @@ namespace SIMULTAN.Tests.IO
             ExtendedProjectData projectData = new ExtendedProjectData();
             var location = new DummyReferenceLocation(guid);
             projectData.SetCallingLocation(location);
+            TaxonomyUtils.LoadDefaultTaxonomies(projectData);
 
             CreateTestProjectData(projectData);
 
             var demoTax = new SimTaxonomy("demotax");
-            var taxEntry = new SimTaxonomyEntry(new SimId(5566)) { Key = "demokey" };
+            var taxEntry = new SimTaxonomyEntry(new SimId(5566), "demokey");
             projectData.Taxonomies.StartLoading();
             demoTax.Entries.Add(taxEntry);
             projectData.Taxonomies.Add(demoTax);

@@ -1,13 +1,14 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SIMULTAN.Data.Geometry;
+using SIMULTAN.Data.SimMath;
 using SIMULTAN.Tests.Geometry.EventData;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Windows.Media;
-using System.Windows.Media.Media3D;
+
+
 
 namespace SIMULTAN.Tests.Geometry.BaseGeometries
 {
@@ -23,23 +24,23 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
         {
             Vertex[] v = new Vertex[]
             {
-                new Vertex(layer, "", new Point3D(0, 0, 0)),
-                new Vertex(layer, "", new Point3D(0, 0, 2)),
-                new Vertex(layer, "", new Point3D(2, 0, 2)),
-                new Vertex(layer, "", new Point3D(2, 0, 0)),
-                new Vertex(layer, "", new Point3D(2, 2, 2)),
-                new Vertex(layer, "", new Point3D(2, 2, 0)),
+                new Vertex(layer, "", new SimPoint3D(0, 0, 0)),
+                new Vertex(layer, "", new SimPoint3D(0, 0, 2)),
+                new Vertex(layer, "", new SimPoint3D(2, 0, 2)),
+                new Vertex(layer, "", new SimPoint3D(2, 0, 0)),
+                new Vertex(layer, "", new SimPoint3D(2, 2, 2)),
+                new Vertex(layer, "", new SimPoint3D(2, 2, 0)),
 
 				//Hole in 0-1-2-3
-				new Vertex(layer, "", new Point3D(0.5, 0, 1)),
-                new Vertex(layer, "", new Point3D(1, 0, 1.5)),
-                new Vertex(layer, "", new Point3D(1.5, 0, 1)),
-                new Vertex(layer, "", new Point3D(1, 0, 0.5)),
+				new Vertex(layer, "", new SimPoint3D(0.5, 0, 1)),
+                new Vertex(layer, "", new SimPoint3D(1, 0, 1.5)),
+                new Vertex(layer, "", new SimPoint3D(1.5, 0, 1)),
+                new Vertex(layer, "", new SimPoint3D(1, 0, 0.5)),
 
-                new Vertex(layer, "", new Point3D(0.5, 0, 0.5)),
-                new Vertex(layer, "", new Point3D(1.5, 0, 0.5)),
-                new Vertex(layer, "", new Point3D(1.5, 0, 1.5)),
-                new Vertex(layer, "", new Point3D(0.5, 0, 1.5)),
+                new Vertex(layer, "", new SimPoint3D(0.5, 0, 0.5)),
+                new Vertex(layer, "", new SimPoint3D(1.5, 0, 0.5)),
+                new Vertex(layer, "", new SimPoint3D(1.5, 0, 1.5)),
+                new Vertex(layer, "", new SimPoint3D(0.5, 0, 1.5)),
             };
 
             Edge[] e = new Edge[]
@@ -321,7 +322,7 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
             f1.eventData.Reset();
             data.eventData.Reset();
 
-            v[0].Position = new Point3D(-2, -4, -6);
+            v[0].Position = new SimPoint3D(-2, -4, -6);
             Assert.AreEqual(7, data.eventData.GeometryChangedEventData.Count());
             for (int i = 0; i < data.eventData.GeometryChangedEventData.Count(); ++i)
                 Assert.AreEqual(1, data.eventData.GeometryChangedEventData[i].Count());
@@ -338,7 +339,7 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
             f0.eventData.Reset();
             f1.eventData.Reset();
 
-            v[2].Position = new Point3D(-1, -2, -3);
+            v[2].Position = new SimPoint3D(-1, -2, -3);
             Assert.AreEqual(12, data.eventData.GeometryChangedEventData.Count());
             for (int i = 0; i < data.eventData.GeometryChangedEventData.Count(); ++i)
                 Assert.AreEqual(1, data.eventData.GeometryChangedEventData[i].Count());
@@ -364,7 +365,7 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
             f0.eventData.Reset();
             data.eventData.Reset();
 
-            v[6].Position = new Point3D(-2, -4, -6);
+            v[6].Position = new SimPoint3D(-2, -4, -6);
             Assert.AreEqual(7, data.eventData.GeometryChangedEventData.Count());
             for (int i = 0; i < data.eventData.GeometryChangedEventData.Count(); ++i)
                 Assert.AreEqual(1, data.eventData.GeometryChangedEventData[i].Count());
@@ -391,8 +392,8 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
 
             data.model.Geometry.StartBatchOperation();
 
-            v[0].Position = new Point3D(-2, -4, -6);
-            v[2].Position = new Point3D(-1, -2, -3);
+            v[0].Position = new SimPoint3D(-2, -4, -6);
+            v[2].Position = new SimPoint3D(-1, -2, -3);
 
             Assert.AreEqual(0, data.eventData.GeometryChangedEventData.Count());
             Assert.AreEqual(0, data.eventData.AddEventData.Count());
@@ -428,8 +429,8 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
 
             data.model.Geometry.StartBatchOperation();
 
-            v[6].Position = new Point3D(-2, -4, -6);
-            v[8].Position = new Point3D(-1, -2, -3);
+            v[6].Position = new SimPoint3D(-2, -4, -6);
+            v[8].Position = new SimPoint3D(-1, -2, -3);
 
             Assert.AreEqual(0, data.eventData.GeometryChangedEventData.Count());
             Assert.AreEqual(0, data.eventData.AddEventData.Count());
@@ -639,7 +640,7 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
             Assert.AreEqual(0, f0.eventData.GeometryChangedCount);
             Assert.AreEqual(1, f0.eventData.TopologyChangedCount);
 
-            v[12].Position = new Point3D(-1, -1, -1);
+            v[12].Position = new SimPoint3D(-1, -1, -1);
             Assert.AreEqual(7, data.eventData.GeometryChangedEventData.Count());
             Assert.IsTrue(data.eventData.GeometryChangedEventData[3].Contains(f0.f));
             Assert.IsTrue(data.eventData.GeometryChangedEventData[6].Contains(f0.f));
@@ -675,7 +676,7 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
             Assert.AreEqual(0, f0.eventData.GeometryChangedCount);
             Assert.AreEqual(1, f0.eventData.TopologyChangedCount);
 
-            v[12].Position = new Point3D(-1, -1, -1);
+            v[12].Position = new SimPoint3D(-1, -1, -1);
             Assert.AreEqual(7, data.eventData.GeometryChangedEventData.Count());
             Assert.IsTrue(data.eventData.GeometryChangedEventData[3].Contains(f0.f));
             Assert.IsTrue(data.eventData.GeometryChangedEventData[6].Contains(f0.f));
@@ -707,7 +708,7 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
             Assert.AreEqual(0, f0.eventData.GeometryChangedCount);
             Assert.AreEqual(1, f0.eventData.TopologyChangedCount);
 
-            v[12].Position = new Point3D(-1, -1, -1);
+            v[12].Position = new SimPoint3D(-1, -1, -1);
             Assert.AreEqual(7, data.eventData.GeometryChangedEventData.Count());
             Assert.IsTrue(data.eventData.GeometryChangedEventData[3].Contains(f0.f));
             Assert.IsTrue(data.eventData.GeometryChangedEventData[6].Contains(f0.f));
@@ -743,7 +744,7 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
             Assert.AreEqual(0, f0.eventData.GeometryChangedCount);
             Assert.AreEqual(1, f0.eventData.TopologyChangedCount);
 
-            v[12].Position = new Point3D(-1, -1, -1);
+            v[12].Position = new SimPoint3D(-1, -1, -1);
             Assert.AreEqual(7, data.eventData.GeometryChangedEventData.Count());
             Assert.IsTrue(data.eventData.GeometryChangedEventData[3].Contains(f0.f));
             Assert.IsTrue(data.eventData.GeometryChangedEventData[6].Contains(f0.f));
@@ -774,7 +775,7 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
             Assert.AreEqual(0, f0.eventData.GeometryChangedCount);
             Assert.AreEqual(1, f0.eventData.TopologyChangedCount);
 
-            v[12].Position = new Point3D(-1, -1, -1);
+            v[12].Position = new SimPoint3D(-1, -1, -1);
             Assert.AreEqual(5, data.eventData.GeometryChangedEventData.Count());
             Assert.IsTrue(data.eventData.GeometryChangedEventData.All(x => x != f0.f));
             Assert.AreEqual(0, data.eventData.AddEventData.Count());
@@ -808,7 +809,7 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
             Assert.AreEqual(0, f0.eventData.GeometryChangedCount);
             Assert.AreEqual(1, f0.eventData.TopologyChangedCount);
 
-            v[12].Position = new Point3D(-1, -1, -1);
+            v[12].Position = new SimPoint3D(-1, -1, -1);
             Assert.AreEqual(5, data.eventData.GeometryChangedEventData.Count());
             Assert.IsTrue(data.eventData.GeometryChangedEventData.All(x => x != f0.f));
             Assert.AreEqual(0, data.eventData.AddEventData.Count());
@@ -898,7 +899,7 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
         public void MoveToLayer()
         {
             var data = GeometryModelHelper.EmptyModelWithEvents();
-            Layer targetLayer = new Layer(data.model.Geometry, "TargetLayer") { Color = new DerivedColor(Colors.Pink) };
+            Layer targetLayer = new Layer(data.model.Geometry, "TargetLayer") { Color = new DerivedColor(SimColors.Pink) };
 
             (var v, var e, var l) = TestData(data.layer);
             var f0 = FaceWithEvents(new Face(data.layer, "", l[0], GeometricOrientation.Forward, new EdgeLoop[] { l[2] }));
@@ -906,13 +907,13 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
 
             Assert.AreEqual(data.layer, f0.f.Layer);
             Assert.AreEqual(1, data.layer.Elements.Count(x => x is Face));
-            Assert.AreEqual(Colors.Red, f0.f.Color.Color);
+            Assert.AreEqual(SimColors.Red, f0.f.Color.Color);
 
             f0.f.Layer = targetLayer;
             Assert.AreEqual(targetLayer, f0.f.Layer);
             Assert.AreEqual(0, data.layer.Elements.Count(x => x is Face));
             Assert.AreEqual(1, targetLayer.Elements.Count(x => x is Face));
-            Assert.AreEqual(Colors.Pink, f0.f.Color.Color);
+            Assert.AreEqual(SimColors.Pink, f0.f.Color.Color);
 
             Assert.AreEqual(0, data.eventData.GeometryChangedEventData.Count);
             Assert.AreEqual(0, data.eventData.AddEventData.Count);

@@ -6,8 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SIMULTAN.Serializer.GRDXF
 {
@@ -87,16 +85,23 @@ namespace SIMULTAN.Serializer.GRDXF
             info.ProjectData.GeometryRelations.StartLoading();
             info.ProjectData.GeometryRelations.AddRange(relations);
             info.ProjectData.GeometryRelations.StopLoading();
-
-            info.ProjectData.GeometryRelations.RestoreReferences();
         }
 
         private static SimGeometryRelation ParseGeometryRelation(DXFParserResultSet result, DXFParserInfo info)
         {
             var id = result.GetSimId(ParamStructCommonSaveCode.ENTITY_GLOBAL_ID, ParamStructCommonSaveCode.ENTITY_LOCAL_ID, info.GlobalId);
             var typeId = result.GetSimId(GeometryRelationSaveCode.GEOMETRY_RELATION_TYPE_GLOBAL_ID, GeometryRelationSaveCode.GEOMETRY_RELATION_TYPE_LOCAL_ID, info.GlobalId);
-            // no reference saved if 0
-            var typeRef = typeId.LocalId == 0 ? null : new SimTaxonomyEntryReference(typeId);
+
+            SimTaxonomyEntryReference typeRef = null;
+
+            if (typeId.LocalId != 0) // no reference saved if 0
+            {
+                var taxEntry = info.ProjectData.IdGenerator.GetById<SimTaxonomyEntry>(typeId);
+                if (taxEntry != null)
+                    typeRef = new SimTaxonomyEntryReference(taxEntry);
+                else
+                    info.Log(string.Format("Failed to restore TaxonomyEntry {0} in Geometry Relation {1}", typeId, id));
+            }
 
             var sourceProjectId = result.Get<Guid>(GeometryRelationSaveCode.GEOMETRY_RELATION_SOURCE_PROJECT_ID, Guid.Empty);
             var sourceFileId = result.Get<int>(GeometryRelationSaveCode.GEOMETRY_RELATION_SOURCE_FILE_ID, 0);
@@ -144,7 +149,7 @@ namespace SIMULTAN.Serializer.GRDXF
         {
             writer.WriteVersionSection();
 
-            writer.StartSection(ParamStructTypes.GEOMETRY_RELATION_SECTION);
+            writer.StartSection(ParamStructTypes.GEOMETRY_RELATION_SECTION, relations.Count());
 
             foreach (var relation in relations)
             {

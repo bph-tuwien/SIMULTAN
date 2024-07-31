@@ -1,11 +1,12 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SIMULTAN.Data;
+using SIMULTAN.Data.SimMath;
 using SIMULTAN.Data.MultiValues;
 using SIMULTAN.Data.ValueMappings;
 using SIMULTAN.Tests.TestUtils;
 using System;
 using System.Collections.Generic;
-using System.Windows.Media;
+
 
 namespace SIMULTAN.Tests.ValueMappings
 {
@@ -16,8 +17,8 @@ namespace SIMULTAN.Tests.ValueMappings
         {
             var prefilter = new SimDefaultPrefilter();
             var colorMap = new SimLinearGradientColorMap(new List<SimColorMarker> {
-                new SimColorMarker(0.0, Colors.Red),
-                new SimColorMarker(5.0, Colors.Blue)
+                new SimColorMarker(0.0, SimColors.Red),
+                new SimColorMarker(5.0, SimColors.Blue)
             });
             var table = new SimMultiValueBigTable("", "", "",
                 new List<SimMultiValueBigTableHeader> { new SimMultiValueBigTableHeader("", "") },
@@ -51,8 +52,8 @@ namespace SIMULTAN.Tests.ValueMappings
             var prefilter = new SimMinimumPrefilter();
             var colorMap = new SimLinearGradientColorMap(new List<SimColorMarker>
             {
-                new SimColorMarker(0.0, Colors.Red),
-                new SimColorMarker(4.0, Colors.Blue),
+                new SimColorMarker(0.0, SimColors.Red),
+                new SimColorMarker(4.0, SimColors.Blue),
             });
             var table = new SimMultiValueBigTable("", "", "",
                 new List<SimMultiValueBigTableHeader> { new SimMultiValueBigTableHeader("", ""), new SimMultiValueBigTableHeader("", "") },
@@ -66,7 +67,7 @@ namespace SIMULTAN.Tests.ValueMappings
 
             Assert.ThrowsException<IndexOutOfRangeException>(() => { mapping.ApplyMapping(99, 0); });
 
-            Assert.AreEqual(Color.FromArgb(255, 63, 0, 191), mapping.ApplyMapping(1, 0));
+            Assert.AreEqual(SimColor.FromArgb(255, 63, 0, 191), mapping.ApplyMapping(1, 0));
         }
 
         #region Properties
@@ -179,7 +180,7 @@ namespace SIMULTAN.Tests.ValueMappings
             int count = 0;
             mapping.ValueMappingChanged += (s) => count++;
 
-            ((SimLinearGradientColorMap)mapping.ColorMap).ColorMarkers.Add(new SimColorMarker(100.0, Colors.Pink));
+            ((SimLinearGradientColorMap)mapping.ColorMap).ColorMarkers.Add(new SimColorMarker(100.0, SimColors.Pink));
 
             Assert.AreEqual(1, count);
         }
@@ -219,7 +220,7 @@ namespace SIMULTAN.Tests.ValueMappings
             int count = 0;
             mapping.ValueMappingChanged += (s) => count++;
 
-            ((SimLinearGradientColorMap)mapping.ColorMap).ColorMarkers[0].Color = Colors.Pink;
+            ((SimLinearGradientColorMap)mapping.ColorMap).ColorMarkers[0].Color = SimColors.Pink;
 
             Assert.AreEqual(1, count);
         }

@@ -1,5 +1,5 @@
-﻿using System.Linq;
-using System.Windows;
+﻿using SIMULTAN.Data.SimMath;
+using System.Linq;
 using static SIMULTAN.Data.SimNetworks.SimNetworkPort;
 
 namespace SIMULTAN.Data.SimNetworks
@@ -7,8 +7,21 @@ namespace SIMULTAN.Data.SimNetworks
     /// <summary>
     /// A Base element for the elements constructing a network
     /// </summary>
-    public abstract partial class BaseSimNetworkElement : SimNamedObject<ISimManagedCollection>
+    public abstract partial class BaseSimNetworkElement : SimNamedObject<ISimManagedCollection>, ISimNetworkElement
     {
+        /// <summary>
+        /// Color of the Block
+        /// </summary>
+        public SimColor Color
+        {
+            get { return this.color; }
+            set
+            {
+                this.color = value;
+                this.NotifyPropertyChanged(nameof(this.Color));
+            }
+        }
+        private SimColor color;
 
         /// <summary>
         /// Representing the parent network.
@@ -18,6 +31,38 @@ namespace SIMULTAN.Data.SimNetworks
         /// Representing incoming ports 
         /// </summary>
         public SimNetworkPortCollection Ports { get; internal set; }
+
+
+        /// <summary>
+        /// Width of the BaseSimNetworkElement
+        /// </summary>
+        public double Width
+        {
+            get { return this.width; }
+            set
+            {
+                this.width = value;
+                this.NotifyPropertyChanged(nameof(this.Width));
+            }
+        }
+        private double width;
+
+
+        /// <summary>
+        /// Height of the BaseSimNetworkElement
+        /// </summary>
+        public double Height
+        {
+            get { return this.height; }
+            set
+            {
+                this.height = value;
+                this.NotifyPropertyChanged(nameof(this.Height));
+            }
+        }
+        private double height;
+
+
         /// <summary>
         /// Tells whether any of the ports of the block is connected 
         /// </summary>
@@ -32,7 +77,7 @@ namespace SIMULTAN.Data.SimNetworks
         /// <summary>
         /// Position of the network element on the network editor canvas
         /// </summary>
-        public Point Position
+        public SimPoint Position
         {
             get { return this.position; }
             set
@@ -41,7 +86,7 @@ namespace SIMULTAN.Data.SimNetworks
                 this.NotifyPropertyChanged(nameof(this.Position));
             }
         }
-        private Point position;
+        private SimPoint position;
 
 
         #region PROPERTIES: for geometric representation
@@ -83,7 +128,6 @@ namespace SIMULTAN.Data.SimNetworks
             this.IsBeingDeleted?.Invoke(this);
         }
 
-
         /// <summary>
         /// Handler for the <see cref="IsDeleted"/> event.
         /// </summary>
@@ -96,7 +140,23 @@ namespace SIMULTAN.Data.SimNetworks
         /// <summary>
         /// Invokes the <see cref="IsDeleted"/> event.
         /// </summary>
-        public void OnIsDeleted()
+        /// 
+
+
+
+        #region .CTOR
+        public BaseSimNetworkElement()
+        {
+            this.Width = 200;
+            this.Height = 100;
+        }
+        #endregion
+
+
+        /// <summary>
+        /// Invokes the <see cref="IsDeleted"/> event
+        /// </summary>
+        public void NotifyIsDeleted()
         {
             this.IsDeleted?.Invoke(this);
         }

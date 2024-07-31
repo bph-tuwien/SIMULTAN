@@ -14,7 +14,7 @@ namespace SIMULTAN.Tests.Values
     [TestClass]
     public class MultiValueBigTableIntegerPointerTests : BaseProjectTest
     {
-        private static readonly FileInfo testProject = new FileInfo(@".\BigTableTestsProject.simultan");
+        private static readonly FileInfo testProject = new FileInfo(@"./BigTableTestsProject.simultan");
 
         private void CheckPointer(SimMultiValueBigTableParameterSource ptr, SimMultiValueBigTable table, int row, int column)
         {
@@ -242,7 +242,7 @@ namespace SIMULTAN.Tests.Values
 
             //Find ptr
             var comp = projectData.Components.First(x => x.Name == "WithPointer_Int");
-            var param = comp.Parameters.OfType<SimIntegerParameter>().First(x => x.NameTaxonomyEntry.Name == "Target_Int");
+            var param = comp.Parameters.OfType<SimIntegerParameter>().First(x => x.NameTaxonomyEntry.Text == "Target_Int");
 
             var ptr = (SimMultiValueBigTableParameterSource)param.ValueSource;
             CheckPointer(ptr, ptr.Table, 1, 1);
@@ -259,9 +259,9 @@ namespace SIMULTAN.Tests.Values
 
             //Find ptr
             var comp = projectData.Components.First(x => x.Name == "WithPointer_Int");
-            var param = comp.Parameters.OfType<SimIntegerParameter>().First(x => x.NameTaxonomyEntry.Name == "Target_Int");
-            var colParam = comp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "Target_Int.ValuePointer.OffsetColumn");
-            var rowParam = comp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "Target_Int.ValuePointer.OffsetRow");
+            var param = comp.Parameters.OfType<SimIntegerParameter>().First(x => x.NameTaxonomyEntry.Text == "Target_Int");
+            var colParam = comp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Text == "Target_Int.ValuePointer.OffsetColumn");
+            var rowParam = comp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Text == "Target_Int.ValuePointer.OffsetRow");
 
             var ptr = (SimMultiValueBigTableParameterSource)param.ValueSource;
             ptr.ValueChanged += (s, e) => eventCounter++;
@@ -285,9 +285,9 @@ namespace SIMULTAN.Tests.Values
 
             //Find ptr
             var comp = projectData.Components.First(x => x.Name == "WithPointer_Int");
-            var param = comp.Parameters.OfType<SimIntegerParameter>().First(x => x.NameTaxonomyEntry.Name == "Target_Int");
-            var colParam = comp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "Target_Int.ValuePointer.OffsetColumn");
-            var rowParam = comp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "Target_Int.ValuePointer.OffsetRow");
+            var param = comp.Parameters.OfType<SimIntegerParameter>().First(x => x.NameTaxonomyEntry.Text == "Target_Int");
+            var colParam = comp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Text == "Target_Int.ValuePointer.OffsetColumn");
+            var rowParam = comp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Text == "Target_Int.ValuePointer.OffsetRow");
 
             var ptr = (SimMultiValueBigTableParameterSource)param.ValueSource;
             ptr.ValueChanged += (s, e) => eventCounter++;
@@ -313,12 +313,12 @@ namespace SIMULTAN.Tests.Values
             LoadProject(testProject);
 
             var comp = projectData.Components.First(x => x.Name == "NoParameters");
-            var param = comp.Parameters.OfType<SimIntegerParameter>().First(x => x.NameTaxonomyEntry.Name == "Target_Int");
+            var param = comp.Parameters.OfType<SimIntegerParameter>().First(x => x.NameTaxonomyEntry.Text == "Target_Int");
 
             ((SimMultiValueParameterSource)param.ValueSource).CreateValuePointerParameters(projectData.UsersManager.Users.First());
 
-            var colParam = comp.Parameters.OfType<SimDoubleParameter>().FirstOrDefault(x => x.NameTaxonomyEntry.Name == "Target_Int.ValuePointer.OffsetColumn");
-            var rowParam = comp.Parameters.OfType<SimDoubleParameter>().FirstOrDefault(x => x.NameTaxonomyEntry.Name == "Target_Int.ValuePointer.OffsetRow");
+            var colParam = comp.Parameters.OfType<SimDoubleParameter>().FirstOrDefault(x => x.NameTaxonomyEntry.Text == "Target_Int.ValuePointer.OffsetColumn");
+            var rowParam = comp.Parameters.OfType<SimDoubleParameter>().FirstOrDefault(x => x.NameTaxonomyEntry.Text == "Target_Int.ValuePointer.OffsetRow");
 
             Assert.IsNotNull(colParam);
             Assert.IsNotNull(rowParam);
@@ -333,7 +333,7 @@ namespace SIMULTAN.Tests.Values
         private WeakReference MemoryLeakRemoveFromParameterTest_Action()
         {
             var comp = projectData.Components.First(x => x.Name == "WithPointer_Int");
-            var param = comp.Parameters.OfType<SimIntegerParameter>().First(x => x.NameTaxonomyEntry.Name == "Target_Int");
+            var param = comp.Parameters.OfType<SimIntegerParameter>().First(x => x.NameTaxonomyEntry.Text == "Target_Int");
 
             WeakReference ptrRef = new WeakReference(param.ValueSource);
             param.ValueSource = null;
@@ -357,7 +357,7 @@ namespace SIMULTAN.Tests.Values
         private WeakReference MemoryLeakRemoveParameterTest_Action()
         {
             var comp = projectData.Components.First(x => x.Name == "WithPointer_Int");
-            var param = comp.Parameters.OfType<SimIntegerParameter>().First(x => x.NameTaxonomyEntry.Name == "Target_Int");
+            var param = comp.Parameters.OfType<SimIntegerParameter>().First(x => x.NameTaxonomyEntry.Text == "Target_Int");
 
             WeakReference ptrRef = new WeakReference(param.ValueSource);
 
@@ -385,7 +385,7 @@ namespace SIMULTAN.Tests.Values
             LoadProject(testProject);
 
             var comp = projectData.Components.First(x => x.Name == "WithPointer_Int");
-            var param = comp.Parameters.OfType<SimIntegerParameter>().First(x => x.NameTaxonomyEntry.Name == "Target_Int");
+            var param = comp.Parameters.OfType<SimIntegerParameter>().First(x => x.NameTaxonomyEntry.Text == "Target_Int");
 
             var table = ((SimMultiValueBigTableParameterSource)param.ValueSource).Table;
             table[3, 2] = 9977;

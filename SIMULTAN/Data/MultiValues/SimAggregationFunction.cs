@@ -71,7 +71,9 @@ namespace SIMULTAN.Data.MultiValues
         /// <returns>The SimAggregationFunction which is described by representation</returns>
         public static SimAggregationFunction FromStringRepresentation(string representation)
         {
-            return stringToEnum[representation];
+            if (stringToEnum.TryGetValue(representation, out var func))
+                return func;
+            return SimAggregationFunction.Sum;
         }
     }
 }

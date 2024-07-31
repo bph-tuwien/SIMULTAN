@@ -1,13 +1,16 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SIMULTAN.Data.Geometry;
+using SIMULTAN.Data.SimMath;
 using SIMULTAN.Tests.Geometry.EventData;
+using SIMULTAN.Tests.TestUtils;
+using SIMULTAN.Utils;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Windows.Media.Media3D;
+
 
 namespace SIMULTAN.Tests.Geometry.BaseGeometries
 {
@@ -17,7 +20,7 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
         [TestMethod]
         public void Ctor()
         {
-            var gm = new GeometryModelData();
+            var gm = new GeometryModelData(new SystemTimerFactory());
 
             Assert.ThrowsException<ArgumentNullException>(() => { var l0 = new Layer(null, ""); });
             Assert.ThrowsException<ArgumentNullException>(() => { var l0 = new Layer(gm, null); });
@@ -35,7 +38,7 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
         [TestMethod]
         public void AddToSublayer()
         {
-            var gm = new GeometryModelData();
+            var gm = new GeometryModelData(new SystemTimerFactory());
             var l1 = new Layer(gm, "asdf");
             gm.Layers.Add(l1);
 
@@ -49,7 +52,7 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
         [TestMethod]
         public void RemoveSublayer()
         {
-            var gm = new GeometryModelData();
+            var gm = new GeometryModelData(new SystemTimerFactory());
             var l1 = new Layer(gm, "asdf");
             gm.Layers.Add(l1);
 
@@ -64,11 +67,11 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
         [TestMethod]
         public void GeometryRemoved()
         {
-            var gm = new GeometryModelData();
+            var gm = new GeometryModelData(new SystemTimerFactory());
             var l1 = new Layer(gm, "asdf");
             gm.Layers.Add(l1);
 
-            var v = new Vertex(l1, "", new Point3D(0, 0, 0));
+            var v = new Vertex(l1, "", new SimPoint3D(0, 0, 0));
             Assert.AreEqual(1, l1.Elements.Count);
 
             v.RemoveFromModel();
@@ -78,7 +81,7 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
         [TestMethod]
         public void IsVisible()
         {
-            var gm = new GeometryModelData();
+            var gm = new GeometryModelData(new SystemTimerFactory());
             var l1 = new Layer(gm, "asdf");
             var l1event = new PropertyChangedEventData(l1);
             gm.Layers.Add(l1);

@@ -1,4 +1,6 @@
-﻿using SIMULTAN.Data.Geometry;
+﻿using SIMULTAN.Data.Assets;
+using SIMULTAN.Data.Geometry;
+using SIMULTAN.Data.Taxonomy;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -26,7 +28,12 @@ namespace SIMULTAN.DataMapping
         /// <summary>
         /// Filters based on the key of the resource file the face is stored in
         /// </summary>
-        FileKey = 2 //Special handling outside of the filter to prevent geometry model loading when not necessary
+        FileKey = 2, //Special handling outside of the filter to prevent geometry model loading when not necessary
+        /// <summary>
+        /// Filters based on the tags of the resource files (see <see cref="ResourceEntry.Tags"/>
+        /// Supports <see cref="SimTaxonomyEntryReference"/>
+        /// </summary>
+        FileTags = 3,
     }
 
     /// <summary>
@@ -102,6 +109,8 @@ namespace SIMULTAN.DataMapping
                     else
                         throw new NotSupportedException("Unsupported value type");
                 case SimDataMappingFaceFilterProperties.FileKey:
+                    return true; //Has already been handled before arriving here
+                case SimDataMappingFaceFilterProperties.FileTags:
                     return true; //Has already been handled before arriving here
                 default:
                     throw new NotImplementedException();

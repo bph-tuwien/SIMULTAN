@@ -264,10 +264,11 @@ namespace SIMULTAN.Data.Assets
         // ------------------------------------------------ UTILS --------------------------------------------------- //
 
         /// <inheritdoc/>
-        internal override List<ResourceDirectoryEntry> ChangePath_Internal(FileSystemInfo _new_data, string nameCollisionFormat, bool _check_admissibility)
+        internal override void ChangePath_Internal(FileSystemInfo _new_data, string nameCollisionFormat, bool _check_admissibility)
         {
             List<ResourceDirectoryEntry> new_dirs = new List<ResourceDirectoryEntry>();
             DirectoryInfo dir_new = null;
+
             if (_check_admissibility)
             {
                 var test = this.CanChangePath(_new_data, nameCollisionFormat);
@@ -313,14 +314,15 @@ namespace SIMULTAN.Data.Assets
                     throw new Exception("Inconsistency with the resource parent. This should not happen!");
 
                 // 2. before making structural changes...
+
+                // 2b. actually move the directory
+                Directory.Move(this.CurrentFullPath, dir_new.FullName);
+
                 // 2a. remove from the old parent
                 if (parent_old_check.is_working_dir)
                     this.manager.RemoveAsTopLevelResource(this);
                 else
                     (this.Parent as ResourceDirectoryEntry).Children.Remove(this);
-
-                // 2b. actually rename the directory
-                Directory.Move(this.CurrentFullPath, dir_new.FullName);
 
                 // 2c. change the entry itself
                 this.directory = dir_new;
@@ -352,9 +354,6 @@ namespace SIMULTAN.Data.Assets
                     }
                 }
             }
-
-            // done
-            return new_dirs;
         }
 
         /// <inheritdoc/>
@@ -398,17 +397,7 @@ namespace SIMULTAN.Data.Assets
         /// <inheritdoc/>
         public override void ChangePath(FileSystemInfo _new_data, string nameCollisionFormat, bool _check_admissibility)
         {
-            DirectoryInfo dir_old = new DirectoryInfo(this.CurrentFullPath);
-            List<ResourceDirectoryEntry> additional_dir_res = this.ChangePath_Internal(_new_data, nameCollisionFormat, _check_admissibility);
-            Dictionary<int, FileSystemInfo> content_old = this.GetFlatContainedContent();
-
-            IEnumerable<DirectoryInfo> additional_dirs = additional_dir_res.Select(x => new DirectoryInfo(x.CurrentFullPath));
-
-            DirectoryInfo dir_new = new DirectoryInfo(this.CurrentFullPath);
-            Dictionary<int, FileSystemInfo> content_new = this.GetFlatContainedContent();
-
-            //if (this.manager != null)
-            //    this.manager.OnResourceManipulated(new ManipulatedResourceEventArgs(dir_old, dir_new, additional_dirs, content_old, content_new));
+            this.ChangePath_Internal(_new_data, nameCollisionFormat, _check_admissibility);
         }
 
         /// <inheritdoc/>

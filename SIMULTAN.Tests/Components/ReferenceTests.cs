@@ -15,7 +15,7 @@ namespace SIMULTAN.Tests.Components
     [TestClass]
     public class ReferenceTests : BaseProjectTest
     {
-        private static readonly FileInfo referencesProject = new FileInfo(@".\ReferencesTestProject.simultan");
+        private static readonly FileInfo referencesProject = new FileInfo(@"./ReferencesTestProject.simultan");
 
         #region Ctor
 

@@ -5,8 +5,8 @@ using SIMULTAN.Projects;
 using SIMULTAN.Serializer.DXF;
 using SIMULTAN.Serializer.SIMLINKS;
 using SIMULTAN.Tests.Properties;
-using SIMULTAN.Tests.Util;
 using SIMULTAN.Tests.TestUtils;
+using SIMULTAN.Tests.Util;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -53,6 +53,36 @@ namespace SIMULTAN.Tests.IO
         }
 
         [TestMethod]
+        public void ReadV29()
+        {
+            var guid = Guid.NewGuid();
+            var otherGuid = Guid.Parse("da7d8f7c-8eec-423b-b127-9d6e17f52522");
+
+            ExtendedProjectData projectData = new ExtendedProjectData();
+            projectData.SetCallingLocation(new DummyReferenceLocation(guid));
+
+            List<MultiLink> links = null;
+
+            using (DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_SIMLINKS_ReadV29)))
+            {
+                var info = new DXFParserInfo(guid, projectData);
+                links = SimLinksDxfIO.Read(reader, info);
+            }
+
+            Assert.IsNotNull(links);
+            Assert.AreEqual(2, links.Count);
+
+            var link = links[0];
+            Assert.AreEqual(1, link.Representations.Count);
+            Assert.AreEqual("42BE0F32C1C2CDC58646B483E18C864978D668C64687FF16C8149951721AA191", link.Representations.First().Key);
+            Assert.AreEqual(@"C:\something", link.Representations.First().Value);
+
+            link = links[1];
+            Assert.AreEqual(1, link.Representations.Count);
+            Assert.AreEqual("42BE0F32C1C2CDC58646B483E18C864978D668C64687FF16C8149951721AA191", link.Representations.First().Key);
+            Assert.AreEqual(@"D:\something", link.Representations.First().Value);
+        }
+        [TestMethod]
         public void ReadV12()
         {
             var guid = Guid.NewGuid();
@@ -74,12 +104,12 @@ namespace SIMULTAN.Tests.IO
 
             var link = links[0];
             Assert.AreEqual(1, link.Representations.Count);
-            Assert.AreEqual(1136910687, link.Representations.First().Key);
+            Assert.AreEqual("1136910687", link.Representations.First().Key);
             Assert.AreEqual(@"C:\something", link.Representations.First().Value);
 
             link = links[1];
             Assert.AreEqual(1, link.Representations.Count);
-            Assert.AreEqual(1136910687, link.Representations.First().Key);
+            Assert.AreEqual("1136910687", link.Representations.First().Key);
             Assert.AreEqual(@"D:\something", link.Representations.First().Value);
         }
 
@@ -105,12 +135,12 @@ namespace SIMULTAN.Tests.IO
 
             var link = links[0];
             Assert.AreEqual(1, link.Representations.Count);
-            Assert.AreEqual(1136910687, link.Representations.First().Key);
+            Assert.AreEqual("1136910687", link.Representations.First().Key);
             Assert.AreEqual(@"C:\something", link.Representations.First().Value);
 
             link = links[1];
             Assert.AreEqual(1, link.Representations.Count);
-            Assert.AreEqual(1136910687, link.Representations.First().Key);
+            Assert.AreEqual("1136910687", link.Representations.First().Key);
             Assert.AreEqual(@"D:\something", link.Representations.First().Value);
         }
 
@@ -172,12 +202,12 @@ namespace SIMULTAN.Tests.IO
 
             var link = links[0];
             Assert.AreEqual(1, link.Representations.Count);
-            Assert.AreEqual(1136910687, link.Representations.First().Key);
+            Assert.AreEqual("1136910687", link.Representations.First().Key);
             Assert.AreEqual(@"C:\something", link.Representations.First().Value);
 
             link = links[1];
             Assert.AreEqual(1, link.Representations.Count);
-            Assert.AreEqual(1136910687, link.Representations.First().Key);
+            Assert.AreEqual("1136910687", link.Representations.First().Key);
             Assert.AreEqual(@"D:\something", link.Representations.First().Value);
         }
 
@@ -237,7 +267,7 @@ namespace SIMULTAN.Tests.IO
 
             Assert.IsNotNull(link);
             Assert.AreEqual(1, link.Representations.Count);
-            Assert.AreEqual(1136910687, link.Representations.First().Key);
+            Assert.AreEqual("1136910687", link.Representations.First().Key);
             Assert.AreEqual(@"C:\something", link.Representations.First().Value);
         }
     }

@@ -9,7 +9,7 @@ using System.Collections.Specialized;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
-using System.Windows.Media.Media3D;
+using SIMULTAN.Data.SimMath;
 
 namespace SIMULTAN.Exchange.NetworkConnectors
 {
@@ -165,7 +165,7 @@ namespace SIMULTAN.Exchange.NetworkConnectors
             {
                 foreach (var asset in Node.Content.Component.ReferencedAssets)
                 {
-                    if (asset.Resource is ResourceFileEntry rfe && proxyResourceExtensions.Contains(rfe.Extension))
+                    if (asset.Resource is ResourceFileEntry rfe && proxyResourceExtensions.Contains(Path.GetExtension(rfe.CurrentFullPath)))
                     {
                         if (rfe.Exists)
                             proxyAssets.Add(new FileInfo(rfe.CurrentFullPath));
@@ -216,11 +216,11 @@ namespace SIMULTAN.Exchange.NetworkConnectors
                 if (proxy == null)
                 {
                     proxy = ProxyShapeGenerator.GenerateCube(Vertex.ModelGeometry.Layers.First(),
-                        Vertex.Name, Vertex, new Point3D(1, 1, 1));
+                        Vertex.Name, Vertex, new SimPoint3D(1, 1, 1));
                 }
                 else
                 {
-                    ProxyShapeGenerator.UpdateCube(proxy, new Point3D(1, 1, 1));
+                    ProxyShapeGenerator.UpdateCube(proxy, new SimPoint3D(1, 1, 1));
                 }
             }
 
@@ -238,7 +238,7 @@ namespace SIMULTAN.Exchange.NetworkConnectors
                 this.transformInProgress = true;
 
                 var size = SimInstanceSize.Default;
-                var rotation = Quaternion.Identity;
+                var rotation = SimQuaternion.Identity;
 
                 if (Node.Content != null)
                 {

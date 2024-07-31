@@ -48,7 +48,7 @@ namespace SIMULTAN.Data
                 }
             }
         }
-        private string description;
+        private string description = string.Empty;
 
         #endregion
 

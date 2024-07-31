@@ -1,5 +1,6 @@
 ﻿using SIMULTAN.Data.Taxonomy;
 using SIMULTAN.Serializer.Projects;
+using SIMULTAN.Serializer.TXDXF;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -39,9 +40,8 @@ namespace SIMULTAN.Projects.ManagedFiles
         /// <inheritdoc/>
         public override void Save()
         {
-            ProjectIO.SaveTaxonomyFile(File, ProjectData);
-            this.OnFileUpToDateChanged(true);
+            SimTaxonomyDxfIO.Write(File, ProjectData.Taxonomies, ProjectData);
+            File.LastWriteTime = DateTime.Now;
         }
-
     }
 }

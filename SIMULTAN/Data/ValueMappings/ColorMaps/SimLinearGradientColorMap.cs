@@ -1,10 +1,10 @@
-﻿using SIMULTAN.Data.SitePlanner;
+﻿using SIMULTAN.Data.SimMath;
+using SIMULTAN.Data.SitePlanner;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Windows.Media;
 
 namespace SIMULTAN.Data.ValueMappings
 {
@@ -38,7 +38,7 @@ namespace SIMULTAN.Data.ValueMappings
         }
 
         /// <inheritdoc />
-        public override Color Map(double value)
+        public override SimColor Map(double value)
         {
             for (int i = 0; i < ColorMarkers.Count - 1; i++)
             {
@@ -56,7 +56,7 @@ namespace SIMULTAN.Data.ValueMappings
         /// <param name="b">Marker b</param>
         /// <param name="val">Value between values of markers a and b</param>
         /// <returns>Interpolated color</returns>
-        public static Color Lerp(SimColorMarker a, SimColorMarker b, double val)
+        public static SimColor Lerp(SimColorMarker a, SimColorMarker b, double val)
         {
             if (double.IsInfinity(a.Value)) return b.Color;
             if (double.IsInfinity(b.Value)) return a.Color;
@@ -67,7 +67,7 @@ namespace SIMULTAN.Data.ValueMappings
             var cb = a.Color.B * (1.0 - t) + b.Color.B * t;
             var ca = a.Color.A * (1.0 - t) + b.Color.A * t;
 
-            return Color.FromArgb((byte)ca, (byte)cr, (byte)cg, (byte)cb);
+            return SimColor.FromArgb((byte)ca, (byte)cr, (byte)cg, (byte)cb);
         }
     }
 }

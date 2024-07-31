@@ -111,12 +111,7 @@ namespace SIMULTAN.Data.Geometry
         public override bool RemoveFromModel()
         {
             bool removed = this.ModelGeometry.Edges.Remove(this);
-
-            if (ModelGeometry.HandleConsistency)
-            {
-                Vertices.ForEach(x => x.Edges.Remove(this));
-            }
-
+            Vertices.ForEach(x => x.Edges.Remove(this));
             return removed;
         }
         /// <inheritdoc/>

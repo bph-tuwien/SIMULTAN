@@ -1,27 +1,28 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SIMULTAN.Data;
 using SIMULTAN.Data.Assets;
+using SIMULTAN.Data.SimMath;
 using SIMULTAN.Data.SitePlanner;
 using SIMULTAN.Data.ValueMappings;
 using SIMULTAN.Projects;
 using SIMULTAN.Serializer.DXF;
 using SIMULTAN.Serializer.SPDXF;
 using SIMULTAN.Tests.Properties;
-using SIMULTAN.Tests.Util;
 using SIMULTAN.Tests.TestUtils;
+using SIMULTAN.Tests.Util;
 using SIMULTAN.Utils;
 using System;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Windows.Media;
+
 
 namespace SIMULTAN.Tests.IO
 {
     [TestClass]
     public class SitePlannerDXFTests : BaseProjectTest
     {
-        private static readonly FileInfo testProject = new FileInfo(@".\SiteplannerTest.simultan");
+        private static readonly FileInfo testProject = new FileInfo(@"./SiteplannerTest.simultan");
         private ResourceFileEntry spRes;
         private static int startSiteplannerCount = 2;
 
@@ -272,12 +273,12 @@ namespace SIMULTAN.Tests.IO
             Assert.AreEqual(2UL, sp.Buildings[0].ID);
             Assert.AreEqual(new Guid("a5ef2c5d-9519-4335-9ac2-4beb0a597326"), sp.Buildings[0].GeometryModelRes.ProjectId);
             Assert.AreEqual(5, sp.Buildings[0].GeometryModelRes.ResourceIndex);
-            Assert.AreEqual(Color.FromRgb(0, 128, 255), sp.Buildings[0].CustomColor);
+            Assert.AreEqual(SimColor.FromRgb(0, 128, 255), sp.Buildings[0].CustomColor);
 
             Assert.AreEqual(3UL, sp.Buildings[1].ID);
             Assert.AreEqual(new Guid("a5ef2c5d-9519-4335-9ac2-4beb0a597327"), sp.Buildings[1].GeometryModelRes.ProjectId);
             Assert.AreEqual(6, sp.Buildings[1].GeometryModelRes.ResourceIndex);
-            Assert.AreEqual(Color.FromRgb(128, 0, 32), sp.Buildings[1].CustomColor);
+            Assert.AreEqual(SimColor.FromRgb(128, 0, 32), sp.Buildings[1].CustomColor);
 
             Assert.IsNull(sp.ActiveValueMapping);
             Assert.AreEqual(0, sp.ValueMappings.Count);
@@ -302,12 +303,12 @@ namespace SIMULTAN.Tests.IO
             Assert.AreEqual(2UL, sp.Buildings[0].ID);
             Assert.AreEqual(new Guid("a5ef2c5d-9519-4335-9ac2-4beb0a597326"), sp.Buildings[0].GeometryModelRes.ProjectId);
             Assert.AreEqual(5, sp.Buildings[0].GeometryModelRes.ResourceIndex);
-            Assert.AreEqual(Color.FromRgb(0, 128, 255), sp.Buildings[0].CustomColor);
+            Assert.AreEqual(SimColor.FromRgb(0, 128, 255), sp.Buildings[0].CustomColor);
 
             Assert.AreEqual(3UL, sp.Buildings[1].ID);
             Assert.AreEqual(new Guid("a5ef2c5d-9519-4335-9ac2-4beb0a597327"), sp.Buildings[1].GeometryModelRes.ProjectId);
             Assert.AreEqual(6, sp.Buildings[1].GeometryModelRes.ResourceIndex);
-            Assert.AreEqual(Color.FromRgb(128, 0, 32), sp.Buildings[1].CustomColor);
+            Assert.AreEqual(SimColor.FromRgb(128, 0, 32), sp.Buildings[1].CustomColor);
 
             Assert.IsNull(sp.ActiveValueMapping);
             Assert.AreEqual(0, sp.ValueMappings.Count);
@@ -332,12 +333,12 @@ namespace SIMULTAN.Tests.IO
             Assert.AreEqual(2UL, sp.Buildings[0].ID);
             Assert.AreEqual(new Guid("a5ef2c5d-9519-4335-9ac2-4beb0a597326"), sp.Buildings[0].GeometryModelRes.ProjectId);
             Assert.AreEqual(5, sp.Buildings[0].GeometryModelRes.ResourceIndex);
-            Assert.AreEqual(Color.FromRgb(0, 128, 255), sp.Buildings[0].CustomColor);
+            Assert.AreEqual(SimColor.FromRgb(0, 128, 255), sp.Buildings[0].CustomColor);
 
             Assert.AreEqual(3UL, sp.Buildings[1].ID);
             Assert.AreEqual(new Guid("a5ef2c5d-9519-4335-9ac2-4beb0a597327"), sp.Buildings[1].GeometryModelRes.ProjectId);
             Assert.AreEqual(6, sp.Buildings[1].GeometryModelRes.ResourceIndex);
-            Assert.AreEqual(Color.FromRgb(128, 0, 32), sp.Buildings[1].CustomColor);
+            Assert.AreEqual(SimColor.FromRgb(128, 0, 32), sp.Buildings[1].CustomColor);
 
             Assert.IsNull(sp.ActiveValueMapping);
             Assert.AreEqual(0, sp.ValueMappings.Count);
@@ -353,12 +354,12 @@ namespace SIMULTAN.Tests.IO
 
             var building = new SitePlannerBuilding(2, new ResourceReference(new Guid("a5ef2c5d-9519-4335-9ac2-4beb0a597326"), 5))
             {
-                CustomColor = Color.FromRgb(0, 128, 255),
+                CustomColor = SimColor.FromRgb(0, 128, 255),
             };
             siteplannerProject.Buildings.Add(building);
             building = new SitePlannerBuilding(3, new ResourceReference(new Guid("a5ef2c5d-9519-4335-9ac2-4beb0a597327"), 6))
             {
-                CustomColor = Color.FromRgb(128, 0, 32),
+                CustomColor = SimColor.FromRgb(128, 0, 32),
             };
             siteplannerProject.Buildings.Add(building);
 
@@ -418,11 +419,11 @@ namespace SIMULTAN.Tests.IO
             Assert.IsInstanceOfType(colorMap, typeof(SimThresholdColorMap));
             var mtcm = (SimThresholdColorMap)colorMap;
             Assert.AreEqual(0, mtcm.ColorMarkers[0].Value);
-            Assert.AreEqual(ColorConverter.ConvertFromString("#FF3FFF00"), mtcm.ColorMarkers[0].Color);
+            Assert.AreEqual(SimColorConverter.ConvertFromString("#FF3FFF00"), mtcm.ColorMarkers[0].Color);
             Assert.AreEqual(3.5, mtcm.ColorMarkers[1].Value);
-            Assert.AreEqual(ColorConverter.ConvertFromString("#FFFFFFFF"), mtcm.ColorMarkers[1].Color);
+            Assert.AreEqual(SimColorConverter.ConvertFromString("#FFFFFFFF"), mtcm.ColorMarkers[1].Color);
             Assert.AreEqual(100, mtcm.ColorMarkers[2].Value);
-            Assert.AreEqual(ColorConverter.ConvertFromString("#12345678"), mtcm.ColorMarkers[2].Color);
+            Assert.AreEqual(SimColorConverter.ConvertFromString("#12345678"), mtcm.ColorMarkers[2].Color);
 
             var prefilter = valueMapping.Prefilter;
             Assert.IsInstanceOfType(prefilter, typeof(SimDefaultPrefilter));
@@ -437,11 +438,11 @@ namespace SIMULTAN.Tests.IO
             Assert.IsInstanceOfType(colorMap, typeof(SimLinearGradientColorMap));
             var lgcm = (SimLinearGradientColorMap)colorMap;
             Assert.AreEqual(0, lgcm.ColorMarkers[0].Value);
-            Assert.AreEqual(ColorConverter.ConvertFromString("#FF3FFF00"), lgcm.ColorMarkers[0].Color);
+            Assert.AreEqual(SimColorConverter.ConvertFromString("#FF3FFF00"), lgcm.ColorMarkers[0].Color);
             Assert.AreEqual(33, lgcm.ColorMarkers[1].Value);
-            Assert.AreEqual(ColorConverter.ConvertFromString("#FFFFFFFF"), lgcm.ColorMarkers[1].Color);
+            Assert.AreEqual(SimColorConverter.ConvertFromString("#FFFFFFFF"), lgcm.ColorMarkers[1].Color);
             Assert.AreEqual(100, lgcm.ColorMarkers[2].Value);
-            Assert.AreEqual(ColorConverter.ConvertFromString("#FFFFFFFF"), lgcm.ColorMarkers[2].Color);
+            Assert.AreEqual(SimColorConverter.ConvertFromString("#FFFFFFFF"), lgcm.ColorMarkers[2].Color);
 
             prefilter = valueMapping.Prefilter;
             Assert.IsInstanceOfType(prefilter, typeof(SimMinimumPrefilter));
@@ -494,11 +495,11 @@ namespace SIMULTAN.Tests.IO
             Assert.IsInstanceOfType(colorMap, typeof(SimThresholdColorMap));
             var mtcm = (SimThresholdColorMap)colorMap;
             Assert.AreEqual(0, mtcm.ColorMarkers[0].Value);
-            Assert.AreEqual(ColorConverter.ConvertFromString("#FF3FFF00"), mtcm.ColorMarkers[0].Color);
+            Assert.AreEqual(SimColorConverter.ConvertFromString("#FF3FFF00"), mtcm.ColorMarkers[0].Color);
             Assert.AreEqual(3.5, mtcm.ColorMarkers[1].Value);
-            Assert.AreEqual(ColorConverter.ConvertFromString("#FFFFFFFF"), mtcm.ColorMarkers[1].Color);
+            Assert.AreEqual(SimColorConverter.ConvertFromString("#FFFFFFFF"), mtcm.ColorMarkers[1].Color);
             Assert.AreEqual(100, mtcm.ColorMarkers[2].Value);
-            Assert.AreEqual(ColorConverter.ConvertFromString("#12345678"), mtcm.ColorMarkers[2].Color);
+            Assert.AreEqual(SimColorConverter.ConvertFromString("#12345678"), mtcm.ColorMarkers[2].Color);
 
             var prefilter = mapping.Prefilter;
             Assert.IsInstanceOfType(prefilter, typeof(SimDefaultPrefilter));
@@ -513,11 +514,11 @@ namespace SIMULTAN.Tests.IO
             Assert.IsInstanceOfType(colorMap, typeof(SimLinearGradientColorMap));
             var lgcm = (SimLinearGradientColorMap)colorMap;
             Assert.AreEqual(0, lgcm.ColorMarkers[0].Value);
-            Assert.AreEqual(ColorConverter.ConvertFromString("#FF3FFF00"), lgcm.ColorMarkers[0].Color);
+            Assert.AreEqual(SimColorConverter.ConvertFromString("#FF3FFF00"), lgcm.ColorMarkers[0].Color);
             Assert.AreEqual(33, lgcm.ColorMarkers[1].Value);
-            Assert.AreEqual(ColorConverter.ConvertFromString("#FFFFFFFF"), lgcm.ColorMarkers[1].Color);
+            Assert.AreEqual(SimColorConverter.ConvertFromString("#FFFFFFFF"), lgcm.ColorMarkers[1].Color);
             Assert.AreEqual(100, lgcm.ColorMarkers[2].Value);
-            Assert.AreEqual(ColorConverter.ConvertFromString("#FFFFFFFF"), lgcm.ColorMarkers[2].Color);
+            Assert.AreEqual(SimColorConverter.ConvertFromString("#FFFFFFFF"), lgcm.ColorMarkers[2].Color);
 
             prefilter = mapping.Prefilter;
             Assert.IsInstanceOfType(prefilter, typeof(SimMinimumPrefilter));
@@ -570,11 +571,11 @@ namespace SIMULTAN.Tests.IO
             Assert.IsInstanceOfType(colorMap, typeof(SimThresholdColorMap));
             var mtcm = (SimThresholdColorMap)colorMap;
             Assert.AreEqual(0, mtcm.ColorMarkers[0].Value);
-            Assert.AreEqual(ColorConverter.ConvertFromString("#FF3FFF00"), mtcm.ColorMarkers[0].Color);
+            Assert.AreEqual(SimColorConverter.ConvertFromString("#FF3FFF00"), mtcm.ColorMarkers[0].Color);
             Assert.AreEqual(3.5, mtcm.ColorMarkers[1].Value);
-            Assert.AreEqual(ColorConverter.ConvertFromString("#FFFFFFFF"), mtcm.ColorMarkers[1].Color);
+            Assert.AreEqual(SimColorConverter.ConvertFromString("#FFFFFFFF"), mtcm.ColorMarkers[1].Color);
             Assert.AreEqual(100, mtcm.ColorMarkers[2].Value);
-            Assert.AreEqual(ColorConverter.ConvertFromString("#12345678"), mtcm.ColorMarkers[2].Color);
+            Assert.AreEqual(SimColorConverter.ConvertFromString("#12345678"), mtcm.ColorMarkers[2].Color);
 
             var prefilter = association.Prefilter;
             Assert.IsInstanceOfType(prefilter, typeof(SimDefaultPrefilter));
@@ -589,11 +590,11 @@ namespace SIMULTAN.Tests.IO
             Assert.IsInstanceOfType(colorMap, typeof(SimLinearGradientColorMap));
             var lgcm = (SimLinearGradientColorMap)colorMap;
             Assert.AreEqual(0, lgcm.ColorMarkers[0].Value);
-            Assert.AreEqual(ColorConverter.ConvertFromString("#FF3FFF00"), lgcm.ColorMarkers[0].Color);
+            Assert.AreEqual(SimColorConverter.ConvertFromString("#FF3FFF00"), lgcm.ColorMarkers[0].Color);
             Assert.AreEqual(33, lgcm.ColorMarkers[1].Value);
-            Assert.AreEqual(ColorConverter.ConvertFromString("#FFFFFFFF"), lgcm.ColorMarkers[1].Color);
+            Assert.AreEqual(SimColorConverter.ConvertFromString("#FFFFFFFF"), lgcm.ColorMarkers[1].Color);
             Assert.AreEqual(100, lgcm.ColorMarkers[2].Value);
-            Assert.AreEqual(ColorConverter.ConvertFromString("#FFFFFFFF"), lgcm.ColorMarkers[2].Color);
+            Assert.AreEqual(SimColorConverter.ConvertFromString("#FFFFFFFF"), lgcm.ColorMarkers[2].Color);
 
             prefilter = association.Prefilter;
             Assert.IsInstanceOfType(prefilter, typeof(SimMinimumPrefilter));

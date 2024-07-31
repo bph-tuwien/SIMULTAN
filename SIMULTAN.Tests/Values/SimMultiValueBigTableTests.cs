@@ -1,13 +1,14 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SIMULTAN.Data;
 using SIMULTAN.Data.Components;
+using SIMULTAN.Data.SimMath;
 using SIMULTAN.Data.MultiValues;
 using SIMULTAN.Projects;
 using SIMULTAN.Tests.TestUtils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Windows.Media.Media3D;
+
 
 namespace SIMULTAN.Tests.Values
 {
@@ -702,21 +703,21 @@ namespace SIMULTAN.Tests.Values
             var emptyData = DoubleTestDataTable(0, 0);
 
             //Out-of-range cases
-            Assert.AreEqual(0, emptyData.table.GetRange(new Point4D(-1, 3, 1, 3)).Count);
-            Assert.AreEqual(0, emptyData.table.GetRange(new Point4D(1, 3, -1, 3)).Count);
-            Assert.AreEqual(0, emptyData.table.GetRange(new Point4D(1, 100, 1, 3)).Count);
-            Assert.AreEqual(0, emptyData.table.GetRange(new Point4D(1, 3, 1, 100)).Count);
-            Assert.AreEqual(0, emptyData.table.GetRange(new Point4D(3, 1, 1, 3)).Count);
-            Assert.AreEqual(0, emptyData.table.GetRange(new Point4D(1, 3, 3, 1)).Count);
+            Assert.AreEqual(0, emptyData.table.GetRange(new SimPoint4D(-1, 3, 1, 3)).Count);
+            Assert.AreEqual(0, emptyData.table.GetRange(new SimPoint4D(1, 3, -1, 3)).Count);
+            Assert.AreEqual(0, emptyData.table.GetRange(new SimPoint4D(1, 100, 1, 3)).Count);
+            Assert.AreEqual(0, emptyData.table.GetRange(new SimPoint4D(1, 3, 1, 100)).Count);
+            Assert.AreEqual(0, emptyData.table.GetRange(new SimPoint4D(3, 1, 1, 3)).Count);
+            Assert.AreEqual(0, emptyData.table.GetRange(new SimPoint4D(1, 3, 3, 1)).Count);
 
-            Assert.AreEqual(0, data.table.GetRange(new Point4D(-1, 3, 1, 3)).Count);
-            Assert.AreEqual(0, data.table.GetRange(new Point4D(1, 3, -1, 3)).Count);
-            Assert.AreEqual(0, data.table.GetRange(new Point4D(1, 100, 1, 3)).Count);
-            Assert.AreEqual(0, data.table.GetRange(new Point4D(1, 3, 1, 100)).Count);
-            Assert.AreEqual(0, data.table.GetRange(new Point4D(3, 1, 1, 3)).Count);
-            Assert.AreEqual(0, data.table.GetRange(new Point4D(1, 3, 3, 1)).Count);
+            Assert.AreEqual(0, data.table.GetRange(new SimPoint4D(-1, 3, 1, 3)).Count);
+            Assert.AreEqual(0, data.table.GetRange(new SimPoint4D(1, 3, -1, 3)).Count);
+            Assert.AreEqual(0, data.table.GetRange(new SimPoint4D(1, 100, 1, 3)).Count);
+            Assert.AreEqual(0, data.table.GetRange(new SimPoint4D(1, 3, 1, 100)).Count);
+            Assert.AreEqual(0, data.table.GetRange(new SimPoint4D(3, 1, 1, 3)).Count);
+            Assert.AreEqual(0, data.table.GetRange(new SimPoint4D(1, 3, 3, 1)).Count);
 
-            var range = data.table.GetRange(new Point4D(2, 3, 2, 3));
+            var range = data.table.GetRange(new SimPoint4D(2, 3, 2, 3));
             double[,] compare = new double[2, 2]
             {
                 { 5001, 5002 },

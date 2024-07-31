@@ -33,7 +33,14 @@ namespace SIMULTAN.Data.Geometry
         /// <summary>
         /// Gets or sets the general calculation tolerance
         /// </summary>
-        public double Tolerance { get; set; }
+        public double Tolerance { get { return tolerance; } set { tolerance = value; toleranceSquared = value * value; } }
+        private double tolerance = 0.01;
+        private double toleranceSquared = 0.01 * 0.01;
+
+        /// <summary>
+        /// Returns the squared calculation tolerance. This value is derived from <see cref="Tolerance"/>
+        /// </summary>
+        public double ToleranceSquared { get { return toleranceSquared; } }
 
         /// <summary>
         /// Specifies whether offset surfaces should be calculated

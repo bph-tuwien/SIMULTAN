@@ -48,7 +48,7 @@ namespace SIMULTAN.Data.SimNetworks
                 oldItem.OnIsBeingDeleted();
                 this.UnsetValues(oldItem);
                 base.RemoveItem(index);
-                oldItem.OnIsDeleted();
+                oldItem.NotifyIsDeleted();
             }
             /// <summary>
             /// Replaces an element in the collection at index
@@ -78,7 +78,7 @@ namespace SIMULTAN.Data.SimNetworks
                 {
                     item.OnIsBeingDeleted();
                     this.UnsetValues(item);
-                    item.OnIsDeleted();
+                    item.NotifyIsDeleted();
                 }
                 base.ClearItems();
             }

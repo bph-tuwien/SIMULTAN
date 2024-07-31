@@ -9,6 +9,11 @@ namespace SIMULTAN.Data.SimNetworks
     public interface IElementWithComponent : INotifyPropertyChanged
     {
         /// <summary>
+        /// The network in which this element is contained
+        /// </summary>
+        SimNetwork ParentNetwork { get; }
+
+        /// <summary>
         /// The component instance
         /// </summary>
         SimComponentInstance ComponentInstance { get; set; }

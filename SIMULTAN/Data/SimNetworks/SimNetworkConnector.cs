@@ -1,20 +1,22 @@
-﻿using SIMULTAN.Data.Geometry;
+﻿using SIMULTAN.Data.SimMath;
 using SIMULTAN.Exchange.SimNetworkConnectors;
+using SIMULTAN.Utils;
 using System;
-using System.Windows.Media;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
 
 namespace SIMULTAN.Data.SimNetworks
 {
     /// <summary>
     /// Class for representing a connector between two ports in a SimNetwork
     /// </summary>
-    public partial class SimNetworkConnector : SimNamedObject<ISimManagedCollection>
+    public partial class SimNetworkConnector : SimNamedObject<ISimManagedCollection>, ISimNetworkElement
     {
 
         /// <summary>
         /// Color of the Connector
         /// </summary>
-        public DerivedColor Color
+        public SimColor Color
         {
             get { return this.color; }
             set
@@ -24,7 +26,7 @@ namespace SIMULTAN.Data.SimNetworks
             }
         }
 
-        private DerivedColor color;
+        private SimColor color;
 
         private SimId loadingSourceId, loadingTargetId;
 
@@ -63,7 +65,14 @@ namespace SIMULTAN.Data.SimNetworks
         /// The target Port
         /// </summary>
         public SimNetworkPort Target { get; internal set; }
-
+        /// <summary>
+        /// Stores additional control points 
+        /// </summary>
+        public ObservableCollection<SimPoint> Points
+        {
+            get;
+            internal set;
+        }
 
         #region .CTOR
         /// <summary>
@@ -117,11 +126,10 @@ namespace SIMULTAN.Data.SimNetworks
             if (this.Target == null)
                 throw new ArgumentNullException("No target is provided");
 
-
-            this.Color = new DerivedColor(Colors.DarkGray);
+            this.Points = new ObservableCollection<SimPoint>();
+            this.Color = SimColors.DarkGray;
             this.Name = this.Name = string.Format("{0}to{1}", this.Source.LocalID.ToString(), this.Target.LocalID.ToString());
             this.geom_representation_ref = GeometricReference.Empty;
-
         }
 
 
@@ -134,10 +142,12 @@ namespace SIMULTAN.Data.SimNetworks
             this.Id = id;
         }
 
-        internal SimNetworkConnector(string name, SimId id, SimId loadingSourceId, SimId loadingTargetId, DerivedColor color)
+        internal SimNetworkConnector(string name, SimId id, SimId loadingSourceId, SimId loadingTargetId, SimColor color, List<SimPoint> controlPoints)
         {
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
+            this.Points = new ObservableCollection<SimPoint>();
+            this.Points.AddRange(controlPoints);
             this.Name = name;
             this.Id = id;
             this.loadingSourceId = loadingSourceId;

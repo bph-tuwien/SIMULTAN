@@ -15,12 +15,10 @@ using SIMULTAN.Serializer.TXDXF;
 using SIMULTAN.Utils;
 using SIMULTAN.Utils.Files;
 using System;
-using System.CodeDom.Compiler;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Text;
 
 namespace SIMULTAN.Serializer.Projects
 {
@@ -141,7 +139,7 @@ namespace SIMULTAN.Serializer.Projects
             FileInfo vfile = files_to_import.FirstOrDefault(x => string.Equals(x.Extension, ParamStructFileExtensions.FILE_EXT_MULTIVALUES));
             FileInfo cfile = files_to_import.FirstOrDefault(x => string.Equals(x.Extension, ParamStructFileExtensions.FILE_EXT_COMPONENTS));
 
-            ExtendedProjectData mergeData = new ExtendedProjectData();
+            ExtendedProjectData mergeData = new ExtendedProjectData(_project.AllProjectDataManagers.SynchronizationContext, _project.AllProjectDataManagers.DispatcherTimerFactory);
 
             // load the taxonomies
             if (tfile != null)
@@ -179,7 +177,7 @@ namespace SIMULTAN.Serializer.Projects
                 if (!mergeData.Taxonomies.Any())
                 {
                     HierarchicalProject.LoadDefaultTaxonomies(mergeData);
-                    mergeData.Components.RestoreDefaultTaxonomyReferences();
+                    mergeData.RestoreDefaultTaxonomyReferences();
                 }
 
                 // 2c. put all imported components into a new parent component to make the import recognizable
@@ -187,12 +185,12 @@ namespace SIMULTAN.Serializer.Projects
 
                 import_parent = new SimComponent(_project.AllProjectDataManagers.UsersManager.CurrentUser.Role);
                 var importTax = _project.AllProjectDataManagers.Taxonomies.GetDefaultSlot(SimDefaultSlotKeys.Import);
-                import_parent.CurrentSlot = new SimTaxonomyEntryReference(importTax);
+                import_parent.Slots.Add(new SimTaxonomyEntryReference(importTax));
 
                 foreach (SimComponent c in to_transfer)
                 {
                     // define the slot in the parent
-                    var new_slot = import_parent.Components.FindAvailableSlot(c.CurrentSlot.Target);
+                    var new_slot = import_parent.Components.FindAvailableSlot(c.Slots[0].Target);
                     import_parent.Components.Add(new SimChildComponentEntry(new_slot, c));
                 }
 
@@ -215,11 +213,13 @@ namespace SIMULTAN.Serializer.Projects
                 // replace all taxonomy entries that already existed
                 ComponentWalker.ForeachComponent(import_parent, (component) =>
                 {
-                    if (component.ParentContainer == null)
+                    for (int i = 0; i < component.Slots.Count; i++)
                     {
-                        if (GetReplacingTaxonomyEntry(component.CurrentSlot.Target, existingTaxonomies, out var replaceEntry))
+                        var item = component.Slots[i];
+                        if (GetReplacingTaxonomyEntry(item.Target, existingTaxonomies, out var replaceEntry))
                         {
-                            component.CurrentSlot = new SimTaxonomyEntryReference(replaceEntry);
+                            component.Slots.Insert(i + 1, new SimTaxonomyEntryReference(replaceEntry));
+                            component.Slots.RemoveAt(i);
                         }
                     }
 
@@ -241,7 +241,7 @@ namespace SIMULTAN.Serializer.Projects
 
                     foreach (var param in component.Parameters)
                     {
-                        if (param.NameTaxonomyEntry.HasTaxonomyEntry())
+                        if (param.NameTaxonomyEntry.HasTaxonomyEntry)
                         {
                             if (GetReplacingTaxonomyEntry(param.NameTaxonomyEntry.TaxonomyEntryReference.Target, existingTaxonomies, out var replaceEntry))
                             {
@@ -250,6 +250,22 @@ namespace SIMULTAN.Serializer.Projects
                         }
                     }
                 });
+
+                // ToDo: remove, only for testing
+                /*
+                ComponentWalker.ForeachComponent(import_parent, (component) =>
+                {
+                    Debug.Assert(component.Slots.All(x => x.Target.Factory != null &&
+                        x.Target.Factory == _project.AllProjectDataManagers.Taxonomies));
+                    Debug.Assert(component.Components.All(x => x.Slot.SlotBase.Target.Factory != null &&
+                        x.Slot.SlotBase.Target.Factory == _project.AllProjectDataManagers.Taxonomies));
+                    Debug.Assert(component.ReferencedComponents.All(x => x.Slot.SlotBase.Target.Factory != null &&
+                        x.Slot.SlotBase.Target.Factory == _project.AllProjectDataManagers.Taxonomies));
+                    Debug.Assert(component.Parameters.All(x => !x.NameTaxonomyEntry.HasTaxonomyEntry ||
+                        x.NameTaxonomyEntry.TaxonomyEntryReference.Target.Factory != null &&
+                        x.NameTaxonomyEntry.TaxonomyEntryReference.Target.Factory == _project.AllProjectDataManagers.Taxonomies));
+                });
+                */
             }
 
             // delete the unpacked files
@@ -292,7 +308,7 @@ namespace SIMULTAN.Serializer.Projects
                 throw new ArgumentException("The given file does not exist!");
 
             // 1a. reconstruct the values file
-            var projectData = new ExtendedProjectData();
+            var projectData = new ExtendedProjectData(_project.AllProjectDataManagers.SynchronizationContext, _project.AllProjectDataManagers.DispatcherTimerFactory);
             if (_value_file.Exists)
             {
                 // 1b. load the values to a clean factory                
@@ -429,7 +445,7 @@ namespace SIMULTAN.Serializer.Projects
             FileInfo grfmfile = files_to_import.FirstOrDefault(x => string.Equals(x.Extension, ParamStructFileExtensions.FILE_EXT_GEOMETRY_RELATIONS_FILE_MAPPINGS));
             var simgeoFiles = files_to_import.Where(x => string.Equals(x.Extension, ParamStructFileExtensions.FILE_EXT_GEOMETRY_INTERNAL));
 
-            ExtendedProjectData mergeData = new ExtendedProjectData();
+            ExtendedProjectData mergeData = new ExtendedProjectData(_project.AllProjectDataManagers.SynchronizationContext, _project.AllProjectDataManagers.DispatcherTimerFactory);
 
             // load the taxonomies
             if (tfile != null)
@@ -454,8 +470,6 @@ namespace SIMULTAN.Serializer.Projects
                 DXFParserInfo info = new DXFParserInfo(Guid.Empty, mergeData);
                 mergeData.GeometryRelations.SetCallingLocation(new DummyReferenceLocation(info.GlobalId));
                 SimGeometryRelationsDxfIO.Read(grfile, info);
-
-                mergeData.GeometryRelations.RestoreReferences();
             }
 
             // import geometry files as new resources
@@ -768,9 +782,13 @@ namespace SIMULTAN.Serializer.Projects
             // Check whole component tree
             ComponentWalker.ForeachComponent(rootComponent, component =>
             {
-                if (component.ParentContainer == null && !result.Contains(component.CurrentSlot.Target.Taxonomy))
-                    result.Add(component.CurrentSlot.Target.Taxonomy);
-
+                foreach (var slot in component.Slots)
+                {
+                    if (component.ParentContainer == null && !result.Contains(slot.Target.Taxonomy))
+                    {
+                        result.Add(slot.Target.Taxonomy);
+                    }
+                }
                 // also check the child entry slots cause they could have no Target component
                 foreach (var child in component.Components)
                 {
@@ -788,7 +806,7 @@ namespace SIMULTAN.Serializer.Projects
                 // check parameters
                 foreach (var param in component.Parameters)
                 {
-                    if (param.NameTaxonomyEntry.HasTaxonomyEntry())
+                    if (param.NameTaxonomyEntry.HasTaxonomyEntry)
                     {
                         var tax = param.NameTaxonomyEntry.TaxonomyEntryReference.Target.Taxonomy;
                         if (!result.Contains(tax))

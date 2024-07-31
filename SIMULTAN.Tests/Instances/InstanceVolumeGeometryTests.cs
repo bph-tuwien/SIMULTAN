@@ -11,7 +11,7 @@ namespace SIMULTAN.Tests.Instances
     [TestClass]
     public class InstanceVolumeGeometryTests : BaseProjectTest
     {
-        private static readonly FileInfo testProject = new FileInfo(@".\GeometryInstanceTestsProject.simultan");
+        private static readonly FileInfo testProject = new FileInfo(@"./GeometryInstanceTestsProject.simultan");
 
 
         private static void CheckParameter(SimComponent comp, string name, double value, string unit,
@@ -48,7 +48,6 @@ namespace SIMULTAN.Tests.Instances
 
             var inst1 = comp.Instances[0];
             Assert.AreEqual(comp, inst1.Component);
-            Assert.AreEqual(SimInstanceType.Entity3D, inst1.InstanceType);
             Assert.AreEqual(true, inst1.State.IsRealized);
             Assert.AreEqual(SimInstanceConnectionState.Ok, inst1.State.ConnectionState);
             Assert.AreEqual(1, inst1.Placements.Count);
@@ -78,7 +77,6 @@ namespace SIMULTAN.Tests.Instances
 
             var inst1 = comp.Instances[0];
             Assert.AreEqual(comp, inst1.Component);
-            Assert.AreEqual(SimInstanceType.Entity3D, inst1.InstanceType);
             Assert.AreEqual(true, inst1.State.IsRealized);
             Assert.AreEqual(SimInstanceConnectionState.Ok, inst1.State.ConnectionState);
             Assert.AreEqual(1, inst1.Placements.Count);
@@ -96,7 +94,6 @@ namespace SIMULTAN.Tests.Instances
 
             inst1 = comp.Instances[0];
             Assert.AreEqual(comp, inst1.Component);
-            Assert.AreEqual(SimInstanceType.Entity3D, inst1.InstanceType);
             Assert.AreEqual(true, inst1.State.IsRealized);
             Assert.AreEqual(SimInstanceConnectionState.Ok, inst1.State.ConnectionState);
             Assert.AreEqual(1, inst1.Placements.Count);
@@ -127,17 +124,6 @@ namespace SIMULTAN.Tests.Instances
                 gm.Geometry.Faces.First(x => x.Name == "BackWall"),
                 gm.Geometry.Faces.First(x => x.Name == "RightWall")
             };
-
-            foreach (var subComp in room1Comp.Components.Where(x => x.Component != null && x.Component.InstanceType == SimInstanceType.GeometricSurface))
-            {
-                var geometricPlacement = (SimInstancePlacementGeometry)subComp.Component.Instances.First().Placements.First(x => x is SimInstancePlacementGeometry);
-                if (geometricPlacement.FileId == resource.Key && facesWithMaterial.Any(x => x.Id == geometricPlacement.GeometryId))
-                {
-                    Assert.IsTrue(subComp.Component.ReferencedComponents.Any(x => x.Target == wallComp));
-                }
-                else
-                    Assert.IsFalse(subComp.Component.ReferencedComponents.Any(x => x.Target == wallComp));
-            }
         }
 
         #endregion

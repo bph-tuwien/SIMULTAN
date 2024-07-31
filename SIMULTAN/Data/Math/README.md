@@ -1,0 +1,1 @@
+﻿These math classes are copied and renamed from the [WPF Core](https://github.com/dotnet/wpf/tree/main) repository as they are only available for Windows otherwise.

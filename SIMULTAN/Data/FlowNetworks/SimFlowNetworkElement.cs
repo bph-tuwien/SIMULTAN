@@ -1,7 +1,10 @@
 ﻿using SIMULTAN.Data.Components;
+using SIMULTAN.Data.SimMath;
+using SIMULTAN.Utils;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Globalization;
 using System.Linq;
 using System.Windows;
 
@@ -61,7 +64,7 @@ namespace SIMULTAN.Data.FlowNetworks
         {
             if ((e.PropertyName == nameof(SimComponent.Name)) ||
                 (e.PropertyName == nameof(SimComponent.Description)) ||
-                (e.PropertyName == nameof(SimComponent.CurrentSlot)))
+                (e.PropertyName == nameof(SimComponent.Slots)))
             {
                 //This one is unfortunately needed since the UI listens to it...
                 this.NotifyPropertyChanged(nameof(Content));
@@ -180,7 +183,7 @@ namespace SIMULTAN.Data.FlowNetworks
             }
         }
 
-        internal virtual void ResetContentInstance(Point _default_offset)
+        internal virtual void ResetContentInstance(SimPoint _default_offset)
         {
             if (this.Content != null)
             {
@@ -236,11 +239,11 @@ namespace SIMULTAN.Data.FlowNetworks
 
         #region METHODS: Info
 
-        internal virtual SimDoubleParameter GetFirstParamBySuffix(string _suffix, bool _in_flow_dir)
+        internal virtual SimDoubleParameter GetFirstParamBySuffix(string _suffix, bool _in_flow_dir, CultureInfo culture)
         {
             if (this.Content == null)
                 return null;
-            return ComponentWalker.GetFlatParameters<SimDoubleParameter>(this.Content.Component).FirstOrDefault(x => x.NameTaxonomyEntry.Name.EndsWith(_suffix));
+            return ComponentWalker.GetFlatParameters<SimDoubleParameter>(this.Content.Component).FirstOrDefault(x => x.NameTaxonomyEntry.GetLocalizedName(culture).EndsWith(_suffix));
         }
 
         public virtual bool GetBoundInstanceRealizedStatus()
@@ -268,7 +271,7 @@ namespace SIMULTAN.Data.FlowNetworks
         {
             SimComponentInstance instance = this.Content;
             if (instance == null) return false;
-            if (instance.Component.InstanceType != SimInstanceType.NetworkEdge) return false;
+            if (!instance.Component.InstanceType.HasFlag(SimInstanceType.NetworkEdge)) return false;
 
             return true;
         }
@@ -277,7 +280,7 @@ namespace SIMULTAN.Data.FlowNetworks
         {
             SimComponentInstance instance = this.Content;
             if (instance == null) return false;
-            if (instance.Component.InstanceType != SimInstanceType.NetworkEdge) return false;
+            if (!instance.Component.InstanceType.HasFlag(SimInstanceType.NetworkEdge)) return false;
 
             return instance.State.IsRealized;
         }
@@ -294,7 +297,7 @@ namespace SIMULTAN.Data.FlowNetworks
             if (this.Content == null)
                 return "[ ]" + geom_rep;
             else
-                return "[ " + this.Content.Component.CurrentSlot + ": " +
+                return "[ " + this.Content.Component.Slots[0] + ": " +
                     this.Content.Component.Id + " " + this.Content.Component.Name + " " + this.Content.Component.Description + " ]" + geom_rep;
         }
 

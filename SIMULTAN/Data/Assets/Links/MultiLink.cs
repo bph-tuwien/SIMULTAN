@@ -88,8 +88,8 @@ namespace SIMULTAN.Data.Assets
         /// <summary>
         /// Holds the different paths for the same Link on different machines.
         /// </summary>
-        public IReadonlyObservableDictionary<int, string> Representations { get { return representations; } }
-        private ObservableDictionary<int, string> representations;
+        public IReadonlyObservableDictionary<string, string> Representations { get { return representations; } }
+        private ObservableDictionary<string, string> representations;
 
         /// <summary>
         /// Indicates if the instance contains any link representations at all.
@@ -102,7 +102,7 @@ namespace SIMULTAN.Data.Assets
         /// <param name="_full_path">the full path of the link in the local file system</param>
         public MultiLink(string _full_path)
         {
-            this.representations = new ObservableDictionary<int, string>();
+            this.representations = new ObservableDictionary<string, string>();
             this.representations.CollectionChanged += Representations_CollectionChanged;
             AddRepresentation(_full_path);
         }
@@ -111,9 +111,9 @@ namespace SIMULTAN.Data.Assets
         /// The parsing constructor takes a dictionary of existing representations.
         /// </summary>
         /// <param name="_parsed_representations">the parsed representations</param>
-        internal MultiLink(IDictionary<int, string> _parsed_representations)
+        internal MultiLink(IDictionary<string, string> _parsed_representations)
         {
-            this.representations = new ObservableDictionary<int, string>();
+            this.representations = new ObservableDictionary<string, string>();
             this.representations.CollectionChanged += Representations_CollectionChanged;
             foreach (var entry in _parsed_representations)
             {
@@ -132,7 +132,7 @@ namespace SIMULTAN.Data.Assets
             if (string.IsNullOrEmpty(_full_path))
                 throw new ArgumentNullException("The new path cannot be Null!", nameof(_full_path));
 
-            int local_hash = MultiLinkManager.MachineHashGenerator.GetMachineHash();
+            var local_hash = MultiLinkManager.MachineHashGenerator.GetMachineHash();
             if (representations.ContainsKey(local_hash))
                 return false;
 
@@ -151,7 +151,7 @@ namespace SIMULTAN.Data.Assets
             if (string.IsNullOrEmpty(_full_path))
                 throw new ArgumentNullException("The path to remove cannot be Null!", nameof(_full_path));
 
-            int local_hash = MultiLinkManager.MachineHashGenerator.GetMachineHash();
+            var local_hash = MultiLinkManager.MachineHashGenerator.GetMachineHash();
             return representations.Remove(local_hash);
         }
 
@@ -162,7 +162,7 @@ namespace SIMULTAN.Data.Assets
         public string GetLink()
         {
             // construct the hash for the look-up
-            int local_hash = MultiLinkManager.MachineHashGenerator.GetMachineHash();
+            var local_hash = MultiLinkManager.MachineHashGenerator.GetMachineHash();
             if (representations.ContainsKey(local_hash))
                 return representations[local_hash];
             else

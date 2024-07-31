@@ -45,8 +45,6 @@ namespace SIMULTAN.Exchange.GeometryConnectors
 
         internal void Initialize()
         {
-            CreateConnectors();
-
             this.GeometryModel.Replaced += this.GeometryModel_Replaced;
             this.GeometryModel.Geometry.GeometryChanged += this.Geometry_GeometryChanged;
             this.GeometryModel.Geometry.TopologyChanged += this.Geometry_TopologyChanged;
@@ -136,7 +134,7 @@ namespace SIMULTAN.Exchange.GeometryConnectors
                 if (this.placements.TryGetValues(geom.Id, out var placements))
                 {
                     foreach (var placement in placements)
-                        InitGeometryConnection(placement, geom, false);
+                        InitGeometryConnection(placement, geom);
                 }
             }
         }
@@ -249,7 +247,7 @@ namespace SIMULTAN.Exchange.GeometryConnectors
                     {
                         var geometry = e.NewGeometry.GeometryFromId(pls.Key);
                         foreach (var pl in pls.Value)
-                            InitGeometryConnection(pl, geometry, false);
+                            InitGeometryConnection(pl, geometry);
                     }
                 }
             }
@@ -294,55 +292,23 @@ namespace SIMULTAN.Exchange.GeometryConnectors
 
         #endregion
 
-
-        private void CreateConnectors()
+        /// <summary>
+        /// Initiliazes the connectors sources.
+        /// </summary>
+        internal void InitializeConnectors()
         {
-            //Performance disabling
-            var enableReferencePropagation = Exchange.ProjectData.Components.EnableReferencePropagation;
-            Exchange.ProjectData.Components.EnableReferencePropagation = false;
-            Exchange.EnableNotifyGeometryInvalidated = false;
-
-            //Check the components to find instances that attach to this geometryModel
-            CreateConnectors(GeometryModel.File.Key, Exchange.ProjectData.Components);
-
-            Exchange.EnableNotifyGeometryInvalidated = true;
-            Exchange.NotifyGeometryInvalidated(null);
-
             //Initialize all connectors
             foreach (var sources in this.parameterSources)
                 sources.Value.ForEach(x => x.OnConnectorsInitialized());
-
-            //Invalidate/Recalculate all references
-            Exchange.ProjectData.Components.EnableReferencePropagation = enableReferencePropagation;
         }
 
-        private void CreateConnectors(int modelKey, IEnumerable<SimComponent> components)
-        {
-            foreach (var component in components)
-            {
-                if (component != null)
-                {
-                    foreach (var inst in component.Instances)
-                    {
-                        foreach (var placement in inst.Placements.Where(x => x is SimInstancePlacementGeometry gp && gp.FileId == modelKey))
-                        {
-                            CreateConnector((SimInstancePlacementGeometry)placement, false);
-                        }
-                    }
-
-                    //Child components
-                    CreateConnectors(modelKey, component.Components.Select(x => x.Component));
-                }
-            }
-        }
-
-        private void CreateConnector(SimInstancePlacementGeometry placement, bool initialize)
+        internal void CreateConnector(SimInstancePlacementGeometry placement, bool initialize)
         {
             this.placements.Add(placement.GeometryId, placement);
 
             //Create connection
             var geometry = this.GeometryModel.Geometry.GeometryFromId(placement.GeometryId);
-            InitGeometryConnection(placement, geometry, initialize);
+            InitGeometryConnection(placement, geometry);
 
             //Parameter source connectors
             foreach (var parameter in placement.Instance.Component.Parameters)
@@ -369,40 +335,24 @@ namespace SIMULTAN.Exchange.GeometryConnectors
         }
 
 
-        private bool InitGeometryConnection(SimInstancePlacementGeometry placement, BaseGeometry geometry, bool createNew)
+        private void InitGeometryConnection(SimInstancePlacementGeometry placement, BaseGeometry geometry)
         {
             bool isValid = false;
 
-            //When adding a if here, also add it to ComponentGeometryExchangeNew.IsValidAssociation
+            //When adding here, also add it to ComponentGeometryExchangeNew.IsValidAssociation
             if (geometry is Vertex)
-                isValid = placement.Instance.Component.InstanceType == SimInstanceType.AttributesPoint;
+                isValid = placement.Instance.Component.InstanceType.HasFlag(SimInstanceType.AttributesPoint);
             else if (geometry is Edge)
-                isValid = placement.Instance.Component.InstanceType == SimInstanceType.AttributesEdge;
+                isValid = placement.Instance.Component.InstanceType.HasFlag(SimInstanceType.AttributesEdge);
             else if (geometry is Face)
-            {
-                isValid = placement.Instance.Component.InstanceType == SimInstanceType.AttributesFace;
-
-                if (isValid)
-                {
-                    using (AccessCheckingDisabler.Disable(placement.Instance.Component.Factory))
-                    {
-                        //Create din/dout
-                        ExchangeHelpers.CreateParameterIfNotExists(placement.Instance.Component,
-                            ReservedParameterKeys.RP_MATERIAL_COMPOSITE_D_IN, ReservedParameters.RP_MATERIAL_COMPOSITE_D_IN,
-                        SimParameterInstancePropagation.PropagateIfInstance, 0.0);
-                        ExchangeHelpers.CreateParameterIfNotExists(placement.Instance.Component,
-                            ReservedParameterKeys.RP_MATERIAL_COMPOSITE_D_OUT, ReservedParameters.RP_MATERIAL_COMPOSITE_D_OUT,
-                            SimParameterInstancePropagation.PropagateIfInstance, 0.0);
-                    }
-                }
-            }
+                isValid = placement.Instance.Component.InstanceType.HasFlag(SimInstanceType.AttributesFace);
             if (geometry is Volume)
             {
-                if (placement.Instance.Component.InstanceType == SimInstanceType.Entity3D)
+                if (placement.Instance.Component.InstanceType.HasFlag(SimInstanceType.Entity3D))
                     isValid = true;
-                else if (placement.Instance.Component.InstanceType == SimInstanceType.NetworkNode)
+                else if (placement.Instance.Component.InstanceType.HasFlag(SimInstanceType.NetworkNode))
                 {
-                    return true; //This is a instance that connects a network node with it's parent
+                    return; //This is a instance that connects a network node with it's parent
                 }
             }
 
@@ -411,15 +361,13 @@ namespace SIMULTAN.Exchange.GeometryConnectors
                 placement.State = SimInstancePlacementState.Valid;
 
                 this.Exchange.NotifyAssociationChanged(new BaseGeometry[] { geometry });
-                if (placement.Instance.InstanceType == SimInstanceType.AttributesFace)
+                if (placement.InstanceType.HasFlag(SimInstanceType.AttributesFace))
                     this.Exchange.NotifyGeometryInvalidated(new BaseGeometry[] { geometry });
             }
             else
             {
                 placement.State = SimInstancePlacementState.InstanceTargetMissing;
             }
-
-            return isValid;
         }
 
 
@@ -470,7 +418,7 @@ namespace SIMULTAN.Exchange.GeometryConnectors
             {
                 this.Exchange.NotifyAssociationChanged(new BaseGeometry[] { geometry });
 
-                if (placement.Instance.InstanceType == SimInstanceType.AttributesFace)
+                if (placement.InstanceType.HasFlag(SimInstanceType.AttributesFace))
                     this.Exchange.NotifyGeometryInvalidated(new BaseGeometry[] { geometry });
             }
         }
@@ -480,7 +428,7 @@ namespace SIMULTAN.Exchange.GeometryConnectors
         {
             var geometry = this.GeometryModel.Geometry.GeometryFromId(placement.GeometryId);
 
-            if (geometry != null)
+            if (ParameterSourceConnector.SourceMatchesGeometry(source.GeometryProperty, geometry))
             {
                 var valueSourceConnector = new ParameterSourceConnector(geometry, source, placement);
                 this.parameterSources.Add(placement.GeometryId,
@@ -524,7 +472,7 @@ namespace SIMULTAN.Exchange.GeometryConnectors
             if (placement.FileId != this.GeometryModel.File.Key)
                 throw new ArgumentException("Placement does not belong to this GeometryModel");
 
-            if (placement.Instance.InstanceType == SimInstanceType.AttributesFace)
+            if (placement.InstanceType.HasFlag(SimInstanceType.AttributesFace))
             {
                 if (parameter.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_MATERIAL_COMPOSITE_D_IN) ||
                     parameter.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_MATERIAL_COMPOSITE_D_OUT))
@@ -534,7 +482,7 @@ namespace SIMULTAN.Exchange.GeometryConnectors
                         yield return geometry;
                 }
             }
-            else if (placement.Instance.InstanceType == SimInstanceType.Entity3D)
+            else if (placement.InstanceType.HasFlag(SimInstanceType.Entity3D))
             {
                 if (parameter.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_PARAM_TO_GEOMETRY))
                 {

@@ -13,7 +13,7 @@ namespace SIMULTAN.Tests.Components
     [TestClass]
     public class UserRootComponentCollectionTests : BaseProjectTest
     {
-        private static readonly FileInfo testProject = new FileInfo(@".\UserComponentListTest.simultan");
+        private static readonly FileInfo testProject = new FileInfo(@"./UserComponentListTest.simultan");
 
         [TestMethod]
         public void ConstructorTest()

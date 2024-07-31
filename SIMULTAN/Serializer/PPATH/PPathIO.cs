@@ -1,11 +1,14 @@
 ﻿using SIMULTAN.Data.Assets;
 using SIMULTAN.Projects;
 using SIMULTAN.Serializer.CODXF;
+using SIMULTAN.Utils.Files;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Enumeration;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace SIMULTAN.Serializer.PPATH
@@ -42,9 +45,9 @@ namespace SIMULTAN.Serializer.PPATH
             foreach (var resource in publicResources)
             {
                 if (resource is ResourceDirectoryEntry)
-                    writer.WriteLine(resource.CurrentRelativePath + Path.DirectorySeparatorChar);
+                    writer.WriteLine(FileSystemNavigation.SanitizeWritePath(resource.CurrentRelativePath) + "/");
                 else if (resource is ResourceFileEntry)
-                    writer.WriteLine(resource.CurrentRelativePath);
+                    writer.WriteLine(FileSystemNavigation.SanitizeWritePath(resource.CurrentRelativePath));
             }
         }
 
@@ -75,7 +78,9 @@ namespace SIMULTAN.Serializer.PPATH
             while ((line = file.ReadLine()) != null)
             {
                 if (!string.IsNullOrEmpty(line))
-                    result.Add(line);
+                {
+                    result.Add(FileSystemNavigation.SanitizePath(line));
+                }
             }
 
             return result;

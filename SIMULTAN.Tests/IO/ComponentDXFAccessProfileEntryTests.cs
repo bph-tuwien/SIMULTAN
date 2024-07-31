@@ -5,15 +5,11 @@ using SIMULTAN.Projects;
 using SIMULTAN.Serializer.CODXF;
 using SIMULTAN.Serializer.DXF;
 using SIMULTAN.Tests.Properties;
-using SIMULTAN.Tests.Util;
 using SIMULTAN.Tests.TestUtils;
 using System;
-using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace SIMULTAN.Tests.IO
 {
@@ -63,7 +59,6 @@ namespace SIMULTAN.Tests.IO
                 info.FileVersion = 12;
 
                 reader.Read();
-
                 entry = ComponentDxfIOComponents.ProfileEntryElement.Parse(reader, info);
             }
 
@@ -89,7 +84,6 @@ namespace SIMULTAN.Tests.IO
                 info.FileVersion = 11;
 
                 reader.Read();
-
                 entry = ComponentDxfIOComponents.ProfileEntryElement.Parse(reader, info);
             }
 
@@ -115,7 +109,6 @@ namespace SIMULTAN.Tests.IO
                 info.FileVersion = 0;
 
                 reader.Read();
-
                 entry = ComponentDxfIOComponents.ProfileEntryElement.Parse(reader, info);
             }
 

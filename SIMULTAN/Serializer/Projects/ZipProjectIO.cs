@@ -10,6 +10,7 @@ using SIMULTAN.Utils;
 using SIMULTAN.Utils.Files;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -70,7 +71,7 @@ namespace SIMULTAN.Serializer.Projects
 
                         // Close and unload the project
                         created.AuthenticationSkipped = true;
-                        Close(created, false, true);
+                        Close(created, true);
                         Unload(created);
                     }
                 }
@@ -98,7 +99,7 @@ namespace SIMULTAN.Serializer.Projects
         /// <returns>the loaded project</returns>
         public static HierarchicalProject Load(FileInfo _project_file, ExtendedProjectData _data_manager)
         {
-            // Console.WriteLine("-LOADING START...");
+            // Debug.WriteLine("-LOADING START...");
             // 1. check for an existing folder and offer recovery
 
             // 2. [ZIP] do the unpacking
@@ -121,14 +122,6 @@ namespace SIMULTAN.Serializer.Projects
             if (!files.Any(x => x.Extension == ParamStructFileExtensions.FILE_EXT_TAXONOMY))
             {
                 var taxFile = ProjectIO.CreateInitialTaxonomyFile(unpacked_folder.FullName);
-                var tmpFiles = files.ToList();
-                tmpFiles.Add(taxFile);
-                files = tmpFiles;
-            }
-            // Check if Geometry Relations file exists, otherwise create it
-            if (!files.Any(x => x.Extension == ParamStructFileExtensions.FILE_EXT_GEOMETRY_RELATIONS))
-            {
-                var taxFile = ProjectIO.CreateInitialGeometryRelationsFile(unpacked_folder.FullName);
                 var tmpFiles = files.ToList();
                 tmpFiles.Add(taxFile);
                 files = tmpFiles;
@@ -267,7 +260,7 @@ namespace SIMULTAN.Serializer.Projects
         /// <param name="_data_manager">the data manager for loading the project information</param>
         public static void OpenAfterAuthentication(HierarchicalProject _project, ExtendedProjectData _data_manager)
         {
-            // Console.WriteLine("-OPENING START...");
+            // Debug.WriteLine("-OPENING START...");
 
             if (!(_project is CompactProject cproject))
                 throw new ArgumentException("The project must be of type compact!");
@@ -296,14 +289,15 @@ namespace SIMULTAN.Serializer.Projects
                     if (File.Exists(full_path))
                     {
                         FileInfo child_file = new FileInfo(full_path);
-                        var child_pdm = new ExtendedProjectData();
+                        var child_pdm = new ExtendedProjectData(_data_manager.SynchronizationContext, _data_manager.DispatcherTimerFactory);
                         HierarchicalProject child_project = Load(child_file, child_pdm);
                         cproject.Children.Add(child_project);
                     }
                     else
                     {
                         // look for the project
-                        FileInfo project_candidate = FindProject(entry.Key, entry.Value, cproject.AllProjectDataManagers.AssetManager);
+                        FileInfo project_candidate = FindProject(entry.Key, entry.Value, cproject.AllProjectDataManagers.AssetManager,
+                            _data_manager.SynchronizationContext, _data_manager.DispatcherTimerFactory);
                         if (project_candidate == null)
                         {
                             // ask the user for the correct target folder? ... TODO
@@ -326,20 +320,12 @@ namespace SIMULTAN.Serializer.Projects
         /// project structures, closing those structures and clean-up.
         /// </summary>
         /// <param name="_project">the project to close</param>
-        /// <param name="_save_before_closing">if True the information from the data manager is transfered to the project file</param>
         /// <param name="_unloading_follows">if True, the project is immediately unloaded after closing</param>
         /// <exception cref="ProjectFileDeleteException">In case access to a project file is denied</exception>
-        public static void Close(HierarchicalProject _project, bool _save_before_closing, bool _unloading_follows)
+        public static void Close(HierarchicalProject _project, bool _unloading_follows)
         {
             // 1. check project state
             if (_project == null) return;
-
-            // 2. check the access to the temporary project folder: throws an exception that should be caught by the UI
-            CheckLockOnFiles(_project.ProjectUnpackFolder);
-
-            // 3. save, if necessary
-            if (_save_before_closing)
-                Save(_project, false);
 
             // 4. unload all child projects          
             foreach (var childP in _project.Children)
@@ -352,7 +338,12 @@ namespace SIMULTAN.Serializer.Projects
 
             // 6. delete the no longer need files from the temporary folder
             var extensions_to_skip = ExtensionsToIncludeForLoading();
-            DeleteFiles(_project.ProjectUnpackFolder, extensions_to_skip);
+
+            try
+            {
+                DeleteFiles(_project.ProjectUnpackFolder, extensions_to_skip);
+            }
+            catch (ProjectFileDeleteException) { }
         }
 
         /// <summary>
@@ -367,21 +358,19 @@ namespace SIMULTAN.Serializer.Projects
             // 1. check project state
             if (_project == null) return false;
 
-            // 2. check the access to the temporary project folder: throws an exception that should be caught by the UI
-            CheckLockOnFiles(_project.ProjectUnpackFolder);
-
-            // 2a. save changes to the components in the public component file (TODO: check for changes)
-            _project.ManagedFiles.SavePublic(false);
-
             // 3. clear and reset the data managers
             _project.Unload();
 
             // 4. delete the temporary folder
-            if (Directory.Exists(_project.ProjectUnpackFolder.FullName))
+            try
             {
-                // delete
-                Directory.Delete(_project.ProjectUnpackFolder.FullName, true);
+                if (Directory.Exists(_project.ProjectUnpackFolder.FullName))
+                {
+                    // delete
+                    Directory.Delete(_project.ProjectUnpackFolder.FullName, true);
+                }
             }
+            catch (IOException) { }
 
             // 5. unload the children projects
             foreach (var child in _project.Children)
@@ -563,8 +552,10 @@ namespace SIMULTAN.Serializer.Projects
         /// <param name="projectId">the Guid of the project</param>
         /// <param name="projectRelPath">the last known relative path of the project (relative to the parent)</param>
         /// <param name="resources">the resource manager of the parent project</param>
+        /// <param name="synchronize">the synchronization context</param>
+        /// <param name="dispatcherTimer">The dispatcher timer factory</param>
         /// <returns>A file info pointing to the matching project file, or Null when no project could be found</returns>
-        private static FileInfo FindProject(Guid projectId, string projectRelPath, AssetManager resources)
+        private static FileInfo FindProject(Guid projectId, string projectRelPath, AssetManager resources, ISynchronizeInvoke synchronize, IDispatcherTimerFactory dispatcherTimer)
         {
             if (projectId == Guid.Empty)
                 throw new ArgumentException(string.Format("The {0} has its default value!", nameof(projectId)));
@@ -582,7 +573,7 @@ namespace SIMULTAN.Serializer.Projects
                     if (File.Exists(reconstructed))
                     {
                         FileInfo projectFile = new FileInfo(reconstructed);
-                        bool found = ProjectHasExpectedId(projectId, projectFile);
+                        bool found = ProjectHasExpectedId(projectId, projectFile, synchronize, dispatcherTimer);
                         if (found)
                             return projectFile;
                     }
@@ -597,8 +588,10 @@ namespace SIMULTAN.Serializer.Projects
         /// </summary>
         /// <param name="projectId">the expected project Id</param>
         /// <param name="projectFile">the project file location</param>
+        /// <param name="synchronize">the synchronization context</param>
+        /// <param name="dispatcherTimer">The dispatcher timer factory</param>
         /// <returns>True, if the project could be located, loaded and its id was the expected one; False otherwise</returns>
-        private static bool ProjectHasExpectedId(Guid projectId, FileInfo projectFile)
+        private static bool ProjectHasExpectedId(Guid projectId, FileInfo projectFile, ISynchronizeInvoke synchronize, IDispatcherTimerFactory dispatcherTimer)
         {
             if (projectFile == null)
                 throw new ArgumentNullException(string.Format("The project file {0} cannot be null", nameof(projectFile)));
@@ -606,7 +599,7 @@ namespace SIMULTAN.Serializer.Projects
                 throw new ArgumentException(string.Format("The project file {0} is invalid!", nameof(projectFile)));
 
             // attempt to load and read out the meta-data
-            var pdm = new ExtendedProjectData();
+            var pdm = new ExtendedProjectData(synchronize, dispatcherTimer);
             HierarchicalProject project = ZipProjectIO.Load(projectFile, pdm);
             if (project != null)
             {
@@ -755,7 +748,7 @@ namespace SIMULTAN.Serializer.Projects
             if (_project == null) return false;
 
             bool ok = (!_project.IsLoaded && !_project.IsAuthenticated && !_project.IsReadyForAuthentication && !_project.IsOpened);
-            ok &= (!Directory.Exists(_project.ProjectUnpackFolder.FullName));
+            //ok &= (!Directory.Exists(_project.ProjectUnpackFolder.FullName));
             ok &= (_project.NonManagedFiles.Count == 0 && _project.AssociatedFilesCount == 0);
             return ok;
         }
@@ -765,7 +758,7 @@ namespace SIMULTAN.Serializer.Projects
         #region Files
 
         /// <summary>
-        /// Returns the file extensions - i.e., the file types to be used for loading a poject.
+        /// Returns the file extensions - i.e., the file types to be used for loading a project.
         /// </summary>
         /// <returns>a collection of extensions w/o point</returns>
         private static HashSet<string> ExtensionsToIncludeForLoading()
@@ -775,12 +768,13 @@ namespace SIMULTAN.Serializer.Projects
                 ParamStructFileExtensions.FILE_EXT_META,
                 ParamStructFileExtensions.FILE_EXT_MULTIVALUES_PUBLIC,
                 ParamStructFileExtensions.FILE_EXT_COMPONENTS_PUBLIC,
-                ParamStructFileExtensions.FILE_EXT_PUBLIC_PROJECT_PATHS
+                ParamStructFileExtensions.FILE_EXT_PUBLIC_PROJECT_PATHS,
+                ParamStructFileExtensions.FILE_EXT_TAXONOMY,
             };
         }
 
         /// <summary>
-        /// Returns the file extensions - i.e., the file types to be used for authentication within a poject.
+        /// Returns the file extensions - i.e., the file types to be used for authentication within a project.
         /// </summary>
         /// <returns>the extension of the user record file</returns>
         private static HashSet<string> ExtensionsToIncludeForAuthentication()
@@ -789,7 +783,7 @@ namespace SIMULTAN.Serializer.Projects
         }
 
         /// <summary>
-        /// Returns the file extensions - i.e., the file types to be excluded from opening a poject.
+        /// Returns the file extensions - i.e., the file types to be excluded from opening a project.
         /// </summary>
         /// <returns>a collection of extensions w/o point</returns>
         private static HashSet<string> ExtensionsToSkipForOpening()
@@ -799,7 +793,8 @@ namespace SIMULTAN.Serializer.Projects
                 ParamStructFileExtensions.FILE_EXT_META,
                 ParamStructFileExtensions.FILE_EXT_USERS,
                 ParamStructFileExtensions.FILE_EXT_MULTIVALUES_PUBLIC,
-                ParamStructFileExtensions.FILE_EXT_COMPONENTS_PUBLIC
+                ParamStructFileExtensions.FILE_EXT_COMPONENTS_PUBLIC,
+                ParamStructFileExtensions.FILE_EXT_TAXONOMY,
             };
         }
 

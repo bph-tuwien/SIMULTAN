@@ -2,26 +2,15 @@
 using SIMULTAN.Data.Components;
 using SIMULTAN.Data.Taxonomy;
 using SIMULTAN.DataMapping;
-using SIMULTAN.Excel;
 using SIMULTAN.Projects;
 using SIMULTAN.Serializer.DXF;
 using SIMULTAN.Serializer.ETDXF;
 using SIMULTAN.Utils;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Data;
 using System.IO;
 using System.Linq;
-using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Input;
-using System.Windows.Media.Media3D;
-using System.Windows.Navigation;
 
 namespace SIMULTAN.Serializer
 {
@@ -96,7 +85,8 @@ namespace SIMULTAN.Serializer
             new DXFSingleEntryParserElement<int>(DataMappingSaveCode.RULE_MAXMATCHES),
             new DXFSingleEntryParserElement<int>(DataMappingSaveCode.RULE_MAXDEPTH),
             new DXFSingleEntryParserElement<SimDataMappingDirection>(DataMappingSaveCode.RULE_DIRECTION),
-            new DXFSingleEntryParserElement<SimDataMappingReferencePoint>(DataMappingSaveCode.RULE_REFERENCEPOSITION),
+            new DXFSingleEntryParserElement<SimDataMappingReferencePoint>(DataMappingSaveCode.RULE_REFERENCEPOSITIONPARENT),
+            new DXFSingleEntryParserElement<SimDataMappingReferencePoint>(DataMappingSaveCode.RULE_REFERENCEPOSITIONCONSECUTIVE) { MinVersion = 22 },
         };
 
         internal static DXFEntityParserElementBase<SimDataMappingRuleParameter> ParameterRuleEntityElement =
@@ -217,7 +207,7 @@ namespace SIMULTAN.Serializer
 
         internal static DXFEntityParserElementBase<SimDataMappingReadRule> DataMappingReadRuleEntityElement =
             new DXFComplexEntityParserElement<SimDataMappingReadRule>(
-                new DXFEntityParserElement<SimDataMappingReadRule>(ParamStructTypes.DATAMAPPING_RULE_READ, 
+                new DXFEntityParserElement<SimDataMappingReadRule>(ParamStructTypes.DATAMAPPING_RULE_READ,
                     (data, info) => ParseDataMappingReadRule(data, info),
                     new DXFEntryParserElement[]
                     {
@@ -286,7 +276,7 @@ namespace SIMULTAN.Serializer
             //File header
             writer.WriteVersionSection();
 
-            writer.StartSection(ParamStructTypes.DATAMAPPINGTOOL_SECTION);
+            writer.StartSection(ParamStructTypes.DATAMAPPINGTOOL_SECTION, -1);
 
             foreach (var tool in projectData.DataMappingTools)
                 WriteDataMappingTool(tool, writer);
@@ -296,7 +286,6 @@ namespace SIMULTAN.Serializer
             //EOF
             writer.WriteEOF();
         }
-
 
         /// <summary>
         /// Reads a ETDXF file and loads the Excel Tools into a project
@@ -433,7 +422,7 @@ namespace SIMULTAN.Serializer
 
         #region DataMapping Rules
 
-        internal static (SimDataMappingRuleComponent rule, SimComponent[] mappedComponents) 
+        internal static (SimDataMappingRuleComponent rule, SimComponent[] mappedComponents)
             ParseDataMappingComponentRule(DXFParserResultSet data, DXFParserInfo info)
         {
             string sheetName = data.Get<string>(DataMappingSaveCode.RULE_SHEETNAME, string.Empty);
@@ -445,7 +434,7 @@ namespace SIMULTAN.Serializer
                 SimDataMappingRuleTraversalStrategy.Subtree);
 
             rule.Properties.AddRange(
-                data.Get<SimDataMappingComponentMappingProperties[]>(DataMappingSaveCode.RULE_PROPERTIES, 
+                data.Get<SimDataMappingComponentMappingProperties[]>(DataMappingSaveCode.RULE_PROPERTIES,
                     new SimDataMappingComponentMappingProperties[0])
                 );
 
@@ -568,17 +557,19 @@ namespace SIMULTAN.Serializer
 
             int offsetX = data.Get<int>(DataMappingSaveCode.RULE_OFFSETPARENT_X, 0);
             int offsetY = data.Get<int>(DataMappingSaveCode.RULE_OFFSETPARENT_Y, 1);
-            rule.OffsetParent = new IntIndex2D(offsetX, offsetY);
+            rule.OffsetParent = new RowColumnIndex(offsetY, offsetX);
 
             int offsetConsecutiveX = data.Get<int>(DataMappingSaveCode.RULE_OFFSETCONSECUTIVE_X, 0);
             int offsetConsecutiveY = data.Get<int>(DataMappingSaveCode.RULE_OFFSETCONSECUTIVE_Y, 0);
-            rule.OffsetConsecutive = new IntIndex2D(offsetConsecutiveX, offsetConsecutiveY);
+            rule.OffsetConsecutive = new RowColumnIndex(offsetConsecutiveY, offsetConsecutiveX);
 
             rule.MaxMatches = data.Get<int>(DataMappingSaveCode.RULE_MAXMATCHES, 1);
             rule.MaxDepth = data.Get<int>(DataMappingSaveCode.RULE_MAXDEPTH, 1);
-            rule.MappingDirection = data.Get<SimDataMappingDirection>(DataMappingSaveCode.RULE_DIRECTION, 
+            rule.MappingDirection = data.Get<SimDataMappingDirection>(DataMappingSaveCode.RULE_DIRECTION,
                 SimDataMappingDirection.Horizontal);
-            rule.ReferencePoint = data.Get<SimDataMappingReferencePoint>(DataMappingSaveCode.RULE_REFERENCEPOSITION, 
+            rule.ReferencePointParent = data.Get<SimDataMappingReferencePoint>(DataMappingSaveCode.RULE_REFERENCEPOSITIONPARENT,
+                SimDataMappingReferencePoint.BottomLeft);
+            rule.ReferencePointConsecutive = data.Get<SimDataMappingReferencePoint>(DataMappingSaveCode.RULE_REFERENCEPOSITIONCONSECUTIVE,
                 SimDataMappingReferencePoint.BottomLeft);
         }
 
@@ -608,16 +599,17 @@ namespace SIMULTAN.Serializer
             writer.Write(DataMappingSaveCode.RULE_NAME, rule.Name);
             writer.Write(DataMappingSaveCode.RULE_SHEETNAME, rule.SheetName);
 
-            writer.Write(DataMappingSaveCode.RULE_OFFSETPARENT_X, rule.OffsetParent.X);
-            writer.Write(DataMappingSaveCode.RULE_OFFSETPARENT_Y, rule.OffsetParent.Y);
-            writer.Write(DataMappingSaveCode.RULE_OFFSETCONSECUTIVE_X, rule.OffsetConsecutive.X);
-            writer.Write(DataMappingSaveCode.RULE_OFFSETCONSECUTIVE_Y, rule.OffsetConsecutive.Y);
+            writer.Write(DataMappingSaveCode.RULE_OFFSETPARENT_X, rule.OffsetParent.Column);
+            writer.Write(DataMappingSaveCode.RULE_OFFSETPARENT_Y, rule.OffsetParent.Row);
+            writer.Write(DataMappingSaveCode.RULE_OFFSETCONSECUTIVE_X, rule.OffsetConsecutive.Column);
+            writer.Write(DataMappingSaveCode.RULE_OFFSETCONSECUTIVE_Y, rule.OffsetConsecutive.Row);
 
             writer.Write(DataMappingSaveCode.RULE_MAXMATCHES, rule.MaxMatches);
             writer.Write(DataMappingSaveCode.RULE_MAXDEPTH, rule.MaxDepth);
 
             writer.Write(DataMappingSaveCode.RULE_DIRECTION, rule.MappingDirection);
-            writer.Write(DataMappingSaveCode.RULE_REFERENCEPOSITION, rule.ReferencePoint);
+            writer.Write(DataMappingSaveCode.RULE_REFERENCEPOSITIONPARENT, rule.ReferencePointParent);
+            writer.Write(DataMappingSaveCode.RULE_REFERENCEPOSITIONCONSECUTIVE, rule.ReferencePointConsecutive);
 
             //Type specific properties
             switch (rule)
@@ -651,11 +643,11 @@ namespace SIMULTAN.Serializer
                 iwriter.Write(ParamStructCommonSaveCode.X_VALUE, item);
             });
 
-            writer.WriteArray(DataMappingSaveCode.RULE_FILTER, rule.Filter, 
+            writer.WriteArray(DataMappingSaveCode.RULE_FILTER, rule.Filter,
                 (item, iwriter) =>
                 {
                     writer.Write(DataMappingSaveCode.RULE_FILTER_PROPERTY, item.Property);
-                    WriteFilterValue(item.Value, iwriter); 
+                    WriteFilterValue(item.Value, iwriter);
                 });
 
             //Needs to be serialized here since Rules don't have ids. Otherwise the mappings could be written somewhere else
@@ -665,7 +657,7 @@ namespace SIMULTAN.Serializer
             else
                 mappedComponents = Enumerable.Empty<SimComponent>();
 
-            writer.WriteArray(DataMappingSaveCode.RULE_MAPPED_COMPONENTS, mappedComponents, (mc, iwriter) => 
+            writer.WriteArray(DataMappingSaveCode.RULE_MAPPED_COMPONENTS, mappedComponents, (mc, iwriter) =>
                 {
                     iwriter.Write(ParamStructCommonSaveCode.X_VALUE, mc.Id.LocalId);
                     iwriter.WriteGlobalId(ParamStructCommonSaveCode.Y_VALUE, mc.Id.GlobalId, mc.Factory.CalledFromLocation.GlobalID);
@@ -768,7 +760,7 @@ namespace SIMULTAN.Serializer
         {
             var paramId = data.GetSimId(DataMappingSaveCode.RULE_PARAMETER_GLOBALID, DataMappingSaveCode.RULE_PARAMETER_LOCALID, info.GlobalId);
             var parameter = info.ProjectData.IdGenerator.GetById<SimBaseParameter>(paramId);
-            
+
             var sheetName = data.Get<string>(DataMappingSaveCode.RULE_SHEETNAME, "");
 
             var columnStart = data.Get<int>(DataMappingSaveCode.RULE_RANGE_COLUMNSTART, 0);
@@ -902,6 +894,12 @@ namespace SIMULTAN.Serializer
         }
         internal static void WriteFilterValue(object value, DXFStreamWriter writer)
         {
+            if (value == null)
+            {
+                writer.Write(DataMappingSaveCode.RULE_FILTER_TYPE, SimDataMappingFilterType.Null);
+                writer.Write(DataMappingSaveCode.RULE_FILTER_VALUE, "");
+                return;
+            }
             switch (value)
             {
                 case string s:

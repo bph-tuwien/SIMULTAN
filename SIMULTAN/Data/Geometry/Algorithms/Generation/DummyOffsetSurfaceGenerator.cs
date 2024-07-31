@@ -78,8 +78,14 @@ namespace SIMULTAN.Data.Geometry
 
             var dir = face.Normal * (int)orientation * offset;
 
-            var off = new OffsetFace(face);
+            var off = new OffsetFace(face, orientation);
             off.Boundary.AddRange(face.Boundary.Edges.Select(x => x.StartVertex.Position + dir));
+
+            foreach (var hole in face.Holes)
+            {
+                off.Openings.Add(hole, hole.Edges.Select(x => x.StartVertex.Position).ToList());
+            }
+
             return off;
         }
     }

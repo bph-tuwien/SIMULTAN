@@ -17,7 +17,7 @@ namespace SIMULTAN.DataMapping
         /// <summary>
         /// The current position
         /// </summary>
-        public IntIndex2D CurrentPosition { get; set; } = new IntIndex2D(0,0);
+        public RowColumnIndex CurrentPosition { get; set; } = new RowColumnIndex(0,0);
 
         /// <summary>
         /// Number of objects that have already matched. This value is compared to <see cref="SimDataMappingRuleBase{TPropertyEnumeration, TFilter}.MaxMatches"/>
@@ -48,7 +48,12 @@ namespace SIMULTAN.DataMapping
         /// The range into which the results have been written
         /// </summary>
         public RowColumnRange Range { get; set; } = new RowColumnRange(-1, -1, -1, -1);
-    
+
+        /// <summary>
+        /// Stores the ranges already used by the parent rules
+        /// </summary>
+        public List<RowColumnRange> RangeStack { get; set; } = new List<RowColumnRange>();
+
         /// <summary>
         /// Releases all models loaded during the traversal
         /// </summary>

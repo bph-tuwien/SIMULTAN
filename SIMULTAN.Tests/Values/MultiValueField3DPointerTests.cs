@@ -11,7 +11,7 @@ namespace SIMULTAN.Tests.Values
     [TestClass]
     public class MultiValueField3DPointerTests : BaseProjectTest
     {
-        private static readonly FileInfo testProject = new FileInfo(@".\Field3DTestsProject.simultan");
+        private static readonly FileInfo testProject = new FileInfo(@"./Field3DTestsProject.simultan");
 
         private void CheckPointer(SimMultiValueField3DParameterSource ptr, SimMultiValueField3D table, double x, double y, double z)
         {
@@ -284,7 +284,7 @@ namespace SIMULTAN.Tests.Values
 
             //Find ptr
             var comp = projectData.Components.First(x => x.Name == "WithPointer");
-            var param = comp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "Target");
+            var param = comp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Text == "Target");
 
             var ptr = (SimMultiValueField3DParameterSource)param.ValueSource;
             CheckPointer(ptr, ptr.Field, 1.5, 0.017478, 200.0);
@@ -301,10 +301,10 @@ namespace SIMULTAN.Tests.Values
 
             //Find ptr
             var comp = projectData.Components.First(x => x.Name == "WithPointer");
-            var param = comp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "Target");
-            var xParam = comp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "Target.ValuePointer.OffsetX");
-            var yParam = comp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "Target.ValuePointer.OffsetY");
-            var zParam = comp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "Target.ValuePointer.OffsetZ");
+            var param = comp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Text == "Target");
+            var xParam = comp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Text == "Target.ValuePointer.OffsetX");
+            var yParam = comp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Text == "Target.ValuePointer.OffsetY");
+            var zParam = comp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Text == "Target.ValuePointer.OffsetZ");
 
             var ptr = (SimMultiValueField3DParameterSource)param.ValueSource;
             ptr.ValueChanged += (s, e) => eventCounter++;
@@ -332,10 +332,10 @@ namespace SIMULTAN.Tests.Values
 
             //Find ptr
             var comp = projectData.Components.First(x => x.Name == "WithPointer");
-            var param = comp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "Target");
-            var xParam = comp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "Target.ValuePointer.OffsetX");
-            var yParam = comp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "Target.ValuePointer.OffsetY");
-            var zParam = comp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "Target.ValuePointer.OffsetZ");
+            var param = comp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Text == "Target");
+            var xParam = comp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Text == "Target.ValuePointer.OffsetX");
+            var yParam = comp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Text == "Target.ValuePointer.OffsetY");
+            var zParam = comp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Text == "Target.ValuePointer.OffsetZ");
 
             var ptr = (SimMultiValueField3DParameterSource)param.ValueSource;
             ptr.ValueChanged += (s, e) => eventCounter++;
@@ -363,13 +363,13 @@ namespace SIMULTAN.Tests.Values
             LoadProject(testProject);
 
             var comp = projectData.Components.First(x => x.Name == "NoParameters");
-            var param = comp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "Target");
+            var param = comp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Text == "Target");
 
             ((SimMultiValueParameterSource)param.ValueSource).CreateValuePointerParameters(projectData.UsersManager.Users.First());
 
-            var xParam = comp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "Target.ValuePointer.OffsetX");
-            var yParam = comp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "Target.ValuePointer.OffsetY");
-            var zParam = comp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "Target.ValuePointer.OffsetZ");
+            var xParam = comp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Text == "Target.ValuePointer.OffsetX");
+            var yParam = comp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Text == "Target.ValuePointer.OffsetY");
+            var zParam = comp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Text == "Target.ValuePointer.OffsetZ");
 
             Assert.IsNotNull(xParam);
             Assert.IsNotNull(yParam);
@@ -388,7 +388,7 @@ namespace SIMULTAN.Tests.Values
         private WeakReference MemoryLeakRemoveFromParameterTest_Action()
         {
             var comp = projectData.Components.First(x => x.Name == "WithPointer");
-            var param = comp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "Target");
+            var param = comp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Text == "Target");
 
             WeakReference ptrRef = new WeakReference(param.ValueSource);
             param.ValueSource = null;
@@ -415,7 +415,7 @@ namespace SIMULTAN.Tests.Values
         private WeakReference MemoryLeakRemoveParameterTest_Action()
         {
             var comp = projectData.Components.First(x => x.Name == "WithPointer");
-            var param = comp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "Target");
+            var param = comp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Text == "Target");
 
             WeakReference ptrRef = new WeakReference(param.ValueSource);
 
@@ -443,7 +443,7 @@ namespace SIMULTAN.Tests.Values
             LoadProject(testProject);
 
             var comp = projectData.Components.First(x => x.Name == "WithPointer");
-            var param = comp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "Target");
+            var param = comp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Text == "Target");
 
             var table = ((SimMultiValueField3DParameterSource)param.ValueSource).Field;
             table[2, 3, 3] = 9977;

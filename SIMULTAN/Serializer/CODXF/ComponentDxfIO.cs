@@ -132,7 +132,6 @@ namespace SIMULTAN.Serializer.CODXF
             EOFParserElement.Element.Parse(reader);
 
             parserInfo.ProjectData.Components.RestoreReferences(parserInfo.ProjectData.NetworkManager.GetAllNetworkElements());
-            parserInfo.ProjectData.AssetManager.RestoreReferences();
             parserInfo.ProjectData.AssetManager.ReleaseTmpParseRecord();
         }
 
@@ -252,7 +251,6 @@ namespace SIMULTAN.Serializer.CODXF
             EOFParserElement.Element.Parse(reader);
 
             parserInfo.ProjectData.Components.RestoreReferences(parserInfo.ProjectData.NetworkManager.GetAllNetworkElements());
-            parserInfo.ProjectData.AssetManager.RestoreReferences();
             parserInfo.ProjectData.AssetManager.ReleaseTmpParseRecord();
 
             if (parserInfo.FileVersion >= 12)
@@ -337,7 +335,6 @@ namespace SIMULTAN.Serializer.CODXF
             EOFParserElement.Element.Parse(reader);
 
             parserInfo.ProjectData.Components.RestoreReferences(parserInfo.ProjectData.NetworkManager.GetAllNetworkElements());
-            parserInfo.ProjectData.AssetManager.RestoreReferences();
             parserInfo.ProjectData.AssetManager.ReleaseTmpParseRecord();
         }
 

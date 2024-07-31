@@ -1,10 +1,10 @@
-﻿using SIMULTAN.Utils;
+﻿using SIMULTAN.Data.SimMath;
+using SIMULTAN.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Windows.Media.Media3D;
 
 namespace SIMULTAN.Data.Geometry
 {
@@ -21,18 +21,19 @@ namespace SIMULTAN.Data.Geometry
         /// <param name="faces">The offset faces that should be converted</param>
         /// <param name="transformation">An additional transformation which is applied to all vertices</param>
         /// <param name="tolerance">Tolerance for merging vertices</param>
+        /// <param name="dispatcherTimer">The dispatcher timer factory</param>
         /// <returns>A geometry model containing all the faces</returns>
-        public static GeometryModelData ConvertToModel(IEnumerable<OffsetFace> faces, Matrix3D transformation, double tolerance = 0.01)
+        public static GeometryModelData ConvertToModel(IEnumerable<OffsetFace> faces, SimMatrix3D transformation, IDispatcherTimerFactory dispatcherTimer, double tolerance = 0.01)
         {
             var t2 = tolerance * tolerance;
 
-            GeometryModelData data = new GeometryModelData();
+            GeometryModelData data = new GeometryModelData(dispatcherTimer);
             Layer layer = new Layer(data, "OffsetModel");
 
             //Calculation maximum and minimum along each axis
             var minmax = VertexAlgorithms.BoundingBox(faces.SelectMany(f => f.Boundary).Select(v => transformation.Transform(v)));
 
-            AABBGrid vertexGrid = new AABBGrid(minmax.min, minmax.max, new Vector3D(5, 5, 5));
+            AABBGrid vertexGrid = new AABBGrid(minmax.min, minmax.max, new SimVector3D(5, 5, 5));
 
             List<Vertex> vertices = new List<Vertex>();
             List<Edge> edges = new List<Edge>();

@@ -1,10 +1,10 @@
-﻿using System;
+﻿using SIMULTAN.Data.SimMath;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Windows.Media;
 
 namespace SIMULTAN.Data.ValueMappings
 {
@@ -23,7 +23,7 @@ namespace SIMULTAN.Data.ValueMappings
         /// </summary>
         /// <param name="value">The value</param>
         /// <returns>Mapped color</returns>
-        public abstract Color Map(double value);
+        public abstract SimColor Map(double value);
 
         /// <summary>
         /// Invokes the <see cref="SimValueMapping.ValueMappingChanged"/> event in the <see cref="Owner"/>

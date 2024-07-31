@@ -43,9 +43,9 @@ namespace SIMULTAN.Data.Components
             if (!this.ParameterRecord.Contains(_record)) return _record;
 
             SimBaseParameter copy = _record.Clone();
-            if (!copy.NameTaxonomyEntry.HasTaxonomyEntry())
+            if (!copy.NameTaxonomyEntry.HasTaxonomyEntry)
             {
-                copy.NameTaxonomyEntry = new Taxonomy.SimTaxonomyEntryOrString(copy.NameTaxonomyEntry.Name + " (copy)");
+                copy.NameTaxonomyEntry = new Taxonomy.SimTaxonomyEntryOrString(copy.NameTaxonomyEntry.Text + " (copy)");
             }
             if (copy != null)
                 this.ParameterRecord.Add(copy);

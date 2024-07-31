@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using System.Windows.Media.Media3D;
+using SIMULTAN.Data.SimMath;
 
 namespace SIMULTAN.Data.MultiValues
 {
@@ -91,7 +91,13 @@ namespace SIMULTAN.Data.MultiValues
                 if (owner.resizeHandlingEnabled)
                 {
                     if (axis == SimMultiValueBigTableHeader.AxisEnum.Rows)
-                        owner.values.Insert(index, new List<object>(Enumerable.Repeat<object>(null, owner.Count(1))));
+                    {
+                        int columnCount = owner.Count(1);
+                        if (this.Count == 0) //No rows -> Count(1) returns always 0
+                            columnCount = owner.ColumnHeaders.Count;
+
+                        owner.values.Insert(index, new List<object>(Enumerable.Repeat<object>(null, columnCount)));
+                    }
                     else if (axis == SimMultiValueBigTableHeader.AxisEnum.Columns)
                     {
                         foreach (var row in owner.values)
@@ -725,7 +731,7 @@ namespace SIMULTAN.Data.MultiValues
         /// W: Column End
         /// </param>
         /// <returns>the extracted values</returns>
-        public List<List<object>> GetRange(Point4D _range_definition)
+        public List<List<object>> GetRange(SimPoint4D _range_definition)
         {
             List<List<object>> range = new List<List<object>>();
 
@@ -772,7 +778,7 @@ namespace SIMULTAN.Data.MultiValues
         /// W: Column End
         /// </param>
         /// <returns>the extracted values</returns>
-        public List<List<T>> GetRange<T>(Point4D _range_definition)
+        public List<List<T>> GetRange<T>(SimPoint4D _range_definition)
         {
             List<List<T>> range = new List<List<T>>();
 

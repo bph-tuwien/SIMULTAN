@@ -46,6 +46,8 @@ namespace SIMULTAN.Data.Geometry
         private HashSet<BaseGeometry> batchTopologyChangedGeometry;
         private HashSet<GeoReference> batchGeoReferencesChanged;
 
+        private IDispatcherTimerFactory dispatcherTimer;
+
         /// <summary>
         /// Returns a list of all Vertex instances
         /// </summary>
@@ -230,8 +232,13 @@ namespace SIMULTAN.Data.Geometry
         /// <summary>
         /// Initializes a new instance of the GeometryModelData class
         /// </summary>
-        public GeometryModelData()
+        /// <param name="dispatcherTimer">Dispatcher time for the offset surface generator</param>
+        public GeometryModelData(IDispatcherTimerFactory dispatcherTimer)
         {
+            if (dispatcherTimer == null)
+                throw new ArgumentNullException(nameof(dispatcherTimer));
+
+            this.dispatcherTimer = dispatcherTimer;
             geometryLookup = new Dictionary<ulong, BaseGeometry>();
 
             Vertices = new ObservableCollection<Vertex>();
@@ -251,7 +258,7 @@ namespace SIMULTAN.Data.Geometry
 
             ConnectEvents();
 
-            this.OffsetModel = new OffsetModel(this);
+            this.OffsetModel = new OffsetModel(this, dispatcherTimer.Create());
         }
 
         /// <summary>
@@ -259,7 +266,8 @@ namespace SIMULTAN.Data.Geometry
         /// This should only be used when loading from file.
         /// </summary>
         /// <param name="nextId">The next id to use for new BaseGeometries.</param>
-        public GeometryModelData(ulong nextId) : this()
+        /// <param name="dispatcherTimer">Dispatcher time for the offset surface generator</param>
+        public GeometryModelData(ulong nextId, IDispatcherTimerFactory dispatcherTimer) : this(dispatcherTimer)
         {
             this.nextId = nextId;
         }
@@ -414,13 +422,14 @@ namespace SIMULTAN.Data.Geometry
         /// Registers an id as used.
         /// </summary>
         /// <param name="id">The id</param>
-        /// <param name="geometry">The geometry to register, use null if it is a layer.</param>
+        /// <param name="geometry">The geometry to register, use null if it is a layer (layers will not be added to the lookup, they just increase the next id).</param>
         public void RegisterId(ulong id, BaseGeometry geometry)
         {
             if (geometryLookup.ContainsKey(id))
                 throw new ArgumentException("Id was already registered");
 
-            geometryLookup.Add(id, geometry);
+            if (geometry != null)
+                geometryLookup.Add(id, geometry);
 
             if (id >= nextId)
                 nextId = id + 1;
@@ -515,7 +524,7 @@ namespace SIMULTAN.Data.Geometry
         /// <returns></returns>
         public GeometryModelData Clone()
         {
-            GeometryModelData model = new GeometryModelData();
+            GeometryModelData model = new GeometryModelData(dispatcherTimer);
             GeometryModelAlgorithms.CopyContent(this, model, true);
 
             //Copy linked models
@@ -575,56 +584,6 @@ namespace SIMULTAN.Data.Geometry
         public Layer LayerFromId(ulong id)
         {
             return LayerFromId(id, this.Layers);
-        }
-
-
-        private Layer CloneLayer(GeometryModelData targetModel, Layer sourceLayer, Layer parentLayer, Dictionary<Layer, Layer> layerLookup)
-        {
-            Layer clone = new Layer(sourceLayer.Id, targetModel, sourceLayer.Name)
-            {
-                IsVisible = sourceLayer.IsVisible
-            };
-            if (parentLayer != null)
-            {
-                clone.Color = new DerivedColor(sourceLayer.Color.LocalColor, parentLayer, "Color");
-                clone.Color.IsFromParent = sourceLayer.Color.IsFromParent;
-            }
-            else
-                clone.Color = new DerivedColor(sourceLayer.Color.LocalColor);
-
-            foreach (var l in sourceLayer.Layers)
-                clone.Layers.Add(CloneLayer(targetModel, l, clone, layerLookup));
-            layerLookup.Add(sourceLayer, clone);
-            return clone;
-        }
-        private T CloneWithLookup<T>(T source, Func<T, T> clone, Dictionary<T, T> dict)
-        {
-            T t = clone(source);
-            dict.Add(source, t);
-            return t;
-        }
-        private DerivedColor CloneColor(DerivedColor source, Dictionary<Layer, Layer> layerLookup, GeometryModelData model)
-        {
-            if (source.Parent is Layer)
-            {
-                DerivedColor result = new DerivedColor(source.LocalColor, layerLookup[(Layer)source.Parent], source.PropertyName);
-                result.IsFromParent = source.IsFromParent;
-                return result;
-            }
-            else if (source.Parent is BaseGeometry && model.GeometryFromId(((BaseGeometry)source.Parent).Id) != null)
-            {
-                var sourceGeo = model.GeometryFromId(((BaseGeometry)source.Parent).Id);
-                DerivedColor result = new DerivedColor(source.LocalColor, sourceGeo, source.PropertyName)
-                {
-                    IsFromParent = source.IsFromParent
-                };
-                return result;
-            }
-            else
-            {
-                DerivedColor result = new DerivedColor(source.Color);
-                return result;
-            }
         }
 
         private Layer LayerFromId(ulong id, IEnumerable<Layer> layers)

@@ -194,6 +194,12 @@ namespace SIMULTAN.Data.Geometry
         }
         private bool isValueMappingEnabled = false;
 
+        /// <summary>
+        /// The tolerance used during cleanup operations
+        /// </summary>
+        public double CleanupTolerance { get { return cleanupTolerance; } set { this.cleanupTolerance = value; NotifyPropertyChanged(nameof(CleanupTolerance)); } }
+        private double cleanupTolerance = 0.05;
+
         #endregion
 
         #region Events

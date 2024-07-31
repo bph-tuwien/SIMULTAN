@@ -4,7 +4,7 @@ using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Windows.Media;
+using SIMULTAN.Data.SimMath;
 
 namespace SIMULTAN.Data.ValueMappings
 {
@@ -16,11 +16,11 @@ namespace SIMULTAN.Data.ValueMappings
         /// <summary>
         /// If values cannot be mapped during Map(..), this color is returned instead
         /// </summary>
-        public static Color OutOfRangeColor = Colors.DarkGray;
+        public static SimColor OutOfRangeColor = SimColors.DarkGray;
         /// <summary>
         /// Color for objects that are not parameterized (i.e. have no component assigned)
         /// </summary>
-        public static Color NotParameterizedColor = Colors.DarkGray;
+        public static SimColor NotParameterizedColor = SimColors.DarkGray;
         /// <summary>
         /// Base lighting factor
         /// </summary>

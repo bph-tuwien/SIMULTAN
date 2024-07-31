@@ -899,7 +899,7 @@ SEQEND
 0
 ENTCTN
 1428
-12
+5
 1414
 2
 0
@@ -913,7 +913,7 @@ SIMULTAN.Data.Components.SimComponentInstance
 1601
 Custom Instance
 1602
-12
+5
 1609
 0
 1665
@@ -1011,7 +1011,7 @@ SIMULTAN.Data.Components.SimComponentInstance
 1601
 Custom Instance 2
 1602
-12
+5
 1609
 1
 1665

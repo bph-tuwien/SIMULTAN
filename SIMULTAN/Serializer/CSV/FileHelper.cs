@@ -32,7 +32,9 @@ namespace SIMULTAN.Serializer.CSV
             if (encodingByParsingLatin1 != null)
                 return encodingByParsingLatin1;
 
+#pragma warning disable SYSLIB0001 // Type or member is obsolete
             var encodingByParsingUTF7 = GetEncodingByParsing(filename, Encoding.UTF7);
+#pragma warning restore SYSLIB0001 // Type or member is obsolete
             if (encodingByParsingUTF7 != null)
                 return encodingByParsingUTF7;
 
@@ -54,7 +56,9 @@ namespace SIMULTAN.Serializer.CSV
             }
 
             // Analyze the BOM
+#pragma warning disable SYSLIB0001 // Type or member is obsolete
             if (byteOrderMark[0] == 0x2b && byteOrderMark[1] == 0x2f && byteOrderMark[2] == 0x76) return Encoding.UTF7;
+#pragma warning restore SYSLIB0001 // Type or member is obsolete
             if (byteOrderMark[0] == 0xef && byteOrderMark[1] == 0xbb && byteOrderMark[2] == 0xbf) return Encoding.UTF8;
             if (byteOrderMark[0] == 0xff && byteOrderMark[1] == 0xfe) return Encoding.Unicode; //UTF-16LE
             if (byteOrderMark[0] == 0xfe && byteOrderMark[1] == 0xff) return Encoding.BigEndianUnicode; //UTF-16BE

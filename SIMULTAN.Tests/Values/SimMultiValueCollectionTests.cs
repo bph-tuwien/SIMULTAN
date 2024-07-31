@@ -1,23 +1,24 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SIMULTAN.Data;
+using SIMULTAN.Data.SimMath;
 using SIMULTAN.Data.MultiValues;
 using SIMULTAN.Tests.TestUtils;
 using SIMULTAN.Utils;
 using System;
 using System.IO;
 using System.Linq;
-using System.Windows.Media.Media3D;
+
 
 namespace SIMULTAN.Tests.Values
 {
     [TestClass]
     public class SimMultiValueCollectionTests : BaseProjectTest
     {
-        private static readonly FileInfo bigTableProject = new FileInfo(@".\BigTableTestsProject.simultan");
-        private static readonly FileInfo bigTableProjectImport = new FileInfo(@".\BigTableTestsProject_Import.simultan");
+        private static readonly FileInfo bigTableProject = new FileInfo(@"./BigTableTestsProject.simultan");
+        private static readonly FileInfo bigTableProjectImport = new FileInfo(@"./BigTableTestsProject_Import.simultan");
 
-        private static readonly FileInfo functionProject = new FileInfo(@".\FunctionTestsProject.simultan");
-        private static readonly FileInfo field3DProject = new FileInfo(@".\Field3DTestsProject.simultan");
+        private static readonly FileInfo functionProject = new FileInfo(@"./FunctionTestsProject.simultan");
+        private static readonly FileInfo field3DProject = new FileInfo(@"./Field3DTestsProject.simultan");
 
 
         #region General
@@ -1102,7 +1103,7 @@ namespace SIMULTAN.Tests.Values
                 eventCounter.Reset();
             }
             {
-                func.Range = new Range3D(new Point3D(0, 0, 0), new Point3D(1, 1, 1));
+                func.Range = new Range3D(new SimPoint3D(0, 0, 0), new SimPoint3D(1, 1, 1));
                 Assert.IsTrue(fac.HasChanges);
                 Assert.IsTrue(projectData.ValueManager.LastChange >= startTime);
                 Assert.IsTrue(projectData.ValueManager.LastChange <= DateTime.Now);
@@ -1211,7 +1212,7 @@ namespace SIMULTAN.Tests.Values
                 eventCounter.Reset();
             }
             {
-                func.Graphs[0].Points.Insert(0, new Point3D(0, 0, 0));
+                func.Graphs[0].Points.Insert(0, new SimPoint3D(0, 0, 0));
                 Assert.IsTrue(fac.HasChanges);
                 Assert.IsTrue(projectData.ValueManager.LastChange >= startTime);
                 Assert.IsTrue(projectData.ValueManager.LastChange <= DateTime.Now);
@@ -1223,7 +1224,7 @@ namespace SIMULTAN.Tests.Values
                 eventCounter.Reset();
             }
             {
-                func.Graphs[0].Points[0] = new Point3D(0, 2, 0);
+                func.Graphs[0].Points[0] = new SimPoint3D(0, 2, 0);
                 Assert.IsTrue(fac.HasChanges);
                 Assert.IsTrue(projectData.ValueManager.LastChange >= startTime);
                 Assert.IsTrue(projectData.ValueManager.LastChange <= DateTime.Now);

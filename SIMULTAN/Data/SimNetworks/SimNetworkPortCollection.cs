@@ -25,6 +25,7 @@ namespace SIMULTAN.Data.SimNetworks
                 if (parentElement == null) { throw new ArgumentNullException(nameof(parentElement)); }
                 this.parentElement = parentElement;
             }
+
             /// <summary>
             /// Adds a new SimNetworkPort to this collection
             /// </summary>

@@ -32,5 +32,11 @@ namespace SIMULTAN.Data.Components
         {
             return value;
         }
+
+        /// <inheritdoc />
+        public override SimMultiValueExpression Clone()
+        {
+            return new SimMultiValueExpressionDoubleConstant(Value);
+        }
     }
 }

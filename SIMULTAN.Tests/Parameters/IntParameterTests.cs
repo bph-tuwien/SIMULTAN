@@ -14,14 +14,14 @@ namespace SIMULTAN.Tests.Parameters
     [TestClass]
     public class IntParameterTests : BaseProjectTest
     {
-        private static readonly FileInfo parameterProject = new FileInfo(@".\ParameterTestsProject.simultan");
-        private static readonly FileInfo calculationProject = new FileInfo(@".\CalculationTestsProject.simultan");
-        private static readonly FileInfo accessProject = new FileInfo(@".\ComponentAccessTestsProject.simultan");
-        private static readonly FileInfo parameterAccessProject = new FileInfo(@".\AccessTestsProject.simultan");
+        private static readonly FileInfo parameterProject = new FileInfo(@"./ParameterTestsProject.simultan");
+        private static readonly FileInfo calculationProject = new FileInfo(@"./CalculationTestsProject.simultan");
+        private static readonly FileInfo accessProject = new FileInfo(@"./ComponentAccessTestsProject.simultan");
+        private static readonly FileInfo parameterAccessProject = new FileInfo(@"./AccessTestsProject.simultan");
 
         internal void CheckParameter(SimIntegerParameter parameter, string name, string unit, int value, int min, int max, SimParameterOperations op)
         {
-            Assert.AreEqual(name, parameter.NameTaxonomyEntry.Name);
+            Assert.AreEqual(name, parameter.NameTaxonomyEntry.Text);
             Assert.AreEqual(unit, parameter.Unit);
             Assert.AreEqual(value, parameter.Value);
             Assert.AreEqual(min, parameter.ValueMin);
@@ -225,8 +225,8 @@ namespace SIMULTAN.Tests.Parameters
         private void CheckParameterPropertyAccess<T>(string prop, T value)
         {
             LoadProject(accessProject, "bph", "bph");
-            var bphParameter = projectData.Components.First(x => x.Name == "BPHRoot").Parameters.First(x => x.NameTaxonomyEntry.Name == "BPHParameter") as SimDoubleParameter;
-            var archParameter = projectData.Components.First(x => x.Name == "ArchRoot").Parameters.First(x => x.NameTaxonomyEntry.Name == "ArchParameter") as SimDoubleParameter;
+            var bphParameter = projectData.Components.First(x => x.Name == "BPHRoot").Parameters.First(x => x.NameTaxonomyEntry.Text == "BPHParameter") as SimDoubleParameter;
+            var archParameter = projectData.Components.First(x => x.Name == "ArchRoot").Parameters.First(x => x.NameTaxonomyEntry.Text == "ArchParameter") as SimDoubleParameter;
 
             PropertyTestUtils.CheckPropertyAccess(bphParameter, archParameter, prop, value);
         }
@@ -311,8 +311,8 @@ namespace SIMULTAN.Tests.Parameters
             var bphComp = projectData.Components.First(x => x.Name == "BPHComp");
             var table = (SimMultiValueBigTable)projectData.ValueManager.First(x => x.Name == "Table");
 
-            var archParameter = archComp.Parameters.First(x => x.NameTaxonomyEntry.Name == "Parameter1") as SimDoubleParameter;
-            var bphParameter = bphComp.Parameters.First(x => x.NameTaxonomyEntry.Name == "Parameter2") as SimDoubleParameter;
+            var archParameter = archComp.Parameters.First(x => x.NameTaxonomyEntry.Text == "Parameter1") as SimDoubleParameter;
+            var bphParameter = bphComp.Parameters.First(x => x.NameTaxonomyEntry.Text == "Parameter2") as SimDoubleParameter;
 
             PropertyTestUtils.CheckPropertyAccess(bphParameter, archParameter, nameof(SimIntegerParameter.ValueSource), table.CreateNewPointer());
         }
@@ -327,7 +327,7 @@ namespace SIMULTAN.Tests.Parameters
             LoadProject(accessProject, "bph", "bph");
 
             var bphComponent = projectData.Components.First(x => x.Name == "BPHRoot");
-            var bphParameter = bphComponent.Parameters.First(x => x.NameTaxonomyEntry.Name == "BPHParameter_Int");
+            var bphParameter = bphComponent.Parameters.First(x => x.NameTaxonomyEntry.Text == "BPHParameter_Int");
 
             PropertyTestUtils.CheckPropertyChanges(bphParameter, prop, value, SimUserRole.BUILDING_PHYSICS, bphComponent, projectData.Components);
         }
@@ -420,7 +420,7 @@ namespace SIMULTAN.Tests.Parameters
             var table = (SimMultiValueBigTable)projectData.ValueManager.First(x => x.Name == "Table");
 
             var bphComponent = projectData.Components.First(x => x.Name == "BPHComp");
-            var bphParameter = bphComponent.Parameters.First(x => x.NameTaxonomyEntry.Name == "Parameter2");
+            var bphParameter = bphComponent.Parameters.First(x => x.NameTaxonomyEntry.Text == "Parameter2");
 
             PropertyTestUtils.CheckPropertyChanges(bphParameter, nameof(SimIntegerParameter.ValueSource), table.CreateNewPointer(),
                 SimUserRole.BUILDING_PHYSICS, bphComponent, projectData.Components);
@@ -542,7 +542,7 @@ namespace SIMULTAN.Tests.Parameters
         {
             LoadProject(parameterProject);
             var comp = projectData.Components.First(x => x.Name == "NotEmpty");
-            var param = comp.Parameters.First(x => x.NameTaxonomyEntry.Name == "a");
+            var param = comp.Parameters.First(x => x.NameTaxonomyEntry.Text == "a");
 
             Assert.IsTrue(param.HasAccess(projectData.UsersManager.Users.First(x => x.Name == "admin"), SimComponentAccessPrivilege.Read));
             Assert.IsTrue(param.HasAccess(projectData.UsersManager.Users.First(x => x.Name == "arch"), SimComponentAccessPrivilege.Read));
@@ -561,7 +561,7 @@ namespace SIMULTAN.Tests.Parameters
             var param = new SimIntegerParameter("B", "u", 1);
             Assert.ThrowsException<InvalidOperationException>(() => { param.GetReferencedParameter(); });
 
-            var refTarget = projectData.Components.First(x => x.Name == "ReferenceSource").Parameters.First(x => x.NameTaxonomyEntry.Name == "Int_A");
+            var refTarget = projectData.Components.First(x => x.Name == "ReferenceSource").Parameters.First(x => x.NameTaxonomyEntry.Text == "Int_A");
 
             var refComp = projectData.Components.First(x => x.Name == "RefParent")
                 .Components.First(x => x.Component != null && x.Component.Name == "RefChild").Component;
@@ -652,23 +652,24 @@ namespace SIMULTAN.Tests.Parameters
             projectData.Taxonomies.Add(taxonomy);
 
             var entryName = "TestEntry";
-            var taxEntry = new SimTaxonomyEntry("key", entryName);
+            var entryKey = "key";
+            var taxEntry = new SimTaxonomyEntry(entryKey, entryName);
             taxonomy.Entries.Add(taxEntry);
 
             var comp = projectData.Components.FirstOrDefault(x => x.Name == "Empty");
             Assert.IsNotNull(comp);
 
             var parameter = new SimIntegerParameter(taxEntry, "", 1);
-            Assert.AreEqual(entryName, parameter.NameTaxonomyEntry.Name);
+            Assert.AreEqual(entryKey, parameter.NameTaxonomyEntry.TextOrKey);
             Assert.AreEqual(taxEntry, parameter.NameTaxonomyEntry.TaxonomyEntryReference.Target);
             comp.Parameters.Add(parameter);
 
             // now deleting the taxonomy entry should keep the name of the parameter but remove the entry reference
             taxonomy.Entries.Remove(taxEntry);
 
-            Assert.AreEqual(entryName, parameter.NameTaxonomyEntry.Name);
-            Assert.IsFalse(parameter.NameTaxonomyEntry.HasTaxonomyEntry());
-            Assert.IsFalse(parameter.NameTaxonomyEntry.HasTaxonomyEntryReference());
+            Assert.AreEqual(entryKey, parameter.NameTaxonomyEntry.TextOrKey);
+            Assert.IsFalse(parameter.NameTaxonomyEntry.HasTaxonomyEntry);
+            Assert.IsFalse(parameter.NameTaxonomyEntry.HasTaxonomyEntryReference);
         }
 
         private WeakReference KeepNameOnTaxonomyEntryDeleteMemoryLeak_Action()

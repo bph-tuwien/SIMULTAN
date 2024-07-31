@@ -137,6 +137,9 @@ namespace SIMULTAN.Excel
 
         private List<List<string>> ImportFromFile(FileInfo file, string tableName, int maxRowCount)
         {
+            if (!OperatingSystem.IsWindows())
+                throw new PlatformNotSupportedException("Only windows is supported");
+
             if (file == null)
                 throw new ArgumentNullException(string.Format("{0} may not be null", nameof(file)));
             if (string.IsNullOrEmpty(tableName))
@@ -175,9 +178,9 @@ namespace SIMULTAN.Excel
                             var range = TranslateRange(1, maxRowCount, chunk * 255 + 1, 255);
                             oleExcelCommand.CommandText = "Select * From [" + sSheetName + range.range_start + ":" + range.range_end + "]";
                             oleExcelCommand.CommandType = CommandType.Text;
-                            Console.WriteLine("Execute Reader for chunk {0} at {1}", chunk, DateTime.Now);
+                            Debug.WriteLine("Execute Reader for chunk {0} at {1}", chunk, DateTime.Now);
                             var oleExcelReader = oleExcelCommand.ExecuteReader();
-                            Console.WriteLine("Execute Reader done for chunk {0} at {1}", chunk, DateTime.Now);
+                            Debug.WriteLine("Execute Reader done for chunk {0} at {1}", chunk, DateTime.Now);
 
                             int nOutputRow = 0;
                             while (oleExcelReader.Read() && nOutputRow < maxRowCount)

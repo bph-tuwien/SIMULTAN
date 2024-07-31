@@ -238,24 +238,6 @@ namespace SIMULTAN.Data.Geometry
         }
 
         /// <summary>
-        /// Restores the references after loading. Taxonomies need to be loaded first.
-        /// </summary>
-        public void RestoreReferences()
-        {
-            foreach (var relation in this)
-            {
-                if (relation.RelationType != null)
-                {
-                    var entry = this.ProjectData.IdGenerator.GetById<SimTaxonomyEntry>(relation.RelationType.TaxonomyEntryId);
-                    if (entry == null)
-                        throw new TaxonomyEntryNotFoundException(String.Format("Taxonomy entry with id {0} for geometry relation with id {0} could not be found",
-                            relation.RelationType.TaxonomyEntryId, relation.Id));
-                    relation.RelationType = new SimTaxonomyEntryReference(entry);
-                }
-            }
-        }
-
-        /// <summary>
         /// Delegate for the <see cref="GeometryRelationChanged"/> event
         /// </summary>
         /// <param name="sender">The sender.</param>
@@ -274,6 +256,21 @@ namespace SIMULTAN.Data.Geometry
         public void OnGeometryRelationChanged(SimGeometryRelation relation)
         {
             GeometryRelationChanged?.Invoke(this, new GeometryRelationChangedEventArgs(relation));
+        }
+
+        /// <summary>
+        /// Restores all taxonomy entry references after the default taxonomies were updated.
+        /// </summary>
+        public void RestoreDefaultTaxonomyReferences()
+        {
+            foreach (var relation in this)
+            {
+                if (relation.RelationType != null)
+                {
+                    var entry = ProjectData.IdGenerator.GetById<SimTaxonomyEntry>(relation.RelationType.TaxonomyEntryId);
+                    relation.RelationType = new SimTaxonomyEntryReference(entry);
+                }
+            }
         }
     }
 }

@@ -27,7 +27,7 @@ SIMULTAN.Data.Assets.ResourceDirectoryEntry
 7202
 4
 7204
-RootFolder\ChildFolder1
+RootFolder/ChildFolder1
 7212
 1
 7213
@@ -47,7 +47,7 @@ SIMULTAN.Data.Assets.ContainedResourceFileEntry
 7202
 11
 7204
-RootFolder\ChildFolder1\MyContainedFile.txt
+RootFolder/ChildFolder1/MyContainedFile.txt
 7212
 0
 7213
@@ -85,7 +85,7 @@ SIMULTAN.Data.Assets.ResourceDirectoryEntry
 7202
 5
 7204
-RootFolder\ChildFolder2
+RootFolder/ChildFolder2
 7212
 1
 7213

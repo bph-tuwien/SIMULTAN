@@ -36,7 +36,15 @@ namespace SIMULTAN.Exchange
                 var ret = x.HasReservedTaxonomyEntry(parameterKey);
                 if (!ret && name != null)
                 {
-                    ret = x.NameTaxonomyEntry.Name == name;
+                    if (x.NameTaxonomyEntry.HasTaxonomyEntry)
+                    {
+                        // check if any translation contains the name
+                        ret = x.NameTaxonomyEntry.TaxonomyEntryReference.Target.Localization.Entries.Values.Any(loc => loc.Name == name);
+                    }
+                    else
+                    {
+                        ret = x.NameTaxonomyEntry.Text == name;
+                    }
                 }
                 return ret;
             });
@@ -49,7 +57,7 @@ namespace SIMULTAN.Exchange
                 var taxonomyEntry = component.Factory.ProjectData.Taxonomies.GetReservedParameter(parameterKey);
 
 
-                parameter = new SimDoubleParameter(taxonomyEntry.Name, pInfo.unit, value, double.MinValue, double.MaxValue, pInfo.operations)
+                parameter = new SimDoubleParameter(taxonomyEntry.Key, pInfo.unit, value, double.MinValue, double.MaxValue, pInfo.operations)
                 {
                     Propagation = pInfo.propagation,
                     InstancePropagationMode = propagation,
@@ -90,7 +98,15 @@ namespace SIMULTAN.Exchange
                 var ret = x.HasReservedTaxonomyEntry(parameterKey);
                 if (!ret && name != null)
                 {
-                    ret = x.NameTaxonomyEntry.Name == name;
+                    if (x.NameTaxonomyEntry.HasTaxonomyEntry)
+                    {
+                        // check if any translation contains the name
+                        ret = x.NameTaxonomyEntry.TaxonomyEntryReference.Target.Localization.Entries.Values.Any(loc => loc.Name == name);
+                    }
+                    else
+                    {
+                        ret = x.NameTaxonomyEntry.Text == name;
+                    }
                 }
                 return ret;
             });
@@ -104,7 +120,7 @@ namespace SIMULTAN.Exchange
                 var taxonomyEntry = component.Factory.ProjectData.Taxonomies.GetReservedParameter(parameterKey);
 
 
-                parameter = new SimIntegerParameter(taxonomyEntry.Name, pInfo.unit, value, int.MinValue, int.MaxValue, pInfo.operations)
+                parameter = new SimIntegerParameter(taxonomyEntry.Key, pInfo.unit, value, int.MinValue, int.MaxValue, pInfo.operations)
                 {
                     Propagation = pInfo.propagation,
                     InstancePropagationMode = propagation,

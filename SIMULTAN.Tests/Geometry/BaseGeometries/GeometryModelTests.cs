@@ -1,13 +1,15 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SIMULTAN.Data.Geometry;
+using SIMULTAN.Data.SimMath;
 using SIMULTAN.Tests.Geometry.EventData;
 using SIMULTAN.Tests.TestUtils;
+using SIMULTAN.Utils;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Windows.Media.Media3D;
+
 
 namespace SIMULTAN.Tests.Geometry.BaseGeometries
 {
@@ -19,7 +21,7 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
         {
             var file = new FileInfo("./unittest.geosim");
 
-            GeometryModelData model1 = new GeometryModelData();
+            GeometryModelData model1 = new GeometryModelData(new SystemTimerFactory());
             Assert.IsNotNull(model1.Vertices);
             Assert.IsNotNull(model1.EdgeLoops);
             Assert.IsNotNull(model1.Edges);
@@ -43,9 +45,9 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
             };
             data.layer.Layers.Add(l3);
 
-            ShapeGenerator.GenerateCube(data.layer, new Point3D(0, 0, 0), new Point3D(1, 1, 1));
-            ProxyShapeGenerator.GenerateCube(l2, "cube", data.model.Geometry.Vertices[0], new Point3D(0.2, 0.2, 0.2));
-            ProxyShapeGenerator.GenerateCube(l3, "cube", data.model.Geometry.Vertices[1], new Point3D(0.2, 0.2, 0.2));
+            ShapeGenerator.GenerateCube(data.layer, new SimPoint3D(0, 0, 0), new SimPoint3D(1, 1, 1));
+            ProxyShapeGenerator.GenerateCube(l2, "cube", data.model.Geometry.Vertices[0], new SimPoint3D(0.2, 0.2, 0.2));
+            ProxyShapeGenerator.GenerateCube(l3, "cube", data.model.Geometry.Vertices[1], new SimPoint3D(0.2, 0.2, 0.2));
 
             Polyline pl = new Polyline(l2, "", new Edge[] { data.model.Geometry.Edges[0], data.model.Geometry.Edges[1] });
 
@@ -66,9 +68,9 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
         public void ContainsGeometry()
         {
             var data = GeometryModelHelper.EmptyModel();
-            ShapeGenerator.GenerateCube(data.layer, new Point3D(0, 0, 0), new Point3D(1, 1, 1));
-            ProxyShapeGenerator.GenerateCube(data.layer, "cube", data.model.Geometry.Vertices[0], new Point3D(0.2, 0.2, 0.2));
-            ProxyShapeGenerator.GenerateCube(data.layer, "cube", data.model.Geometry.Vertices[1], new Point3D(0.2, 0.2, 0.2));
+            ShapeGenerator.GenerateCube(data.layer, new SimPoint3D(0, 0, 0), new SimPoint3D(1, 1, 1));
+            ProxyShapeGenerator.GenerateCube(data.layer, "cube", data.model.Geometry.Vertices[0], new SimPoint3D(0.2, 0.2, 0.2));
+            ProxyShapeGenerator.GenerateCube(data.layer, "cube", data.model.Geometry.Vertices[1], new SimPoint3D(0.2, 0.2, 0.2));
             Polyline pl = new Polyline(data.layer, "", new Edge[] { data.model.Geometry.Edges[0], data.model.Geometry.Edges[1] });
 
             foreach (var g in data.model.Geometry.Vertices)
@@ -115,9 +117,9 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
         public void GeometryFromId()
         {
             var data = GeometryModelHelper.EmptyModel();
-            ShapeGenerator.GenerateCube(data.layer, new Point3D(0, 0, 0), new Point3D(1, 1, 1));
-            ProxyShapeGenerator.GenerateCube(data.layer, "cube", data.model.Geometry.Vertices[0], new Point3D(0.2, 0.2, 0.2));
-            ProxyShapeGenerator.GenerateCube(data.layer, "cube", data.model.Geometry.Vertices[1], new Point3D(0.2, 0.2, 0.2));
+            ShapeGenerator.GenerateCube(data.layer, new SimPoint3D(0, 0, 0), new SimPoint3D(1, 1, 1));
+            ProxyShapeGenerator.GenerateCube(data.layer, "cube", data.model.Geometry.Vertices[0], new SimPoint3D(0.2, 0.2, 0.2));
+            ProxyShapeGenerator.GenerateCube(data.layer, "cube", data.model.Geometry.Vertices[1], new SimPoint3D(0.2, 0.2, 0.2));
             Polyline pl = new Polyline(data.layer, "", new Edge[] { data.model.Geometry.Edges[0], data.model.Geometry.Edges[1] });
 
             foreach (var g in data.model.Geometry.Vertices)
@@ -195,7 +197,7 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
         {
             var data = GeometryModelHelper.EmptyModel();
 
-            var gm2 = new GeometryModelData();
+            var gm2 = new GeometryModelData(new SystemTimerFactory());
 
             data.model.LinkedModels.Add(new GeometryModel("Model2", new DummyResourceFileEntry("dummy2.geosim", 2), OperationPermission.None, gm2));
             Assert.AreEqual(1, data.model.LinkedModels.Count);
@@ -208,7 +210,7 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
         [TestMethod]
         public void GetFreeId()
         {
-            var gm = new GeometryModelData();
+            var gm = new GeometryModelData(new SystemTimerFactory());
 
             var freeId = gm.GetFreeId();
             Assert.AreEqual((ulong)0, freeId);
@@ -226,7 +228,7 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
         {
             var data = GeometryModelHelper.EmptyModelWithEvents();
 
-            var v = new Vertex(data.layer, "", new Point3D(0, 0, 0));
+            var v = new Vertex(data.layer, "", new SimPoint3D(0, 0, 0));
             data.model.Geometry.OnOperationFinished(new BaseGeometry[] { v });
 
             Assert.AreEqual(1, data.eventData.OperationFinished.Count);

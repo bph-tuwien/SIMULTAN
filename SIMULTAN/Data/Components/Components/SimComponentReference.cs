@@ -3,6 +3,7 @@ using SIMULTAN.Utils;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -72,7 +73,10 @@ namespace SIMULTAN.Data.Components
         {
             get
             {
-                return targetId;
+                if (this.Target != null)
+                    return this.Target.Id;
+                else
+                    return targetId;
             }
             private set
             {
@@ -192,17 +196,10 @@ namespace SIMULTAN.Data.Components
             if (this.Owner == null || this.Owner.Factory == null)
                 throw new InvalidOperationException("Reference has to be added to an active component first");
 
-            if (!(Slot.SlotBase is SimPlaceholderTaxonomyEntryReference))
-            {
-                var entry = Owner.Factory.ProjectData.IdGenerator.GetById<SimTaxonomyEntry>(Slot.SlotBase.TaxonomyEntryId);
-                if (entry == null)
-                    throw new TaxonomyEntryNotFoundException(String.Format("Slot taxonomy entry with id {0} of component Reference could not be found", Slot.SlotBase.TaxonomyEntryId));
-                this.Slot = new SimSlot(new SimTaxonomyEntryReference(entry), Slot.SlotExtension);
-            }
-
             if (this.Target == null)
             {
                 this.Target = this.Owner.Factory.ProjectData.IdGenerator.GetById<SimComponent>(this.TargetId);
+                Debug.WriteLine("Search: {0}; Found {1}", this.TargetId, this.Target != null);
             }
         }
 

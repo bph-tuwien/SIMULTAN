@@ -3,9 +3,9 @@ using SIMULTAN.Utils;
 using Sprache;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Windows.Threading;
 
 namespace SIMULTAN.Data.Components
 {
@@ -169,7 +169,7 @@ namespace SIMULTAN.Data.Components
     /// </summary>
     public partial class SimCalculation : SimNamedObject<SimComponentCollection>
     {
-        //~Calculation() { Console.WriteLine("~Calculation"); }
+        //~Calculation() { Debug.WriteLine("~Calculation"); }
 
         #region PROPERTIES
 
@@ -450,7 +450,7 @@ namespace SIMULTAN.Data.Components
             this.Expression = _original.Expression;
 
             this.isMultiValueCalculation = _original.isMultiValueCalculation;
-            this.MultiValueCalculation = _original.MultiValueCalculation;
+            this.MultiValueCalculation = _original.MultiValueCalculation?.Clone();
 
             foreach (var entry in _original.InputParams)
             {
@@ -581,7 +581,7 @@ namespace SIMULTAN.Data.Components
         public void Calculate(SimMultiValueCollection valuefieldCollection,
             TableNameProviderDelegate tableNameProvider = null, TableNameProviderDelegate tableNameAverageProvider = null,
             Dictionary<SimDoubleParameter, SimDoubleParameter> parameterReplacements = null,
-            Dispatcher dispatcher = null)
+            ISynchronizeInvoke dispatcher = null)
         {
             if (this.IsMultiValueCalculation)
             {
@@ -642,7 +642,7 @@ namespace SIMULTAN.Data.Components
 
         private void ExecuteAsVectorEquation(SimMultiValueCollection valuefieldCollection,
             TableNameProviderDelegate tableNameProvider = null, TableNameProviderDelegate tableNameAverageProvider = null,
-            Dispatcher dispatcher = null)
+            ISynchronizeInvoke dispatcher = null)
         {
             if (this.Component == null || valuefieldCollection == null || this.ReturnParams.Count == 0) return;
 
@@ -714,7 +714,7 @@ namespace SIMULTAN.Data.Components
                 });
 
                 if (dispatcher != null)
-                    dispatcher.Invoke(createTablesAction);
+                    dispatcher.Invoke(createTablesAction, null);
                 else
                     createTablesAction();
             }

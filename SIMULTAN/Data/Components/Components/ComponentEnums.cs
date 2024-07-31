@@ -233,6 +233,8 @@ namespace SIMULTAN.Data.Components
             Undefined
         };
 
+#pragma warning disable CS0618
+
         internal static readonly Dictionary<string, string> BaseToKeyLookup = new Dictionary<string, string>
         {
             { SimDefaultSlots.Item , Item},
@@ -283,24 +285,7 @@ namespace SIMULTAN.Data.Components
         };
         internal static readonly Dictionary<string, string> KeyToBaseLookup = BaseToKeyLookup.ToDictionary(x => x.Value, x => x.Key);
 
-
-        /// <summary>
-        /// Splits a slot with (or without) extension into it's parts.
-        /// </summary>
-        /// <param name="storedSlot">The full slot (including extension)</param>
-        /// <returns>
-        /// slot: The slot base
-        /// extension: The extension string, or an empty string when no extension was found
-        /// hasExtension: True when an extensions string exists, otherwise False
-        /// </returns>
-        public static (string slot, string extension, bool hasExtension) SplitExtensionSlot(string storedSlot)
-        {
-            int splitIdx = storedSlot.IndexOf(SimDefaultSlots.COMP_SLOT_DELIMITER);
-            if (splitIdx == -1)
-                return (storedSlot, "", false);
-            else
-                return (storedSlot.Substring(0, splitIdx), storedSlot.Substring(splitIdx + SimDefaultSlots.COMP_SLOT_DELIMITER.Length), true);
-        }
+#pragma warning restore CS0618
 
         /// <summary>
         /// Tries to find a reserved taxonomy entry in the provided taxonomy collection. Throws and exception if not found.

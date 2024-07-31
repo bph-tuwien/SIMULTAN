@@ -1,13 +1,15 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using SIMULTAN.Data;
 using SIMULTAN.Data.Assets;
 using SIMULTAN.Data.Components;
+using SIMULTAN.Data.Taxonomy;
 using SIMULTAN.Data.Users;
 using SIMULTAN.Projects;
 using SIMULTAN.Serializer.CODXF;
 using SIMULTAN.Serializer.DXF;
 using SIMULTAN.Tests.Properties;
-using SIMULTAN.Tests.Util;
 using SIMULTAN.Tests.TestUtils;
+using SIMULTAN.Tests.Util;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -65,7 +67,6 @@ namespace SIMULTAN.Tests.IO
             {
                 var info = new DXFParserInfo(guid, projectData);
                 info.FileVersion = 12;
-
                 assetManager = ComponentDxfIOResources.AssetsSectionElement.Parse(reader, info);
             }
 
@@ -88,7 +89,6 @@ namespace SIMULTAN.Tests.IO
             {
                 var info = new DXFParserInfo(guid, projectData);
                 info.FileVersion = 11;
-
                 assetManager = ComponentDxfIOResources.AssetsSectionElement.Parse(reader, info);
             }
 
@@ -180,7 +180,6 @@ namespace SIMULTAN.Tests.IO
                 info.FileVersion = 12;
 
                 reader.Read();
-
                 assetManager = ComponentDxfIOResources.AssetManagerEntityElement.Parse(reader, info);
             }
 
@@ -204,7 +203,6 @@ namespace SIMULTAN.Tests.IO
                 info.FileVersion = 11;
 
                 reader.Read();
-
                 assetManager = ComponentDxfIOResources.AssetManagerEntityElement.Parse(reader, info);
             }
 
@@ -223,7 +221,9 @@ namespace SIMULTAN.Tests.IO
             var otherGuid = Guid.Parse("da7d8f7c-8eec-423b-b127-9d6e17f52522");
 
             ExtendedProjectData projectData = new ExtendedProjectData();
-            projectData.AssetManager.WorkingDirectory = "C:\\";
+            var workdir = Path.Combine(Directory.GetCurrentDirectory(), "TestWorkDir");
+            Directory.CreateDirectory(workdir);
+            projectData.AssetManager.WorkingDirectory = workdir;
 
             ResourceDirectoryEntry rootDirectory = new ResourceDirectoryEntry(projectData.AssetManager,
                 SimUserRole.BUILDING_PHYSICS, "RootFolder", false, 3, false);
@@ -289,7 +289,15 @@ namespace SIMULTAN.Tests.IO
             projectData.AssetManager.WorkingDirectory = workingDirectory.FullName;
             projectData.AssetManager.PathsToResourceFiles.Add(linkDirectory.FullName);
             Guid guid = Guid.NewGuid();
+            projectData.SetCallingLocation(new DummyReferenceLocation(guid));
             var otherGuid = Guid.Parse("da7d8f7c-8eec-423b-b127-9d6e17f52522");
+
+            projectData.Taxonomies.StartLoading();
+            var taxonomy = new SimTaxonomy("Demo Taxonomy");
+            projectData.Taxonomies.Add(taxonomy);
+            var taxEntry = new SimTaxonomyEntry("taxentry", "Demo Entry") { Id = new SimId(47) };
+            taxonomy.Entries.Add(taxEntry);
+            projectData.Taxonomies.StopLoading();
 
             ResourceDirectoryEntry directory = null;
 
@@ -316,7 +324,7 @@ namespace SIMULTAN.Tests.IO
 
             var childFolder1 = directory.Children[0] as ResourceDirectoryEntry;
             Assert.IsNotNull(childFolder1);
-            Assert.AreEqual("RootFolder\\ChildFolder1", childFolder1.CurrentRelativePath);
+            Assert.AreEqual(Path.Join("RootFolder", "ChildFolder1"), childFolder1.CurrentRelativePath);
             Assert.AreEqual(SimUserRole.ARCHITECTURE, childFolder1.UserWithWritingAccess);
             Assert.AreEqual(4, childFolder1.Key);
             Assert.AreEqual(SimComponentVisibility.VisibleInProject, childFolder1.Visibility);
@@ -326,7 +334,7 @@ namespace SIMULTAN.Tests.IO
 
             var childFolder2 = directory.Children[1] as ResourceDirectoryEntry;
             Assert.IsNotNull(childFolder2);
-            Assert.AreEqual("RootFolder\\ChildFolder2", childFolder2.CurrentRelativePath);
+            Assert.AreEqual(Path.Join("RootFolder", "ChildFolder2"), childFolder2.CurrentRelativePath);
             Assert.AreEqual(SimUserRole.ARCHITECTURE, childFolder2.UserWithWritingAccess);
             Assert.AreEqual(5, childFolder2.Key);
             Assert.AreEqual(SimComponentVisibility.VisibleInProject, childFolder2.Visibility);
@@ -337,7 +345,7 @@ namespace SIMULTAN.Tests.IO
             Assert.AreEqual(2, childFolder1.Children.Count);
             var containedFile1 = childFolder1.Children[0] as ContainedResourceFileEntry;
             Assert.IsNotNull(containedFile1);
-            Assert.AreEqual("RootFolder\\ChildFolder1\\MyContainedFile.txt", containedFile1.CurrentRelativePath);
+            Assert.AreEqual(Path.Join("RootFolder", "ChildFolder1", "MyContainedFile.txt"), containedFile1.CurrentRelativePath);
             Assert.AreEqual(SimUserRole.BUILDING_PHYSICS, containedFile1.UserWithWritingAccess);
             Assert.AreEqual(11, containedFile1.Key);
             Assert.AreEqual(true, containedFile1.Exists);
@@ -349,7 +357,7 @@ namespace SIMULTAN.Tests.IO
             var linkedFile1 = childFolder1.Children[1] as LinkedResourceFileEntry;
             Assert.IsNotNull(linkedFile1);
             Assert.AreEqual("MyLinkedFile.txt", linkedFile1.CurrentRelativePath);
-            Assert.AreEqual(linkDirectory.FullName + "\\MyLinkedFile.txt", linkedFile1.CurrentFullPath);
+            Assert.AreEqual(Path.Join(linkDirectory.FullName, "MyLinkedFile.txt"), linkedFile1.CurrentFullPath);
             Assert.AreEqual(SimUserRole.BUILDING_DEVELOPER, linkedFile1.UserWithWritingAccess);
             Assert.AreEqual(12, linkedFile1.Key);
             Assert.AreEqual(true, linkedFile1.Exists);
@@ -390,14 +398,14 @@ namespace SIMULTAN.Tests.IO
 
             var childFolder1 = directory.Children[0] as ResourceDirectoryEntry;
             Assert.IsNotNull(childFolder1);
-            Assert.AreEqual("RootFolder\\ChildFolder1", childFolder1.CurrentRelativePath);
+            Assert.AreEqual(Path.Join("RootFolder", "ChildFolder1"), childFolder1.CurrentRelativePath);
             Assert.AreEqual(SimUserRole.ARCHITECTURE, childFolder1.UserWithWritingAccess);
             Assert.AreEqual(4, childFolder1.Key);
             Assert.AreEqual(SimComponentVisibility.VisibleInProject, childFolder1.Visibility);
 
             var childFolder2 = directory.Children[1] as ResourceDirectoryEntry;
             Assert.IsNotNull(childFolder2);
-            Assert.AreEqual("RootFolder\\ChildFolder2", childFolder2.CurrentRelativePath);
+            Assert.AreEqual(Path.Join("RootFolder", "ChildFolder2"), childFolder2.CurrentRelativePath);
             Assert.AreEqual(SimUserRole.ARCHITECTURE, childFolder2.UserWithWritingAccess);
             Assert.AreEqual(5, childFolder2.Key);
             Assert.AreEqual(SimComponentVisibility.VisibleInProject, childFolder2.Visibility);
@@ -405,7 +413,7 @@ namespace SIMULTAN.Tests.IO
             Assert.AreEqual(2, childFolder1.Children.Count);
             var containedFile1 = childFolder1.Children[0] as ContainedResourceFileEntry;
             Assert.IsNotNull(containedFile1);
-            Assert.AreEqual("RootFolder\\ChildFolder1\\MyContainedFile.txt", containedFile1.CurrentRelativePath);
+            Assert.AreEqual(Path.Join("RootFolder", "ChildFolder1", "MyContainedFile.txt"), containedFile1.CurrentRelativePath);
             Assert.AreEqual(SimUserRole.BUILDING_PHYSICS, containedFile1.UserWithWritingAccess);
             Assert.AreEqual(11, containedFile1.Key);
             Assert.AreEqual(true, containedFile1.Exists);
@@ -414,7 +422,7 @@ namespace SIMULTAN.Tests.IO
             var linkedFile1 = childFolder1.Children[1] as LinkedResourceFileEntry;
             Assert.IsNotNull(linkedFile1);
             Assert.AreEqual("MyLinkedFile.txt", linkedFile1.CurrentRelativePath);
-            Assert.AreEqual(linkDirectory.FullName + "\\MyLinkedFile.txt", linkedFile1.CurrentFullPath);
+            Assert.AreEqual(Path.Join(linkDirectory.FullName, "MyLinkedFile.txt"), linkedFile1.CurrentFullPath);
             Assert.AreEqual(SimUserRole.BUILDING_DEVELOPER, linkedFile1.UserWithWritingAccess);
             Assert.AreEqual(12, linkedFile1.Key);
             Assert.AreEqual(true, linkedFile1.Exists);
@@ -452,14 +460,14 @@ namespace SIMULTAN.Tests.IO
 
             var childFolder1 = directory.Children[0] as ResourceDirectoryEntry;
             Assert.IsNotNull(childFolder1);
-            Assert.AreEqual("RootFolder\\ChildFolder1", childFolder1.CurrentRelativePath);
+            Assert.AreEqual(Path.Join("RootFolder", "ChildFolder1"), childFolder1.CurrentRelativePath);
             Assert.AreEqual(SimUserRole.ARCHITECTURE, childFolder1.UserWithWritingAccess);
             Assert.AreEqual(4, childFolder1.Key);
             Assert.AreEqual(SimComponentVisibility.VisibleInProject, childFolder1.Visibility);
 
             var childFolder2 = directory.Children[1] as ResourceDirectoryEntry;
             Assert.IsNotNull(childFolder2);
-            Assert.AreEqual("RootFolder\\ChildFolder2", childFolder2.CurrentRelativePath);
+            Assert.AreEqual(Path.Join("RootFolder", "ChildFolder2"), childFolder2.CurrentRelativePath);
             Assert.AreEqual(SimUserRole.ARCHITECTURE, childFolder2.UserWithWritingAccess);
             Assert.AreEqual(5, childFolder2.Key);
             Assert.AreEqual(SimComponentVisibility.VisibleInProject, childFolder2.Visibility);
@@ -467,7 +475,7 @@ namespace SIMULTAN.Tests.IO
             Assert.AreEqual(2, childFolder1.Children.Count);
             var containedFile1 = childFolder1.Children[0] as ContainedResourceFileEntry;
             Assert.IsNotNull(containedFile1);
-            Assert.AreEqual("RootFolder\\ChildFolder1\\MyContainedFile.txt", containedFile1.CurrentRelativePath);
+            Assert.AreEqual(Path.Join("RootFolder", "ChildFolder1", "MyContainedFile.txt"), containedFile1.CurrentRelativePath);
             Assert.AreEqual(SimUserRole.BUILDING_PHYSICS, containedFile1.UserWithWritingAccess);
             Assert.AreEqual(11, containedFile1.Key);
             Assert.AreEqual(true, containedFile1.Exists);
@@ -476,7 +484,7 @@ namespace SIMULTAN.Tests.IO
             var linkedFile1 = childFolder1.Children[1] as LinkedResourceFileEntry;
             Assert.IsNotNull(linkedFile1);
             Assert.AreEqual("MyLinkedFile.txt", linkedFile1.CurrentRelativePath);
-            Assert.AreEqual(linkDirectory.FullName + "\\MyLinkedFile.txt", linkedFile1.CurrentFullPath);
+            Assert.AreEqual(Path.Join(linkDirectory.FullName, "MyLinkedFile.txt"), linkedFile1.CurrentFullPath);
             Assert.AreEqual(SimUserRole.BUILDING_DEVELOPER, linkedFile1.UserWithWritingAccess);
             Assert.AreEqual(12, linkedFile1.Key);
             Assert.AreEqual(true, linkedFile1.Exists);
@@ -494,7 +502,9 @@ namespace SIMULTAN.Tests.IO
             var otherGuid = Guid.Parse("da7d8f7c-8eec-423b-b127-9d6e17f52522");
 
             ExtendedProjectData projectData = new ExtendedProjectData();
-            projectData.AssetManager.WorkingDirectory = "C:\\";
+            var workdir = Path.Combine(Directory.GetCurrentDirectory(), "TestWorkDir");
+            Directory.CreateDirectory(workdir);
+            projectData.AssetManager.WorkingDirectory = workdir;
 
             ContainedResourceFileEntry file = new ContainedResourceFileEntry(projectData.AssetManager,
                 SimUserRole.BUILDING_DEVELOPER, "MyContainedFile.txt", false, 11, false);
@@ -527,7 +537,15 @@ namespace SIMULTAN.Tests.IO
             ExtendedProjectData projectData = new ExtendedProjectData();
             projectData.AssetManager.WorkingDirectory = workingDirectory.FullName;
             Guid guid = Guid.NewGuid();
+            projectData.SetCallingLocation(new DummyReferenceLocation(guid));
             var otherGuid = Guid.Parse("da7d8f7c-8eec-423b-b127-9d6e17f52522");
+
+            projectData.Taxonomies.StartLoading();
+            var taxonomy = new SimTaxonomy("Demo Taxonomy");
+            projectData.Taxonomies.Add(taxonomy);
+            var taxEntry = new SimTaxonomyEntry("taxentry", "Demo Entry") { Id = new SimId(47) };
+            taxonomy.Entries.Add(taxEntry);
+            projectData.Taxonomies.StopLoading();
 
             ContainedResourceFileEntry file = null;
 
@@ -547,8 +565,7 @@ namespace SIMULTAN.Tests.IO
             Assert.AreEqual(11, file.Key);
             Assert.AreEqual(SimComponentVisibility.AlwaysVisible, file.Visibility);
             Assert.AreEqual(1, file.Tags.Count);
-            Assert.AreEqual(guid, file.Tags[0].TaxonomyEntryId.GlobalId);
-            Assert.AreEqual(47, file.Tags[0].TaxonomyEntryId.LocalId);
+            Assert.AreEqual(taxEntry, file.Tags[0].Target);
 
         }
         [TestMethod]
@@ -618,7 +635,9 @@ namespace SIMULTAN.Tests.IO
             var otherGuid = Guid.Parse("da7d8f7c-8eec-423b-b127-9d6e17f52522");
 
             ExtendedProjectData projectData = new ExtendedProjectData();
-            projectData.AssetManager.WorkingDirectory = "C:\\";
+            var workdir = Path.Combine(Directory.GetCurrentDirectory(), "TestWorkDir");
+            Directory.CreateDirectory(workdir);
+            projectData.AssetManager.WorkingDirectory = workdir;
 
             LinkedResourceFileEntry file = new LinkedResourceFileEntry(projectData.AssetManager,
                 SimUserRole.BUILDING_DEVELOPER, "MyLinkedFile.txt", false, 12);
@@ -652,7 +671,15 @@ namespace SIMULTAN.Tests.IO
             projectData.AssetManager.WorkingDirectory = new DirectoryInfo("./TestWorkingDirectory").FullName;
             projectData.AssetManager.PathsToResourceFiles.Add(linkDirectory.FullName);
             Guid guid = Guid.NewGuid();
+            projectData.SetCallingLocation(new DummyReferenceLocation(guid));
             var otherGuid = Guid.Parse("da7d8f7c-8eec-423b-b127-9d6e17f52522");
+
+            projectData.Taxonomies.StartLoading();
+            var taxonomy = new SimTaxonomy("Demo Taxonomy");
+            projectData.Taxonomies.Add(taxonomy);
+            var taxEntry = new SimTaxonomyEntry("taxentry", "Demo Entry") { Id = new SimId(47) };
+            taxonomy.Entries.Add(taxEntry);
+            projectData.Taxonomies.StopLoading();
 
             LinkedResourceFileEntry file = null;
 
@@ -745,7 +772,7 @@ namespace SIMULTAN.Tests.IO
             var otherGuid = Guid.Parse("da7d8f7c-8eec-423b-b127-9d6e17f52522");
 
             ExtendedProjectData projectData = new ExtendedProjectData();
-            projectData.AssetManager.WorkingDirectory = "C:\\";
+            projectData.AssetManager.WorkingDirectory = "TestWorkDir";
 
             var asset = new DocumentAsset(projectData.AssetManager, 5566, 11, "2");
 
@@ -774,7 +801,7 @@ namespace SIMULTAN.Tests.IO
             var otherGuid = Guid.Parse("da7d8f7c-8eec-423b-b127-9d6e17f52522");
 
             ExtendedProjectData projectData = new ExtendedProjectData();
-            projectData.AssetManager.WorkingDirectory = "C:\\";
+            projectData.AssetManager.WorkingDirectory = "TestWorkDir";
 
             var asset = new GeometricAsset(projectData.AssetManager, 5566, 12, "3");
 
@@ -813,7 +840,6 @@ namespace SIMULTAN.Tests.IO
                 info.FileVersion = 12;
 
                 reader.Read();
-
                 asset = ComponentDxfIOResources.DocumentAssetEntityElement.Parse(reader, info) as DocumentAsset;
             }
 
@@ -842,7 +868,6 @@ namespace SIMULTAN.Tests.IO
                 info.FileVersion = 12;
 
                 reader.Read();
-
                 asset = ComponentDxfIOResources.GeometricAssetEntityElement.Parse(reader, info) as GeometricAsset;
             }
 
@@ -871,7 +896,6 @@ namespace SIMULTAN.Tests.IO
                 info.FileVersion = 11;
 
                 reader.Read();
-
                 asset = ComponentDxfIOResources.DocumentAssetEntityElement.Parse(reader, info) as DocumentAsset;
             }
 
@@ -900,7 +924,6 @@ namespace SIMULTAN.Tests.IO
                 info.FileVersion = 11;
 
                 reader.Read();
-
                 asset = ComponentDxfIOResources.GeometricAssetEntityElement.Parse(reader, info) as GeometricAsset;
             }
 

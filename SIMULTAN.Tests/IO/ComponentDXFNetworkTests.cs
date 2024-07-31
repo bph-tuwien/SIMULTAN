@@ -5,7 +5,6 @@ using SIMULTAN.Projects;
 using SIMULTAN.Serializer.CODXF;
 using SIMULTAN.Serializer.DXF;
 using SIMULTAN.Tests.Properties;
-using SIMULTAN.Tests.Util;
 using SIMULTAN.Tests.TestUtils;
 using System;
 using System.Collections.Generic;
@@ -14,7 +13,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
-using System.Windows;
+
 
 namespace SIMULTAN.Tests.IO
 {
@@ -114,8 +113,7 @@ namespace SIMULTAN.Tests.IO
                 info.FileVersion = 12;
 
                 reader.Read();
-
-                node = ComponentDxfIONetworks.NetworkNodeEntityElement.Parse(reader, info) as SimFlowNetworkNode;
+                node = ComponentDxfIONetworks.NetworkNodeEntityElement.Parse(reader, info);
             }
 
             Assert.IsNotNull(node);
@@ -157,8 +155,7 @@ namespace SIMULTAN.Tests.IO
                 info.FileVersion = 11;
 
                 reader.Read();
-
-                node = ComponentDxfIONetworks.NetworkNodeEntityElement.Parse(reader, info) as SimFlowNetworkNode;
+                node = ComponentDxfIONetworks.NetworkNodeEntityElement.Parse(reader, info);
             }
 
             Assert.IsNotNull(node);
@@ -228,8 +225,7 @@ namespace SIMULTAN.Tests.IO
                 info.FileVersion = 12;
 
                 reader.Read();
-
-                edge = ComponentDxfIONetworks.NetworkEdgeEntityElement.Parse(reader, info) as SimFlowNetworkEdge;
+                edge = ComponentDxfIONetworks.NetworkEdgeEntityElement.Parse(reader, info);
             }
 
             Assert.IsNotNull(edge);
@@ -262,8 +258,7 @@ namespace SIMULTAN.Tests.IO
                 info.FileVersion = 11;
 
                 reader.Read();
-
-                edge = ComponentDxfIONetworks.NetworkEdgeEntityElement.Parse(reader, info) as SimFlowNetworkEdge;
+                edge = ComponentDxfIONetworks.NetworkEdgeEntityElement.Parse(reader, info);
             }
 
             Assert.IsNotNull(edge);
@@ -324,7 +319,6 @@ namespace SIMULTAN.Tests.IO
                 info.FileVersion = 12;
 
                 reader.Read();
-
                 network = ComponentDxfIONetworks.NetworkEntityElement.Parse(reader, info);
             }
 
@@ -346,7 +340,6 @@ namespace SIMULTAN.Tests.IO
                 info.FileVersion = 11;
 
                 reader.Read();
-
                 network = ComponentDxfIONetworks.NetworkEntityElement.Parse(reader, info);
             }
 
@@ -410,7 +403,6 @@ namespace SIMULTAN.Tests.IO
             {
                 var info = new DXFParserInfo(guid, projectData);
                 info.FileVersion = 11;
-
                 ComponentDxfIONetworks.ReadNetworkSection(reader, info);
             }
 

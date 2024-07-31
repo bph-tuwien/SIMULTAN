@@ -1,8 +1,6 @@
 ﻿using SIMULTAN.Data.Components;
-using SIMULTAN.Data.Taxonomy;
 using SIMULTAN.Data.Users;
 using SIMULTAN.Projects;
-using SIMULTAN.Serializer.DXF;
 using SIMULTAN.Utils;
 using SIMULTAN.Utils.Collections;
 using SIMULTAN.Utils.Files;
@@ -11,11 +9,10 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SIMULTAN.Data.Assets
 {
@@ -37,11 +34,6 @@ namespace SIMULTAN.Data.Assets
         #region CLASS MEMBERS
 
         public ProjectData ProjectData { get; }
-
-        /// <summary>
-        /// Is true while the Asset manager is restoring references.
-        /// </summary>
-        public bool IsRestoringReferences { get; private set; } = false;
 
         #endregion
 
@@ -432,6 +424,7 @@ namespace SIMULTAN.Data.Assets
 
         private Dictionary<long, List<Asset>> tmp_parsed_asset_record;
 
+        [Obsolete]
         internal void AddParsedUndifferentiatedResourceEntry(SimUserRole _user, string _rel_path, string _full_path, int _key, bool _is_contained)
         {
             AssetManager.LAST_KEY = Math.Max(AssetManager.LAST_KEY, _key);
@@ -544,6 +537,7 @@ namespace SIMULTAN.Data.Assets
         }
 
 
+        [Obsolete]
         internal ResourceDirectoryEntry AddParsedResourceDirectoryEntry(SimUserRole _user, string _rel_path, string _full_path, int _key, bool _add_to_record, bool _check_for_existence = true)
         {
             // check and correct the input, if necessary           
@@ -572,6 +566,7 @@ namespace SIMULTAN.Data.Assets
             return rde;
         }
 
+        [Obsolete]
         internal (ContainedResourceFileEntry parsed, LinkedResourceFileEntry alternative) AddParsedContainedResourceFileEntry(SimUserRole _user, string _rel_path, string _full_path, int _key, bool _add_to_record, bool _check_for_existence = true)
         {
             // check and correct the input, if necessary
@@ -605,6 +600,7 @@ namespace SIMULTAN.Data.Assets
             return (cre, null);
         }
 
+        [Obsolete]
         internal (LinkedResourceFileEntry parsed, ContainedResourceFileEntry alternative) AddParsedLinkedResourceFileEntry(SimUserRole _user, string _rel_path, string _full_path, int _key, bool _add_to_record, bool _check_for_existence = true)
         {
             // check and correct the input, if necessary
@@ -701,7 +697,7 @@ namespace SIMULTAN.Data.Assets
                 if (_entry.CurrentFullPath == "?")
                 {
                     entry_dir = new DirectoryInfo(this.WorkingDirectory);
-                    Console.WriteLine("BS to GP: Please fix non-existing resources. They crash CG and RM");
+                    Debug.WriteLine("BS to GP: Please fix non-existing resources. They crash CG and RM");
                 }
                 else
                     entry_dir = new FileInfo(_entry.CurrentFullPath).Directory;
@@ -813,32 +809,6 @@ namespace SIMULTAN.Data.Assets
         internal void ReleaseTmpParseRecord()
         {
             this.tmp_parsed_asset_record = null;
-        }
-
-        internal void RestoreReferences()
-        {
-            IsRestoringReferences = true;
-            RestoreResourceReferences(Resources_Internal);
-            IsRestoringReferences = false;
-        }
-
-        private void RestoreResourceReferences(IEnumerable<ResourceEntry> entries)
-        {
-            foreach (var entry in entries)
-            {
-                for (int i = 0; i < entry.Tags.Count; i++)
-                {
-                    var taxEntry = ProjectData.IdGenerator.GetById<SimTaxonomyEntry>(entry.Tags[i].TaxonomyEntryId);
-                    if (taxEntry == null)
-                        throw new TaxonomyEntryNotFoundException(String.Format("Tag taxonomy entry with id {0} of resource {1} could not be found", entry.Tags[i].TaxonomyEntryId, entry.Name));
-                    entry.Tags[i] = new SimTaxonomyEntryReference(taxEntry);
-                }
-
-                if (entry is ResourceDirectoryEntry dir)
-                {
-                    RestoreResourceReferences(dir.Children);
-                }
-            }
         }
 
         #endregion
@@ -1147,8 +1117,10 @@ namespace SIMULTAN.Data.Assets
         /// </summary>
         /// <param name="_source_file">the file to link as a resource</param>
         /// <param name="_parent">the directory where the link should be deposited</param>
-        /// <param name="_allow_duplicates">if true, the same file can be linked multiple times as different resources</param>
+        /// <param name="_allow_duplicates">if true, the same file can be linked 
+        /// times as different resources</param>
         /// <returns>the key of the generated resource or -1, if it could not be generated</returns>
+        [Obsolete("Use the version that returns a ResourceFileEntry")]
         public (int key, bool isDuplicate) LinkResourceAsLinkedFileEntry(FileInfo _source_file, DirectoryInfo _parent, bool _allow_duplicates = false)
         {
             ResourceLocationError ok_to_add = CanLinkAsResource(_source_file);
@@ -1167,6 +1139,23 @@ namespace SIMULTAN.Data.Assets
             AssetManager.LAST_KEY++;
             this.AddResourceEntry(_source_file.FullName, true, false, true, AssetManager.LAST_KEY, _parent);
             return (AssetManager.LAST_KEY, false);
+        }
+
+        public ResourceFileEntry LinkResourceAsLinkedFileEntry(FileInfo sourceFile, ResourceDirectoryEntry directory)
+        {
+            ResourceLocationError ok_to_add = CanLinkAsResource(sourceFile);
+            if (ok_to_add != ResourceLocationError.OK)
+                throw new Exception($"Unable to link resource file. Reason: {ok_to_add}");
+
+            AssetManager.LAST_KEY++;
+            var re = new LinkedResourceFileEntry(this, this.ProjectData.UsersManager.CurrentUser.Role, sourceFile.FullName, true, AssetManager.LAST_KEY);
+
+            if (directory != null)
+                directory.Children.Add(re);
+            else
+                this.Resources_Internal.Add(re);
+
+            return re;
         }
 
         /// <summary>
@@ -2248,6 +2237,17 @@ namespace SIMULTAN.Data.Assets
             }
 
             return (consistent, corrected_full, corrected_relative, corrected_is_contained);
+        }
+
+        /// <summary>
+        /// Restores all taxonomy entry references after the default taxonomies were updated.
+        /// </summary>
+        public void RestoreDefaultTaxonomyReferences()
+        {
+            foreach (var resource in Resources)
+            {
+                resource.RestoreDefaultTaxonomyReferences(ProjectData);
+            }
         }
 
         #endregion

@@ -1,13 +1,9 @@
-﻿using SIMULTAN.Projects;
+﻿using SIMULTAN.Data.SimMath;
+using SIMULTAN.Projects;
 using SIMULTAN.Serializer.Geometry;
-using SIMULTAN.Serializer.SimGeo;
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Media.Media3D;
 
 namespace SIMULTAN.Data.Geometry
 {
@@ -22,80 +18,80 @@ namespace SIMULTAN.Data.Geometry
         /// <param name="proxy">The proxy geometry that should be updated.</param>
         /// <param name="size">Size of the cube geometry (NOT: size of the proxy. This size is used to calculate vertex coordinates)</param>
         /// <returns>A proxygeometry containing a cube</returns>
-        public static void UpdateCube(ProxyGeometry proxy, Point3D size)
+        public static void UpdateCube(ProxyGeometry proxy, SimPoint3D size)
         {
-            var s2 = ((Vector3D)size) / 2.0;
+            var s2 = ((SimVector3D)size) / 2.0;
 
-            proxy.Positions = new List<Point3D>()
+            proxy.Positions = new List<SimPoint3D>()
             {
 				//Front
-				new Point3D(-s2.X, -s2.Y, s2.Z),
-                new Point3D( s2.X, -s2.Y, s2.Z),
-                new Point3D( s2.X,  s2.Y, s2.Z),
-                new Point3D(-s2.X,  s2.Y, s2.Z),
+				new SimPoint3D(-s2.X, -s2.Y, s2.Z),
+                new SimPoint3D( s2.X, -s2.Y, s2.Z),
+                new SimPoint3D( s2.X,  s2.Y, s2.Z),
+                new SimPoint3D(-s2.X,  s2.Y, s2.Z),
 
 				//Back
-				new Point3D(-s2.X, -s2.Y, -s2.Z),
-                new Point3D(-s2.X,  s2.Y, -s2.Z),
-                new Point3D( s2.X,  s2.Y, -s2.Z),
-                new Point3D( s2.X, -s2.Y, -s2.Z),
+				new SimPoint3D(-s2.X, -s2.Y, -s2.Z),
+                new SimPoint3D(-s2.X,  s2.Y, -s2.Z),
+                new SimPoint3D( s2.X,  s2.Y, -s2.Z),
+                new SimPoint3D( s2.X, -s2.Y, -s2.Z),
 
 				//Left
-				new Point3D(-s2.X, -s2.Y, -s2.Z),
-                new Point3D(-s2.X, -s2.Y,  s2.Z),
-                new Point3D(-s2.X,  s2.Y,  s2.Z),
-                new Point3D(-s2.X,  s2.Y, -s2.Z),
+				new SimPoint3D(-s2.X, -s2.Y, -s2.Z),
+                new SimPoint3D(-s2.X, -s2.Y,  s2.Z),
+                new SimPoint3D(-s2.X,  s2.Y,  s2.Z),
+                new SimPoint3D(-s2.X,  s2.Y, -s2.Z),
 
 				//Right
-				new Point3D(s2.X, -s2.Y, -s2.Z),
-                new Point3D(s2.X,  s2.Y, -s2.Z),
-                new Point3D(s2.X,  s2.Y,  s2.Z),
-                new Point3D(s2.X, -s2.Y,  s2.Z),
+				new SimPoint3D(s2.X, -s2.Y, -s2.Z),
+                new SimPoint3D(s2.X,  s2.Y, -s2.Z),
+                new SimPoint3D(s2.X,  s2.Y,  s2.Z),
+                new SimPoint3D(s2.X, -s2.Y,  s2.Z),
 
 				//Bottom
-				new Point3D(-s2.X, -s2.Y, -s2.Z),
-                new Point3D(-s2.X, -s2.Y,  s2.Z),
-                new Point3D( s2.X, -s2.Y,  s2.Z),
-                new Point3D( s2.X, -s2.Y, -s2.Z),
+				new SimPoint3D(-s2.X, -s2.Y, -s2.Z),
+                new SimPoint3D(-s2.X, -s2.Y,  s2.Z),
+                new SimPoint3D( s2.X, -s2.Y,  s2.Z),
+                new SimPoint3D( s2.X, -s2.Y, -s2.Z),
 
 				//Top
-				new Point3D(-s2.X, s2.Y, -s2.Z),
-                new Point3D( s2.X, s2.Y, -s2.Z),
-                new Point3D( s2.X, s2.Y,  s2.Z),
-                new Point3D(-s2.X, s2.Y,  s2.Z),
+				new SimPoint3D(-s2.X, s2.Y, -s2.Z),
+                new SimPoint3D( s2.X, s2.Y, -s2.Z),
+                new SimPoint3D( s2.X, s2.Y,  s2.Z),
+                new SimPoint3D(-s2.X, s2.Y,  s2.Z),
             };
 
-            proxy.Normals = new List<Vector3D>()
+            proxy.Normals = new List<SimVector3D>()
             {
-                new Vector3D(0, 0, 1),
-                new Vector3D(0, 0, 1),
-                new Vector3D(0, 0, 1),
-                new Vector3D(0, 0, 1),
+                new SimVector3D(0, 0, 1),
+                new SimVector3D(0, 0, 1),
+                new SimVector3D(0, 0, 1),
+                new SimVector3D(0, 0, 1),
 
-                new Vector3D(0, 0, -1),
-                new Vector3D(0, 0, -1),
-                new Vector3D(0, 0, -1),
-                new Vector3D(0, 0, -1),
+                new SimVector3D(0, 0, -1),
+                new SimVector3D(0, 0, -1),
+                new SimVector3D(0, 0, -1),
+                new SimVector3D(0, 0, -1),
 
-                new Vector3D(-1, 0, 0),
-                new Vector3D(-1, 0, 0),
-                new Vector3D(-1, 0, 0),
-                new Vector3D(-1, 0, 0),
+                new SimVector3D(-1, 0, 0),
+                new SimVector3D(-1, 0, 0),
+                new SimVector3D(-1, 0, 0),
+                new SimVector3D(-1, 0, 0),
 
-                new Vector3D(1, 0, 0),
-                new Vector3D(1, 0, 0),
-                new Vector3D(1, 0, 0),
-                new Vector3D(1, 0, 0),
+                new SimVector3D(1, 0, 0),
+                new SimVector3D(1, 0, 0),
+                new SimVector3D(1, 0, 0),
+                new SimVector3D(1, 0, 0),
 
-                new Vector3D(0, 1, 0),
-                new Vector3D(0, 1, 0),
-                new Vector3D(0, 1, 0),
-                new Vector3D(0, 1, 0),
+                new SimVector3D(0, 1, 0),
+                new SimVector3D(0, 1, 0),
+                new SimVector3D(0, 1, 0),
+                new SimVector3D(0, 1, 0),
 
-                new Vector3D(0, -1, 0),
-                new Vector3D(0, -1, 0),
-                new Vector3D(0, -1, 0),
-                new Vector3D(0, -1, 0),
+                new SimVector3D(0, -1, 0),
+                new SimVector3D(0, -1, 0),
+                new SimVector3D(0, -1, 0),
+                new SimVector3D(0, -1, 0),
             };
 
             proxy.Indices = new List<int>()
@@ -130,7 +126,7 @@ namespace SIMULTAN.Data.Geometry
         /// <param name="baseVertex">Vertex to which the cube should be attached</param>
         /// <param name="size">Size of the cube geometry (NOT: size of the proxy. This size is used to calculate vertex coordinates)</param>
         /// <returns>A proxy geometry containing a cube</returns>
-        public static ProxyGeometry GenerateCube(Layer layer, string name, Vertex baseVertex, Point3D size)
+        public static ProxyGeometry GenerateCube(Layer layer, string name, Vertex baseVertex, SimPoint3D size)
         {
             ProxyGeometry proxy = new ProxyGeometry(layer, name, baseVertex);
 
@@ -169,11 +165,11 @@ namespace SIMULTAN.Data.Geometry
                 proxy.ModelGeometry.StartBatchOperation();
 
             if (proxy.Positions == null)
-                proxy.Positions = new List<Point3D>();
+                proxy.Positions = new List<SimPoint3D>();
             else
                 proxy.Positions.Clear();
             if (proxy.Normals == null)
-                proxy.Normals = new List<Vector3D>();
+                proxy.Normals = new List<SimVector3D>();
             else
                 proxy.Normals.Clear();
             if (proxy.Indices == null)

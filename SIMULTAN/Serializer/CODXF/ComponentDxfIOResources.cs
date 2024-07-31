@@ -5,11 +5,11 @@ using SIMULTAN.Data.Taxonomy;
 using SIMULTAN.Data.Users;
 using SIMULTAN.Serializer.DXF;
 using SIMULTAN.Utils;
+using SIMULTAN.Utils.Files;
 using System;
 using System.Collections.Generic;
+using System.IO.Enumeration;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SIMULTAN.Serializer.CODXF
 {
@@ -184,7 +184,7 @@ namespace SIMULTAN.Serializer.CODXF
         internal static void WriteAssetsSection(IEnumerable<ResourceEntry> resources,
             IEnumerable<Asset> assets, Predicate<ResourceEntry> resourceFilter, DXFStreamWriter writer)
         {
-            writer.StartSection(ParamStructTypes.ASSET_SECTION);
+            writer.StartSection(ParamStructTypes.ASSET_SECTION, resources.Count());
 
             WriteAssetManager(resources, resourceFilter, assets, writer);
 
@@ -266,7 +266,7 @@ namespace SIMULTAN.Serializer.CODXF
         {
             writer.Write(ResourceSaveCode.RESOURCE_USER, resource.UserWithWritingAccess);
             writer.Write(ResourceSaveCode.RESOURCE_KEY, resource.Key);
-            writer.Write(ResourceSaveCode.RESOURCE_RELATIVE_PATH, resource.CurrentRelativePath);
+            writer.WritePath(ResourceSaveCode.RESOURCE_RELATIVE_PATH, resource.CurrentRelativePath);
             writer.Write(ResourceSaveCode.RESOURCE_VISIBILITY, resource.Visibility);
             writer.WriteArray(ResourceSaveCode.RESOURCE_TAGS, resource.Tags, WriteTag);
         }
@@ -320,12 +320,26 @@ namespace SIMULTAN.Serializer.CODXF
             var user = data.Get<SimUserRole>(ResourceSaveCode.RESOURCE_USER, SimUserRole.ADMINISTRATOR);
             var key = data.Get<int>(ResourceSaveCode.RESOURCE_KEY, -1);
             var relPath = data.Get<string>(ResourceSaveCode.RESOURCE_RELATIVE_PATH, AssetManager.PATH_NOT_FOUND);
+            relPath = FileSystemNavigation.SanitizePath(relPath);
             var visibility = data.Get<SimComponentVisibility>(ResourceSaveCode.RESOURCE_VISIBILITY, SimComponentVisibility.AlwaysVisible);
             var tagIds = data.Get<SimId[]>(ResourceSaveCode.RESOURCE_TAGS, new SimId[] { });
             var children = data.Get<ResourceEntry[]>(ResourceSaveCode.RESOURCE_CHILDREN, new ResourceEntry[0]);
 
             var dir = info.ProjectData.AssetManager.ParseResourceDirectoryEntry(user, relPath, key, visibility);
-            dir.Tags.AddRange(tagIds.Select(x => new SimTaxonomyEntryReference(x)));
+
+            foreach (var tagId in tagIds)
+            {
+                //Try to find taxonomy entry
+                var taxEntry = info.ProjectData.IdGenerator.GetById<SimTaxonomyEntry>(tagId);
+                if (taxEntry != null)
+                {
+                    dir.Tags.Add(new SimTaxonomyEntryReference(taxEntry));
+                }
+                else
+                {
+                    info.Log(string.Format("Resource Tag on Resource {1}: Failed to restore taxonomy entry with Id {0}", tagId, key));
+                }
+            }
 
             dir.Children.SuppressNotification = true;
             foreach (var child in children)
@@ -364,11 +378,25 @@ namespace SIMULTAN.Serializer.CODXF
             var user = data.Get<SimUserRole>(ResourceSaveCode.RESOURCE_USER, SimUserRole.ADMINISTRATOR);
             var key = data.Get<int>(ResourceSaveCode.RESOURCE_KEY, -1);
             var relPath = data.Get<string>(ResourceSaveCode.RESOURCE_RELATIVE_PATH, AssetManager.PATH_NOT_FOUND);
+            relPath = FileSystemNavigation.SanitizePath(relPath);
             var visibility = data.Get<SimComponentVisibility>(ResourceSaveCode.RESOURCE_VISIBILITY, SimComponentVisibility.AlwaysVisible);
             var tagIds = data.Get<SimId[]>(ResourceSaveCode.RESOURCE_TAGS, new SimId[] { });
 
             var file = info.ProjectData.AssetManager.ParseContainedResourceFileEntry(user, relPath, key, visibility);
-            file.Tags.AddRange(tagIds.Select(x => new SimTaxonomyEntryReference(x)));
+
+            foreach (var tagId in tagIds)
+            {
+                //Try to find taxonomy entry
+                var taxEntry = info.ProjectData.IdGenerator.GetById<SimTaxonomyEntry>(tagId);
+                if (taxEntry != null)
+                {
+                    file.Tags.Add(new SimTaxonomyEntryReference(taxEntry));
+                }
+                else
+                {
+                    info.Log(string.Format("Resource Tag on Resource {1}: Failed to restore taxonomy entry with Id {0}", tagId, key));
+                }
+            }
             return file;
         }
 
@@ -398,11 +426,25 @@ namespace SIMULTAN.Serializer.CODXF
             var user = data.Get<SimUserRole>(ResourceSaveCode.RESOURCE_USER, SimUserRole.ADMINISTRATOR);
             var key = data.Get<int>(ResourceSaveCode.RESOURCE_KEY, -1);
             var relPath = data.Get<string>(ResourceSaveCode.RESOURCE_RELATIVE_PATH, AssetManager.PATH_NOT_FOUND);
+            relPath = FileSystemNavigation.SanitizePath(relPath);
             var visibility = data.Get<SimComponentVisibility>(ResourceSaveCode.RESOURCE_VISIBILITY, SimComponentVisibility.AlwaysVisible);
             var tagIds = data.Get<SimId[]>(ResourceSaveCode.RESOURCE_TAGS, new SimId[] { });
 
             var file = info.ProjectData.AssetManager.ParseLinkedResourceFileEntry(user, relPath, key, visibility);
-            file.Tags.AddRange(tagIds.Select(x => new SimTaxonomyEntryReference(x)));
+            foreach (var tagId in tagIds)
+            {
+                //Try to find taxonomy entry
+                var taxEntry = info.ProjectData.IdGenerator.GetById<SimTaxonomyEntry>(tagId);
+                if (taxEntry != null)
+                {
+                    file.Tags.Add(new SimTaxonomyEntryReference(taxEntry));
+                }
+                else
+                {
+                    info.Log(string.Format("Resource Tag on Resource {1}: Failed to restore taxonomy entry with Id {0}", tagId, key));
+                }
+            }
+
             return file;
         }
 

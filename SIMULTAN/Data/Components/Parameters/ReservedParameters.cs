@@ -5,8 +5,14 @@ using System.Collections.Generic;
 namespace SIMULTAN.Data.Components
 {
 
+    /// <summary>
+    /// <see cref="SimTaxonomyEntry"/> keys of default reserved parameters.
+    /// </summary>
     public static class ReservedParameterKeys
     {
+        /// <summary>
+        /// Taxonomy key of the reserved parameters
+        /// </summary>
         public const string RP_TAXONOMY_KEY = "resparam";
 
         [Obsolete("Still used by the old networks")]
@@ -44,8 +50,13 @@ namespace SIMULTAN.Data.Components
         public const string SIMNW_STATIC_PORT_POSITION_Z = "simnw_postn_z";
 
 
+        /// <summary>
+        /// Lookup of legacy reserved parameter names to taxonomy entry keys
+        /// </summary>
         public static Dictionary<String, String> NameToKeyLookup = new Dictionary<string, string> {
 
+            // disable warnings for ReservedParameters
+#pragma warning disable CS0618 // Type or member is obsolete
             { ReservedParameters.RP_COUNT , RP_COUNT },
 
             { ReservedParameters.RP_LENGTH_MIN_TOTAL , RP_LENGTH_MIN_TOTAL },
@@ -65,11 +76,10 @@ namespace SIMULTAN.Data.Components
 
             { ReservedParameters.RP_PARAM_TO_GEOMETRY , RP_PARAM_TO_GEOMETRY },
 
-            { ReservedParameters.SIMENUMPARAM_DEFAULT , SIMENUMPARAM_DEFAULT },
-
             { ReservedParameters.SIMNW_STATIC_PORT_POSITION_X , SIMNW_STATIC_PORT_POSITION_X },
             { ReservedParameters.SIMNW_STATIC_PORT_POSITION_Y , SIMNW_STATIC_PORT_POSITION_Y },
             { ReservedParameters.SIMNW_STATIC_PORT_POSITION_Z , SIMNW_STATIC_PORT_POSITION_Z },
+#pragma warning restore CS0618 // Type or member is obsolete
         };
 
         /// <summary>
@@ -105,7 +115,8 @@ namespace SIMULTAN.Data.Components
     /// Contains informations about reserved parameter names.
     /// These names are used for special purposes by the data model or by the Geometry connection
     /// </summary>
-	public static class ReservedParameters
+    [Obsolete("Use the reserved parameter keys and taxonomy entries instead. Only used for migration of old projects.")]
+    public static class ReservedParameters
     {
         public const string RP_COUNT = "NRᴛᴏᴛᴀʟ";
 
@@ -137,8 +148,6 @@ namespace SIMULTAN.Data.Components
         public const string MVT_OFFSET_X_FORMAT = "{0}.ValuePointer.OffsetX";
         public const string MVT_OFFSET_Y_FORMAT = "{0}.ValuePointer.OffsetY";
         public const string MVT_OFFSET_Z_FORMAT = "{0}.ValuePointer.OffsetZ";
-
-        public const string SIMENUMPARAM_DEFAULT = "Default";
 
         public const string SIMNW_STATIC_PORT_POSITION_X = "X";
         public const string SIMNW_STATIC_PORT_POSITION_Y = "Y";

@@ -1,4 +1,6 @@
 ﻿using SIMULTAN.Data.Geometry;
+using SIMULTAN.Data.SimNetworks;
+using System.Collections.Generic;
 
 namespace SIMULTAN.Exchange.SimNetworkConnectors
 {
@@ -7,6 +9,11 @@ namespace SIMULTAN.Exchange.SimNetworkConnectors
     /// </summary>
     public abstract class BaseSimnetworkGeometryConnector
     {
+        /// <summary>
+        /// The represented SimNetwork Element
+        /// </summary>
+        internal abstract IEnumerable<ISimNetworkElement> SimNetworkElement { get; }
+
         /// <summary>
         /// The geometry associated with the network element
         /// </summary>

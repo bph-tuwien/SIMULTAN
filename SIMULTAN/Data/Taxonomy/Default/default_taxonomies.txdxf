@@ -5,7 +5,7 @@ VERSION_SECTION
 0
 FILE_VERSION
 10
-21
+25
 0
 ENDSEC
 0
@@ -16,14 +16,30 @@ TAXONOMY_SECTION
 TAXONOMY
 22004
 resslot
-2
-Reserved Slots
-22002
-These are the default reserved slot names
 22005
 1
 22006
 0
+22100
+2
+22101
+
+22101
+de
+22102
+2
+22103
+
+22104
+Reserved Slots
+22105
+These are the default reserved slot names
+22103
+de
+22104
+Reservierte Slots
+22105
+Das sind die standard reservierten Slot Namen
 22001
 37
 0
@@ -32,9 +48,19 @@ ENTSEQ
 TAXONOMY_ENTRY
 22003
 undefined
+22102
 2
+22103
+
+22104
 Undefined Slot
-22002
+22105
+
+22103
+de
+22104
+Undefinierter Slot
+22105
 
 22001
 0
@@ -44,9 +70,19 @@ SEQEND
 TAXONOMY_ENTRY
 22003
 item
+22102
 2
+22103
+
+22104
 Element
-22002
+22105
+
+22103
+de
+22104
+Element
+22105
 
 22001
 0
@@ -56,9 +92,19 @@ SEQEND
 TAXONOMY_ENTRY
 22003
 list
+22102
 2
+22103
+
+22104
 List
-22002
+22105
+
+22103
+de
+22104
+Liste
+22105
 
 22001
 0
@@ -68,9 +114,19 @@ SEQEND
 TAXONOMY_ENTRY
 22003
 tuple
+22102
 2
+22103
+
+22104
 Tuple
-22002
+22105
+
+22103
+de
+22104
+Tupel
+22105
 
 22001
 0
@@ -80,9 +136,19 @@ SEQEND
 TAXONOMY_ENTRY
 22003
 import
+22102
 2
+22103
+
+22104
 Import
-22002
+22105
+
+22103
+de
+22104
+Import
+22105
 
 22001
 0
@@ -92,9 +158,19 @@ SEQEND
 TAXONOMY_ENTRY
 22003
 communication
+22102
 2
+22103
+
+22104
 Communication
-22002
+22105
+
+22103
+de
+22104
+Kommunikation
+22105
 
 22001
 0
@@ -104,9 +180,19 @@ SEQEND
 TAXONOMY_ENTRY
 22003
 cost
+22102
 2
+22103
+
+22104
 Cost
-22002
+22105
+
+22103
+de
+22104
+Kosten
+22105
 
 22001
 0
@@ -116,9 +202,19 @@ SEQEND
 TAXONOMY_ENTRY
 22003
 regulation
+22102
 2
+22103
+
+22104
 Requirement
-22002
+22105
+
+22103
+de
+22104
+Anforderung
+22105
 
 22001
 0
@@ -128,9 +224,19 @@ SEQEND
 TAXONOMY_ENTRY
 22003
 specification
+22102
 2
+22103
+
+22104
 Specification
-22002
+22105
+
+22103
+de
+22104
+Spezifizierung
+22105
 
 22001
 0
@@ -140,9 +246,19 @@ SEQEND
 TAXONOMY_ENTRY
 22003
 calculation
+22102
 2
+22103
+
+22104
 Calculation
-22002
+22105
+
+22103
+de
+22104
+Rechnung
+22105
 
 22001
 0
@@ -152,9 +268,19 @@ SEQEND
 TAXONOMY_ENTRY
 22003
 object
+22102
 2
+22103
+
+22104
 Geometric Object
-22002
+22105
+
+22103
+de
+22104
+Geometrisches Objekt
+22105
 
 22001
 0
@@ -164,9 +290,19 @@ SEQEND
 TAXONOMY_ENTRY
 22003
 size
+22102
 2
+22103
+
+22104
 Geometric Size
-22002
+22105
+
+22103
+de
+22104
+Geometrische Größe
+22105
 
 22001
 0
@@ -176,9 +312,19 @@ SEQEND
 TAXONOMY_ENTRY
 22003
 length
+22102
 2
+22103
+
+22104
 Geometric Length
-22002
+22105
+
+22103
+de
+22104
+Geometrische Länge
+22105
 
 22001
 0
@@ -188,9 +334,19 @@ SEQEND
 TAXONOMY_ENTRY
 22003
 areas
+22102
 2
+22103
+
+22104
 Geometric Area
-22002
+22105
+
+22103
+de
+22104
+Geometrische Fläche
+22105
 
 22001
 0
@@ -200,9 +356,19 @@ SEQEND
 TAXONOMY_ENTRY
 22003
 volumes
+22102
 2
+22103
+
+22104
 Geometric Volumes
-22002
+22105
+
+22103
+de
+22104
+Geometrische Volumen
+22105
 
 22001
 0
@@ -212,9 +378,19 @@ SEQEND
 TAXONOMY_ENTRY
 22003
 georef
+22102
 2
+22103
+
+22104
 Geo-Reference
-22002
+22105
+
+22103
+de
+22104
+Geo-Referenz
+22105
 
 22001
 0
@@ -224,9 +400,19 @@ SEQEND
 TAXONOMY_ENTRY
 22003
 material
+22102
 2
+22103
+
+22104
 Material
-22002
+22105
+
+22103
+de
+22104
+Material
+22105
 
 22001
 0
@@ -236,9 +422,19 @@ SEQEND
 TAXONOMY_ENTRY
 22003
 layer
+22102
 2
+22103
+
+22104
 Layer
-22002
+22105
+
+22103
+de
+22104
+Ebene
+22105
 
 22001
 0
@@ -248,9 +444,19 @@ SEQEND
 TAXONOMY_ENTRY
 22003
 composite
+22102
 2
+22103
+
+22104
 Composite
-22002
+22105
+
+22103
+de
+22104
+Aufbau
+22105
 
 22001
 0
@@ -260,9 +466,19 @@ SEQEND
 TAXONOMY_ENTRY
 22003
 opening
+22102
 2
+22103
+
+22104
 Opening
-22002
+22105
+
+22103
+de
+22104
+Öffnung
+22105
 
 22001
 0
@@ -272,9 +488,19 @@ SEQEND
 TAXONOMY_ENTRY
 22003
 system
+22102
 2
+22103
+
+22104
 System
-22002
+22105
+
+22103
+de
+22104
+System
+22105
 
 22001
 0
@@ -284,9 +510,19 @@ SEQEND
 TAXONOMY_ENTRY
 22003
 generator
+22102
 2
+22103
+
+22104
 Generator
-22002
+22105
+
+22103
+de
+22104
+Generator
+22105
 
 22001
 0
@@ -296,9 +532,19 @@ SEQEND
 TAXONOMY_ENTRY
 22003
 transport
+22102
 2
+22103
+
+22104
 Transportation
-22002
+22105
+
+22103
+de
+22104
+Transport
+22105
 
 22001
 2
@@ -308,9 +554,19 @@ ENTSEQ
 TAXONOMY_ENTRY
 22003
 transport_pipe
+22102
 2
+22103
+
+22104
 Transportation Channel
-22002
+22105
+
+22103
+de
+22104
+Leitung
+22105
 
 22001
 0
@@ -320,9 +576,19 @@ SEQEND
 TAXONOMY_ENTRY
 22003
 transport_part
+22102
 2
+22103
+
+22104
 Transportation Part
-22002
+22105
+
+22103
+de
+22104
+Leitungsformstück
+22105
 
 22001
 0
@@ -338,9 +604,19 @@ SEQEND
 TAXONOMY_ENTRY
 22003
 distribution
+22102
 2
+22103
+
+22104
 Distribution
-22002
+22105
+
+22103
+de
+22104
+Abgabe
+22105
 
 22001
 0
@@ -350,9 +626,19 @@ SEQEND
 TAXONOMY_ENTRY
 22003
 connected_to
+22102
 2
+22103
+
+22104
 Connected to
-22002
+22105
+
+22103
+de
+22104
+Zusammenhängend mit
+22105
 
 22001
 0
@@ -362,9 +648,19 @@ SEQEND
 TAXONOMY_ENTRY
 22003
 joint
+22102
 2
+22103
+
+22104
 Joint
-22002
+22105
+
+22103
+de
+22104
+Verbindung
+22105
 
 22001
 0
@@ -374,9 +670,19 @@ SEQEND
 TAXONOMY_ENTRY
 22003
 heating
+22102
 2
+22103
+
+22104
 Heating
-22002
+22105
+
+22103
+de
+22104
+Heizung
+22105
 
 22001
 0
@@ -386,9 +692,19 @@ SEQEND
 TAXONOMY_ENTRY
 22003
 aircondition
+22102
 2
+22103
+
+22104
 Aircondition
-22002
+22105
+
+22103
+de
+22104
+Raumklima
+22105
 
 22001
 0
@@ -398,9 +714,19 @@ SEQEND
 TAXONOMY_ENTRY
 22003
 humidity
+22102
 2
+22103
+
+22104
 Humidity
-22002
+22105
+
+22103
+de
+22104
+Luftfeuchtigkeit
+22105
 
 22001
 0
@@ -410,9 +736,19 @@ SEQEND
 TAXONOMY_ENTRY
 22003
 acoustics
+22102
 2
+22103
+
+22104
 Acoustics
-22002
+22105
+
+22103
+de
+22104
+Akustik
+22105
 
 22001
 0
@@ -422,9 +758,19 @@ SEQEND
 TAXONOMY_ENTRY
 22003
 natural_light
+22102
 2
+22103
+
+22104
 Natural Light
-22002
+22105
+
+22103
+de
+22104
+Natürliches Licht
+22105
 
 22001
 0
@@ -434,9 +780,19 @@ SEQEND
 TAXONOMY_ENTRY
 22003
 artificial_light
+22102
 2
+22103
+
+22104
 Artificial Light
-22002
+22105
+
+22103
+de
+22104
+Kunstlicht
+22105
 
 22001
 0
@@ -446,9 +802,19 @@ SEQEND
 TAXONOMY_ENTRY
 22003
 electrical
+22102
 2
+22103
+
+22104
 Electrical
-22002
+22105
+
+22103
+de
+22104
+Elektrizität
+22105
 
 22001
 0
@@ -458,9 +824,19 @@ SEQEND
 TAXONOMY_ENTRY
 22003
 fire_safety
+22102
 2
+22103
+
+22104
 Fire Safety
-22002
+22105
+
+22103
+de
+22104
+Brandschutz
+22105
 
 22001
 0
@@ -470,9 +846,19 @@ SEQEND
 TAXONOMY_ENTRY
 22003
 msr
+22102
 2
+22103
+
+22104
 MSR
-22002
+22105
+
+22103
+de
+22104
+MSR
+22105
 
 22001
 0
@@ -482,9 +868,19 @@ SEQEND
 TAXONOMY_ENTRY
 22003
 sewage
+22102
 2
+22103
+
+22104
 Sewage
-22002
+22105
+
+22103
+de
+22104
+Abwasser
+22105
 
 22001
 0
@@ -494,9 +890,19 @@ SEQEND
 TAXONOMY_ENTRY
 22003
 water
+22102
 2
+22103
+
+22104
 Water
-22002
+22105
+
+22103
+de
+22104
+Wasser
+22105
 
 22001
 0
@@ -512,25 +918,51 @@ SEQEND
 TAXONOMY
 22004
 resparam
-2
-Reserved Parameters
-22002
-These are the default reserved parameters
 22005
 1
 22006
 0
+22100
+2
+22101
+
+22101
+de
+22102
+2
+22103
+
+22104
+Reserved Parameters
+22105
+These are the default reserved parameters
+22103
+de
+22104
+Reservierte Parameter
+22105
+Das sind die standard reservierten Parameter Namen
 22001
-5
+6
 0
 ENTSEQ
 0
 TAXONOMY_ENTRY
 22003
 general
+22102
 2
+22103
+
+22104
 General
-22002
+22105
+
+22103
+de
+22104
+Generell
+22105
 
 22001
 2
@@ -540,10 +972,20 @@ ENTSEQ
 TAXONOMY_ENTRY
 22003
 nrtotal
+22102
 2
+22103
+
+22104
 NRᴛᴏᴛᴀʟ
-22002
+22105
 Count
+22103
+de
+22104
+NRᴛᴏᴛᴀʟ
+22105
+Anzahl
 22001
 0
 0
@@ -552,9 +994,19 @@ SEQEND
 TAXONOMY_ENTRY
 22003
 total
+22102
 2
+22103
+
+22104
 Total
-22002
+22105
+
+22103
+de
+22104
+Total
+22105
 
 22001
 6
@@ -564,10 +1016,20 @@ ENTSEQ
 TAXONOMY_ENTRY
 22003
 amintotal
+22102
 2
+22103
+
+22104
 AᴍɪNᴛᴏᴛᴀʟ
-22002
+22105
 Area mintotal
+22103
+de
+22104
+AᴍɪNᴛᴏᴛᴀʟ
+22105
+Fläche min total
 22001
 0
 0
@@ -576,10 +1038,20 @@ SEQEND
 TAXONOMY_ENTRY
 22003
 vmintotal
+22102
 2
+22103
+
+22104
 VᴍɪNᴛᴏᴛᴀʟ
-22002
+22105
 Volume min total
+22103
+de
+22104
+VᴍɪNᴛᴏᴛᴀʟ
+22105
+Volumen min total
 22001
 0
 0
@@ -588,10 +1060,20 @@ SEQEND
 TAXONOMY_ENTRY
 22003
 lmintotal
+22102
 2
+22103
+
+22104
 LᴍɪNᴛᴏᴛᴀʟ
-22002
+22105
 Length min total
+22103
+de
+22104
+LᴍɪNᴛᴏᴛᴀʟ
+22105
+Länge min total
 22001
 0
 0
@@ -600,10 +1082,20 @@ SEQEND
 TAXONOMY_ENTRY
 22003
 lmaxtotal
+22102
 2
+22103
+
+22104
 LᴍᴀXᴛᴏᴛᴀʟ
-22002
+22105
 Length max total
+22103
+de
+22104
+LᴍᴀXᴛᴏᴛᴀʟ
+22105
+Länge max total
 22001
 0
 0
@@ -612,10 +1104,20 @@ SEQEND
 TAXONOMY_ENTRY
 22003
 amaxtotal
+22102
 2
+22103
+
+22104
 AᴍᴀXᴛᴏᴛᴀʟ
-22002
+22105
 Area max total
+22103
+de
+22104
+AᴍᴀXᴛᴏᴛᴀʟ
+22105
+Fläche max total
 22001
 0
 0
@@ -624,10 +1126,20 @@ SEQEND
 TAXONOMY_ENTRY
 22003
 vmaxtotal
+22102
 2
+22103
+
+22104
 VᴍᴀXᴛᴏᴛᴀʟ
-22002
+22105
 Volume max total
+22103
+de
+22104
+VᴍᴀXᴛᴏᴛᴀʟ
+22105
+Volumen max total
 22001
 0
 0
@@ -648,9 +1160,19 @@ SEQEND
 TAXONOMY_ENTRY
 22003
 inout
+22102
 2
+22103
+
+22104
 In, Out
-22002
+22105
+
+22103
+de
+22104
+In, Out
+22105
 
 22001
 2
@@ -660,9 +1182,19 @@ ENTSEQ
 TAXONOMY_ENTRY
 22003
 dout
+22102
 2
+22103
+
+22104
 Δdout
-22002
+22105
+Material composite D Out
+22103
+de
+22104
+Δdout
+22105
 Material composite D Out
 22001
 0
@@ -672,9 +1204,19 @@ SEQEND
 TAXONOMY_ENTRY
 22003
 din
+22102
 2
+22103
+
+22104
 Δdin
-22002
+22105
+Material composite D In
+22103
+de
+22104
+Δdin
+22105
 Material composite D In
 22001
 0
@@ -690,9 +1232,19 @@ SEQEND
 TAXONOMY_ENTRY
 22003
 symbols
+22102
 2
+22103
+
+22104
 Symbols
-22002
+22105
+
+22103
+de
+22104
+Symbols
+22105
 
 22001
 5
@@ -702,10 +1254,20 @@ ENTSEQ
 TAXONOMY_ENTRY
 22003
 ohrz
+22102
 2
+22103
+
+22104
 ➽
-22002
+22105
 Orientation HRZ
+22103
+de
+22104
+➽
+22105
+Orientierun HRZ
 22001
 0
 0
@@ -714,10 +1276,20 @@ SEQEND
 TAXONOMY_ENTRY
 22003
 tp
+22102
 2
+22103
+
+22104
 ❏
-22002
+22105
 Table pointer
+22103
+de
+22104
+❏
+22105
+Tabellen Zeiger
 22001
 0
 0
@@ -726,10 +1298,20 @@ SEQEND
 TAXONOMY_ENTRY
 22003
 ao
+22102
 2
+22103
+
+22104
 ❖
-22002
+22105
 Aggregation operation
+22103
+de
+22104
+❖
+22105
+Aggregations Operation
 22001
 0
 0
@@ -738,10 +1320,20 @@ SEQEND
 TAXONOMY_ENTRY
 22003
 ls
+22102
 2
+22103
+
+22104
 ❝
-22002
+22105
 Label source
+22103
+de
+22104
+❝
+22105
+Label Quelle
 22001
 0
 0
@@ -750,10 +1342,20 @@ SEQEND
 TAXONOMY_ENTRY
 22003
 ptg
+22102
 2
+22103
+
+22104
 ➤
-22002
+22105
 Parameter to Geometry
+22103
+de
+22104
+➤
+22105
+Parameter zu Geometrie
 22001
 0
 0
@@ -768,9 +1370,19 @@ SEQEND
 TAXONOMY_ENTRY
 22003
 simnw
+22102
 2
+22103
+
+22104
 SimNetworks
-22002
+22105
+
+22103
+de
+22104
+SimNetworks
+22105
 
 22001
 3
@@ -780,9 +1392,19 @@ ENTSEQ
 TAXONOMY_ENTRY
 22003
 simnw_postn_x
+22102
 2
+22103
+
+22104
 X
-22002
+22105
+
+22103
+de
+22104
+X
+22105
 
 22001
 0
@@ -792,9 +1414,19 @@ SEQEND
 TAXONOMY_ENTRY
 22003
 simnw_postn_y
+22102
 2
+22103
+
+22104
 Y
-22002
+22105
+
+22103
+de
+22104
+Y
+22105
 
 22001
 0
@@ -804,9 +1436,19 @@ SEQEND
 TAXONOMY_ENTRY
 22003
 simnw_postn_z
+22102
 2
+22103
+
+22104
 Z
-22002
+22105
+
+22103
+de
+22104
+Z
+22105
 
 22001
 0
@@ -822,9 +1464,19 @@ SEQEND
 TAXONOMY_ENTRY
 22003
 params
+22102
 2
+22103
+
+22104
 Parameters
-22002
+22105
+
+22103
+de
+22104
+Parameter
+22105
 
 22001
 1
@@ -834,9 +1486,245 @@ ENTSEQ
 TAXONOMY_ENTRY
 22003
 simenumparam_default
+22102
 2
+22103
+
+22104
 Default
-22002
+22105
+
+22103
+de
+22104
+Default
+22105
+
+22001
+0
+0
+SEQEND
+0
+SEQEND
+0
+ENTCTN
+0
+SEQEND
+0
+TAXONOMY_ENTRY
+22003
+geometrysource
+22102
+2
+22103
+
+22104
+Geometry Source
+22105
+
+22103
+de
+22104
+Geometrie Quelle
+22105
+
+22001
+9
+0
+ENTSEQ
+0
+TAXONOMY_ENTRY
+22003
+edge_length
+22102
+2
+22103
+
+22104
+Length
+22105
+
+22103
+de
+22104
+Länge
+22105
+
+22001
+0
+0
+SEQEND
+0
+TAXONOMY_ENTRY
+22003
+face_area
+22102
+2
+22103
+
+22104
+Area
+22105
+
+22103
+de
+22104
+Fläche
+22105
+
+22001
+0
+0
+SEQEND
+0
+TAXONOMY_ENTRY
+22003
+face_incline
+22102
+2
+22103
+
+22104
+Incline
+22105
+
+22103
+de
+22104
+Steigung
+22105
+
+22001
+0
+0
+SEQEND
+0
+TAXONOMY_ENTRY
+22003
+face_orientation
+22102
+2
+22103
+
+22104
+Orientation
+22105
+
+22103
+de
+22104
+Ausrichtung
+22105
+
+22001
+0
+0
+SEQEND
+0
+TAXONOMY_ENTRY
+22003
+volume_elevation_floor
+22102
+2
+22103
+
+22104
+Elevation (Floor)
+22105
+
+22103
+de
+22104
+Höhe (Boden)
+22105
+
+22001
+0
+0
+SEQEND
+0
+TAXONOMY_ENTRY
+22003
+volume_elevation_ceiling
+22102
+2
+22103
+
+22104
+Elevation (Ceiling)
+22105
+
+22103
+de
+22104
+Höhe (Decke)
+22105
+
+22001
+0
+0
+SEQEND
+0
+TAXONOMY_ENTRY
+22003
+volume_height
+22102
+2
+22103
+
+22104
+Height
+22105
+
+22103
+de
+22104
+Raumhöhe
+22105
+
+22001
+0
+0
+SEQEND
+0
+TAXONOMY_ENTRY
+22003
+volume_area_floor
+22102
+2
+22103
+
+22104
+Floor Area
+22105
+
+22103
+de
+22104
+Bodenfläche
+22105
+
+22001
+0
+0
+SEQEND
+0
+TAXONOMY_ENTRY
+22003
+volume_volume
+22102
+2
+22103
+
+22104
+Volume
+22105
+
+22103
+de
+22104
+Volumen
+22105
 
 22001
 0

@@ -39,6 +39,10 @@ namespace SIMULTAN.DataMapping
         /// The positioning for the next rule starts at the top-right of the bounding box of the previous rule
         /// </summary>
         TopRight = 1,
+        /// <summary>
+        /// The positioning for the next rule starts at the top-left of the bounding box of the previous rule
+        /// </summary>
+        TopLeft = 2,
     }
 
     /// <summary>
@@ -73,24 +77,28 @@ namespace SIMULTAN.DataMapping
         /// <summary>
         /// Relative position to the previous rule. When the rule is a top-level rule, the offset is relative to the worksheet origin.
         /// All positions assume index (0,0) is cell A1.
-        /// The position origin is set by the <see cref="ReferencePoint"/> property
+        /// The position origin is set by the <see cref="ReferencePointParent"/> property
         /// </summary>
-        IntIndex2D OffsetParent { get; set; }
+        RowColumnIndex OffsetParent { get; set; }
         /// <summary>
         /// Relative position to the last invocation of the same rule. When the rule is a top-level rule, the offset is relative to the worksheet origin.
         /// All positions assume index (0,0) is cell A1.
-        /// The position origin is set by the <see cref="ReferencePoint"/> property
+        /// The position origin is set by the <see cref="ReferencePointParent"/> property
         /// </summary>
-        IntIndex2D OffsetConsecutive { get; set; }
+        RowColumnIndex OffsetConsecutive { get; set; }
 
         /// <summary>
         /// The direction in which properties of this rule are written
         /// </summary>
         SimDataMappingDirection MappingDirection { get; set; }
         /// <summary>
-        /// The origin point for the offset of this rule
+        /// The origin point for the offset of this rule to the parent rule. Used in combination with <see cref="OffsetParent"/>
         /// </summary>
-        SimDataMappingReferencePoint ReferencePoint { get; set; }
+        SimDataMappingReferencePoint ReferencePointParent { get; set; }
+        /// <summary>
+        /// The origin point for the offset of this rule to the previous execution of the same rule. Used in combination with <see cref="OffsetConsecutive"/>
+        /// </summary>
+        SimDataMappingReferencePoint ReferencePointConsecutive { get; set; }
 
         /// <summary>
         /// Executes the rule on a root object
@@ -99,6 +107,12 @@ namespace SIMULTAN.DataMapping
         /// <param name="state">The current state of the traversal</param>
         /// <param name="data">The result data of the mapping operation</param>
         void Execute(object rootObject, SimTraversalState state, SimMappedData data);
+
+        /// <summary>
+        /// Looks up taxonomy entries for default slot by their name.
+        /// Do this if the default taxonomies changed, could mean that the project is migrated.
+        /// </summary>
+        void RestoreDefaultTaxonomyReferences();
     }
 
     /// <summary>
@@ -118,6 +132,7 @@ namespace SIMULTAN.DataMapping
     /// <typeparam name="TPropertyEnumeration">Enumeration type containing the available properties for this rule type</typeparam>
     /// <typeparam name="TFilter">Type of the filter for this rule type</typeparam>
     public abstract class SimDataMappingRuleBase<TPropertyEnumeration, TFilter> : ISimDataMappingRuleBase
+        where TFilter : SimDataMappingFilterBase
     {
         #region Properties
 
@@ -167,18 +182,21 @@ namespace SIMULTAN.DataMapping
         public int MaxDepth { get; set; } = int.MaxValue;
 
         /// <inheritdoc />
-        public IntIndex2D OffsetParent { get; set; } = new IntIndex2D(0, 0);
+        public RowColumnIndex OffsetParent { get; set; } = new RowColumnIndex(0, 0);
         /// <inheritdoc />
-        public IntIndex2D OffsetConsecutive { get; set; } = new IntIndex2D(0, 0);
+        public RowColumnIndex OffsetConsecutive { get; set; } = new RowColumnIndex(0, 0);
 
         /// <inheritdoc />
         public string SheetName { get; set; }
         /// <inheritdoc />
         public SimDataMappingDirection MappingDirection { get; set; }
         /// <inheritdoc />
-        public SimDataMappingReferencePoint ReferencePoint { get; set; } = SimDataMappingReferencePoint.BottomLeft;
+        public SimDataMappingReferencePoint ReferencePointParent { get; set; } = SimDataMappingReferencePoint.BottomLeft;
+        /// <inheritdoc />
+        public SimDataMappingReferencePoint ReferencePointConsecutive { get; set; } = SimDataMappingReferencePoint.BottomLeft;
 
         #endregion
+
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SimDataMappingRuleBase{TPropertyEnumeration, TFilter}"/> class
@@ -191,6 +209,7 @@ namespace SIMULTAN.DataMapping
             
             this.SheetName = sheetName;
         }
+
 
         /// <inheritdoc />
         public abstract void Execute(object rootObject, SimTraversalState state, SimMappedData data);
@@ -205,16 +224,8 @@ namespace SIMULTAN.DataMapping
         /// <param name="write">Write operation that stores the property into the result set</param>
         protected void WriteProperties(SimTraversalState state, Action<TPropertyEnumeration> write)
         {
-            state.MatchCount++;
-
             //Write properties
-            if (state.MatchCount == 1)
-            {
-                state.CurrentPosition += this.OffsetParent;
-                state.Range = new RowColumnRange(state.CurrentPosition.Y, state.CurrentPosition.X, 0, 0);
-            }
-            else
-                state.CurrentPosition += this.OffsetConsecutive;
+            var propertyRange = new RowColumnRange(state.CurrentPosition.Row, state.CurrentPosition.Column, 0, 0);
 
             for (int pi = 0; pi < this.Properties.Count; pi++)
             {
@@ -224,46 +235,65 @@ namespace SIMULTAN.DataMapping
                 write(property);
 
                 //Add write position to range
-                if (state.Range.RowStart == -1 && state.Range.ColumnStart == -1)
-                    state.Range = new RowColumnRange(state.CurrentPosition.Y, state.CurrentPosition.X, 1, 1);
-                else
-                    state.Range = RowColumnRange.Merge(state.Range, state.CurrentPosition);
+                propertyRange = RowColumnRange.Merge(propertyRange, state.CurrentPosition);
 
                 //Update current position for next property
                 if (pi < this.Properties.Count - 1) //All except for last
                 {
                     if (this.MappingDirection == SimDataMappingDirection.Horizontal)
-                        state.CurrentPosition += new IntIndex2D(1, 0);
+                        state.CurrentPosition += new RowColumnIndex(0, 1);
                     else if (this.MappingDirection == SimDataMappingDirection.Vertical)
-                        state.CurrentPosition += new IntIndex2D(0, 1);
+                        state.CurrentPosition += new RowColumnIndex(1, 0);
                 }
             }
+
+            //Merge range
+            state.RangeStack[state.RangeStack.Count - 1] = RowColumnRange.Merge(state.RangeStack[state.RangeStack.Count - 1], propertyRange);
         }
 
         /// <summary>
         /// Advances the reference point for the application of the next rule. Sets the reference point
-        /// according to the <see cref="ReferencePoint"/> property.
+        /// according to the <see cref="ReferencePointParent"/> property.
         /// This method needs to be called by inheriting classes after their properties and the properties of all child components have been written.
         /// </summary>
         /// <param name="state">The current traversal state</param>
         protected void AdvanceReferencePoint(SimTraversalState state)
         {
-            //Set reference position for next rule
-            switch (this.ReferencePoint)
+            var parentRange = new RowColumnRange(0, 0, 1, 1);
+            if (state.RangeStack.Count > 0)
+                parentRange = state.RangeStack[state.RangeStack.Count - 1];
+
+
+            var referencePosition = new RowColumnIndex(parentRange.RowStart, parentRange.ColumnStart);
+            
+            var refPos = ReferencePointParent;
+            if (state.MatchCount > 0)
+                refPos = ReferencePointConsecutive;
+
+            switch (refPos)
             {
-                case SimDataMappingReferencePoint.BottomLeft:
-                    state.CurrentPosition = new IntIndex2D(
-                        state.Range.ColumnStart, state.Range.RowStart + state.Range.RowCount - 1
-                        );
-                    break;
                 case SimDataMappingReferencePoint.TopRight:
-                    state.CurrentPosition = new IntIndex2D(
-                        state.Range.ColumnStart + state.Range.ColumnCount - 1, state.Range.RowStart
-                        );
+                    referencePosition = new RowColumnIndex(parentRange.RowStart, parentRange.ColumnStart + Math.Max(0, parentRange.ColumnCount - 1));
+                    break;
+                case SimDataMappingReferencePoint.BottomLeft:
+                    referencePosition = new RowColumnIndex(parentRange.RowStart + Math.Max(0, parentRange.RowCount - 1), parentRange.ColumnStart);
+                    break;
+                case SimDataMappingReferencePoint.TopLeft: //Nothing to do
                     break;
                 default:
                     throw new NotSupportedException("Unsupported enum value");
             }
+
+            //Add offset
+            if (state.MatchCount == 0)
+                state.CurrentPosition = referencePosition + this.OffsetParent;
+            else
+                state.CurrentPosition = referencePosition + this.OffsetConsecutive;
+
+            //Start new range for this rule
+            state.RangeStack.Add(new RowColumnRange(state.CurrentPosition.Row, state.CurrentPosition.Column, 0, 0));
+
+            state.MatchCount++;
         }
     
 
@@ -278,6 +308,8 @@ namespace SIMULTAN.DataMapping
         protected void ExecuteChildRules(IEnumerable<ISimDataMappingRuleBase> childRules, object root,
             SimTraversalState state, SimMappedData data)
         {
+            int rangeCount = state.RangeStack.Count;
+
             foreach (var rule in childRules)
             {
                 SimTraversalState childState = new SimTraversalState()
@@ -287,20 +319,23 @@ namespace SIMULTAN.DataMapping
                     IncludeRoot = false,
                     VisitedObjects = state.VisitedObjects,
                     ModelsToRelease = state.ModelsToRelease,
+                    RangeStack = state.RangeStack,
                 };
 
                 rule.Execute(root, childState, data);
 
-                //Merge child rule content range
-                if (childState.Range.RowCount > 0 && childState.Range.ColumnCount > 0) //Otherwise nothing was written
+                //Merge ranges
+                var currentRuleRange = state.RangeStack[rangeCount - 1];
+                for (int i = rangeCount; i < state.RangeStack.Count; i++)
                 {
-                    state.Range = RowColumnRange.Merge(state.Range, childState.Range);
-
-                    //Move current pointer to end of child content
-                    if (this.MappingDirection == SimDataMappingDirection.Horizontal)
-                        state.CurrentPosition = new IntIndex2D(childState.Range.ColumnStart + childState.Range.ColumnCount - 1, state.CurrentPosition.Y);
-                    else if (this.MappingDirection == SimDataMappingDirection.Vertical)
-                        state.CurrentPosition = new IntIndex2D(state.CurrentPosition.X, childState.Range.RowStart + childState.Range.RowCount - 1);
+                    var mergeRange = state.RangeStack[i];
+                    if (mergeRange.RowCount > 0 || mergeRange.ColumnCount > 0)
+                        currentRuleRange = RowColumnRange.Merge(currentRuleRange, mergeRange);
+                }
+                if (state.RangeStack.Count > rangeCount)
+                {
+                    state.RangeStack.RemoveRange(rangeCount, state.RangeStack.Count - rangeCount);
+                    state.RangeStack[state.RangeStack.Count - 1] = currentRuleRange;
                 }
             }
         }
@@ -324,5 +359,15 @@ namespace SIMULTAN.DataMapping
         }
 
         #endregion
+
+        /// <summary>
+        /// Looks up taxonomy entries for default slot by their name.
+        /// Do this if the default taxonomies changed, could mean that the project is migrated.
+        /// </summary>
+        public virtual void RestoreDefaultTaxonomyReferences()
+        {
+            foreach (var filter in Filter)
+                filter.RestoreDefaultTaxonomyReferences(Tool.Factory.ProjectData);
+        }
     }
 }

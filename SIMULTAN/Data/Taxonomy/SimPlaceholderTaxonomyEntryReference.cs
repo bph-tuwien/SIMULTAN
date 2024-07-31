@@ -24,7 +24,7 @@ namespace SIMULTAN.Data.Taxonomy
         /// Creates a new Placeholder reference with the given name.
         /// </summary>
         /// <param name="placeholderName">The placeholder name that will be used to find the <see cref="SimTaxonomyEntry"/>.</param>
-        public SimPlaceholderTaxonomyEntryReference(string placeholderName) : base(SimId.Empty)
+        public SimPlaceholderTaxonomyEntryReference(string placeholderName) : base()
         {
             this.PlaceholderName = placeholderName;
         }

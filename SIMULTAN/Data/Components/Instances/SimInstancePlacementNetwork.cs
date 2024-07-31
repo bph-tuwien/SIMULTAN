@@ -1,10 +1,6 @@
 ﻿using SIMULTAN.Data.FlowNetworks;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Media.Media3D;
 
 namespace SIMULTAN.Data.Components
 {
@@ -61,10 +57,15 @@ namespace SIMULTAN.Data.Components
         /// Initializes a new instance of the SimInstancePlacementNetwork class
         /// </summary>
         /// <param name="networkElement">The network element</param>
-        public SimInstancePlacementNetwork(SimFlowNetworkElement networkElement)
+        /// <param name="instanceType">The instance type of this placement. Must be one of
+        /// <see cref="SimInstanceType.NetworkNode"/> or <see cref="SimInstanceType.NetworkEdge"/></param>
+        public SimInstancePlacementNetwork(SimFlowNetworkElement networkElement, SimInstanceType instanceType)
+            : base(instanceType)
         {
             if (networkElement == null)
                 throw new ArgumentNullException(nameof(networkElement));
+            if (instanceType != SimInstanceType.NetworkNode && instanceType != SimInstanceType.NetworkEdge)
+                throw new ArgumentException("Instance type not supported for this placement type");
 
             this.NetworkElement = networkElement;
         }
@@ -74,8 +75,17 @@ namespace SIMULTAN.Data.Components
         /// May only be used during loading.
         /// </summary>
         /// <param name="networkElementId">The id of the network element this placement references</param>
-        public SimInstancePlacementNetwork(SimObjectId networkElementId)
+        /// <param name="instanceType">The instance type of this placement. Must be one of
+        /// <see cref="SimInstanceType.NetworkNode"/> or <see cref="SimInstanceType.NetworkEdge"/>. Also accepts
+        /// <see cref="SimInstanceType.None"/>, but in that case the instance type must be set from by
+        /// the <see cref="RestoreReferences(Dictionary{SimObjectId, SimFlowNetworkElement})"/> method.</param>
+        internal SimInstancePlacementNetwork(SimObjectId networkElementId, SimInstanceType instanceType)
+            : base(instanceType)
         {
+            if (instanceType != SimInstanceType.NetworkNode && instanceType != SimInstanceType.NetworkEdge &&
+                instanceType != SimInstanceType.None) //When the InstanceType is set to None, it has to be set from the restore reference method
+                throw new ArgumentException("Instance type not supported for this placement type");
+
             this.loadingNetworkElement = networkElementId;
         }
 
@@ -102,6 +112,15 @@ namespace SIMULTAN.Data.Components
                 if (found)
                 {
                     this.NetworkElement = nwElement;
+
+                    if (this.InstanceType == SimInstanceType.None)
+                    {
+                        if (nwElement is SimFlowNetworkNode)
+                            this.InstanceType = SimInstanceType.NetworkNode;
+                        else if (nwElement is SimFlowNetworkEdge)
+                            this.InstanceType = SimInstanceType.NetworkEdge;
+                    }
+
                     AddToTarget(); //Make sure that connection is restored
                 }
                 this.loadingNetworkElement = SimObjectId.Empty;

@@ -41,15 +41,15 @@ namespace SIMULTAN.Data.Geometry
             {
                 if (result.LastChanged != file.LastWriteTime)
                 {
-                    //Console.WriteLine("cache dirty "+file.LastWriteTime+" "+file.FullName);
+                    //Debug.WriteLine("cache dirty "+file.LastWriteTime+" "+file.FullName);
                     return null;
                 }
                 {
-                    //Console.WriteLine("cache hit " + file.LastWriteTime + " " + file.FullName);
+                    //Debug.WriteLine("cache hit " + file.LastWriteTime + " " + file.FullName);
                     return result.Geometry;
                 }
             }
-            //Console.WriteLine("cache miss "+file.LastWriteTime+" "+file.FullName);
+            //Debug.WriteLine("cache miss "+file.LastWriteTime+" "+file.FullName);
             return null;
         }
 

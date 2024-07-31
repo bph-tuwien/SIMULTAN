@@ -12,7 +12,7 @@ namespace SIMULTAN.Tests.Instances
     [TestClass]
     public class InstanceSitePlannerTests : BaseProjectTest
     {
-        private static readonly FileInfo testProject = new FileInfo(@".\SiteplannerTest.simultan");
+        private static readonly FileInfo testProject = new FileInfo(@"./SiteplannerTest.simultan");
 
         #region Add/Remove Instance
 
@@ -86,8 +86,7 @@ namespace SIMULTAN.Tests.Instances
             var building = spProject.Buildings.First(x => x.GeometryModelRes.ResourceFile.Name == "test1.simgeo");
             var comp = projectData.Components.First(x => x.Name == "Building2");
 
-            var inst = new SimComponentInstance(SimInstanceType.BuiltStructure, spProject.SitePlannerFile.Key,
-                9999, null);
+            var inst = new SimComponentInstance(SimInstanceType.BuiltStructure, spProject.SitePlannerFile.Key, 9999);
             comp.Instances.Add(inst);
 
             Assert.AreEqual(new SimInstanceState(true, SimInstanceConnectionState.GeometryNotFound), inst.State);

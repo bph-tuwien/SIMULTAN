@@ -1,6 +1,7 @@
 ﻿using SIMULTAN.Data.Assets;
 using SIMULTAN.Data.Components;
 using SIMULTAN.Data.Geometry;
+using SIMULTAN.Data.Taxonomy;
 using SIMULTAN.Projects;
 using SIMULTAN.Serializer.SimGeo;
 using SIMULTAN.Utils;
@@ -8,8 +9,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SIMULTAN.DataMapping
 {
@@ -33,23 +32,23 @@ namespace SIMULTAN.DataMapping
         /// <summary>
         /// The name of the face. (string)
         /// </summary>
-        Name, 
+        Name = 0,
         /// <summary>
         /// The local id of the face. (int)
         /// </summary>
-        Id,
+        Id = 1,
         /// <summary>
         /// The area of the face. (double)
         /// </summary>
-        Area,
+        Area = 2,
         /// <summary>
         /// The incline of the face, see <see cref="FaceAlgorithms.OrientationIncline(PFace, double)"/>. (double)
         /// </summary>
-        Incline,
+        Incline = 3,
         /// <summary>
         /// The orientation of the face, see <see cref="FaceAlgorithms.OrientationIncline(PFace, double)"/>. (double)
         /// </summary>
-        Orientation
+        Orientation = 4
     }
 
     /// <summary>
@@ -142,6 +141,8 @@ namespace SIMULTAN.DataMapping
                 if (state.MatchCount >= this.MaxMatches)
                     break;
 
+                var resourceFile = projectData.AssetManager.GetResource(geoPlacement.FileId) as ResourceFileEntry;
+
                 //Check if there are any filter for resource file id
                 bool matchesFile = true;
                 foreach (var fileFilter in Filter.Where(x => x.Property == SimDataMappingFaceFilterProperties.FileKey))
@@ -149,11 +150,17 @@ namespace SIMULTAN.DataMapping
                     if (fileFilter.Value is int ikey)
                         matchesFile &= ikey == geoPlacement.FileId;
                 }
+                foreach (var fileFilter in Filter.Where(x => x.Property == SimDataMappingFaceFilterProperties.FileTags))
+                {
+                    if (fileFilter.Value is SimTaxonomyEntryReference tref)
+                    {
+                        matchesFile &= resourceFile.Tags.Any(t => t.Target == tref.Target);
+                    }
+                }
 
                 if (matchesFile)
                 {
                     //Make sure that the GeometryModel is loaded
-                    var resourceFile = projectData.AssetManager.GetResource(geoPlacement.FileId) as ResourceFileEntry;
                     if (resourceFile != null)
                     {
                         if (!projectData.GeometryModels.TryGetGeometryModel(resourceFile, out var gm, false))
@@ -182,22 +189,22 @@ namespace SIMULTAN.DataMapping
 
         private void HandleMatch(Face face, SimTraversalState state, SimMappedData data)
         {
+            //Advance position for this rule
+            AdvanceReferencePoint(state);
+
             WriteProperties(state, property => WriteProperty(property, face, state, data));
 
             ExecuteChildRules(this.Rules, face, state, data);
-
-            //Advance position for next rule
-            AdvanceReferencePoint(state);
         }
 
         private void HandleMatch(PFace face, SimTraversalState state, SimMappedData data)
         {
+            //Advance position for this rule
+            AdvanceReferencePoint(state);
+
             WriteProperties(state, property => WriteProperty(property, face, state, data));
 
             ExecuteChildRules(this.Rules, face.Face, state, data);
-
-            //Advance position for next rule
-            AdvanceReferencePoint(state);
         }
 
         private void WriteProperty(SimDataMappingFaceMappingProperties property, Face face, SimTraversalState state, SimMappedData data)
@@ -206,35 +213,35 @@ namespace SIMULTAN.DataMapping
             switch (property)
             {
                 case SimDataMappingFaceMappingProperties.Name:
-                    data.AddData(this.SheetName, state.CurrentPosition, face.Name);
+                    data.AddData(this.SheetName, state.CurrentPosition, face.Name, this);
                     break;
                 case SimDataMappingFaceMappingProperties.Id:
-                    data.AddData(this.SheetName, state.CurrentPosition, (int)face.Id);
+                    data.AddData(this.SheetName, state.CurrentPosition, (int)face.Id, this);
                     break;
                 case SimDataMappingFaceMappingProperties.Area:
-                    data.AddData(this.SheetName, state.CurrentPosition, FaceAlgorithms.Area(face));
+                    data.AddData(this.SheetName, state.CurrentPosition, FaceAlgorithms.Area(face), this);
                     break;
                 case SimDataMappingFaceMappingProperties.Incline:
-                    data.AddData(this.SheetName, state.CurrentPosition, FaceAlgorithms.OrientationIncline(face.Normal).incline * 180.0 / Math.PI);
+                    data.AddData(this.SheetName, state.CurrentPosition, FaceAlgorithms.OrientationIncline(face.Normal).incline * 180.0 / Math.PI, this);
                     break;
                 case SimDataMappingFaceMappingProperties.Orientation:
-                    data.AddData(this.SheetName, state.CurrentPosition, FaceAlgorithms.OrientationIncline(face.Normal).orientation * 180.0 / Math.PI);
+                    data.AddData(this.SheetName, state.CurrentPosition, FaceAlgorithms.OrientationIncline(face.Normal).orientation * 180.0 / Math.PI, this);
                     break;
                 default:
                     throw new NotSupportedException("Unsupported property");
             }
         }
-    
+
         private void WriteProperty(SimDataMappingFaceMappingProperties property, PFace face, SimTraversalState state, SimMappedData data)
         {
             //Store property
             switch (property)
             {
                 case SimDataMappingFaceMappingProperties.Incline:
-                    data.AddData(this.SheetName, state.CurrentPosition, FaceAlgorithms.OrientationIncline(face).incline * 180.0 / Math.PI);
+                    data.AddData(this.SheetName, state.CurrentPosition, FaceAlgorithms.OrientationIncline(face).incline * 180.0 / Math.PI, this);
                     break;
                 case SimDataMappingFaceMappingProperties.Orientation:
-                    data.AddData(this.SheetName, state.CurrentPosition, FaceAlgorithms.OrientationIncline(face).orientation * 180.0 / Math.PI);
+                    data.AddData(this.SheetName, state.CurrentPosition, FaceAlgorithms.OrientationIncline(face).orientation * 180.0 / Math.PI, this);
                     break;
                 default:
                     WriteProperty(property, face.Face, state, data);
@@ -265,7 +272,7 @@ namespace SIMULTAN.DataMapping
                 OffsetParent = this.OffsetParent,
                 OffsetConsecutive = this.OffsetConsecutive,
                 MappingDirection = this.MappingDirection,
-                ReferencePoint = this.ReferencePoint,
+                ReferencePointParent = this.ReferencePointParent,
             };
 
             copy.Properties.AddRange(this.Properties);
@@ -298,5 +305,14 @@ namespace SIMULTAN.DataMapping
         }
 
         #endregion
+
+        /// <inheritdoc />
+        public override void RestoreDefaultTaxonomyReferences()
+        {
+            base.RestoreDefaultTaxonomyReferences();
+
+            foreach (var childRule in Rules)
+                childRule.RestoreDefaultTaxonomyReferences();
+        }
     }
 }

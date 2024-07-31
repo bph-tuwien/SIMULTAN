@@ -1,13 +1,14 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SIMULTAN.Data.Geometry;
+using SIMULTAN.Data.SimMath;
 using SIMULTAN.Tests.Geometry.EventData;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Windows.Media;
-using System.Windows.Media.Media3D;
+
+
 
 namespace SIMULTAN.Tests.Geometry.BaseGeometries
 {
@@ -23,7 +24,7 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
         public void Ctor()
         {
             var data = GeometryModelHelper.EmptyModel();
-            var v0 = new Vertex(data.layer, "", new Point3D(1, 2, 3));
+            var v0 = new Vertex(data.layer, "", new SimPoint3D(1, 2, 3));
 
             Assert.ThrowsException<ArgumentNullException>(() => { var p0 = new ProxyGeometry(null, "", v0); });
             Assert.ThrowsException<ArgumentNullException>(() => { var p0 = new ProxyGeometry(data.layer, null, v0); });
@@ -46,7 +47,7 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
         public void Add()
         {
             var data = GeometryModelHelper.EmptyModelWithEvents();
-            var v0 = new Vertex(data.layer, "", new Point3D(1, 2, 3));
+            var v0 = new Vertex(data.layer, "", new SimPoint3D(1, 2, 3));
             data.eventData.Reset();
 
             var p0 = ProxyWithEvents(new ProxyGeometry(data.layer, "", v0));
@@ -73,7 +74,7 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
         public void Remove()
         {
             var data = GeometryModelHelper.EmptyModelWithEvents();
-            var v0 = new Vertex(data.layer, "", new Point3D(1, 2, 3));
+            var v0 = new Vertex(data.layer, "", new SimPoint3D(1, 2, 3));
             var p0 = ProxyWithEvents(new ProxyGeometry(data.layer, "", v0));
             data.eventData.Reset();
 
@@ -117,7 +118,7 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
         public void Readd()
         {
             var data = GeometryModelHelper.EmptyModelWithEvents();
-            var v0 = new Vertex(data.layer, "", new Point3D(1, 2, 3));
+            var v0 = new Vertex(data.layer, "", new SimPoint3D(1, 2, 3));
             var p0 = ProxyWithEvents(new ProxyGeometry(data.layer, "", v0));
             p0.p.RemoveFromModel();
             data.eventData.Reset();
@@ -147,8 +148,8 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
         public void BatchAdd()
         {
             var data = GeometryModelHelper.EmptyModelWithEvents();
-            var v0 = new Vertex(data.layer, "", new Point3D(1, 2, 3));
-            var v1 = new Vertex(data.layer, "", new Point3D(2, 4, 6));
+            var v0 = new Vertex(data.layer, "", new SimPoint3D(1, 2, 3));
+            var v1 = new Vertex(data.layer, "", new SimPoint3D(2, 4, 6));
             data.eventData.Reset();
 
             data.model.Geometry.StartBatchOperation();
@@ -190,8 +191,8 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
         public void BatchRemove()
         {
             var data = GeometryModelHelper.EmptyModelWithEvents();
-            var v0 = new Vertex(data.layer, "", new Point3D(1, 2, 3));
-            var v1 = new Vertex(data.layer, "", new Point3D(2, 4, 6));
+            var v0 = new Vertex(data.layer, "", new SimPoint3D(1, 2, 3));
+            var v1 = new Vertex(data.layer, "", new SimPoint3D(2, 4, 6));
             var p0 = ProxyWithEvents(new ProxyGeometry(data.layer, "", v0));
             var p1 = ProxyWithEvents(new ProxyGeometry(data.layer, "", v0));
             data.eventData.Reset();
@@ -236,11 +237,11 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
         public void PositionSetTest()
         {
             var data = GeometryModelHelper.EmptyModelWithEvents();
-            var v0 = new Vertex(data.layer, "", new Point3D(1, 2, 3));
+            var v0 = new Vertex(data.layer, "", new SimPoint3D(1, 2, 3));
             var p0 = ProxyWithEvents(new ProxyGeometry(data.layer, "", v0));
             data.eventData.Reset();
 
-            var posList = new List<Point3D> { new Point3D(0, 0, 0), new Point3D(1, 1, 1), new Point3D(2, 2, 2) };
+            var posList = new List<SimPoint3D> { new SimPoint3D(0, 0, 0), new SimPoint3D(1, 1, 1), new SimPoint3D(2, 2, 2) };
             p0.p.Positions = posList;
 
             Assert.AreEqual(posList, p0.p.Positions);
@@ -259,11 +260,11 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
         public void NormalSetTest()
         {
             var data = GeometryModelHelper.EmptyModelWithEvents();
-            var v0 = new Vertex(data.layer, "", new Point3D(1, 2, 3));
+            var v0 = new Vertex(data.layer, "", new SimPoint3D(1, 2, 3));
             var p0 = ProxyWithEvents(new ProxyGeometry(data.layer, "", v0));
             data.eventData.Reset();
 
-            var posList = new List<Vector3D> { new Vector3D(0, 0, 0), new Vector3D(1, 1, 1), new Vector3D(2, 2, 2) };
+            var posList = new List<SimVector3D> { new SimVector3D(0, 0, 0), new SimVector3D(1, 1, 1), new SimVector3D(2, 2, 2) };
             p0.p.Normals = posList;
 
             Assert.AreEqual(posList, p0.p.Normals);
@@ -282,7 +283,7 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
         public void IndexSetTest()
         {
             var data = GeometryModelHelper.EmptyModelWithEvents();
-            var v0 = new Vertex(data.layer, "", new Point3D(1, 2, 3));
+            var v0 = new Vertex(data.layer, "", new SimPoint3D(1, 2, 3));
             var p0 = ProxyWithEvents(new ProxyGeometry(data.layer, "", v0));
             data.eventData.Reset();
 
@@ -305,18 +306,18 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
         public void Transformations()
         {
             var data = GeometryModelHelper.EmptyModelWithEvents();
-            var v0 = new Vertex(data.layer, "", new Point3D(1, 2, 3));
+            var v0 = new Vertex(data.layer, "", new SimPoint3D(1, 2, 3));
             var p0 = ProxyWithEvents(new ProxyGeometry(data.layer, "", v0));
             data.eventData.Reset();
 
-            Assert.AreEqual(new Vector3D(1, 1, 1), p0.p.Size);
+            Assert.AreEqual(new SimVector3D(1, 1, 1), p0.p.Size);
 
-            Matrix3D mat = new Matrix3D(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1, 2, 3, 1);
+            SimMatrix3D mat = new SimMatrix3D(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1, 2, 3, 1);
             Assert.AreEqual(mat, p0.p.Transformation);
 
-            p0.p.Size = new Vector3D(6, 7, 8);
-            Assert.AreEqual(new Vector3D(6, 7, 8), p0.p.Size);
-            mat = new Matrix3D(6, 0, 0, 0, 0, 7, 0, 0, 0, 0, 8, 0, 1, 2, 3, 1);
+            p0.p.Size = new SimVector3D(6, 7, 8);
+            Assert.AreEqual(new SimVector3D(6, 7, 8), p0.p.Size);
+            mat = new SimMatrix3D(6, 0, 0, 0, 0, 7, 0, 0, 0, 0, 8, 0, 1, 2, 3, 1);
             Assert.AreEqual(mat, p0.p.Transformation);
         }
 
@@ -324,13 +325,13 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
         public void GeometryChanged()
         {
             var data = GeometryModelHelper.EmptyModelWithEvents();
-            var v0 = new Vertex(data.layer, "", new Point3D(1, 2, 3));
+            var v0 = new Vertex(data.layer, "", new SimPoint3D(1, 2, 3));
             var p0 = ProxyWithEvents(new ProxyGeometry(data.layer, "", v0));
             data.eventData.Reset();
 
-            v0.Position = new Point3D(-1, -2, -3);
+            v0.Position = new SimPoint3D(-1, -2, -3);
 
-            Assert.AreEqual(new Matrix3D(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -1, -2, -3, 1), p0.p.Transformation);
+            Assert.AreEqual(new SimMatrix3D(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -1, -2, -3, 1), p0.p.Transformation);
             Assert.AreEqual(0, data.eventData.TopologyChangedEventData.Count);
             Assert.AreEqual(0, data.eventData.AddEventData.Count);
             Assert.AreEqual(0, data.eventData.RemoveEventData.Count);
@@ -345,13 +346,13 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
         public void BatchGeometryChanged()
         {
             var data = GeometryModelHelper.EmptyModelWithEvents();
-            var v0 = new Vertex(data.layer, "", new Point3D(1, 2, 3));
+            var v0 = new Vertex(data.layer, "", new SimPoint3D(1, 2, 3));
             var p0 = ProxyWithEvents(new ProxyGeometry(data.layer, "", v0));
             data.eventData.Reset();
 
             data.model.Geometry.StartBatchOperation();
 
-            v0.Position = new Point3D(-1, -2, -3);
+            v0.Position = new SimPoint3D(-1, -2, -3);
             Assert.AreEqual(0, data.eventData.TopologyChangedEventData.Count);
             Assert.AreEqual(0, data.eventData.AddEventData.Count);
             Assert.AreEqual(0, data.eventData.RemoveEventData.Count);
@@ -362,7 +363,7 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
 
             data.model.Geometry.EndBatchOperation();
 
-            Assert.AreEqual(new Matrix3D(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -1, -2, -3, 1), p0.p.Transformation);
+            Assert.AreEqual(new SimMatrix3D(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -1, -2, -3, 1), p0.p.Transformation);
             Assert.AreEqual(0, data.eventData.TopologyChangedEventData.Count);
             Assert.AreEqual(0, data.eventData.AddEventData.Count);
             Assert.AreEqual(0, data.eventData.RemoveEventData.Count);
@@ -377,15 +378,15 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
         public void MoveToLayer()
         {
             var data = GeometryModelHelper.EmptyModelWithEvents();
-            Layer targetLayer = new Layer(data.model.Geometry, "TargetLayer") { Color = new DerivedColor(Colors.Pink) };
+            Layer targetLayer = new Layer(data.model.Geometry, "TargetLayer") { Color = new DerivedColor(SimColors.Pink) };
 
-            var v0 = new Vertex(data.layer, "", new Point3D(1, 2, 3));
+            var v0 = new Vertex(data.layer, "", new SimPoint3D(1, 2, 3));
             var p0 = ProxyWithEvents(new ProxyGeometry(data.layer, "", v0));
             data.eventData.Reset();
 
             Assert.AreEqual(data.layer, p0.p.Layer);
             Assert.AreEqual(1, data.layer.Elements.Count(x => x is ProxyGeometry));
-            Assert.AreEqual(Colors.Red, p0.p.Color.Color);
+            Assert.AreEqual(SimColors.Red, p0.p.Color.Color);
 
             p0.p.Layer = targetLayer;
             Assert.AreEqual(targetLayer, p0.p.Layer);

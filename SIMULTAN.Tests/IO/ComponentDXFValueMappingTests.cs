@@ -1,20 +1,21 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SIMULTAN.Data;
+using SIMULTAN.Data.SimMath;
 using SIMULTAN.Data.SitePlanner;
 using SIMULTAN.Data.ValueMappings;
 using SIMULTAN.Projects;
 using SIMULTAN.Serializer.CODXF;
 using SIMULTAN.Serializer.DXF;
 using SIMULTAN.Tests.Properties;
-using SIMULTAN.Tests.Util;
 using SIMULTAN.Tests.TestUtils;
+using SIMULTAN.Tests.Util;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Windows.Media;
+
 
 namespace SIMULTAN.Tests.IO
 {
@@ -39,15 +40,15 @@ namespace SIMULTAN.Tests.IO
 
             var marker = colorMap.ColorMarkers[0];
             Assert.AreEqual(-1.0, marker.Value);
-            Assert.AreEqual(Color.FromArgb(255, 255, 0, 0), marker.Color);
+            Assert.AreEqual(SimColor.FromArgb(255, 255, 0, 0), marker.Color);
 
             marker = colorMap.ColorMarkers[1];
             Assert.AreEqual(5.0, marker.Value);
-            Assert.AreEqual(Color.FromArgb(255, 0, 255, 0), marker.Color);
+            Assert.AreEqual(SimColor.FromArgb(255, 0, 255, 0), marker.Color);
 
             marker = colorMap.ColorMarkers[2];
             Assert.AreEqual(99.0, marker.Value);
-            Assert.AreEqual(Color.FromArgb(255, 0, 0, 255), marker.Color);
+            Assert.AreEqual(SimColor.FromArgb(255, 0, 0, 255), marker.Color);
 
             var prefilter = valueMapping.Prefilter as SimMinimumPrefilter;
             Assert.IsNotNull(prefilter);
@@ -164,15 +165,15 @@ namespace SIMULTAN.Tests.IO
 
             var marker = colorMap.ColorMarkers[0];
             Assert.AreEqual(-1.0, marker.Value);
-            Assert.AreEqual(Color.FromArgb(255, 255, 0, 0), marker.Color);
+            Assert.AreEqual(SimColor.FromArgb(255, 255, 0, 0), marker.Color);
 
             marker = colorMap.ColorMarkers[1];
             Assert.AreEqual(5.0, marker.Value);
-            Assert.AreEqual(Color.FromArgb(255, 0, 255, 0), marker.Color);
+            Assert.AreEqual(SimColor.FromArgb(255, 0, 255, 0), marker.Color);
 
             marker = colorMap.ColorMarkers[2];
             Assert.AreEqual(99.0, marker.Value);
-            Assert.AreEqual(Color.FromArgb(255, 0, 0, 255), marker.Color);
+            Assert.AreEqual(SimColor.FromArgb(255, 0, 0, 255), marker.Color);
 
             var prefilter = valueMapping.Prefilter as SimMinimumPrefilter;
             Assert.IsNotNull(prefilter);
@@ -192,9 +193,9 @@ namespace SIMULTAN.Tests.IO
             var valueMap1 = new SimValueMapping("my mapping 1", table, new SimMinimumPrefilter(), new SimLinearGradientColorMap(
                 new SimColorMarker[]
                 {
-                    new SimColorMarker(-1.0, Color.FromArgb(255, 255, 0, 0)),
-                    new SimColorMarker(5.0, Color.FromArgb(255, 0, 255, 0)),
-                    new SimColorMarker(99.0, Color.FromArgb(255, 0, 0, 255)),
+                    new SimColorMarker(-1.0, SimColor.FromArgb(255, 255, 0, 0)),
+                    new SimColorMarker(5.0, SimColor.FromArgb(255, 0, 255, 0)),
+                    new SimColorMarker(99.0, SimColor.FromArgb(255, 0, 0, 255)),
                 }))
             {
                 Id = new SimId(data.SitePlannerManager.CalledFromLocation.GlobalID, 665577),
@@ -249,24 +250,24 @@ namespace SIMULTAN.Tests.IO
 
             var marker = colorMap.ColorMarkers[0];
             Assert.AreEqual(-1.0, marker.Value);
-            Assert.AreEqual(Color.FromArgb(255, 255, 0, 0), marker.Color);
+            Assert.AreEqual(SimColor.FromArgb(255, 255, 0, 0), marker.Color);
 
             marker = colorMap.ColorMarkers[1];
             Assert.AreEqual(5.0, marker.Value);
-            Assert.AreEqual(Color.FromArgb(255, 0, 255, 0), marker.Color);
+            Assert.AreEqual(SimColor.FromArgb(255, 0, 255, 0), marker.Color);
 
             marker = colorMap.ColorMarkers[2];
             Assert.AreEqual(99.0, marker.Value);
-            Assert.AreEqual(Color.FromArgb(255, 0, 0, 255), marker.Color);
+            Assert.AreEqual(SimColor.FromArgb(255, 0, 0, 255), marker.Color);
         }
         [TestMethod]
         public void WriteColorMapLinearGradient()
         {
             var colorMap = new SimLinearGradientColorMap(new SimColorMarker[]
             {
-                new SimColorMarker(-1.0, Color.FromArgb(255, 255, 0, 0)),
-                new SimColorMarker(5.0, Color.FromArgb(255, 0, 255, 0)),
-                new SimColorMarker(99.0, Color.FromArgb(255, 0, 0, 255)),
+                new SimColorMarker(-1.0, SimColor.FromArgb(255, 255, 0, 0)),
+                new SimColorMarker(5.0, SimColor.FromArgb(255, 0, 255, 0)),
+                new SimColorMarker(99.0, SimColor.FromArgb(255, 0, 0, 255)),
             });
 
             string exportedString = null;
@@ -313,24 +314,24 @@ namespace SIMULTAN.Tests.IO
 
             var marker = colorMap.ColorMarkers[0];
             Assert.AreEqual(-1.0, marker.Value);
-            Assert.AreEqual(Color.FromArgb(255, 255, 0, 0), marker.Color);
+            Assert.AreEqual(SimColor.FromArgb(255, 255, 0, 0), marker.Color);
 
             marker = colorMap.ColorMarkers[1];
             Assert.AreEqual(5.0, marker.Value);
-            Assert.AreEqual(Color.FromArgb(255, 0, 255, 0), marker.Color);
+            Assert.AreEqual(SimColor.FromArgb(255, 0, 255, 0), marker.Color);
 
             marker = colorMap.ColorMarkers[2];
             Assert.AreEqual(99.0, marker.Value);
-            Assert.AreEqual(Color.FromArgb(255, 0, 0, 255), marker.Color);
+            Assert.AreEqual(SimColor.FromArgb(255, 0, 0, 255), marker.Color);
         }
         [TestMethod]
         public void WriteColorMapThreshold()
         {
             var colorMap = new SimThresholdColorMap(new SimColorMarker[]
             {
-                new SimColorMarker(-1.0, Color.FromArgb(255, 255, 0, 0)),
-                new SimColorMarker(5.0, Color.FromArgb(255, 0, 255, 0)),
-                new SimColorMarker(99.0, Color.FromArgb(255, 0, 0, 255)),
+                new SimColorMarker(-1.0, SimColor.FromArgb(255, 255, 0, 0)),
+                new SimColorMarker(5.0, SimColor.FromArgb(255, 0, 255, 0)),
+                new SimColorMarker(99.0, SimColor.FromArgb(255, 0, 0, 255)),
             });
 
             string exportedString = null;

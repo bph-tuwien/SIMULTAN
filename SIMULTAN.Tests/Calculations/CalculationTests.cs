@@ -15,8 +15,8 @@ namespace SIMULTAN.Tests.Calculations
     [TestClass]
     public class CalculationTests : BaseProjectTest
     {
-        private static readonly FileInfo calculationProject = new FileInfo(@".\CalculationTestsProject.simultan");
-        private static readonly FileInfo accessProject = new FileInfo(@".\AccessTestsProject.simultan");
+        private static readonly FileInfo calculationProject = new FileInfo(@"./CalculationTestsProject.simultan");
+        private static readonly FileInfo accessProject = new FileInfo(@"./AccessTestsProject.simultan");
 
         #region Utils
 
@@ -446,7 +446,7 @@ namespace SIMULTAN.Tests.Calculations
             var archCalc = archComp.Calculations.First(x => x.Name == "Calc1");
             var bphComp = projectData.Components.First(x => x.Name == "BPHComp");
             var bphCalc = bphComp.Calculations.First(x => x.Name == "Calc2");
-            var param2 = bphComp.Parameters.First(x => x.NameTaxonomyEntry.Name == "Parameter2");
+            var param2 = bphComp.Parameters.First(x => x.NameTaxonomyEntry.Text == "Parameter2");
 
             if (param2 is SimDoubleParameter doubleParam)
             {
@@ -672,7 +672,7 @@ namespace SIMULTAN.Tests.Calculations
             var archCalc = archComp.Calculations.First(x => x.Name == "Calc1");
             var bphComp = projectData.Components.First(x => x.Name == "BPHComp");
             var bphCalc = bphComp.Calculations.First(x => x.Name == "Calc2");
-            var param2 = bphComp.Parameters.First(x => x.NameTaxonomyEntry.Name == "Parameter2");
+            var param2 = bphComp.Parameters.First(x => x.NameTaxonomyEntry.Text == "Parameter2");
 
             //Working
             bphCalc.ReturnParams.Add("out2", null);
@@ -690,7 +690,7 @@ namespace SIMULTAN.Tests.Calculations
             var archCalc = archComp.Calculations.First(x => x.Name == "Calc1");
             var bphComp = projectData.Components.First(x => x.Name == "BPHComp");
             var bphCalc = bphComp.Calculations.First(x => x.Name == "Calc2");
-            var param2 = bphComp.Parameters.First(x => x.NameTaxonomyEntry.Name == "Parameter2");
+            var param2 = bphComp.Parameters.First(x => x.NameTaxonomyEntry.Text == "Parameter2");
 
             var outparam = new SimDoubleParameter("outputtest", "", 15.0);
 
@@ -710,7 +710,7 @@ namespace SIMULTAN.Tests.Calculations
             var archCalc = archComp.Calculations.First(x => x.Name == "Calc1");
             var bphComp = projectData.Components.First(x => x.Name == "BPHComp");
             var bphCalc = bphComp.Calculations.First(x => x.Name == "Calc2");
-            var param2 = bphComp.Parameters.First(x => x.NameTaxonomyEntry.Name == "Parameter2");
+            var param2 = bphComp.Parameters.First(x => x.NameTaxonomyEntry.Text == "Parameter2");
 
             var outparam = new SimDoubleParameter("outputtest", "", 15.0);
 

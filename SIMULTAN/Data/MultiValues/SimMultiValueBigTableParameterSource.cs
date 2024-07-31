@@ -10,7 +10,7 @@ namespace SIMULTAN.Data.MultiValues
     /// </summary>
     public sealed class SimMultiValueBigTableParameterSource : SimMultiValueParameterSource
     {
-        //~SimMultiValueBigTableParameterSource() { Console.WriteLine("~MultiValueBigTablePointer"); }
+        //~SimMultiValueBigTableParameterSource() { Debug.WriteLine("~MultiValueBigTablePointer"); }
 
         /// <summary>
         /// Returns the Table this pointer is pointing to

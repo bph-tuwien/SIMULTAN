@@ -1,47 +1,29 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SIMULTAN.Data.Components;
+using SIMULTAN.Data.FlowNetworks;
+using SIMULTAN.Data.SimMath;
 using SIMULTAN.Exceptions;
 using SIMULTAN.Tests.TestUtils;
 using System;
 using System.IO;
 using System.Linq;
-using System.Windows;
-using System.Windows.Media.Media3D;
+
+
 
 namespace SIMULTAN.Tests.Instances
 {
     [TestClass]
     public class InstanceTests : BaseProjectTest
     {
-        private static readonly FileInfo instanceProject = new FileInfo(@".\InstanceTestsProject.simultan");
-        private static readonly FileInfo emptyProject = new FileInfo(@".\EmptyProject.simultan");
+        private static readonly FileInfo instanceProject = new FileInfo(@"./InstanceTestsProject.simultan");
+        private static readonly FileInfo emptyProject = new FileInfo(@"./EmptyProject.simultan");
 
         #region General Tests
 
         [TestMethod]
         public void Ctor()
         {
-            Assert.ThrowsException<ArgumentNullException>(() => { new SimComponentInstance(null, new Point(0, 0)); });
-        }
-
-        [TestMethod]
-        public void WrongInstanceType()
-        {
-            LoadProject(instanceProject);
-
-            var component = projectData.Components.First(x => x.Name == "Node");
-            var network = projectData.NetworkManager.NetworkRecord.First(x => x.Name == "Network");
-            var edge = network.ContainedEdges.Values.First(x => x.Name == "Edge 4");
-
-            var instance = new SimComponentInstance(edge, new Point(0, 0));
-            Assert.ThrowsException<InvalidStateException>(() => { component.Instances.Add(instance); });
-
-            component = projectData.Components.First(x => x.Name == "Edge");
-            network = projectData.NetworkManager.NetworkRecord.First(x => x.Name == "Network");
-            var node = network.ContainedNodes.Values.First(x => x.Name == "Node 912f497f-2a73-4798-85d6-bdd365da555f: 2");
-
-            instance = new SimComponentInstance(node, new Point(0, 0));
-            Assert.ThrowsException<InvalidStateException>(() => { component.Instances.Add(instance); });
+            Assert.ThrowsException<ArgumentNullException>(() => { new SimComponentInstance((SimFlowNetworkElement)null); });
         }
 
         [TestMethod]
@@ -53,11 +35,11 @@ namespace SIMULTAN.Tests.Instances
             var network = projectData.NetworkManager.NetworkRecord.First(x => x.Name == "Network");
             var node = network.ContainedNodes.Values.First(x => x.Name == "Node 912f497f-2a73-4798-85d6-bdd365da555f: 2");
 
-            var instance = new SimComponentInstance(node, new Point(0, 0));
+            var instance = new SimComponentInstance(node);
             nodeComponent.Instances.Add(instance);
 
             PropertyChangedEventCounter ec = new PropertyChangedEventCounter(instance);
-            instance.InstanceSize = new SimInstanceSize(new Vector3D(1.0, 2.0, 3.0), new Vector3D(4.0, 5.0, 6.0));
+            instance.InstanceSize = new SimInstanceSize(new SimVector3D(1.0, 2.0, 3.0), new SimVector3D(4.0, 5.0, 6.0));
 
             ec.AssertEventCount(1);
             Assert.AreEqual(nameof(SimComponentInstance.InstanceSize), ec.PropertyChangedArgs[0]);
@@ -86,7 +68,7 @@ namespace SIMULTAN.Tests.Instances
             };
             component.Parameters.Add(param2);
 
-            var instance = new SimComponentInstance(SimInstanceType.None);
+            var instance = new SimComponentInstance();
             component.Instances.Add(instance);
 
             Assert.AreEqual(2, instance.InstanceParameterValuesPersistent.Count);
@@ -115,7 +97,7 @@ namespace SIMULTAN.Tests.Instances
             };
             component.Parameters.Add(param1);
 
-            var instance = new SimComponentInstance(SimInstanceType.None);
+            var instance = new SimComponentInstance();
             component.Instances.Add(instance);
 
             Assert.AreEqual(1, instance.InstanceParameterValuesPersistent.Count);
@@ -159,7 +141,7 @@ namespace SIMULTAN.Tests.Instances
             };
             component.Parameters.Add(param2);
 
-            var instance = new SimComponentInstance(SimInstanceType.None);
+            var instance = new SimComponentInstance();
             component.Instances.Add(instance);
 
             Assert.AreEqual(2, instance.InstanceParameterValuesPersistent.Count);
@@ -196,7 +178,7 @@ namespace SIMULTAN.Tests.Instances
             };
             component.Parameters.Add(param2);
 
-            var instance = new SimComponentInstance(SimInstanceType.None);
+            var instance = new SimComponentInstance();
             Assert.AreEqual(true, instance.PropagateParameterChanges);
             instance.PropagateParameterChanges = false;
             component.Instances.Add(instance);
@@ -254,7 +236,7 @@ namespace SIMULTAN.Tests.Instances
             };
             component.Parameters.Add(param2);
 
-            var instance = new SimComponentInstance(SimInstanceType.None);
+            var instance = new SimComponentInstance();
             Assert.AreEqual(true, instance.PropagateParameterChanges);
             instance.PropagateParameterChanges = false;
             component.Instances.Add(instance);
@@ -312,7 +294,7 @@ namespace SIMULTAN.Tests.Instances
             };
             component.Parameters.Add(param2);
 
-            var instance = new SimComponentInstance(SimInstanceType.None);
+            var instance = new SimComponentInstance();
             Assert.AreEqual(true, instance.PropagateParameterChanges);
             instance.PropagateParameterChanges = false;
             component.Instances.Add(instance);
@@ -370,7 +352,7 @@ namespace SIMULTAN.Tests.Instances
             };
             component.Parameters.Add(param2);
 
-            var instance = new SimComponentInstance(SimInstanceType.None);
+            var instance = new SimComponentInstance();
             Assert.AreEqual(true, instance.PropagateParameterChanges);
             instance.PropagateParameterChanges = false;
             component.Instances.Add(instance);
@@ -420,7 +402,7 @@ namespace SIMULTAN.Tests.Instances
             var nodeComponent = projectData.Components.First(x => x.Name == "Node2");
             var instance = nodeComponent.Instances.FirstOrDefault();
 
-            instance.SetSize(new SimInstanceSize(new Vector3D(11, 12, 13), new Vector3D(14, 15, 16)), instance.SizeTransfer);
+            instance.SetSize(new SimInstanceSize(new SimVector3D(11, 12, 13), new SimVector3D(14, 15, 16)), instance.SizeTransfer);
 
             Assert.AreEqual(11.0, instance.InstanceSize.Min.X);
             Assert.AreEqual(12.0, instance.InstanceSize.Min.Y);
@@ -441,7 +423,7 @@ namespace SIMULTAN.Tests.Instances
 
             PropertyChangedEventCounter cc = new PropertyChangedEventCounter(instance);
 
-            instance.SetSize(new SimInstanceSize(new Vector3D(11, 12, 13), new Vector3D(14, 15, 16)), instance.SizeTransfer);
+            instance.SetSize(new SimInstanceSize(new SimVector3D(11, 12, 13), new SimVector3D(14, 15, 16)), instance.SizeTransfer);
 
             cc.AssertEventCount(1);
             Assert.AreEqual("InstanceSize", cc.PropertyChangedArgs[0]);
@@ -457,7 +439,7 @@ namespace SIMULTAN.Tests.Instances
             LoadProject(instanceProject);
 
             var nodeComponent = projectData.Components.First(x => x.Name == "Node2");
-            var parameter = nodeComponent.Parameters.FirstOrDefault(x => x is SimDoubleParameter && x.NameTaxonomyEntry.Name == "A") as SimDoubleParameter;
+            var parameter = nodeComponent.Parameters.FirstOrDefault(x => x is SimDoubleParameter && x.NameTaxonomyEntry.Text == "A") as SimDoubleParameter;
             var instance = nodeComponent.Instances.FirstOrDefault();
 
             PropertyChangedEventCounter pc = new PropertyChangedEventCounter(instance);
@@ -481,7 +463,7 @@ namespace SIMULTAN.Tests.Instances
             LoadProject(instanceProject);
 
             var nodeComponent = projectData.Components.First(x => x.Name == "Node2");
-            var parameter = nodeComponent.Parameters.FirstOrDefault(x => x is SimDoubleParameter && x.NameTaxonomyEntry.Name == "A") as SimDoubleParameter;
+            var parameter = nodeComponent.Parameters.FirstOrDefault(x => x is SimDoubleParameter && x.NameTaxonomyEntry.Text == "A") as SimDoubleParameter;
             var instance = nodeComponent.Instances.FirstOrDefault();
 
             PropertyChangedEventCounter pc = new PropertyChangedEventCounter(instance);

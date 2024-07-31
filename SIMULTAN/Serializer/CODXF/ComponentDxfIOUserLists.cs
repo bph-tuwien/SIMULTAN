@@ -5,8 +5,6 @@ using SIMULTAN.Serializer.DXF;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SIMULTAN.Serializer.CODXF
 {
@@ -66,13 +64,14 @@ namespace SIMULTAN.Serializer.CODXF
         /// <param name="writer">The writer into which the data should be written</param>
         internal static void WriteUserListsSection(IEnumerable<SimUserComponentList> userLists, DXFStreamWriter writer)
         {
-            writer.StartSection(ParamStructTypes.USERCOMPONENTLIST_SECTION);
+            writer.StartSection(ParamStructTypes.USERCOMPONENTLIST_SECTION, userLists.Count());
 
             foreach (var ucl in userLists)
                 WriteUserList(ucl, writer);
 
             writer.EndSection();
         }
+
         /// <summary>
         /// Reads a user list section. The results are stored in <see cref="DXFParserInfo.ProjectData"/>
         /// </summary>

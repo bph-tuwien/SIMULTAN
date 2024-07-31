@@ -1,6 +1,7 @@
 ﻿using SIMULTAN.Data.Assets;
 using SIMULTAN.Data.Components;
 using SIMULTAN.Data.Taxonomy;
+using SIMULTAN.Projects;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -177,22 +178,6 @@ namespace SIMULTAN.Data.Geometry
             return new SimGeometryParameterSource(this);
         }
 
-        /// <inheritdoc/>
-        internal override void RestoreReferences(SimIdGenerator idGenerator)
-        {
-            base.RestoreReferences(idGenerator);
-            if (FilterTags.Any())
-            {
-                for (int i = 0; i < FilterTags.Count; i++)
-                {
-                    var taxEntry = idGenerator.GetById<SimTaxonomyEntry>(FilterTags[i].TaxonomyEntryId);
-                    if (taxEntry == null)
-                        throw new TaxonomyEntryNotFoundException(String.Format("Tag taxonomy entry with id {0} of geometry parameter value source could not be found", FilterTags[i].TaxonomyEntryId));
-                    FilterTags[i] = new SimTaxonomyEntryReference(idGenerator.GetById<SimTaxonomyEntry>(FilterTags[i].TaxonomyEntryId));
-                }
-            }
-        }
-
         /// <inheritdoc />
         protected override void Dispose(bool isDisposing)
         {
@@ -200,6 +185,15 @@ namespace SIMULTAN.Data.Geometry
             FilterTags.CollectionChanged -= FilterTags_CollectionChanged;
         }
 
+        /// <summary>
+        /// Restores all taxonomy entry references after the default taxonomies were updated.
+        /// </summary>
+        /// <param name="projectData">The ProjectData</param>
+        public override void RestoreDefaultTaxonomyReferences(ProjectData projectData)
+        {
+            base.RestoreDefaultTaxonomyReferences(projectData);
+            FilterTags.RestoreDefaultTaxonomyReferences(projectData);
+        }
         #endregion
     }
 }

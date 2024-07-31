@@ -1,12 +1,10 @@
-﻿using SIMULTAN.Data.SitePlanner;
+﻿using SIMULTAN.Data.SimMath;
+using SIMULTAN.Data.SitePlanner;
 using SIMULTAN.Projects;
 using SIMULTAN.Serializer.DXF;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SIMULTAN.Serializer.GMDXF
 {
@@ -99,7 +97,7 @@ namespace SIMULTAN.Serializer.GMDXF
             writer.WriteVersionSection();
 
             // Data
-            writer.StartSection(ParamStructTypes.GEOMAP_SECTION);
+            writer.StartSection(ParamStructTypes.GEOMAP_SECTION, -1);
 
             writer.Write(ParamStructCommonSaveCode.ENTITY_START, ParamStructTypes.GEOMAP);
 
@@ -159,7 +157,7 @@ namespace SIMULTAN.Serializer.GMDXF
                 {
                     if (projectId == Guid.Empty)
                     {
-                        projectId = info.ProjectData.Project.GlobalID;
+                        projectId = info.ProjectData.Owner.GlobalID;
                     }
                     mapRes = new ResourceReference(projectId, resourceId, info.ProjectData.AssetManager);
                 }
@@ -190,8 +188,8 @@ namespace SIMULTAN.Serializer.GMDXF
             double latitude = arg.Get<double>(GeoMapSaveCode.LATITUDE, 0);
             double height = arg.Get<double>(GeoMapSaveCode.HEIGHT, 0);
 
-            return new ImageGeoReference(new System.Windows.Point(posX, posY),
-                new System.Windows.Media.Media3D.Point3D(longitude, latitude, height));
+            return new ImageGeoReference(new SimPoint(posX, posY),
+                new SimPoint3D(longitude, latitude, height));
         }
 
         #endregion

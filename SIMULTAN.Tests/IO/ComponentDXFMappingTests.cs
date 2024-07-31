@@ -5,7 +5,6 @@ using SIMULTAN.Projects;
 using SIMULTAN.Serializer.CODXF;
 using SIMULTAN.Serializer.DXF;
 using SIMULTAN.Tests.Properties;
-using SIMULTAN.Tests.Util;
 using SIMULTAN.Tests.TestUtils;
 using System;
 using System.Collections.Generic;
@@ -93,7 +92,6 @@ namespace SIMULTAN.Tests.IO
                 info.FileVersion = 12;
 
                 reader.Read();
-
                 mapping = ComponentDxfIOComponents.CalculatorMappingElement.Parse(reader, info);
             }
 
@@ -131,7 +129,6 @@ namespace SIMULTAN.Tests.IO
                 info.FileVersion = 11;
 
                 reader.Read();
-
                 mapping = ComponentDxfIOComponents.CalculatorMappingElement.Parse(reader, info);
             }
 
@@ -169,7 +166,6 @@ namespace SIMULTAN.Tests.IO
                 info.FileVersion = 7;
 
                 reader.Read();
-
                 mapping = ComponentDxfIOComponents.CalculatorMappingElement.Parse(reader, info);
             }
 
@@ -207,7 +203,6 @@ namespace SIMULTAN.Tests.IO
                 info.FileVersion = 3;
 
                 reader.Read();
-
                 mapping = ComponentDxfIOComponents.CalculatorMappingElement.Parse(reader, info);
             }
 
@@ -245,7 +240,6 @@ namespace SIMULTAN.Tests.IO
                 info.FileVersion = 0;
 
                 reader.Read();
-
                 mapping = ComponentDxfIOComponents.CalculatorMappingElement.Parse(reader, info);
             }
 

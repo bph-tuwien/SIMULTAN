@@ -6,7 +6,7 @@ using System.Collections.Specialized;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Windows.Media.Media3D;
+using SIMULTAN.Data.SimMath;
 
 namespace SIMULTAN.Data.MultiValues
 {
@@ -14,9 +14,9 @@ namespace SIMULTAN.Data.MultiValues
     /// Stores a list of points in a SimMultiValueFunctionGraph.
     /// Ensures that all points lie inside the definition space when the graph belongs to a SimMultiValueFunction
     /// </summary>
-    public class SimMultiValueFunctionPointList : IEnumerable<Point3D>, INotifyCollectionChanged
+    public class SimMultiValueFunctionPointList : IEnumerable<SimPoint3D>, INotifyCollectionChanged
     {
-        private List<Point3D> values;
+        private List<SimPoint3D> values;
         private SimMultiValueFunctionGraph graph;
 
         /// <inheritdoc />
@@ -27,7 +27,7 @@ namespace SIMULTAN.Data.MultiValues
         /// </summary>
         /// <param name="graph">The graph this collection belongs to</param>
         /// <param name="points">Initial set of points</param>
-        public SimMultiValueFunctionPointList(SimMultiValueFunctionGraph graph, IEnumerable<Point3D> points)
+        public SimMultiValueFunctionPointList(SimMultiValueFunctionGraph graph, IEnumerable<SimPoint3D> points)
         {
             this.graph = graph;
             this.values = points.ToList();
@@ -38,7 +38,7 @@ namespace SIMULTAN.Data.MultiValues
         /// </summary>
         /// <param name="index">The index of the point</param>
         /// <returns>The point at the given index</returns>
-        public Point3D this[int index]
+        public SimPoint3D this[int index]
         {
             get
             {
@@ -54,12 +54,12 @@ namespace SIMULTAN.Data.MultiValues
             }
         }
 
-        private Point3D Clamp(Point3D value)
+        private SimPoint3D Clamp(SimPoint3D value)
         {
             if (graph.Function == null)
                 return value;
 
-            return new Point3D(
+            return new SimPoint3D(
                 value.X.Clamp(graph.Function.Range.Minimum.X, graph.Function.Range.Maximum.X),
                 value.Y.Clamp(graph.Function.Range.Minimum.Y, graph.Function.Range.Maximum.Y),
                 value.Z
@@ -70,7 +70,7 @@ namespace SIMULTAN.Data.MultiValues
         /// Adds a point to the collection. Clamps newly added points to the SimMultiValueFunction.Range
         /// </summary>
         /// <param name="item">The new point</param>
-        public void Add(Point3D item)
+        public void Add(SimPoint3D item)
         {
             var clamped = Clamp(item);
             values.Add(clamped);
@@ -94,7 +94,7 @@ namespace SIMULTAN.Data.MultiValues
         /// </summary>
         /// <param name="index">The zero-based index at which value should be inserted</param>
         /// <param name="item">The new point</param>
-        public void Insert(int index, Point3D item)
+        public void Insert(int index, SimPoint3D item)
         {
             var clamped = Clamp(item);
             values.Insert(index, clamped);
@@ -116,10 +116,10 @@ namespace SIMULTAN.Data.MultiValues
             this.CollectionChanged?.Invoke(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
         }
 
-        #region IEnumerable<Point3D>
+        #region IEnumerable<SimPoint3D>
 
         /// <inheritdoc />
-        public IEnumerator<Point3D> GetEnumerator()
+        public IEnumerator<SimPoint3D> GetEnumerator()
         {
             return values.GetEnumerator();
         }

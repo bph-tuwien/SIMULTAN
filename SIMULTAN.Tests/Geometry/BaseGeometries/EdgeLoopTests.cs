@@ -1,13 +1,14 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SIMULTAN.Data.Geometry;
+using SIMULTAN.Data.SimMath;
 using SIMULTAN.Tests.Geometry.EventData;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Windows.Media;
-using System.Windows.Media.Media3D;
+
+
 
 namespace SIMULTAN.Tests.Geometry.BaseGeometries
 {
@@ -18,10 +19,10 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
         {
             Vertex[] v = new Vertex[]
             {
-                new Vertex(layer, "", new Point3D(1, 2, 3)),
-                new Vertex(layer, "", new Point3D(2, 4, 6)),
-                new Vertex(layer, "", new Point3D(3, 6, 9)),
-                new Vertex(layer, "", new Point3D(3, 6, 9))
+                new Vertex(layer, "", new SimPoint3D(1, 2, 3)),
+                new Vertex(layer, "", new SimPoint3D(2, 4, 6)),
+                new Vertex(layer, "", new SimPoint3D(3, 6, 9)),
+                new Vertex(layer, "", new SimPoint3D(3, 6, 9))
             };
 
             Edge[] e = new Edge[]
@@ -368,7 +369,7 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
             l1.eventData.Reset();
             data.eventData.Reset();
 
-            v[2].Position = new Point3D(-1, -2, -3);
+            v[2].Position = new SimPoint3D(-1, -2, -3);
             Assert.AreEqual(5, data.eventData.GeometryChangedEventData.Count());
             for (int i = 0; i < data.eventData.GeometryChangedEventData.Count(); ++i)
                 Assert.AreEqual(1, data.eventData.GeometryChangedEventData[i].Count());
@@ -381,7 +382,7 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
             Assert.AreEqual(2, l0.eventData.GeometryChangedCount);
             Assert.AreEqual(0, l1.eventData.GeometryChangedCount);
 
-            v[0].Position = new Point3D(-2, -4, -6);
+            v[0].Position = new SimPoint3D(-2, -4, -6);
             Assert.AreEqual(5 + 8, data.eventData.GeometryChangedEventData.Count());
             for (int i = 0; i < data.eventData.GeometryChangedEventData.Count(); ++i)
                 Assert.AreEqual(1, data.eventData.GeometryChangedEventData[i].Count());
@@ -414,8 +415,8 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
 
             data.model.Geometry.StartBatchOperation();
 
-            v[2].Position = new Point3D(-1, -2, -3);
-            v[0].Position = new Point3D(-2, -4, -6);
+            v[2].Position = new SimPoint3D(-1, -2, -3);
+            v[0].Position = new SimPoint3D(-2, -4, -6);
 
             Assert.AreEqual(0, data.eventData.GeometryChangedEventData.Count());
             Assert.AreEqual(0, data.eventData.AddEventData.Count());
@@ -661,7 +662,7 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
         public void MoveToLayer()
         {
             var data = GeometryModelHelper.EmptyModelWithEvents();
-            Layer targetLayer = new Layer(data.model.Geometry, "TargetLayer") { Color = new DerivedColor(Colors.Pink) };
+            Layer targetLayer = new Layer(data.model.Geometry, "TargetLayer") { Color = new DerivedColor(SimColors.Pink) };
 
             (var v, var e) = TestData(data.layer);
             var l0edges = new Edge[] { e[0], e[1], e[2] };
@@ -670,13 +671,13 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
 
             Assert.AreEqual(data.layer, l0.loop.Layer);
             Assert.AreEqual(1, data.layer.Elements.Count(x => x is EdgeLoop));
-            Assert.AreEqual(Colors.Red, l0.loop.Color.Color);
+            Assert.AreEqual(SimColors.Red, l0.loop.Color.Color);
 
             l0.loop.Layer = targetLayer;
             Assert.AreEqual(targetLayer, l0.loop.Layer);
             Assert.AreEqual(0, data.layer.Elements.Count(x => x is EdgeLoop));
             Assert.AreEqual(1, targetLayer.Elements.Count(x => x is EdgeLoop));
-            Assert.AreEqual(Colors.Pink, l0.loop.Color.Color);
+            Assert.AreEqual(SimColors.Pink, l0.loop.Color.Color);
 
             Assert.AreEqual(0, data.eventData.GeometryChangedEventData.Count);
             Assert.AreEqual(0, data.eventData.AddEventData.Count);

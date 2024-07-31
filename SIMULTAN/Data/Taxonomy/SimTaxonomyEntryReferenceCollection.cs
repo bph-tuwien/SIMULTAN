@@ -1,4 +1,5 @@
-﻿using SIMULTAN.Serializer.SimGeo;
+﻿using SIMULTAN.Projects;
+using SIMULTAN.Serializer.SimGeo;
 using SIMULTAN.Utils;
 using System;
 using System.Collections.Generic;
@@ -62,6 +63,21 @@ namespace SIMULTAN.Data.Taxonomy
         private void TaxonomyEntryDeleted(SimTaxonomyEntry caller)
         {
             this.RemoveWhere(x => x.Target == caller);
+        }
+
+        /// <summary>
+        /// Restores all taxonomy entry references after the default taxonomies were updated.
+        /// </summary>
+        /// <param name="projectData">The ProjectData</param>
+        public void RestoreDefaultTaxonomyReferences(ProjectData projectData)
+        {
+            var copy = this.ToList();
+            this.Clear();
+            foreach (var item in copy)
+            {
+                var entry = projectData.IdGenerator.GetById<SimTaxonomyEntry>(item.TaxonomyEntryId);
+                this.Add(new SimTaxonomyEntryReference(entry));
+            }
         }
     }
 }

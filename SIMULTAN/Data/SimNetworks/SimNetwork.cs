@@ -1,9 +1,8 @@
-﻿using SIMULTAN.Data.Geometry;
+﻿using SIMULTAN.Data.SimMath;
+using SIMULTAN.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Windows;
-using System.Windows.Media;
 using static SIMULTAN.Data.SimNetworks.SimNetworkConnector;
 using static SIMULTAN.Data.SimNetworks.SimNetworkPort;
 
@@ -14,21 +13,6 @@ namespace SIMULTAN.Data.SimNetworks
     /// </summary>
     public partial class SimNetwork : BaseSimNetworkElement, INetwork
     {
-
-        /// <summary>
-        /// Color of the Block
-        /// </summary>
-        public DerivedColor Color
-        {
-            get { return this.color; }
-            set
-            {
-                this.color = value;
-                this.NotifyPropertyChanged(nameof(this.Color));
-            }
-        }
-        private DerivedColor color;
-
         /// <summary>
         /// The index of geometric representation file 
         /// </summary>
@@ -101,7 +85,7 @@ namespace SIMULTAN.Data.SimNetworks
             this.ContainedConnectors = new SimNetworkConnectorCollection(this);
             this.Ports = new SimNetworkPortCollection(this);
             this.index_of_geometric_rep_file = -1;
-            this.Color = new DerivedColor(Colors.DarkGray);
+            this.Color = SimColors.DarkGray;
         }
 
         /// <summary>
@@ -134,28 +118,22 @@ namespace SIMULTAN.Data.SimNetworks
         /// <param name="connectors">The connectors inside the network. May either connect ports of sub elements or sub elements with ports of the 
         /// root network</param>
         /// <param name="color">Color of the network</param>
-        internal SimNetwork(SimId id, string name, Point position, IEnumerable<SimNetworkPort> ports,
-            IEnumerable<BaseSimNetworkElement> elements, IEnumerable<SimNetworkConnector> connectors, DerivedColor color)
+        internal SimNetwork(SimId id, string name, SimPoint position, IEnumerable<SimNetworkPort> ports,
+            IEnumerable<BaseSimNetworkElement> elements, IEnumerable<SimNetworkConnector> connectors, SimColor color)
         {
-            if (id == null)
-                throw new ArgumentNullException(nameof(id));
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
-            if (position == null)
-                throw new ArgumentNullException(nameof(position));
             if (elements == null)
                 throw new ArgumentNullException(nameof(elements));
             if (ports == null)
                 throw new ArgumentNullException(nameof(ports));
             if (connectors == null)
                 throw new ArgumentNullException(nameof(connectors));
-            if (color == null)
-                throw new ArgumentNullException(nameof(color));
 
             this.Id = id;
             this.Name = name;
             this.Position = position;
-            this.color = color;
+            this.Color = color;
 
             this.ContainedElements = new SimNetworkElementCollection(this);
             foreach (var element in elements)
@@ -176,12 +154,10 @@ namespace SIMULTAN.Data.SimNetworks
         /// </summary>
         /// <param name="name">name of the SimNetwork</param>
         /// <param name="position">Position of the SimNetwork</param>
-        public SimNetwork(string name, Point position)
+        public SimNetwork(string name, SimPoint position)
         {
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
-            if (position == null)
-                throw new ArgumentNullException(nameof(position));
 
             this.Name = name;
             this.Position = position;
@@ -190,7 +166,7 @@ namespace SIMULTAN.Data.SimNetworks
             this.ContainedConnectors = new SimNetworkConnectorCollection(this);
             this.Ports = new SimNetworkPortCollection(this);
             this.index_of_geometric_rep_file = -1;
-            this.Color = new DerivedColor(Colors.DarkGray);
+            this.Color = SimColors.DarkGray;
         }
 
 
@@ -213,14 +189,14 @@ namespace SIMULTAN.Data.SimNetworks
                 ParentNetwork = block.ParentNetwork,
             };
             var ports = new List<SimNetworkPort>();
-            var connectors = new List<(SimNetworkPort Source, SimNetworkPort Target)>();
+            var connectors = new List<(SimNetworkPort Source, SimNetworkPort Target, IEnumerable<SimPoint> controlPoints)>();
 
             for (int i = block.Ports.Count - 1; i > (-1); i--)
             {
                 var port = block.Ports[i];
                 foreach (var con in port.Connectors)
                 {
-                    connectors.Add((con.Source, con.Target));
+                    connectors.Add((con.Source, con.Target, con.Points));
                 }
 
                 block.Ports.Remove(port);
@@ -238,11 +214,15 @@ namespace SIMULTAN.Data.SimNetworks
                 {
                     if (connector.Source == oPort)
                     {
-                        this.ContainedConnectors.Add(new SimNetworkConnector(newPort, connector.Target));
+                        var newCon = new SimNetworkConnector(newPort, connector.Target);
+                        newCon.Points.AddRange(connector.controlPoints);
+                        this.ContainedConnectors.Add(newCon);
                     }
                     else if (connector.Target == oPort)
                     {
-                        this.ContainedConnectors.Add(new SimNetworkConnector(connector.Source, newPort));
+                        var newCon = new SimNetworkConnector(connector.Source, newPort);
+                        newCon.Points.AddRange(connector.controlPoints);
+                        this.ContainedConnectors.Add(newCon);
                     }
                 }
             }

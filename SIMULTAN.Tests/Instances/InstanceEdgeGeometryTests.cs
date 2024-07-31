@@ -1,6 +1,7 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SIMULTAN.Data.Components;
 using SIMULTAN.Data.Geometry;
+using SIMULTAN.Data.SimMath;
 using SIMULTAN.Tests.TestUtils;
 using System;
 using System.Collections.Generic;
@@ -8,14 +9,14 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Windows.Media.Media3D;
+
 
 namespace SIMULTAN.Tests.Instances
 {
     [TestClass]
     public class InstanceEdgeGeometryTests : BaseProjectTest
     {
-        private static readonly FileInfo testProject = new FileInfo(@".\GeometryInstanceTestsProject.simultan");
+        private static readonly FileInfo testProject = new FileInfo(@"./GeometryInstanceTestsProject.simultan");
 
         #region Add
 
@@ -38,7 +39,6 @@ namespace SIMULTAN.Tests.Instances
 
             var inst1 = comp.Instances[0];
             Assert.AreEqual(comp, inst1.Component);
-            Assert.AreEqual(SimInstanceType.AttributesEdge, inst1.InstanceType);
             Assert.AreEqual(true, inst1.State.IsRealized);
             Assert.AreEqual(SimInstanceConnectionState.Ok, inst1.State.ConnectionState);
             Assert.AreEqual(1, inst1.Placements.Count);
@@ -56,7 +56,6 @@ namespace SIMULTAN.Tests.Instances
 
             var inst2 = comp.Instances.First(x => x != inst1);
             Assert.AreEqual(comp, inst2.Component);
-            Assert.AreEqual(SimInstanceType.AttributesEdge, inst2.InstanceType);
             Assert.AreEqual(true, inst2.State.IsRealized);
             Assert.AreEqual(SimInstanceConnectionState.Ok, inst2.State.ConnectionState);
             Assert.AreEqual(1, inst2.Placements.Count);
@@ -93,7 +92,6 @@ namespace SIMULTAN.Tests.Instances
 
             var inst1 = comp.Instances[0];
             Assert.AreEqual(comp, inst1.Component);
-            Assert.AreEqual(SimInstanceType.AttributesEdge, inst1.InstanceType);
             Assert.AreEqual(true, inst1.State.IsRealized);
             Assert.AreEqual(SimInstanceConnectionState.Ok, inst1.State.ConnectionState);
             Assert.AreEqual(1, inst1.Placements.Count);
@@ -111,7 +109,6 @@ namespace SIMULTAN.Tests.Instances
 
             var inst2 = comp.Instances.First(x => x != inst1);
             Assert.AreEqual(comp, inst2.Component);
-            Assert.AreEqual(SimInstanceType.AttributesEdge, inst2.InstanceType);
             Assert.AreEqual(true, inst2.State.IsRealized);
             Assert.AreEqual(SimInstanceConnectionState.Ok, inst2.State.ConnectionState);
             Assert.AreEqual(1, inst2.Placements.Count);
@@ -199,7 +196,7 @@ namespace SIMULTAN.Tests.Instances
             var gmCopy = gm.Geometry.Clone();
             var vertex = gmCopy.Vertices.First(f => f.Name == "Vertex C");
 
-            vertex.Position = new Point3D(10.0, 0.0, 10.0);
+            vertex.Position = new SimPoint3D(10.0, 0.0, 10.0);
 
             gm.Geometry = gmCopy;
 

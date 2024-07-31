@@ -109,6 +109,7 @@ namespace SIMULTAN.Data.Components
             oldItem.RecordWriteAccess();
 
             ProjectData.ComponentGeometryExchange.OnComponentRemoved(oldItem);
+            ProjectData.DataMappingTools.OnComponentRemoved(oldItem);
 
             UnsetValues(oldItem, true);
             base.RemoveItem(index);
@@ -138,6 +139,7 @@ namespace SIMULTAN.Data.Components
                 item.RecordWriteAccess();
 
                 ProjectData.ComponentGeometryExchange.OnComponentRemoved(item);
+                ProjectData.DataMappingTools.OnComponentRemoved(item);
 
                 UnsetValues(item, true);
             }
@@ -165,6 +167,7 @@ namespace SIMULTAN.Data.Components
 
             oldItem.RecordWriteAccess();
             ProjectData.ComponentGeometryExchange.OnComponentRemoved(oldItem);
+            ProjectData.DataMappingTools.OnComponentRemoved(oldItem);
             UnsetValues(oldItem, true);
 
             if (cu != null)

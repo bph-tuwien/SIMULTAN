@@ -12,8 +12,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using System.Windows.Media;
-using System.Windows.Media.Media3D;
+using SIMULTAN.Data.SimMath;
 using static SIMULTAN.Data.Components.CalculationParameterMetaData;
 using static SIMULTAN.Serializer.CODXF.ComponentDxfIOComponents;
 
@@ -83,7 +82,7 @@ namespace SIMULTAN.Serializer.DXF
         IDXFDataConverter<SimChatItemState>,
         IDXFDataConverter<SimSlot>, IDXFDataConverter<SimComponentVisibility>,
         IDXFDataConverter<SimComponentContentSorting>,
-        IDXFDataConverter<Color>, IDXFDataConverter<Quaternion>, IDXFDataConverter<DateTime>,
+        IDXFDataConverter<SimColor>, IDXFDataConverter<SimQuaternion>, IDXFDataConverter<DateTime>,
         IDXFDataConverter<SimFlowNetworkOperator>, IDXFDataConverter<SimFlowNetworkCalcDirection>,
         IDXFDataConverter<SimGeometrySourceProperty>,
         IDXFDataConverter<PortType>,
@@ -96,7 +95,8 @@ namespace SIMULTAN.Serializer.DXF
         IDXFDataConverter<SimDataMappingFaceMappingProperties>, IDXFDataConverter<SimDataMappingFaceFilterProperties>,
         IDXFDataConverter<SimDataMappingVolumeMappingProperties>, IDXFDataConverter<SimDataMappingVolumeFilterProperties>,
         IDXFDataConverter<SimDataMappingFilterType>, IDXFDataConverter<SimDataMappingRuleTraversalStrategy>,
-        IDXFDataConverter<SimDataMappingFaceType>, IDXFDataConverter<SimDataMappingParameterRange>
+        IDXFDataConverter<SimDataMappingFaceType>, IDXFDataConverter<SimDataMappingParameterRange>,
+        IDXFDataConverter<CultureInfo>
     {
         /// <summary>
         /// Instance of the data converter
@@ -593,6 +593,23 @@ namespace SIMULTAN.Serializer.DXF
             { "InPort", SimInstanceType.InPort },
             { "OutPort", SimInstanceType.OutPort },
         };
+        private static Dictionary<uint, SimInstanceType> instanceTypeValuesV26 = new Dictionary<uint, SimInstanceType>
+        {
+            { 0, SimInstanceType.None },
+            { 1, SimInstanceType.Entity3D },
+            { 2, SimInstanceType.GeometricVolume },
+            { 3, SimInstanceType.GeometricSurface },
+            { 4, SimInstanceType.AttributesFace },
+            { 5, SimInstanceType.NetworkNode },
+            { 6, SimInstanceType.NetworkEdge },
+            { 7, SimInstanceType.Group },
+            { 8, SimInstanceType.BuiltStructure },
+            { 9, SimInstanceType.InPort },
+            { 10, SimInstanceType.OutPort },
+            { 11, SimInstanceType.AttributesEdge },
+            { 12, SimInstanceType.AttributesPoint },
+            { 13, SimInstanceType.SimNetworkBlock },
+        };
         /// <inheritdoc />
         public string ToDXFString(SimInstanceType value)
         {
@@ -601,14 +618,20 @@ namespace SIMULTAN.Serializer.DXF
         /// <inheritdoc />
         SimInstanceType IDXFDataConverter<SimInstanceType>.FromDXFString(string value, DXFParserInfo info)
         {
-            if (info.FileVersion >= 12)
-                return (SimInstanceType)uint.Parse(value);
-            else
+            if (info.FileVersion < 12)
             {
                 if (stringToInstanceType.TryGetValue(value, out var instType))
                     return instType;
                 throw new ArgumentOutOfRangeException("value does not contain a valid SimInstanceType string");
             }
+            else if (info.FileVersion < 27)
+            {
+                if (instanceTypeValuesV26.TryGetValue(uint.Parse(value), out var instType))
+                    return instType;
+                throw new ArgumentOutOfRangeException("value does not contain a valid instance type integer");
+            }
+            else
+                return (SimInstanceType)uint.Parse(value);
         }
 
         private static Dictionary<string, SimInstanceConnectionState> stringToConnectionState = new Dictionary<string, SimInstanceConnectionState>
@@ -970,25 +993,25 @@ namespace SIMULTAN.Serializer.DXF
         #region Others
 
         /// <inheritdoc />
-        public string ToDXFString(Color value)
+        public string ToDXFString(SimColor value)
         {
             return String.Format("#{0:X2}{1:X2}{2:X2}{3:X2}", value.A, value.R, value.G, value.B);
         }
         /// <inheritdoc />
-        Color IDXFDataConverter<Color>.FromDXFString(string value, DXFParserInfo info)
+        SimColor IDXFDataConverter<SimColor>.FromDXFString(string value, DXFParserInfo info)
         {
-            return (Color)ColorConverter.ConvertFromString(value);
+            return (SimColor)SimColorConverter.ConvertFromString(value);
         }
 
         /// <inheritdoc />
-        public string ToDXFString(Quaternion value)
+        public string ToDXFString(SimQuaternion value)
         {
             return value.ToString(CultureInfo.InvariantCulture);
         }
         /// <inheritdoc />
-        Quaternion IDXFDataConverter<Quaternion>.FromDXFString(string value, DXFParserInfo info)
+        SimQuaternion IDXFDataConverter<SimQuaternion>.FromDXFString(string value, DXFParserInfo info)
         {
-            return Quaternion.Parse(value);
+            return SimQuaternion.Parse(value);
         }
 
         /// <inheritdoc />
@@ -1042,6 +1065,18 @@ namespace SIMULTAN.Serializer.DXF
             {
                 return null;
             }
+        }
+
+        public string ToDXFString(CultureInfo value)
+        {
+            return value.Name;
+        }
+
+        CultureInfo IDXFDataConverter<CultureInfo>.FromDXFString(string value, DXFParserInfo info)
+        {
+            if (value == null)
+                return null;
+            return new CultureInfo(value);
         }
 
         public string ToDXFString(ParameterType value)

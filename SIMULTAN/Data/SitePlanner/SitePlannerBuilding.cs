@@ -1,11 +1,11 @@
-﻿using SIMULTAN.Projects;
+﻿using SIMULTAN.Data.SimMath;
+using SIMULTAN.Projects;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Windows.Media;
 
 namespace SIMULTAN.Data.SitePlanner
 {
@@ -59,7 +59,7 @@ namespace SIMULTAN.Data.SitePlanner
         /// <summary>
         /// Custom color used for this building
         /// </summary>
-        public Color CustomColor
+        public SimColor CustomColor
         {
             get => customColor;
             set
@@ -69,7 +69,7 @@ namespace SIMULTAN.Data.SitePlanner
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(CustomColor)));
             }
         }
-        private Color customColor = System.Windows.Media.Color.FromRgb(255, 255, 255);
+        private SimColor customColor = SimColor.FromRgb(255, 255, 255);
 
         /// <summary>
         /// Initializes a new instance of the SitePlannerBuilding class

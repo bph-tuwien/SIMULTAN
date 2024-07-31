@@ -83,5 +83,11 @@ namespace SIMULTAN.Data.Components
 
             return result;
         }
+
+        /// <inheritdoc />
+        public override SimMultiValueExpression Clone()
+        {
+            return new SimMultiValueExpressionParameter(Symbol);
+        }
     }
 }

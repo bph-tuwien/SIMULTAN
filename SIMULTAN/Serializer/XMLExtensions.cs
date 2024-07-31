@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -44,7 +45,7 @@ namespace SIMULTAN.Serializer
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine("Failed to convert setting {0}, Reason: {1}", xpath, e.Message);
+                    Debug.WriteLine("Failed to convert setting {0}, Reason: {1}", xpath, e.Message);
                 }
                 return true;
             }

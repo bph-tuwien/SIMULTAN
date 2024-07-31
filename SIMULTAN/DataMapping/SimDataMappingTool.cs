@@ -102,7 +102,7 @@ namespace SIMULTAN.DataMapping
         /// <param name="addNewTables">When set to True, newly created <see cref="SimMultiValueBigTable"/> instances are added to the project.
         /// Set this to False when only temporary results are required</param>
         /// <returns>A list of worksheet names with corresponding data for each sheet</returns>
-        public List<(string sheetName, SimMultiValueBigTable table)> Execute(
+        public (List<(string sheetName, SimMultiValueBigTable table)> tables, SimMappedData mappedData) Execute(
             HashSet<SimComponent> components = null,
             string tableNameFormat = "{0}_{1}", bool overrideResults = true, bool addNewTables = true)
         {
@@ -136,7 +136,7 @@ namespace SIMULTAN.DataMapping
 
             //Transfer data to tables
             foreach (var sheetName in data.Data.Keys)
-            {               
+            {
                 //Create table
                 SimMultiValueBigTable sheetTable = null;
                 string tableName = string.Format(tableNameFormat, this.Name, sheetName);
@@ -148,7 +148,7 @@ namespace SIMULTAN.DataMapping
                 }
 
                 var isNew = sheetTable == null;
-                sheetTable = data.ConverToTable(sheetName, sheetTable);
+                sheetTable = data.ConvertToTable(sheetName, sheetTable);
                 sheetTable.Name = tableName;
 
                 if (isNew && addNewTables) //Create new table if non exists
@@ -159,9 +159,9 @@ namespace SIMULTAN.DataMapping
                 resultTables.Add((sheetName, sheetTable));
             }
 
-            return resultTables;
+            return (resultTables, data);
         }
-    
+
         /// <summary>
         /// Creates a deep copy of the tool and of all rules. Component mappings are not copied.
         /// </summary>
@@ -177,6 +177,18 @@ namespace SIMULTAN.DataMapping
             tool.ReadRules.AddRange(this.ReadRules.Select(x => x.Clone()));
 
             return tool;
+        }
+
+        /// <summary>
+        /// Looks up taxonomy entries for default slot by their name.
+        /// Do this if the default taxonomies changed, could mean that the project is migrated.
+        /// </summary>
+        internal void RestoreDefaultTaxonomyReferences()
+        {
+            foreach (var rule in Rules)
+            {
+                rule.RestoreDefaultTaxonomyReferences();
+            }
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using SIMULTAN.Data.Assets;
+﻿using MathNet.Numerics.Distributions;
+using SIMULTAN.Data.Assets;
 using SIMULTAN.Data.Components;
 using SIMULTAN.Data.FlowNetworks;
 using SIMULTAN.Data.Geometry;
@@ -88,7 +89,8 @@ namespace SIMULTAN.Exchange
         /// Adds a new <see cref="GeometryModel"/> to the Exchange
         /// </summary>
         /// <param name="model">The new geometry model</param>
-        internal void AddGeometryModel(GeometryModel model)
+        /// <returns>The connector that is attached to the GeometryModel</returns>
+        internal GeometryModelConnector AddGeometryModel(GeometryModel model)
         {
             if (this.geometryModelConnectors.ContainsKey(model))
                 throw new ArgumentException("Model is already registered");
@@ -96,7 +98,6 @@ namespace SIMULTAN.Exchange
             model.Exchange = this;
             var connector = new GeometryModelConnector(model, this);
             this.geometryModelConnectors.Add(model, connector);
-            connector.Initialize(); //Has to be done after the connector has been added to connectors. Otherwise the offset surfaces can't be calculated
 
             //Check if this model is associated with a network
             var network = ProjectData.NetworkManager.NetworkRecord.FirstOrDefault(x => x.IndexOfGeometricRepFile == model.File.Key);
@@ -111,6 +112,8 @@ namespace SIMULTAN.Exchange
             {
                 SimNetworkModelConnectors.Add(model, new SimNetworkGeometryModelConnector(model, simNetwork, this));
             }
+
+            return connector;
         }
 
 
@@ -272,6 +275,40 @@ namespace SIMULTAN.Exchange
 
                 if (affectedGeometry.Count > 0)
                     NotifyGeometryInvalidated(affectedGeometry);
+
+                //Handle Static Ports in SimNetworks with GeometryModel opened
+                if (parameter.Component.InstanceType == SimInstanceType.InPort ||
+                    parameter.Component.InstanceType == SimInstanceType.OutPort)
+                {
+                    var networkPlacements = parameter.Component.Instances.SelectMany(t => t.Placements.OfType<SimInstancePlacementSimNetwork>());
+                    foreach (var nwPlacement in networkPlacements)
+                    {
+                        if (nwPlacement.NetworkElement is SimNetworkPort port && parameter is SimDoubleParameter dParam)
+                        {
+                            //Check if this model is associated with a SimNetwork
+                            var parent = port.ParentNetworkElement;
+                            while (parent.ParentNetwork != null)
+                            {
+                                parent = parent.ParentNetwork;
+                            }
+
+                            SimNetwork simNetwork = parent as SimNetwork;
+
+                            var indRepFile = simNetwork.IndexOfGeometricRepFile;
+                            var resource = this.ProjectData.AssetManager.GetResource(indRepFile);
+                            if (resource != null)
+                            {
+                                if (this.ProjectData.GeometryModels.TryGetGeometryModel(resource as ResourceFileEntry, out var geom))
+                                {
+                                    if (this.SimNetworkModelConnectors.TryGetValue(geom, out var simNetworkConnector))
+                                    {
+                                        simNetworkConnector.OnStaticPortCoordinateChanged(dParam);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
         /// <summary>
@@ -286,7 +323,40 @@ namespace SIMULTAN.Exchange
 
             if (affectedGeometry.Count > 0)
                 NotifyGeometryInvalidated(affectedGeometry);
+
+            //Handle Static Ports in SimNetworks with GeometryModel opened
+            if (instance.Component.InstanceType == SimInstanceType.InPort ||
+                instance.Component.InstanceType == SimInstanceType.OutPort)
+            {
+                var networkPlacement = instance.Placements.OfType<SimInstancePlacementSimNetwork>().FirstOrDefault();
+                if (networkPlacement.NetworkElement is SimNetworkPort port && parameter is SimDoubleParameter dParam)
+                {
+                    //Check if this model is associated with a SimNetwork
+                    var parent = port.ParentNetworkElement;
+                    while (parent.ParentNetwork != null)
+                    {
+                        parent = parent.ParentNetwork;
+                    }
+
+                    SimNetwork simNetwork = parent as SimNetwork;
+
+                    var indRepFile = simNetwork.IndexOfGeometricRepFile;
+                    var resource = this.ProjectData.AssetManager.GetResource(indRepFile);
+                    if (resource != null)
+                    {
+                        if (this.ProjectData.GeometryModels.TryGetGeometryModel(resource as ResourceFileEntry, out var geom))
+                        {
+                            if (this.SimNetworkModelConnectors.TryGetValue(geom, out var simNetworkConnector))
+                            {
+                                simNetworkConnector.OnStaticPortCoordinateChanged(dParam);
+                            }
+                        }
+                    }
+                }
+            }
         }
+
+
 
         /// <summary>
         /// Call this when some filter of the parameter source changed (filter on the source or on the resource entry) to update the connectors.
@@ -309,7 +379,7 @@ namespace SIMULTAN.Exchange
                                 connector.OnParameterSourceFilterChanged(source);
                             }
                             // only update while not restoring references
-                            else if (!ProjectData.AssetManager.IsRestoringReferences && !ProjectData.Components.IsRestoringReferences)
+                            else if (!ProjectData.Components.IsRestoringReferences)
                             {
                                 instance.InstanceParameterValuesPersistent[source.TargetParameter] = Double.NaN;
                                 if (source.TargetParameter is SimDoubleParameter dParam)
@@ -335,7 +405,7 @@ namespace SIMULTAN.Exchange
 
                             }
                         }
-                        else if (!ProjectData.AssetManager.IsRestoringReferences && !ProjectData.Components.IsRestoringReferences)
+                        else if (!ProjectData.Components.IsRestoringReferences)
                         {
                             instance.InstanceParameterValuesPersistent[source.TargetParameter] = Double.NaN;
                             if (source.TargetParameter is SimDoubleParameter dParam)
@@ -525,13 +595,20 @@ namespace SIMULTAN.Exchange
             this.AssociationChanged?.Invoke(this, geometry);
         }
 
+        private static Dictionary<Type, SimInstanceType> geometryToInstanceType = new Dictionary<Type, SimInstanceType>()
+        {
+            { typeof(Volume), SimInstanceType.Entity3D },
+            { typeof(Face), SimInstanceType.AttributesFace },
+            { typeof(Edge), SimInstanceType.AttributesEdge },
+            { typeof(Vertex), SimInstanceType.AttributesPoint },
+        };
         /// <summary>
         /// Creates a new instance and placements that connects the component to the geometry.
         /// Throws an ArgumentException when the geometry type does not match the <see cref="SimComponent.InstanceType"/>
         /// </summary>
         /// <param name="component">The component</param>
         /// <param name="geometry">The geometry</param>
-        public void Associate(SimComponent component, BaseGeometry geometry)
+        public (SimComponentInstance instance, bool existed) Associate(SimComponent component, BaseGeometry geometry)
         {
             if (geometry == null)
                 throw new ArgumentNullException(nameof(geometry));
@@ -543,17 +620,25 @@ namespace SIMULTAN.Exchange
             if (component.Factory == null)
                 throw new ArgumentException("Component does not belong to a Project");
 
-            var validity = IsValidAssociation(component, geometry);
-            if (!validity.isValid)
+            //Check if the geometry is one of the geometries that can be connected
+            if (!geometryToInstanceType.TryGetValue(geometry.GetType(), out var instType))
                 throw new ArgumentException("Geometry Type does not match Component.InstanceType");
 
+            //Check if the component already has an instance that connects to this geometry
+            var instance = component.Instances.FirstOrDefault(inst => inst.Placements.Any(p => p is SimInstancePlacementGeometry pg &&
+                pg.FileId == geometry.ModelGeometry.Model.File.Key && pg.GeometryId == geometry.Id));
+
+            bool exited = instance != null;
+
             //Create instance
-            if (validity.needsCreate)
+            if (!exited)
             {
-                SimComponentInstance instance = new SimComponentInstance(component.InstanceType,
-                    geometry.ModelGeometry.Model.File.Key, geometry.Id, new ulong[] { });
+                instance = new SimComponentInstance(instType,
+                    geometry.ModelGeometry.Model.File.Key, geometry.Id);
                 component.Instances.Add(instance);
             }
+
+            return (instance, exited);
         }
         /// <summary>
         /// Creates new instances and placements that connect the component with all geometries.
@@ -561,17 +646,21 @@ namespace SIMULTAN.Exchange
         /// </summary>
         /// <param name="component">The component</param>
         /// <param name="geometries">The geometries</param>
-        public void Associate(SimComponent component, IEnumerable<BaseGeometry> geometries)
+        public List<(SimComponentInstance instance, bool existed)> Associate(SimComponent component, IEnumerable<BaseGeometry> geometries)
         {
             if (geometries == null)
                 throw new ArgumentNullException(nameof(geometries));
             if (component == null)
                 throw new ArgumentNullException(nameof(component));
 
+            List<(SimComponentInstance instance, bool existed)> result = new List<(SimComponentInstance instance, bool existed)>();
+
             foreach (var geometry in geometries)
             {
-                Associate(component, geometry);
+                result.Add(Associate(component, geometry));
             }
+
+            return result;
         }
         /// <summary>
         /// Creates an instance and placements that connect the component with a SitePlannerBuilding
@@ -588,16 +677,61 @@ namespace SIMULTAN.Exchange
             if (building.Project == null)
                 throw new ArgumentException("Building is not part of a project");
 
-            var validity = IsValidAssociation(component, building);
-            if (!validity.isValid)
-                throw new ArgumentException("SitePlanner building does not match Component.InstanceType");
+            var exists = component.Instances.Any(
+                    inst => inst.Placements.Any(p => p is SimInstancePlacementGeometry pg && pg.InstanceType == SimInstanceType.BuiltStructure &&
+                            pg.FileId == building.Project.SitePlannerFile.Key &&
+                            pg.GeometryId == building.ID));
 
-            //Create instance
-            if (validity.needsCreate)
+            if (!exists)
             {
-                SimComponentInstance instance = new SimComponentInstance(component.InstanceType,
-                    building.Project.SitePlannerFile.Key, building.ID, null);
+                SimComponentInstance instance = new SimComponentInstance(SimInstanceType.BuiltStructure,
+                    building.Project.SitePlannerFile.Key, building.ID);
                 component.Instances.Add(instance);
+            }
+        }
+
+        /// <summary>
+        /// Associates an instance of a component with a list of geometry
+        /// </summary>
+        /// <param name="instance">The instance to associate</param>
+        /// <param name="geometries">The geometries which should be associated with the instance</param>
+        public void Associate(SimComponentInstance instance, IEnumerable<BaseGeometry> geometries)
+        {
+            if (geometries == null)
+                throw new ArgumentNullException(nameof(geometries));
+            if (instance == null)
+                throw new ArgumentNullException(nameof(instance));
+
+            foreach (var geometry in geometries)
+            {
+                Associate(instance, geometry);
+            }
+        }
+
+        /// <summary>
+        /// Associates an instance of a component with a geometry
+        /// </summary>
+        /// <param name="instance">The instance to associate</param>
+        /// <param name="geometry">The geometry which should be associated with the instance</param>
+        public void Associate(SimComponentInstance instance, BaseGeometry geometry)
+        {
+            if (geometry == null)
+                throw new ArgumentNullException(nameof(geometry));
+            if (instance == null)
+                throw new ArgumentNullException(nameof(instance));
+
+            //Check if the geometry is one of the geometries that can be connected
+            if (!geometryToInstanceType.TryGetValue(geometry.GetType(), out var instType))
+                throw new ArgumentException("Geometry does not support being connected with a component");
+
+            //Check if the instance already has a placement for this geometry
+            if (!instance.Placements.Any(x => x is SimInstancePlacementGeometry gp && gp.FileId == geometry.ModelGeometry.Model.File.Key &&
+                gp.GeometryId == geometry.Id))
+            {
+                //Create placement
+                SimInstancePlacementGeometry newPlacement = new SimInstancePlacementGeometry(geometry.ModelGeometry.Model.File.Key, geometry.Id,
+                    instType);
+                instance.Placements.Add(newPlacement);
             }
         }
 
@@ -686,6 +820,31 @@ namespace SIMULTAN.Exchange
         }
 
         /// <summary>
+        /// Deletes the association between an instance and a geometry
+        /// </summary>
+        /// <param name="instance">The instance for which the association should be removed</param>
+        /// <param name="geometry">The geometry which should be removed from the instance</param>
+        public void Disassociate(SimComponentInstance instance, BaseGeometry geometry)
+        {
+            if (geometry == null)
+                throw new ArgumentNullException(nameof(geometry));
+            if (instance == null)
+                throw new ArgumentNullException(nameof(instance));
+
+            //Find placement to remove
+            for (int i = instance.Placements.Count - 1; i >= 0; --i)
+            {
+                var placement = instance.Placements[i];
+                if (placement is SimInstancePlacementGeometry pgeo &&
+                    pgeo.FileId == geometry.ModelGeometry.Model.File.Key && pgeo.GeometryId == geometry.Id)
+                {
+                    instance.Placements.RemoveAt(i);
+                }
+            }
+        }
+
+
+        /// <summary>
         /// Returns all components associated with a geometry
         /// </summary>
         /// <param name="geometry">The geometry</param>
@@ -699,8 +858,8 @@ namespace SIMULTAN.Exchange
 
             if (this.geometryModelConnectors.TryGetValue(geometry.ModelGeometry.Model, out var con))
             {
-                foreach (var pl in con.GetPlacements(geometry))
-                    yield return pl.Instance.Component;
+                foreach (var comp in con.GetPlacements(geometry).Select(x => x.Instance.Component).Distinct())
+                    yield return comp;
             }
         }
         /// <summary>
@@ -751,58 +910,6 @@ namespace SIMULTAN.Exchange
             return Enumerable.Empty<SimInstancePlacementGeometry>();
         }
 
-        private (bool isValid, bool needsCreate) IsValidAssociation(SimComponent component, BaseGeometry geometry)
-        {
-            if (component.InstanceType == SimInstanceType.AttributesFace && geometry is Face)
-            {
-                if (component.Instances.Count == 0)
-                    return (true, true);
-                if (component.Instances.Any(c => c.Placements.Any(x => x is SimInstancePlacementGeometry gp &&
-                    gp.FileId == geometry.ModelGeometry.Model.File.Key && gp.GeometryId == geometry.Id)))
-                    return (true, false);
-                else
-                    return (true, true);
-            }
-            else if (component.InstanceType == SimInstanceType.AttributesEdge && geometry is Edge)
-            {
-                if (component.Instances.Count == 0)
-                    return (true, true);
-                if (component.Instances.Any(c => c.Placements.Any(x => x is SimInstancePlacementGeometry gp &&
-                    gp.FileId == geometry.ModelGeometry.Model.File.Key && gp.GeometryId == geometry.Id)))
-                    return (true, false);
-                else
-                    return (true, true);
-            }
-            else if (component.InstanceType == SimInstanceType.AttributesPoint && geometry is Vertex)
-            {
-                if (component.Instances.Count == 0)
-                    return (true, true);
-                if (component.Instances.Any(c => c.Placements.Any(x => x is SimInstancePlacementGeometry gp &&
-                    gp.FileId == geometry.ModelGeometry.Model.File.Key && gp.GeometryId == geometry.Id)))
-                    return (true, false);
-                else
-                    return (true, true);
-            }
-            else if (component.InstanceType == SimInstanceType.Entity3D && geometry is Volume)
-            {
-                if (component.Instances.Count == 0)
-                    return (true, true);
-                if (component.Instances[0].Placements.Any(x => x is SimInstancePlacementGeometry gp &&
-                    gp.FileId == geometry.ModelGeometry.Model.File.Key && gp.GeometryId == geometry.Id))
-                    return (true, false);
-            }
-
-            return (false, false);
-        }
-
-        private (bool isValid, bool needsCreate) IsValidAssociation(SimComponent component, SitePlannerBuilding building)
-        {
-            if (component.InstanceType == SimInstanceType.BuiltStructure)
-                return (component.Instances.Count == 0, true);
-
-            return (false, false);
-        }
-
         #endregion
 
         #region Networks
@@ -812,8 +919,9 @@ namespace SIMULTAN.Exchange
         /// </summary>
         /// <param name="network">The network</param>
         /// <param name="targetFile">The location where the geometry model file should be created</param>
+        /// <param name="dispatcherTimer">Dispatcher timer for the offset surface generator</param>
         /// <returns>The geometry model</returns>
-        public GeometryModel ConvertNetwork(SimFlowNetwork network, FileInfo targetFile)
+        public GeometryModel ConvertNetwork(SimFlowNetwork network, FileInfo targetFile, IDispatcherTimerFactory dispatcherTimer)
         {
             if (network == null)
                 throw new ArgumentNullException(nameof(network));
@@ -827,7 +935,7 @@ namespace SIMULTAN.Exchange
             network.IndexOfGeometricRepFile = asset.Key;
 
             //Load geometry file
-            GeometryModelData geometryData = new GeometryModelData();
+            GeometryModelData geometryData = new GeometryModelData(dispatcherTimer);
             GeometryModel gm = new GeometryModel(targetFile.Name, asset, OperationPermission.DefaultNetworkPermissions, geometryData);
 
             //Get an owning resource to the model
@@ -848,8 +956,9 @@ namespace SIMULTAN.Exchange
         /// </summary>
         /// <param name="network">The SimNetwork</param>
         /// <param name="targetFile">The location where the geometry model file should be created</param>
+        /// <param name="dispatcherTimer">Dispatcher timer for the offset surface generator</param>
         /// <returns>The geometry model</returns>
-        public GeometryModel ConvertSimNetwork(SimNetwork network, FileInfo targetFile)
+        public GeometryModel ConvertSimNetwork(SimNetwork network, FileInfo targetFile, IDispatcherTimerFactory dispatcherTimer)
         {
             if (network == null)
                 throw new ArgumentNullException(nameof(network));
@@ -865,7 +974,7 @@ namespace SIMULTAN.Exchange
 
 
             //Load geometry file
-            GeometryModelData geometryData = new GeometryModelData();
+            GeometryModelData geometryData = new GeometryModelData(dispatcherTimer);
             GeometryModel gm = new GeometryModel(targetFile.Name, asset, OperationPermission.DefaultSimNetworkPermissions, geometryData);
 
             //Get an owning resource to the model
@@ -908,12 +1017,12 @@ namespace SIMULTAN.Exchange
 
             foreach (var pl in this.GetPlacements(face))
             {
-                if (pl.Instance.InstanceType == SimInstanceType.AttributesFace)
+                if (pl.InstanceType.HasFlag(SimInstanceType.AttributesFace))
                 {
                     var dinParameter = pl.Instance.Component.Parameters.FirstOrDefault(
-                        x => x.NameTaxonomyEntry.HasTaxonomyEntry() && x.NameTaxonomyEntry.TaxonomyEntryReference.Target.Key == ReservedParameterKeys.RP_MATERIAL_COMPOSITE_D_IN);
+                        x => x.NameTaxonomyEntry.HasTaxonomyEntry && x.NameTaxonomyEntry.TaxonomyEntryReference.Target.Key == ReservedParameterKeys.RP_MATERIAL_COMPOSITE_D_IN);
                     var doutParameter = pl.Instance.Component.Parameters.FirstOrDefault(
-                        x => x.NameTaxonomyEntry.HasTaxonomyEntry() && x.NameTaxonomyEntry.TaxonomyEntryReference.Target.Key == ReservedParameterKeys.RP_MATERIAL_COMPOSITE_D_OUT);
+                        x => x.NameTaxonomyEntry.HasTaxonomyEntry && x.NameTaxonomyEntry.TaxonomyEntryReference.Target.Key == ReservedParameterKeys.RP_MATERIAL_COMPOSITE_D_OUT);
 
                     //Check if parameters exist
                     if (dinParameter != null)

@@ -1,20 +1,16 @@
 ﻿using SIMULTAN.Exceptions;
-using SIMULTAN.Utils;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Globalization;
 
 namespace SIMULTAN.Data.Taxonomy
 {
     /// <summary>
     /// Data class for a Taxonomy
     /// </summary>
-    [DebuggerDisplay("[Taxonomy] {Name}, {Key}")]
-    public class SimTaxonomy : SimNamedObject<SimTaxonomyCollection>
+    [DebuggerDisplay("[Taxonomy] {Key}")]
+    public class SimTaxonomy : SimObjectNew<SimTaxonomyCollection>, ISimTaxonomyElement
     {
         private Dictionary<string, SimTaxonomyEntry> allEntries;
 
@@ -78,34 +74,49 @@ namespace SIMULTAN.Data.Taxonomy
         }
         private bool isDeletable = true;
 
+        /// <summary>
+        /// Localization languages supported by the taxonomy.
+        /// Changing languages propagates to the taxonomy's and its entries' localizations.
+        /// </summary>
+        public SimTaxonomyLanguageCollection Languages
+        {
+            get;
+        }
 
         /// <summary>
-        /// Creates a new Taxonomy
+        /// Localization of the Taxonomy.
+        /// </summary>
+        public SimTaxonomyLocalization Localization { get; }
+
+        /// <inheritdoc />
+        public SimTaxonomy Taxonomy => this;
+
+
+
+        #region .CTOR
+
+        /// <summary>
+        /// Creates a new Taxonomy with a default translation
         /// </summary>
         /// <param name="key">The key of the taxonomy</param>
         /// <param name="name">The name of the taxonomy</param>
         /// <param name="description">The description of the taxonomy</param>
-        public SimTaxonomy(string key, string name, string description) : this(name, description)
+        /// <param name="culture">The culture to set the name and description for, uses the invariant culture if null</param>
+        public SimTaxonomy(string key, string name, string description, CultureInfo culture = null) : this(name, description, culture)
         {
             Key = key;
         }
         /// <summary>
-        /// Creates a new Taxonomy
+        /// Creates a new Taxonomy with a default translation
         /// </summary>
         /// <param name="name">The name of the taxonomy</param>
         /// <param name="description">The description of the taxonomy</param>
-        public SimTaxonomy(string name, string description) : this(name)
+        /// <param name="culture">The culture to set the name and description for, uses the invariant culture if null</param>
+        public SimTaxonomy(string name, string description = "", CultureInfo culture = null) : this()
         {
-            Description = description;
-        }
-
-        /// <summary>
-        /// Creates a new Taxonomy
-        /// </summary>
-        /// <param name="name">The name of the taxonomy</param>
-        public SimTaxonomy(string name) : this()
-        {
-            Name = name;
+            culture = culture ?? CultureInfo.InvariantCulture;
+            Languages.Add(culture);
+            Localization.SetLanguage(new SimTaxonomyLocalizationEntry(culture, name, description));
         }
 
         /// <summary>
@@ -115,7 +126,22 @@ namespace SIMULTAN.Data.Taxonomy
         {
             Entries = new SimTaxonomyEntryCollection(this);
             allEntries = new Dictionary<string, SimTaxonomyEntry>();
+            Languages = new SimTaxonomyLanguageCollection(this);
+            Localization = new SimTaxonomyLocalization(this);
         }
+
+        /// <summary>
+        /// Creates a new Taxonomy with given id
+        /// </summary>
+        /// <param name="id">The id</param>
+        public SimTaxonomy(SimId id) : base(id)
+        {
+            Entries = new SimTaxonomyEntryCollection(this);
+            allEntries = new Dictionary<string, SimTaxonomyEntry>();
+            Languages = new SimTaxonomyLanguageCollection(this);
+            Localization = new SimTaxonomyLocalization(this);
+        }
+        #endregion
 
         /// <summary>
         /// Returns if a key is already in use.
@@ -195,16 +221,6 @@ namespace SIMULTAN.Data.Taxonomy
             allEntries.Remove(key);
         }
 
-        /// <summary>
-        /// Creates a new Taxonomy with given id
-        /// </summary>
-        /// <param name="id">The id</param>
-        public SimTaxonomy(SimId id) : base(id)
-        {
-            Entries = new SimTaxonomyEntryCollection(this);
-            allEntries = new Dictionary<string, SimTaxonomyEntry>();
-        }
-
         /// <inheritdoc />
         protected override void OnFactoryChanged(SimTaxonomyCollection newFactory, SimTaxonomyCollection oldFactory)
         {
@@ -215,8 +231,9 @@ namespace SIMULTAN.Data.Taxonomy
 
         /// <summary>
         /// Returns true if this taxonomy is identical to another taxonomy.
-        /// A taxonomy is identical with another if their keys (or if no keys are available, their names) are identical and
-        /// if the whole hierarchy is the same in terms of taxonomy entry keys and names.
+        /// A taxonomy is identical with another if their keys and localization are identical and
+        /// if the whole hierarchy is the same in terms of taxonomy entry keys and localizations.
+        /// Used for merging taxonomies.
         /// </summary>
         /// <param name="other">The other taxonomy</param>
         /// <returns>True if the other taxonomy is identical to this one.</returns>
@@ -225,6 +242,8 @@ namespace SIMULTAN.Data.Taxonomy
             if (other == null)
                 return false;
             if (other.key != this.key)
+                return false;
+            if (!other.Localization.IsIdenticalTo(this.Localization))
                 return false;
 
             if (allEntries.Count != other.allEntries.Count)
@@ -240,7 +259,7 @@ namespace SIMULTAN.Data.Taxonomy
                 var foundEntry = GetTaxonomyEntryByKey(entry.Key);
                 if (foundEntry == null)
                     return false;
-                if (foundEntry.Name != entry.Name)
+                if (!foundEntry.Localization.IsIdenticalTo(entry.Localization))
                     return false;
                 // if one or the others parent is null but not both -> different hierarchy
                 if (foundEntry.Parent == null ^ entry.Parent == null)
@@ -271,5 +290,10 @@ namespace SIMULTAN.Data.Taxonomy
             base.NotifyWriteAccess();
         }
 
+        /// <inheritdoc />
+        public void NotifyLocalizationChanged()
+        {
+            Factory?.NotifyTaxonomyEntryPropertyChanged(this, nameof(Localization));
+        }
     }
 }

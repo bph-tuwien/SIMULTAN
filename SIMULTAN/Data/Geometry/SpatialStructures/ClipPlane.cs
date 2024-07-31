@@ -1,9 +1,9 @@
-﻿using System;
+﻿using SIMULTAN.Data.SimMath;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Windows.Media.Media3D;
 
 namespace SIMULTAN.Data.Geometry
 {
@@ -15,7 +15,7 @@ namespace SIMULTAN.Data.Geometry
         /// <summary>
         /// Normal of the plane (a, b, c)
         /// </summary>
-        public Vector3D Normal { get; set; }
+        public SimVector3D Normal { get; set; }
 
         /// <summary>
         /// Distance of the plane (d) from the origin (along the plane normal)
@@ -27,7 +27,7 @@ namespace SIMULTAN.Data.Geometry
         /// </summary>
         /// <param name="normal">Normal of the plane</param>
         /// <param name="distance">Distance from the origin along the normal</param>
-        public ClipPlane(Vector3D normal, double distance)
+        public ClipPlane(SimVector3D normal, double distance)
         {
             this.Normal = normal;
             this.Distance = distance;
@@ -38,11 +38,11 @@ namespace SIMULTAN.Data.Geometry
         /// </summary>
         /// <param name="pointOnPlane">Point on the plane</param>
         /// <param name="normal">Normal of the plane</param>
-        public ClipPlane(Point3D pointOnPlane, Vector3D normal)
+        public ClipPlane(SimPoint3D pointOnPlane, SimVector3D normal)
         {
             normal.Normalize();
             this.Normal = normal;
-            this.Distance = -Vector3D.DotProduct(normal, (Vector3D)pointOnPlane);
+            this.Distance = -SimVector3D.DotProduct(normal, (SimVector3D)pointOnPlane);
         }
 
         /// <summary>
@@ -61,9 +61,9 @@ namespace SIMULTAN.Data.Geometry
         /// </summary>
         /// <param name="p">Point to test</param>
         /// <returns>Returns true, if the point lies inside (behind the plane)</returns>
-        public bool IsInside(Point3D p)
+        public bool IsInside(SimPoint3D p)
         {
-            return Vector3D.DotProduct(Normal, (Vector3D)p) <= -Distance;
+            return SimVector3D.DotProduct(Normal, (SimVector3D)p) <= -Distance;
         }
 
         /// <summary>
@@ -71,29 +71,31 @@ namespace SIMULTAN.Data.Geometry
         /// </summary>
         /// <param name="p0">Start point of the line</param>
         /// <param name="p1">End point of the line</param>
+        /// <param name="epsilon">Epsilon for comparison if the edge lies in the plane</param>
+        /// <param name="insideEpsilon">Epsilon to add or subtract to ensure that t is inside in edge cases</param>
         /// <returns>
         /// The intersection point and the distance t between start point and intersection point
         /// If t is negative, the intersection point was not found
         /// </returns>
-        public (Point3D intersectionPoint, double t) IntersectLine(Point3D p0, Point3D p1)
+        public (SimPoint3D intersectionPoint, double t) IntersectLine(SimPoint3D p0, SimPoint3D p1, double epsilon = 1e-9, double insideEpsilon = 1e-6)
         {
-            Point3D intersection;
+            SimPoint3D intersection;
             double t = 0.0;
 
             var lineDir = p1 - p0;
 
             // line parallel to plane -> no intersection
-            if (Math.Abs(Vector3D.DotProduct(Normal, lineDir / lineDir.Length)) < 1e-9)
-                return (new Point3D(), -1.0);
+            if (Math.Abs(SimVector3D.DotProduct(Normal, lineDir / lineDir.Length)) < epsilon)
+                return (new SimPoint3D(), -1.0);
 
-            var nom = (Vector3D.DotProduct((Vector3D)p0, Normal) + Distance);
-            var denom = (Vector3D.DotProduct((Vector3D)p1, Normal) + Distance);
+            var nom = (SimVector3D.DotProduct((SimVector3D)p0, Normal) + Distance);
+            var denom = (SimVector3D.DotProduct((SimVector3D)p1, Normal) + Distance);
             t = nom / (nom - denom);
 
             if (IsInside(p0))
-                t -= 1e-6;
+                t -= insideEpsilon;
             else
-                t += 1e-6;
+                t += insideEpsilon;
 
             intersection = p0 + t * lineDir;
 

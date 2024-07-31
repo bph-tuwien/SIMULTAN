@@ -17,7 +17,7 @@ namespace SIMULTAN.Tests.DataMapping
     [TestClass]
     public class VolumeRuleTests : BaseProjectTest
     {
-        private static readonly FileInfo mappingProject = new FileInfo(@".\ExcelMappingTests.simultan");
+        private static readonly FileInfo mappingProject = new FileInfo(@"./ExcelMappingTests.simultan");
 
         #region Properties
 
@@ -32,7 +32,7 @@ namespace SIMULTAN.Tests.DataMapping
             componentRule.MappingDirection = SimDataMappingDirection.Horizontal;
             componentRule.MaxMatches = int.MaxValue;
             componentRule.MaxDepth = int.MaxValue;
-            componentRule.OffsetConsecutive = new IntIndex2D(0, 1);
+            componentRule.OffsetConsecutive = new RowColumnIndex(1, 0);
             componentRule.Properties.Add(SimDataMappingComponentMappingProperties.Name);
             componentRule.Filter.Add(new SimDataMappingFilterComponent(SimDataMappingComponentFilterProperties.InstanceType, SimInstanceType.Entity3D));
 
@@ -40,8 +40,8 @@ namespace SIMULTAN.Tests.DataMapping
             volumeRule.MappingDirection = SimDataMappingDirection.Horizontal;
             volumeRule.MaxMatches = int.MaxValue;
             volumeRule.MaxDepth = int.MaxValue;
-            volumeRule.OffsetParent = new IntIndex2D(2, 0);
-            volumeRule.OffsetConsecutive = new IntIndex2D(0, 1);
+            volumeRule.OffsetParent = new RowColumnIndex(0, 2);
+            volumeRule.OffsetConsecutive = new RowColumnIndex(1, 0);
             volumeRule.Properties.Add(SimDataMappingVolumeMappingProperties.Name);
             componentRule.Rules.Add(volumeRule);
 
@@ -53,10 +53,10 @@ namespace SIMULTAN.Tests.DataMapping
             Assert.IsTrue(data.Data.TryGetValue("SheetA", out var sheetData));
 
             Assert.AreEqual(4, sheetData.Count);
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(0, 0), "Volume1");
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(2, 0), "ShoeBox");
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(0, 1), "Volume2");
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(2, 1), "NiceRoom");
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(0, 0), "Volume1");
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(0, 2), "ShoeBox");
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(1, 0), "Volume2");
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(1, 2), "NiceRoom");
         }
 
         [TestMethod]
@@ -70,7 +70,7 @@ namespace SIMULTAN.Tests.DataMapping
             componentRule.MappingDirection = SimDataMappingDirection.Horizontal;
             componentRule.MaxMatches = int.MaxValue;
             componentRule.MaxDepth = int.MaxValue;
-            componentRule.OffsetConsecutive = new IntIndex2D(0, 1);
+            componentRule.OffsetConsecutive = new RowColumnIndex(1, 0);
             componentRule.Properties.Add(SimDataMappingComponentMappingProperties.Name);
             componentRule.Filter.Add(new SimDataMappingFilterComponent(SimDataMappingComponentFilterProperties.InstanceType, SimInstanceType.Entity3D));
 
@@ -78,8 +78,8 @@ namespace SIMULTAN.Tests.DataMapping
             volumeRule.MappingDirection = SimDataMappingDirection.Horizontal;
             volumeRule.MaxMatches = int.MaxValue;
             volumeRule.MaxDepth = int.MaxValue;
-            volumeRule.OffsetParent = new IntIndex2D(2, 0);
-            volumeRule.OffsetConsecutive = new IntIndex2D(0, 1);
+            volumeRule.OffsetParent = new RowColumnIndex(0, 2);
+            volumeRule.OffsetConsecutive = new RowColumnIndex(1, 0);
             volumeRule.Properties.Add(SimDataMappingVolumeMappingProperties.Id);
             componentRule.Rules.Add(volumeRule);
 
@@ -91,10 +91,10 @@ namespace SIMULTAN.Tests.DataMapping
             Assert.IsTrue(data.Data.TryGetValue("SheetA", out var sheetData));
 
             Assert.AreEqual(4, sheetData.Count);
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(0, 0), "Volume1");
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(2, 0), 56);
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(0, 1), "Volume2");
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(2, 1), 79);
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(0, 0), "Volume1");
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(0, 2), 56);
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(1, 0), "Volume2");
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(1, 2), 79);
         }
 
         [TestMethod]
@@ -108,7 +108,7 @@ namespace SIMULTAN.Tests.DataMapping
             componentRule.MappingDirection = SimDataMappingDirection.Horizontal;
             componentRule.MaxMatches = int.MaxValue;
             componentRule.MaxDepth = int.MaxValue;
-            componentRule.OffsetConsecutive = new IntIndex2D(0, 1);
+            componentRule.OffsetConsecutive = new RowColumnIndex(1, 0);
             componentRule.Properties.Add(SimDataMappingComponentMappingProperties.Name);
             componentRule.Filter.Add(new SimDataMappingFilterComponent(SimDataMappingComponentFilterProperties.InstanceType, SimInstanceType.Entity3D));
 
@@ -116,8 +116,8 @@ namespace SIMULTAN.Tests.DataMapping
             volumeRule.MappingDirection = SimDataMappingDirection.Horizontal;
             volumeRule.MaxMatches = int.MaxValue;
             volumeRule.MaxDepth = int.MaxValue;
-            volumeRule.OffsetParent = new IntIndex2D(2, 0);
-            volumeRule.OffsetConsecutive = new IntIndex2D(0, 1);
+            volumeRule.OffsetParent = new RowColumnIndex(0, 2);
+            volumeRule.OffsetConsecutive = new RowColumnIndex(1, 0);
             volumeRule.Properties.Add(SimDataMappingVolumeMappingProperties.Volume);
             componentRule.Rules.Add(volumeRule);
 
@@ -129,10 +129,10 @@ namespace SIMULTAN.Tests.DataMapping
             Assert.IsTrue(data.Data.TryGetValue("SheetA", out var sheetData));
 
             Assert.AreEqual(4, sheetData.Count);
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(0, 0), "Volume1");
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(2, 0), 2000.0);
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(0, 1), "Volume2");
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(2, 1), 375.0);
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(0, 0), "Volume1");
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(0, 2), 2000.0);
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(1, 0), "Volume2");
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(1, 2), 375.0);
         }
 
         [TestMethod]
@@ -146,7 +146,7 @@ namespace SIMULTAN.Tests.DataMapping
             componentRule.MappingDirection = SimDataMappingDirection.Horizontal;
             componentRule.MaxMatches = int.MaxValue;
             componentRule.MaxDepth = int.MaxValue;
-            componentRule.OffsetConsecutive = new IntIndex2D(0, 1);
+            componentRule.OffsetConsecutive = new RowColumnIndex(1, 0);
             componentRule.Properties.Add(SimDataMappingComponentMappingProperties.Name);
             componentRule.Filter.Add(new SimDataMappingFilterComponent(SimDataMappingComponentFilterProperties.InstanceType, SimInstanceType.Entity3D));
 
@@ -154,8 +154,8 @@ namespace SIMULTAN.Tests.DataMapping
             volumeRule.MappingDirection = SimDataMappingDirection.Horizontal;
             volumeRule.MaxMatches = int.MaxValue;
             volumeRule.MaxDepth = int.MaxValue;
-            volumeRule.OffsetParent = new IntIndex2D(2, 0);
-            volumeRule.OffsetConsecutive = new IntIndex2D(0, 1);
+            volumeRule.OffsetParent = new RowColumnIndex(0, 2);
+            volumeRule.OffsetConsecutive = new RowColumnIndex(1, 0);
             volumeRule.Properties.Add(SimDataMappingVolumeMappingProperties.FloorArea);
             componentRule.Rules.Add(volumeRule);
 
@@ -167,10 +167,10 @@ namespace SIMULTAN.Tests.DataMapping
             Assert.IsTrue(data.Data.TryGetValue("SheetA", out var sheetData));
 
             Assert.AreEqual(4, sheetData.Count);
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(0, 0), "Volume1");
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(2, 0), 200.0);
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(0, 1), "Volume2");
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(2, 1), 75.0);
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(0, 0), "Volume1");
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(0, 2), 200.0);
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(1, 0), "Volume2");
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(1, 2), 75.0);
         }
 
         [TestMethod]
@@ -184,7 +184,7 @@ namespace SIMULTAN.Tests.DataMapping
             componentRule.MappingDirection = SimDataMappingDirection.Horizontal;
             componentRule.MaxMatches = int.MaxValue;
             componentRule.MaxDepth = int.MaxValue;
-            componentRule.OffsetConsecutive = new IntIndex2D(0, 1);
+            componentRule.OffsetConsecutive = new RowColumnIndex(1, 0);
             componentRule.Properties.Add(SimDataMappingComponentMappingProperties.Name);
             componentRule.Filter.Add(new SimDataMappingFilterComponent(SimDataMappingComponentFilterProperties.InstanceType, SimInstanceType.Entity3D));
 
@@ -192,8 +192,8 @@ namespace SIMULTAN.Tests.DataMapping
             volumeRule.MappingDirection = SimDataMappingDirection.Horizontal;
             volumeRule.MaxMatches = int.MaxValue;
             volumeRule.MaxDepth = int.MaxValue;
-            volumeRule.OffsetParent = new IntIndex2D(2, 0);
-            volumeRule.OffsetConsecutive = new IntIndex2D(0, 1);
+            volumeRule.OffsetParent = new RowColumnIndex(0, 2);
+            volumeRule.OffsetConsecutive = new RowColumnIndex(1, 0);
             volumeRule.Properties.Add(SimDataMappingVolumeMappingProperties.Height);
             componentRule.Rules.Add(volumeRule);
 
@@ -205,10 +205,10 @@ namespace SIMULTAN.Tests.DataMapping
             Assert.IsTrue(data.Data.TryGetValue("SheetA", out var sheetData));
 
             Assert.AreEqual(4, sheetData.Count);
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(0, 0), "Volume1");
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(2, 0), 10.0);
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(0, 1), "Volume2");
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(2, 1), 5.0);
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(0, 0), "Volume1");
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(0, 2), 10.0);
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(1, 0), "Volume2");
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(1, 2), 5.0);
         }
 
         [TestMethod]
@@ -222,7 +222,7 @@ namespace SIMULTAN.Tests.DataMapping
             componentRule.MappingDirection = SimDataMappingDirection.Horizontal;
             componentRule.MaxMatches = int.MaxValue;
             componentRule.MaxDepth = int.MaxValue;
-            componentRule.OffsetConsecutive = new IntIndex2D(0, 1);
+            componentRule.OffsetConsecutive = new RowColumnIndex(1, 0);
             componentRule.Properties.Add(SimDataMappingComponentMappingProperties.Name);
             componentRule.Filter.Add(new SimDataMappingFilterComponent(SimDataMappingComponentFilterProperties.InstanceType, SimInstanceType.Entity3D));
 
@@ -230,8 +230,8 @@ namespace SIMULTAN.Tests.DataMapping
             volumeRule.MappingDirection = SimDataMappingDirection.Horizontal;
             volumeRule.MaxMatches = int.MaxValue;
             volumeRule.MaxDepth = int.MaxValue;
-            volumeRule.OffsetParent = new IntIndex2D(2, 0);
-            volumeRule.OffsetConsecutive = new IntIndex2D(0, 1);
+            volumeRule.OffsetParent = new RowColumnIndex(0, 2);
+            volumeRule.OffsetConsecutive = new RowColumnIndex(1, 0);
             volumeRule.Properties.Add(SimDataMappingVolumeMappingProperties.FloorElevation);
             componentRule.Rules.Add(volumeRule);
 
@@ -243,10 +243,10 @@ namespace SIMULTAN.Tests.DataMapping
             Assert.IsTrue(data.Data.TryGetValue("SheetA", out var sheetData));
 
             Assert.AreEqual(4, sheetData.Count);
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(0, 0), "Volume1");
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(2, 0), 0.0);
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(0, 1), "Volume2");
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(2, 1), 5.0);
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(0, 0), "Volume1");
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(0, 2), 0.0);
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(1, 0), "Volume2");
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(1, 2), 5.0);
         }
 
         [TestMethod]
@@ -260,7 +260,7 @@ namespace SIMULTAN.Tests.DataMapping
             componentRule.MappingDirection = SimDataMappingDirection.Horizontal;
             componentRule.MaxMatches = int.MaxValue;
             componentRule.MaxDepth = int.MaxValue;
-            componentRule.OffsetConsecutive = new IntIndex2D(0, 1);
+            componentRule.OffsetConsecutive = new RowColumnIndex(1, 0);
             componentRule.Properties.Add(SimDataMappingComponentMappingProperties.Name);
             componentRule.Filter.Add(new SimDataMappingFilterComponent(SimDataMappingComponentFilterProperties.InstanceType, SimInstanceType.Entity3D));
 
@@ -268,8 +268,8 @@ namespace SIMULTAN.Tests.DataMapping
             volumeRule.MappingDirection = SimDataMappingDirection.Horizontal;
             volumeRule.MaxMatches = int.MaxValue;
             volumeRule.MaxDepth = int.MaxValue;
-            volumeRule.OffsetParent = new IntIndex2D(2, 0);
-            volumeRule.OffsetConsecutive = new IntIndex2D(0, 1);
+            volumeRule.OffsetParent = new RowColumnIndex(0, 2);
+            volumeRule.OffsetConsecutive = new RowColumnIndex(1, 0);
             volumeRule.Properties.Add(SimDataMappingVolumeMappingProperties.CeilingElevation);
             componentRule.Rules.Add(volumeRule);
 
@@ -281,10 +281,10 @@ namespace SIMULTAN.Tests.DataMapping
             Assert.IsTrue(data.Data.TryGetValue("SheetA", out var sheetData));
 
             Assert.AreEqual(4, sheetData.Count);
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(0, 0), "Volume1");
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(2, 0), 10.0);
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(0, 1), "Volume2");
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(2, 1), 10.0);
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(0, 0), "Volume1");
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(0, 2), 10.0);
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(1, 0), "Volume2");
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(1, 2), 10.0);
         }
 
         #endregion
@@ -302,7 +302,7 @@ namespace SIMULTAN.Tests.DataMapping
             componentRule.MappingDirection = SimDataMappingDirection.Horizontal;
             componentRule.MaxMatches = int.MaxValue;
             componentRule.MaxDepth = int.MaxValue;
-            componentRule.OffsetConsecutive = new IntIndex2D(0, 1);
+            componentRule.OffsetConsecutive = new RowColumnIndex(1, 0);
             componentRule.Properties.Add(SimDataMappingComponentMappingProperties.Name);
             componentRule.Filter.Add(new SimDataMappingFilterComponent(SimDataMappingComponentFilterProperties.InstanceType, SimInstanceType.Entity3D));
 
@@ -310,8 +310,8 @@ namespace SIMULTAN.Tests.DataMapping
             instanceRule.MappingDirection = SimDataMappingDirection.Horizontal;
             instanceRule.MaxMatches = int.MaxValue;
             instanceRule.MaxDepth = int.MaxValue;
-            instanceRule.OffsetParent = new IntIndex2D(1, 0);
-            instanceRule.OffsetConsecutive = new IntIndex2D(0, 1);
+            instanceRule.OffsetParent = new RowColumnIndex(0, 1);
+            instanceRule.OffsetConsecutive = new RowColumnIndex(1, 0);
             instanceRule.Properties.Add(SimDataMappingInstanceMappingProperties.Name);
             componentRule.Rules.Add(instanceRule);
 
@@ -319,8 +319,8 @@ namespace SIMULTAN.Tests.DataMapping
             volumeRule.MappingDirection = SimDataMappingDirection.Horizontal;
             volumeRule.MaxMatches = int.MaxValue;
             volumeRule.MaxDepth = int.MaxValue;
-            volumeRule.OffsetParent = new IntIndex2D(1, 0);
-            volumeRule.OffsetConsecutive = new IntIndex2D(0, 1);
+            volumeRule.OffsetParent = new RowColumnIndex(0, 1);
+            volumeRule.OffsetConsecutive = new RowColumnIndex(1, 0);
             volumeRule.Properties.Add(SimDataMappingVolumeMappingProperties.Name);
             instanceRule.Rules.Add(volumeRule);
 
@@ -332,12 +332,12 @@ namespace SIMULTAN.Tests.DataMapping
             Assert.IsTrue(data.Data.TryGetValue("SheetA", out var sheetData));
 
             Assert.AreEqual(6, sheetData.Count);
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(0, 0), "Volume1");
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(1, 0), "Geometry Placement 0:56");
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(2, 0), "ShoeBox");
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(0, 1), "Volume2");
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(1, 1), "Geometry Placement 1:79");
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(2, 1), "NiceRoom");
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(0, 0), "Volume1");
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(0, 1), "Geometry Placement 0:56");
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(0, 2), "ShoeBox");
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(1, 0), "Volume2");
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(1, 1), "Geometry Placement 1:79");
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(1, 2), "NiceRoom");
         }
 
         #endregion
@@ -355,7 +355,7 @@ namespace SIMULTAN.Tests.DataMapping
             componentRule.MappingDirection = SimDataMappingDirection.Horizontal;
             componentRule.MaxMatches = int.MaxValue;
             componentRule.MaxDepth = int.MaxValue;
-            componentRule.OffsetConsecutive = new IntIndex2D(0, 1);
+            componentRule.OffsetConsecutive = new RowColumnIndex(1, 0);
             componentRule.Properties.Add(SimDataMappingComponentMappingProperties.Name);
             componentRule.Filter.Add(new SimDataMappingFilterComponent(SimDataMappingComponentFilterProperties.Name, "InteriorWall"));
 
@@ -363,8 +363,8 @@ namespace SIMULTAN.Tests.DataMapping
             faceRule.MappingDirection = SimDataMappingDirection.Horizontal;
             faceRule.MaxMatches = int.MaxValue;
             faceRule.MaxDepth = int.MaxValue;
-            faceRule.OffsetParent = new IntIndex2D(1, 0);
-            faceRule.OffsetConsecutive = new IntIndex2D(0, 1);
+            faceRule.OffsetParent = new RowColumnIndex(0, 1);
+            faceRule.OffsetConsecutive = new RowColumnIndex(1, 0);
             faceRule.Properties.Add(SimDataMappingFaceMappingProperties.Name);
             componentRule.Rules.Add(faceRule);
 
@@ -372,8 +372,8 @@ namespace SIMULTAN.Tests.DataMapping
             volumeRule.MappingDirection = SimDataMappingDirection.Horizontal;
             volumeRule.MaxMatches = int.MaxValue;
             volumeRule.MaxDepth = int.MaxValue;
-            volumeRule.OffsetParent = new IntIndex2D(1, 0);
-            volumeRule.OffsetConsecutive = new IntIndex2D(0, 1);
+            volumeRule.OffsetParent = new RowColumnIndex(0, 1);
+            volumeRule.OffsetConsecutive = new RowColumnIndex(1, 0);
             volumeRule.Properties.Add(SimDataMappingVolumeMappingProperties.Name);
             faceRule.Rules.Add(volumeRule);
 
@@ -385,10 +385,10 @@ namespace SIMULTAN.Tests.DataMapping
             Assert.IsTrue(data.Data.TryGetValue("SheetA", out var sheetData));
 
             Assert.AreEqual(4, sheetData.Count);
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(0, 0), "InteriorWall");
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(1, 0), "Face 45");
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(2, 0), "ShoeBox");
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(2, 1), "Volume 79");
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(0, 0), "InteriorWall");
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(0, 1), "Face 45");
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(0, 2), "ShoeBox");
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(1, 2), "Volume 79");
         }
 
         #endregion
@@ -406,7 +406,7 @@ namespace SIMULTAN.Tests.DataMapping
             componentRule.MappingDirection = SimDataMappingDirection.Horizontal;
             componentRule.MaxMatches = int.MaxValue;
             componentRule.MaxDepth = int.MaxValue;
-            componentRule.OffsetConsecutive = new IntIndex2D(0, 1);
+            componentRule.OffsetConsecutive = new RowColumnIndex(1, 0);
             componentRule.Properties.Add(SimDataMappingComponentMappingProperties.Name);
             componentRule.Filter.Add(new SimDataMappingFilterComponent(SimDataMappingComponentFilterProperties.InstanceType, SimInstanceType.Entity3D));
 
@@ -414,8 +414,8 @@ namespace SIMULTAN.Tests.DataMapping
             volumeRule.MappingDirection = SimDataMappingDirection.Horizontal;
             volumeRule.MaxMatches = int.MaxValue;
             volumeRule.MaxDepth = int.MaxValue;
-            volumeRule.OffsetParent = new IntIndex2D(2, 0);
-            volumeRule.OffsetConsecutive = new IntIndex2D(0, 1);
+            volumeRule.OffsetParent = new RowColumnIndex(0, 2);
+            volumeRule.OffsetConsecutive = new RowColumnIndex(1, 0);
             volumeRule.Properties.Add(SimDataMappingVolumeMappingProperties.Name);
             volumeRule.Filter.Add(new SimDataMappingFilterVolume(SimDataMappingVolumeFilterProperties.Name, "ShoeBox"));
             componentRule.Rules.Add(volumeRule);
@@ -428,9 +428,9 @@ namespace SIMULTAN.Tests.DataMapping
             Assert.IsTrue(data.Data.TryGetValue("SheetA", out var sheetData));
 
             Assert.AreEqual(3, sheetData.Count);
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(0, 0), "Volume1");
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(2, 0), "ShoeBox");
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(0, 1), "Volume2");
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(0, 0), "Volume1");
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(0, 2), "ShoeBox");
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(1, 0), "Volume2");
 
             Assert.AreEqual(2, state.ModelsToRelease.Count);
         }
@@ -446,7 +446,7 @@ namespace SIMULTAN.Tests.DataMapping
             componentRule.MappingDirection = SimDataMappingDirection.Horizontal;
             componentRule.MaxMatches = int.MaxValue;
             componentRule.MaxDepth = int.MaxValue;
-            componentRule.OffsetConsecutive = new IntIndex2D(0, 1);
+            componentRule.OffsetConsecutive = new RowColumnIndex(1, 0);
             componentRule.Properties.Add(SimDataMappingComponentMappingProperties.Name);
             componentRule.Filter.Add(new SimDataMappingFilterComponent(SimDataMappingComponentFilterProperties.InstanceType, SimInstanceType.Entity3D));
 
@@ -454,8 +454,8 @@ namespace SIMULTAN.Tests.DataMapping
             volumeRule.MappingDirection = SimDataMappingDirection.Horizontal;
             volumeRule.MaxMatches = int.MaxValue;
             volumeRule.MaxDepth = int.MaxValue;
-            volumeRule.OffsetParent = new IntIndex2D(2, 0);
-            volumeRule.OffsetConsecutive = new IntIndex2D(0, 1);
+            volumeRule.OffsetParent = new RowColumnIndex(0, 2);
+            volumeRule.OffsetConsecutive = new RowColumnIndex(1, 0);
             volumeRule.Properties.Add(SimDataMappingVolumeMappingProperties.Name);
             volumeRule.Filter.Add(new SimDataMappingFilterVolume(SimDataMappingVolumeFilterProperties.Name, new Regex("Shoe.+")));
             componentRule.Rules.Add(volumeRule);
@@ -468,9 +468,9 @@ namespace SIMULTAN.Tests.DataMapping
             Assert.IsTrue(data.Data.TryGetValue("SheetA", out var sheetData));
 
             Assert.AreEqual(3, sheetData.Count);
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(0, 0), "Volume1");
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(2, 0), "ShoeBox");
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(0, 1), "Volume2");
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(0, 0), "Volume1");
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(0, 2), "ShoeBox");
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(1, 0), "Volume2");
 
             Assert.AreEqual(2, state.ModelsToRelease.Count);
         }
@@ -486,7 +486,7 @@ namespace SIMULTAN.Tests.DataMapping
             componentRule.MappingDirection = SimDataMappingDirection.Horizontal;
             componentRule.MaxMatches = int.MaxValue;
             componentRule.MaxDepth = int.MaxValue;
-            componentRule.OffsetConsecutive = new IntIndex2D(0, 1);
+            componentRule.OffsetConsecutive = new RowColumnIndex(1, 0);
             componentRule.Properties.Add(SimDataMappingComponentMappingProperties.Name);
             componentRule.Filter.Add(new SimDataMappingFilterComponent(SimDataMappingComponentFilterProperties.InstanceType, SimInstanceType.Entity3D));
 
@@ -494,8 +494,8 @@ namespace SIMULTAN.Tests.DataMapping
             volumeRule.MappingDirection = SimDataMappingDirection.Horizontal;
             volumeRule.MaxMatches = int.MaxValue;
             volumeRule.MaxDepth = int.MaxValue;
-            volumeRule.OffsetParent = new IntIndex2D(2, 0);
-            volumeRule.OffsetConsecutive = new IntIndex2D(0, 1);
+            volumeRule.OffsetParent = new RowColumnIndex(0, 2);
+            volumeRule.OffsetConsecutive = new RowColumnIndex(1, 0);
             volumeRule.Properties.Add(SimDataMappingVolumeMappingProperties.Name);
             volumeRule.Filter.Add(new SimDataMappingFilterVolume(SimDataMappingVolumeFilterProperties.FileKey, 0));
             componentRule.Rules.Add(volumeRule);
@@ -508,9 +508,9 @@ namespace SIMULTAN.Tests.DataMapping
             Assert.IsTrue(data.Data.TryGetValue("SheetA", out var sheetData));
 
             Assert.AreEqual(3, sheetData.Count);
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(0, 0), "Volume1");
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(2, 0), "ShoeBox");
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(0, 1), "Volume2");
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(0, 0), "Volume1");
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(0, 2), "ShoeBox");
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(1, 0), "Volume2");
 
             Assert.AreEqual(1, state.ModelsToRelease.Count); //Second model hasn't been loaded
         }
@@ -526,9 +526,10 @@ namespace SIMULTAN.Tests.DataMapping
                 MappingDirection = SimDataMappingDirection.Vertical,
                 MaxDepth = 3,
                 MaxMatches = 5,
-                OffsetConsecutive = new IntIndex2D(7, 8),
-                OffsetParent = new IntIndex2D(9, 10),
-                ReferencePoint = SimDataMappingReferencePoint.TopRight,
+                OffsetConsecutive = new RowColumnIndex(7, 8),
+                OffsetParent = new RowColumnIndex(9, 10),
+                ReferencePointParent = SimDataMappingReferencePoint.TopRight,
+                ReferencePointConsecutive = SimDataMappingReferencePoint.TopLeft,
             };
 
             volumeRule.Filter.Add(new SimDataMappingFilterVolume(SimDataMappingVolumeFilterProperties.FileKey, 33));
@@ -554,11 +555,12 @@ namespace SIMULTAN.Tests.DataMapping
             Assert.AreEqual(SimDataMappingDirection.Vertical, clonedRule.MappingDirection);
             Assert.AreEqual(3, clonedRule.MaxDepth);
             Assert.AreEqual(5, clonedRule.MaxMatches);
-            Assert.AreEqual(7, clonedRule.OffsetConsecutive.X);
-            Assert.AreEqual(8, clonedRule.OffsetConsecutive.Y);
-            Assert.AreEqual(9, clonedRule.OffsetParent.X);
-            Assert.AreEqual(10, clonedRule.OffsetParent.Y);
-            Assert.AreEqual(SimDataMappingReferencePoint.TopRight, clonedRule.ReferencePoint);
+            Assert.AreEqual(7, clonedRule.OffsetConsecutive.Row);
+            Assert.AreEqual(8, clonedRule.OffsetConsecutive.Column);
+            Assert.AreEqual(9, clonedRule.OffsetParent.Row);
+            Assert.AreEqual(10, clonedRule.OffsetParent.Column);
+            Assert.AreEqual(SimDataMappingReferencePoint.TopRight, clonedRule.ReferencePointParent);
+            Assert.AreEqual(SimDataMappingReferencePoint.TopLeft, clonedRule.ReferencePointConsecutive);
 
             Assert.IsTrue(clonedRule.Rules[0] is SimDataMappingRuleComponent);
             Assert.IsTrue(clonedRule.Rules[1] is SimDataMappingRuleInstance);

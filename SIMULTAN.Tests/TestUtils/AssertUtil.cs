@@ -1,13 +1,15 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using SIMULTAN.Data.SimMath;
 using SIMULTAN.Data.MultiValues;
 using SIMULTAN.Utils;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
-using System.Windows.Media.Media3D;
+
 
 namespace SIMULTAN.Tests.TestUtils
 {
@@ -29,10 +31,10 @@ namespace SIMULTAN.Tests.TestUtils
             if (double.IsNaN(expected) && double.IsNaN(actual))
                 return true;
 
-            return Math.Abs(expected - actual) <= tolerance;
+            return System.Math.Abs(expected - actual) <= tolerance;
         }
 
-        public static bool Compare(Point3D expected, Point3D actual)
+        public static bool Compare(SimPoint3D expected, SimPoint3D actual)
         {
             return Compare(expected.X, actual.X) && Compare(expected.Y, actual.Y) && Compare(expected.Z, actual.Z);
         }
@@ -243,6 +245,48 @@ namespace SIMULTAN.Tests.TestUtils
             }
         }
 
+        public static void ContainEqualValues(SimMultiValueBigTable expected, SimMultiValueBigTable actual)
+        {
+            Assert.AreEqual(expected.Count(0), actual.Count(0),
+                string.Format("Dimension 0 is not matching: Expected {0}, Actual {1}", expected.Count(0), actual.Count(0)));
+            Assert.AreEqual(expected.Count(1), actual.Count(1),
+                string.Format("Dimension 1 is not matching: Expected {0}, Actual {1}", expected.Count(1), actual.Count(1)));
+
+            for (int i = 0; i < expected.Count(0); ++i)
+            {
+                for (int j = 0; j < expected.Count(1); ++j)
+                {
+                    if (expected[i, j] == null && actual[i, j] == null) { }
+                    else if (expected[i, j] == null)
+                    {
+                        Assert.Fail("Values aren't matching at [{1}, {2}]. Expect is null, actual = {0}", actual[i, j], i, j);
+                    }
+                    else if (actual[i, j] == null)
+                    {
+                        Assert.Fail("Values aren't matching at [{1}, {2}]. Expect is null, actual = {0}", actual[i, j], i, j);
+                    }
+                    else if (actual[i, j].GetType() != expected[i, j].GetType())
+                    {
+                        Assert.Fail("Values aren't matching at [{0}, {1}]. Expect is {2}, actual is {3}", i, j,
+                            expected[i, j].GetType(), actual[i, j].GetType());
+                    }
+                    else //Same type
+                    {
+                        if (expected[i, j] is double d1 && actual[i, j] is double d2)
+                            AssertDoubleEqual(d1, d2);
+                        else if (expected[i, j] is int i1 && actual[i, j] is int i2)
+                            Assert.AreEqual(i1, i2);
+                        else if (expected[i, j] is bool b1 && actual[i, j] is bool b2)
+                            Assert.AreEqual(b1, b2);
+                        else if (expected[i, j] is string s1 && actual[i, j] is string s2)
+                            Assert.AreEqual(s1, s2);
+                        else
+                            Assert.Fail("Unknown error");
+                    }
+                }
+            }
+        }
+
         public static void ContainEqualValues(double[,] expected, double[,] actual)
         {
             Assert.AreEqual(expected.GetLength(0), actual.GetLength(0),
@@ -264,7 +308,7 @@ namespace SIMULTAN.Tests.TestUtils
             Assert.IsTrue(Compare(expected, actual, tolerance), string.Format("Expected {0} Actual: {1}", expected, actual));
         }
 
-        public static void AreEqual(Point3D expected, Point3D actual, double tolerance = 0.00001)
+        public static void AreEqual(SimPoint3D expected, SimPoint3D actual, double tolerance = 0.00001)
         {
             AssertDoubleEqual(expected.X, actual.X, tolerance);
             AssertDoubleEqual(expected.Y, actual.Y, tolerance);
@@ -304,56 +348,91 @@ namespace SIMULTAN.Tests.TestUtils
         {
             ContainEqualValuesDifferentStart(expected, actual, Compare);
         }
-        public static void ContainEqualValuesDifferentStart(IEnumerable<Point3D> expected, IEnumerable<Point3D> actual)
+        public static void ContainEqualValuesDifferentStart(IEnumerable<SimPoint3D> expected, IEnumerable<SimPoint3D> actual)
         {
             ContainEqualValuesDifferentStart(expected, actual, Compare);
         }
 
         public static void AreEqualMultiline(string expected, string actual)
         {
-            int count = Math.Min(expected.Length, actual.Length);
             int lineCount = 0;
-
-            for (int i = 0; i < count; ++i)
+            using (var expectedReader = new StringReader(expected))
             {
-                if (expected[i] != actual[i])
+                using (var actualReader = new StringReader(actual))
                 {
-                    int start = Math.Max(i - 10, 0);
-                    string expectedPrint =
-                        expected.Substring(start, Math.Min(10, expected.Length - start))
-                        + "--> " + expected.Substring(i, Math.Min(20, expected.Length - i));
-                    string actualPrint =
-                        actual.Substring(start, Math.Min(10, actual.Length - start))
-                        + "--> " + actual.Substring(i, Math.Min(20, actual.Length - i));
+                    string prevExpectedLine = null;
+                    string prevActualLine = null;
+                    var expectedLine = expectedReader.ReadLine();
+                    var actualLine = actualReader.ReadLine();
+                    while (expectedLine != null || actualLine != null)
+                    {
+                        lineCount++;
+                        if (expectedLine != null && actualLine != null &&
+                            !expectedLine.Equals(actualLine))
+                        {
+                            int count = System.Math.Min(expectedLine.Length, actualLine.Length);
+                            for (int i = 0; i < count; ++i)
+                            {
+                                if (expectedLine[i] != actualLine[i])
+                                {
+                                    int start = System.Math.Max(i - 10, 0);
+                                    var nextExpect = expectedReader.ReadLine();
+                                    var nextActual = actualReader.ReadLine();
+                                    string expectedPrint =
+                                        (prevExpectedLine == null ? "" : prevExpectedLine + "\n")
+                                        + expectedLine.Substring(start, System.Math.Min(10, expectedLine.Length - start))
+                                        + "--> " + expectedLine.Substring(i, System.Math.Min(20, expectedLine.Length - i))
+                                        + (nextExpect == null ? "" : "\n" + nextExpect);
+                                    string actualPrint =
+                                        (prevActualLine == null ? "" : prevActualLine + "\n")
+                                        + actualLine.Substring(start, System.Math.Min(10, actualLine.Length - start))
+                                        + "--> " + actualLine.Substring(i, System.Math.Min(20, actualLine.Length - i))
+                                        + (nextActual == null ? "" : "\n" + nextActual);
 
 
-                    Assert.Fail("Strings are not equal.\nMismatch in line {0} around\n--- Expected ---\n{1}\n\n--- Actual ---\n{2}",
-                        lineCount,
-                        expectedPrint,
-                        actualPrint
-                        );
+                                    Assert.Fail("Strings are not equal.\nMismatch in line {0} around\n--- Expected ---\n{1}\n\n--- Actual ---\n{2}",
+                                        lineCount,
+                                        expectedPrint,
+                                        actualPrint
+                                        );
+                                }
+                            }
+                            if (expectedLine.Length != actualLine.Length)
+                            {
+                                int start = System.Math.Max(0, count - 10);
+
+                                Assert.Fail("Line {4} length doesn't match. Expected={0}, Actual={1}\n--- Expected ---\n{2}\n\n--- Actual ---\n{3}",
+                                    expectedLine.Length, actualLine.Length,
+                                    expectedLine.Substring(start), actualLine.Substring(start), lineCount);
+                            }
+                        }
+                        else if (!(expectedLine == null && actualLine == null))
+                        {
+                            // one file is shorter
+                            if (expectedLine == null)
+                                Assert.Fail("Actual string is too long at line {0}", lineCount);
+                            if (actualLine == null)
+                                Assert.Fail("Actual string is too short at line {0}\n--- Expected ---\n{1}", lineCount, expectedLine);
+                        }
+
+                        prevExpectedLine = expectedLine;
+                        prevActualLine = actualLine;
+                        expectedLine = expectedReader.ReadLine();
+                        actualLine = actualReader.ReadLine();
+                    }
                 }
-                else if (expected[i] == '\n')
-                    lineCount++;
             }
 
-            if (expected.Length != actual.Length)
-            {
-                int start = Math.Max(0, count - 10);
 
-                Assert.Fail("String length doesn't match. Expected={0}, Actual={1}\n--- Expected ---\n{2}\n\n--- Actual ---\n{3}",
-                    expected.Length, actual.Length,
-                    expected.Substring(start), actual.Substring(start));
-            }
         }
-    
-    
+
+
         public static void AssertContains<T, U>(Dictionary<T, U> dictionary, T key, U expected)
         {
             if (dictionary.TryGetValue(key, out var actual))
             {
                 if (expected is double de && actual is double da)
-                        Assert.AreEqual(de, da, 0.001);
+                    Assert.AreEqual(de, da, 0.001);
                 else
                     Assert.AreEqual(expected, actual);
             }

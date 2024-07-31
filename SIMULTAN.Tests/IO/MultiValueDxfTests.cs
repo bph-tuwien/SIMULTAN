@@ -1,12 +1,13 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SIMULTAN.Data;
+using SIMULTAN.Data.SimMath;
 using SIMULTAN.Data.MultiValues;
 using SIMULTAN.Projects;
 using SIMULTAN.Serializer.DXF;
 using SIMULTAN.Serializer.MVDXF;
 using SIMULTAN.Tests.Properties;
-using SIMULTAN.Tests.Util;
 using SIMULTAN.Tests.TestUtils;
+using SIMULTAN.Tests.Util;
 using SIMULTAN.Utils;
 using System;
 using System.Collections.Generic;
@@ -16,8 +17,8 @@ using System.Reflection;
 using System.Resources;
 using System.Text;
 using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Media.Media3D;
+
+
 
 namespace SIMULTAN.Tests.IO
 {
@@ -239,7 +240,7 @@ namespace SIMULTAN.Tests.IO
                 });
 
             table.Id = new Data.SimId(guid, 99);
-            table.AdditionalInfo = "Additional Text\r\nWith New Line";
+            table.AdditionalInfo = "Additional Text" + Environment.NewLine + "With New Line";
 
             return table;
         }
@@ -311,7 +312,7 @@ namespace SIMULTAN.Tests.IO
             Assert.AreEqual(Guid.Empty, table.Id.GlobalId);
             Assert.AreEqual(1074741824, table.Id.LocalId);
 
-            Assert.AreEqual("Additional Text\r\nWith New Line", table.AdditionalInfo);
+            Assert.AreEqual("Additional Text" + Environment.NewLine + "With New Line", table.AdditionalInfo);
         }
 
         [TestMethod]
@@ -358,7 +359,7 @@ namespace SIMULTAN.Tests.IO
             Assert.AreEqual(Guid.Empty, table.Id.GlobalId);
             Assert.AreEqual(99, table.Id.LocalId);
 
-            Assert.AreEqual("Additional Text\r\nWith New Line", table.AdditionalInfo);
+            Assert.AreEqual("Additional Text" + Environment.NewLine + "With New Line", table.AdditionalInfo);
         }
 
         [TestMethod]
@@ -405,7 +406,7 @@ namespace SIMULTAN.Tests.IO
             Assert.AreEqual(Guid.Empty, table.Id.GlobalId);
             Assert.AreEqual(99, table.Id.LocalId);
 
-            Assert.AreEqual("Additional Text\r\nWith New Line", table.AdditionalInfo);
+            Assert.AreEqual("Additional Text" + Environment.NewLine + "With New Line", table.AdditionalInfo);
         }
 
         [TestMethod]
@@ -458,7 +459,7 @@ namespace SIMULTAN.Tests.IO
             Assert.AreEqual(Guid.Empty, table.Id.GlobalId);
             Assert.AreEqual(99, table.Id.LocalId);
 
-            Assert.AreEqual("Additional Text\r\nWith New Line", table.AdditionalInfo);
+            Assert.AreEqual("Additional Text" + Environment.NewLine + "With New Line", table.AdditionalInfo);
         }
 
         #endregion
@@ -599,12 +600,12 @@ namespace SIMULTAN.Tests.IO
             Guid guid = new Guid("98478ed1-d3f4-4873-95b6-412e5e23aac5");
 
             SimMultiValueFunction function = new SimMultiValueFunction("field name", "unit X", "unit Y", "unit Z",
-                new Rect(0, -1, 3, 2), new double[] { 0.2, 0.5, 0.7 }, new SimMultiValueFunctionGraph[]
+                new SimRect(0, -1, 3, 2), new double[] { 0.2, 0.5, 0.7 }, new SimMultiValueFunctionGraph[]
                 {
-                    new SimMultiValueFunctionGraph("graph 1", new Point3D[]
-                        { new Point3D(0,-1, 0.2), new Point3D(0, 1, 0.2), new Point3D(2, 0, 0.2) }),
-                    new SimMultiValueFunctionGraph("graph 2", new Point3D[]
-                        { new Point3D(0.5,-1, 0.7), new Point3D(0, -1, 0.7) })
+                    new SimMultiValueFunctionGraph("graph 1", new SimPoint3D[]
+                        { new SimPoint3D(0,-1, 0.2), new SimPoint3D(0, 1, 0.2), new SimPoint3D(2, 0, 0.2) }),
+                    new SimMultiValueFunctionGraph("graph 2", new SimPoint3D[]
+                        { new SimPoint3D(0.5,-1, 0.7), new SimPoint3D(0, -1, 0.7) })
                 });
             function.Id = new Data.SimId(guid, 103);
 
@@ -669,11 +670,11 @@ namespace SIMULTAN.Tests.IO
 
             var g = field.Graphs.First(x => x.Name == "graph 1");
             {
-                AssertUtil.ContainEqualValues(new Point3D[] { new Point3D(0, -1, 0.2), new Point3D(0, 1, 0.2), new Point3D(2, 0, 0.2) }, g.Points);
+                AssertUtil.ContainEqualValues(new SimPoint3D[] { new SimPoint3D(0, -1, 0.2), new SimPoint3D(0, 1, 0.2), new SimPoint3D(2, 0, 0.2) }, g.Points);
             }
             g = field.Graphs.First(x => x.Name == "graph 2");
             {
-                AssertUtil.ContainEqualValues(new Point3D[] { new Point3D(0.5, -1, 0.7), new Point3D(0, -1, 0.7) }, g.Points);
+                AssertUtil.ContainEqualValues(new SimPoint3D[] { new SimPoint3D(0.5, -1, 0.7), new SimPoint3D(0, -1, 0.7) }, g.Points);
             }
 
             Assert.IsTrue(field.CanInterpolate);
@@ -714,11 +715,11 @@ namespace SIMULTAN.Tests.IO
 
             var g = field.Graphs.First(x => x.Name == "graph 1");
             {
-                AssertUtil.ContainEqualValues(new Point3D[] { new Point3D(0, -1, 0.2), new Point3D(0, 1, 0.2), new Point3D(2, 0, 0.2) }, g.Points);
+                AssertUtil.ContainEqualValues(new SimPoint3D[] { new SimPoint3D(0, -1, 0.2), new SimPoint3D(0, 1, 0.2), new SimPoint3D(2, 0, 0.2) }, g.Points);
             }
             g = field.Graphs.First(x => x.Name == "graph 2");
             {
-                AssertUtil.ContainEqualValues(new Point3D[] { new Point3D(0.5, -1, 0.7), new Point3D(0, -1, 0.7) }, g.Points);
+                AssertUtil.ContainEqualValues(new SimPoint3D[] { new SimPoint3D(0.5, -1, 0.7), new SimPoint3D(0, -1, 0.7) }, g.Points);
             }
 
             Assert.IsTrue(field.CanInterpolate);

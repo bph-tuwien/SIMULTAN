@@ -1,5 +1,5 @@
 ﻿using System.Collections.Generic;
-using System.Windows.Media.Media3D;
+using SIMULTAN.Data.SimMath;
 
 namespace SIMULTAN.Data.Geometry
 {
@@ -12,7 +12,7 @@ namespace SIMULTAN.Data.Geometry
         /// <summary>
         /// The vertices of the imported model.
         /// </summary>
-        public List<Point3D> Vertices
+        public List<SimPoint3D> Vertices
         {
             get;
         }
@@ -20,7 +20,7 @@ namespace SIMULTAN.Data.Geometry
         /// <summary>
         /// The normals of the imported model.
         /// </summary>
-        public List<Vector3D> Normals
+        public List<SimVector3D> Normals
         {
             get;
         }
@@ -38,8 +38,8 @@ namespace SIMULTAN.Data.Geometry
         /// </summary>
         public SimMeshGeometryData()
         {
-            Vertices = new List<Point3D>();
-            Normals = new List<Vector3D>();
+            Vertices = new List<SimPoint3D>();
+            Normals = new List<SimVector3D>();
             Indices = new List<int>();
         }
     }

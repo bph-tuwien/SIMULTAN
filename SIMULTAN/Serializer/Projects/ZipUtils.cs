@@ -1,9 +1,11 @@
-﻿using SIMULTAN.Utils.Files;
+﻿using Assimp.Unmanaged;
+using SIMULTAN.Utils.Files;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Text;
 
 namespace SIMULTAN.Serializer.Projects
 {
@@ -90,22 +92,23 @@ namespace SIMULTAN.Serializer.Projects
             {
                 foreach (ZipArchiveEntry entry in zip.Entries)
                 {
-                    if (_paths.Any(x => entry.FullName.EndsWith(x)))
+                    var sanitizedFullName = FileSystemNavigation.SanitizePath(entry.FullName);
+                    if (_paths.Any(x => sanitizedFullName.EndsWith(x)))
                     {
                         // check if directory or file
-                        bool is_dir = (entry.FullName.EndsWith(Path.DirectorySeparatorChar.ToString()) || entry.FullName.EndsWith(Path.AltDirectorySeparatorChar.ToString()))
+                        bool is_dir = (sanitizedFullName.EndsWith(Path.DirectorySeparatorChar.ToString()) || sanitizedFullName.EndsWith(Path.AltDirectorySeparatorChar.ToString()))
                                         && string.IsNullOrEmpty(entry.Name);
 
                         if (is_dir)
                         {
-                            string target_dir_path = Path.Combine(_unpacked_archive_dir.FullName, entry.FullName);
+                            string target_dir_path = Path.Combine(_unpacked_archive_dir.FullName, sanitizedFullName);
                             if (!Directory.Exists(target_dir_path))
                                 Directory.CreateDirectory(target_dir_path);
                             dirs.Add(new DirectoryInfo(target_dir_path));
                         }
                         else
                         {
-                            string target_file_path = Path.Combine(_unpacked_archive_dir.FullName, entry.FullName);
+                            string target_file_path = Path.Combine(_unpacked_archive_dir.FullName, sanitizedFullName);
                             string target_folder_path = Path.GetDirectoryName(target_file_path);
 
                             //Create folder if not existing
@@ -136,6 +139,13 @@ namespace SIMULTAN.Serializer.Projects
         internal static IEnumerable<FileSystemInfo> PartialUnpackArchiveSkip(FileInfo _archive, HashSet<string> _extensions_to_skip, DirectoryInfo _unpacked_archive_dir)
         {
             // 1. extract the files
+
+
+            //var encoding = Encoding.GetEncoding("IBM437");
+
+            //using (FileStream stream = new FileStream(_archive.FullName, FileMode.OpenOrCreate))
+            //{
+            //    using (ZipArchive zip = new ZipArchive(stream, ZipArchiveMode.Update, false, encoding))
             using (ZipArchive zip = ZipFile.Open(_archive.FullName, ZipArchiveMode.Read))
             {
                 foreach (ZipArchiveEntry entry in zip.Entries)
@@ -158,6 +168,7 @@ namespace SIMULTAN.Serializer.Projects
                     }
                 }
             }
+            //}
 
             // 2. gather the extracted files
             //FileInfo[] extracted_files = _unpacked_archive_dir.GetFiles();

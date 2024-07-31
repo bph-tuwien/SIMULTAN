@@ -19,6 +19,8 @@ namespace SIMULTAN.Data.Components
     /// </summary>
     public abstract class SimInstancePlacement : INotifyPropertyChanged
     {
+        #region Properties
+
         /// <summary>
         /// Gets or sets the state in which this placement is in. 
         /// At the moment, this state does NOT automatically influence the <see cref="SimComponentInstance.State"/>
@@ -61,6 +63,30 @@ namespace SIMULTAN.Data.Components
             }
         }
         private SimComponentInstance instance = null;
+
+        /// <summary>
+        /// Stores the instance type of this placement. This property expects a single flag value, combinations of flags are not supported.
+        /// The instance type should describe which specific target is attached to the instance by this placement.
+        /// 
+        /// Note for SIMULTAN Developers: This property may only be set from the constructor and from the restore reference method!
+        /// </summary>
+        public SimInstanceType InstanceType { get; protected set; }
+
+        #endregion
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SimInstancePlacement"/> class
+        /// </summary>
+        /// <param name="instanceType">The instance type of this placement</param>
+        public SimInstancePlacement(SimInstanceType instanceType) 
+        {
+            int instTypeInt = (int)instanceType;
+            if (((instTypeInt - 1) & instTypeInt) != 0)
+                throw new ArgumentException(string.Format("More than one flag has been set in {0}", instanceType));
+
+            this.InstanceType = instanceType;
+        }
+
 
         /// <inheritdoc />
         public event PropertyChangedEventHandler PropertyChanged;

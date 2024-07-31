@@ -1,12 +1,13 @@
 ﻿using SIMULTAN.Data;
-using SIMULTAN.Data.Geometry;
 using SIMULTAN.Data.SimNetworks;
 using SIMULTAN.Serializer.DXF;
+using SIMULTAN.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
-using System.Windows.Media;
+using SIMULTAN.Data.SimMath;
+using System.Diagnostics;
 
 namespace SIMULTAN.Serializer.CODXF
 {
@@ -28,9 +29,17 @@ namespace SIMULTAN.Serializer.CODXF
                     new DXFSingleEntryParserElement<string>(ParamStructCommonSaveCode.ENTITY_NAME),
                     new DXFSingleEntryParserElement<long>(SimNetworkSaveCode.SOURCE_PORT),
                     new DXFSingleEntryParserElement<long>(SimNetworkSaveCode.TARGET_PORT),
-                    new DXFSingleEntryParserElement<Color>(SimNetworkSaveCode.COLOR),
+                    new DXFSingleEntryParserElement<SimColor>(SimNetworkSaveCode.COLOR),
                     new DXFSingleEntryParserElement<int>(SimNetworkSaveCode.GEOM_REP_FILE_KEY),
                     new DXFSingleEntryParserElement<ulong>(SimNetworkSaveCode.GEOM_REP_GEOM_ID),
+
+
+                    new DXFStructArrayEntryParserElement<(double, double)>((int)SimNetworkSaveCode.CONTROL_POINTS, ParseConnectorControlPoints,
+                        new DXFEntryParserElement[]
+                        {
+                            new DXFSingleEntryParserElement<double>(SimNetworkSaveCode.POSITION_X) ,
+                            new DXFSingleEntryParserElement<double>(SimNetworkSaveCode.POSITION_Y),
+                        }) { MinVersion = 26 },
                 });
 
         #endregion
@@ -47,9 +56,11 @@ namespace SIMULTAN.Serializer.CODXF
                     new DXFSingleEntryParserElement<long>(ParamStructCommonSaveCode.ENTITY_LOCAL_ID),
                     new DXFSingleEntryParserElement<string>(ParamStructCommonSaveCode.ENTITY_NAME),
                     new DXFSingleEntryParserElement<PortType>(SimNetworkSaveCode.PORT_TYPE),
-                    new DXFSingleEntryParserElement<Color>(SimNetworkSaveCode.COLOR),
+                    new DXFSingleEntryParserElement<SimColor>(SimNetworkSaveCode.COLOR),
                     new DXFSingleEntryParserElement<int>(SimNetworkSaveCode.GEOM_REP_FILE_KEY),
                     new DXFSingleEntryParserElement<ulong>(SimNetworkSaveCode.GEOM_REP_GEOM_ID),
+                    new DXFSingleEntryParserElement<double>(SimNetworkSaveCode.POSITION_X){MinVersion = 26},
+                    new DXFSingleEntryParserElement<double>(SimNetworkSaveCode.POSITION_Y){MinVersion = 26}
                 });
 
         #endregion
@@ -68,7 +79,9 @@ namespace SIMULTAN.Serializer.CODXF
                     new DXFSingleEntryParserElement<string>(ParamStructCommonSaveCode.ENTITY_NAME),
                     new DXFSingleEntryParserElement<double>(SimNetworkSaveCode.POSITION_X),
                     new DXFSingleEntryParserElement<double>(SimNetworkSaveCode.POSITION_Y),
-                    new DXFSingleEntryParserElement<Color>(SimNetworkSaveCode.COLOR),
+                    new DXFSingleEntryParserElement<double>(SimNetworkSaveCode.WIDTH),
+                    new DXFSingleEntryParserElement<double>(SimNetworkSaveCode.HEIGHT),
+                    new DXFSingleEntryParserElement<SimColor>(SimNetworkSaveCode.COLOR),
                     new DXFSingleEntryParserElement<int>(SimNetworkSaveCode.GEOM_REP_FILE_KEY),
                     new DXFSingleEntryParserElement<ulong>(SimNetworkSaveCode.GEOM_REP_GEOM_ID),
                     new DXFEntitySequenceEntryParserElement<SimNetworkPort>(SimNetworkSaveCode.PORTS,
@@ -77,6 +90,7 @@ namespace SIMULTAN.Serializer.CODXF
                             PortEntityElement
                         })
                 }));
+
 
         #endregion
 
@@ -94,7 +108,9 @@ namespace SIMULTAN.Serializer.CODXF
                     new DXFSingleEntryParserElement<string>(ParamStructCommonSaveCode.ENTITY_NAME),
                     new DXFSingleEntryParserElement<double>(SimNetworkSaveCode.POSITION_X),
                     new DXFSingleEntryParserElement<double>(SimNetworkSaveCode.POSITION_Y),
-                    new DXFSingleEntryParserElement<Color>(SimNetworkSaveCode.COLOR),
+                    new DXFSingleEntryParserElement<double>(SimNetworkSaveCode.WIDTH),
+                    new DXFSingleEntryParserElement<double>(SimNetworkSaveCode.HEIGHT),
+                    new DXFSingleEntryParserElement<SimColor>(SimNetworkSaveCode.COLOR),
                     new DXFSingleEntryParserElement<int>(SimNetworkSaveCode.GEOM_REP_FILE_KEY),
                     new DXFSingleEntryParserElement<ulong>(SimNetworkSaveCode.GEOM_REP_GEOM_ID),
                     new DXFSingleEntryParserElement<int>(SimNetworkSaveCode.GEOM_REP_INDEX),
@@ -145,7 +161,7 @@ namespace SIMULTAN.Serializer.CODXF
 
         internal static void WriteNetworkSection(IEnumerable<SimNetwork> networks, DXFStreamWriter writer)
         {
-            writer.StartSection(ParamStructTypes.SIMNETWORK_SECTION);
+            writer.StartSection(ParamStructTypes.SIMNETWORK_SECTION, networks.Count());
 
             foreach (var network in networks)
             {
@@ -218,8 +234,11 @@ namespace SIMULTAN.Serializer.CODXF
 
             writer.Write(SimNetworkSaveCode.POSITION_X, network.Position.X);
             writer.Write(SimNetworkSaveCode.POSITION_Y, network.Position.Y);
+            writer.Write(SimNetworkSaveCode.WIDTH, network.Width);
+            writer.Write(SimNetworkSaveCode.HEIGHT, network.Height);
+            writer.Write(SimNetworkSaveCode.COLOR, network.Color);
 
-            writer.Write(SimNetworkSaveCode.COLOR, network.Color.Color);
+
             //Geometry
             writer.Write(SimNetworkSaveCode.GEOM_REP_FILE_KEY, network.RepresentationReference.FileId);
             writer.Write(SimNetworkSaveCode.GEOM_REP_GEOM_ID, network.RepresentationReference.GeometryId);
@@ -243,6 +262,8 @@ namespace SIMULTAN.Serializer.CODXF
 
             var posX = data.Get<double>(SimNetworkSaveCode.POSITION_X, 0.0);
             var posY = data.Get<double>(SimNetworkSaveCode.POSITION_Y, 0.0);
+            var width = data.Get<double>(SimNetworkSaveCode.WIDTH, 200);
+            var height = data.Get<double>(SimNetworkSaveCode.HEIGHT, 100);
 
 
             var geomFile = data.Get<int>(SimNetworkSaveCode.GEOM_REP_FILE_KEY, -1);
@@ -255,19 +276,21 @@ namespace SIMULTAN.Serializer.CODXF
             var subNetworks = data.Get<SimNetwork[]>(SimNetworkSaveCode.SUBNETWORKS, new SimNetwork[0]);
             var connectors = data.Get<SimNetworkConnector[]>(SimNetworkSaveCode.CONNECTORS, new SimNetworkConnector[0]);
 
-            var color = data.Get<Color>(SimNetworkSaveCode.COLOR, Colors.Purple);
+            var color = data.Get<SimColor>(SimNetworkSaveCode.COLOR, SimColors.Purple);
 
 
             try
             {
                 return new SimNetwork(new SimId(info.GlobalId, id),
-                    name, new Point(posX, posY),
+                    name, new SimPoint(posX, posY),
                     ports.Where(x => x != null),
                     Enumerable.Concat<BaseSimNetworkElement>(subNetworks, blocks).Where(x => x != null),
-                    connectors.Where(x => x != null), new DerivedColor(color))
+                    connectors.Where(x => x != null), color)
                 {
                     RepresentationReference = new Data.GeometricReference(geomFile, geomId),
-                    IndexOfGeometricRepFile = geomRepFileIndex
+                    IndexOfGeometricRepFile = geomRepFileIndex,
+                    Width = width,
+                    Height = height,
                 };
             }
             catch (Exception e)
@@ -291,7 +314,11 @@ namespace SIMULTAN.Serializer.CODXF
             writer.Write(ParamStructCommonSaveCode.ENTITY_NAME, port.Name);
 
             writer.Write(SimNetworkSaveCode.PORT_TYPE, port.PortType);
-            writer.Write(SimNetworkSaveCode.COLOR, port.Color.Color);
+            writer.Write(SimNetworkSaveCode.COLOR, port.Color);
+
+            //Relative position to the position of the parent
+            writer.Write(SimNetworkSaveCode.POSITION_X, port.Position.X);
+            writer.Write(SimNetworkSaveCode.POSITION_Y, port.Position.Y);
 
             //Geometry
             writer.Write(SimNetworkSaveCode.GEOM_REP_FILE_KEY, port.RepresentationReference.FileId);
@@ -305,13 +332,22 @@ namespace SIMULTAN.Serializer.CODXF
             string name = data.Get<string>(ParamStructCommonSaveCode.ENTITY_NAME, string.Empty);
             var portType = data.Get<PortType>(SimNetworkSaveCode.PORT_TYPE, PortType.Input);
 
+
+            var posX = data.Get<double>(SimNetworkSaveCode.POSITION_X, double.NaN);
+            var posY = data.Get<double>(SimNetworkSaveCode.POSITION_Y, double.NaN);
+
             var geomFile = data.Get<int>(SimNetworkSaveCode.GEOM_REP_FILE_KEY, -1);
             var geomId = data.Get<ulong>(SimNetworkSaveCode.GEOM_REP_GEOM_ID, 0);
-            var color = data.Get<Color>(SimNetworkSaveCode.COLOR, Colors.Purple);
+            var color = data.Get<SimColor>(SimNetworkSaveCode.COLOR, SimColors.Purple);
 
+            SimPoint position = default(SimPoint);
+            if (!double.IsNaN(posX) && !double.IsNaN(posY))
+            {
+                position = new SimPoint(posX, posY);
+            }
             try
             {
-                return new SimNetworkPort(name, new SimId(info.GlobalId, id), portType, new DerivedColor(color))
+                return new SimNetworkPort(name, new SimId(info.GlobalId, id), portType, color, position)
                 {
                     RepresentationReference = new GeometricReference(geomFile, geomId)
                 };
@@ -337,11 +373,19 @@ namespace SIMULTAN.Serializer.CODXF
             writer.Write(ParamStructCommonSaveCode.ENTITY_NAME, connector.Name);
             writer.Write(SimNetworkSaveCode.SOURCE_PORT, connector.Source.Id.LocalId);
             writer.Write(SimNetworkSaveCode.TARGET_PORT, connector.Target.Id.LocalId);
-            writer.Write(SimNetworkSaveCode.COLOR, connector.Color.Color);
+            writer.Write(SimNetworkSaveCode.COLOR, connector.Color);
 
             //Geometry
             writer.Write(SimNetworkSaveCode.GEOM_REP_FILE_KEY, connector.RepresentationReference.FileId);
             writer.Write(SimNetworkSaveCode.GEOM_REP_GEOM_ID, connector.RepresentationReference.GeometryId);
+
+            //Control points
+            writer.WriteArray(SimNetworkSaveCode.CONTROL_POINTS, connector.Points,
+                 (entry, iwriter) =>
+                 {
+                     iwriter.Write(SimNetworkSaveCode.POSITION_X, entry.X);
+                     iwriter.Write(SimNetworkSaveCode.POSITION_Y, entry.Y);
+                 });
 
         }
 
@@ -354,13 +398,16 @@ namespace SIMULTAN.Serializer.CODXF
 
             var geomFile = data.Get<int>(SimNetworkSaveCode.GEOM_REP_FILE_KEY, -1);
             var geomId = data.Get<ulong>(SimNetworkSaveCode.GEOM_REP_GEOM_ID, 0);
-            var color = data.Get<Color>(SimNetworkSaveCode.COLOR, Colors.Purple);
+            var color = data.Get<SimColor>(SimNetworkSaveCode.COLOR, SimColors.Purple);
 
+            var controlPoints = data.Get<(double, double)[]>(SimNetworkSaveCode.CONTROL_POINTS, new (double, double)[0]);
+            var listPoints = new List<SimPoint>();
+            controlPoints.ForEach(p => listPoints.Add(new SimPoint(p.Item1, p.Item2)));
             try
             {
                 return new SimNetworkConnector(name, new SimId(info.GlobalId, id),
                     new SimId(info.GlobalId, sourcePort),
-                    new SimId(info.GlobalId, targetPart), new DerivedColor(color))
+                    new SimId(info.GlobalId, targetPart), color, listPoints)
                 {
                     RepresentationReference = new GeometricReference(geomFile, geomId)
                 };
@@ -372,6 +419,15 @@ namespace SIMULTAN.Serializer.CODXF
                     ));
                 return null;
             }
+        }
+
+        private static (double x, double y) ParseConnectorControlPoints(
+                DXFParserResultSet data, DXFParserInfo info)
+        {
+
+            var x = data.Get<double>(SimNetworkSaveCode.POSITION_X, 0);
+            var y = data.Get<double>(SimNetworkSaveCode.POSITION_Y, 0);
+            return (x, y);
         }
 
         #endregion
@@ -386,10 +442,12 @@ namespace SIMULTAN.Serializer.CODXF
             writer.Write(ParamStructCommonSaveCode.CLASS_NAME, typeof(SimNetworkBlock));
             writer.Write(ParamStructCommonSaveCode.ENTITY_LOCAL_ID, block.Id.LocalId);
             writer.Write(ParamStructCommonSaveCode.ENTITY_NAME, block.Name);
-            writer.Write(SimNetworkSaveCode.COLOR, block.Color.Color);
+            writer.Write(SimNetworkSaveCode.COLOR, block.Color);
 
             writer.Write(SimNetworkSaveCode.POSITION_X, block.Position.X);
             writer.Write(SimNetworkSaveCode.POSITION_Y, block.Position.Y);
+            writer.Write(SimNetworkSaveCode.WIDTH, block.Width);
+            writer.Write(SimNetworkSaveCode.HEIGHT, block.Height);
 
             writer.WriteEntitySequence(SimNetworkSaveCode.PORTS, block.Ports, WritePort);
 
@@ -408,6 +466,8 @@ namespace SIMULTAN.Serializer.CODXF
 
             var posX = data.Get<double>(SimNetworkSaveCode.POSITION_X, 0.0);
             var posY = data.Get<double>(SimNetworkSaveCode.POSITION_Y, 0.0);
+            var width = data.Get<double>(SimNetworkSaveCode.WIDTH, 200);
+            var height = data.Get<double>(SimNetworkSaveCode.HEIGHT, 100);
 
             var ports = data.Get<SimNetworkPort[]>(SimNetworkSaveCode.PORTS, new SimNetworkPort[0]);
 
@@ -415,13 +475,15 @@ namespace SIMULTAN.Serializer.CODXF
             var geomFile = data.Get<int>(SimNetworkSaveCode.GEOM_REP_FILE_KEY, -1);
             var geomId = data.Get<ulong>(SimNetworkSaveCode.GEOM_REP_GEOM_ID, 0);
 
-            var color = data.Get<Color>(SimNetworkSaveCode.COLOR, Colors.Purple);
+            var color = data.Get<SimColor>(SimNetworkSaveCode.COLOR, SimColors.Purple);
 
             try
             {
-                return new SimNetworkBlock(name, new Point(posX, posY), new SimId(info.GlobalId, id), ports.Where(x => x != null), new DerivedColor(color))
+                return new SimNetworkBlock(name, new SimPoint(posX, posY), new SimId(info.GlobalId, id), ports.Where(x => x != null), color)
                 {
-                    RepresentationReference = new GeometricReference(geomFile, geomId)
+                    RepresentationReference = new GeometricReference(geomFile, geomId),
+                    Width = width,
+                    Height = height,
                 };
             }
             catch (Exception e)

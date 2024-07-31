@@ -9,12 +9,12 @@ namespace SIMULTAN.Data.SimNetworks
     public partial class SimNetworkConnector
     {
         /// <summary>
-        /// Collection storing the connectors occuring in a network
+        /// Collection storing the connectors occurring in a network
         /// </summary>
         public class SimNetworkConnectorCollection : ObservableCollection<SimNetworkConnector>
         {
             /// <summary>
-            /// The parent network where the connectors occure
+            /// The parent network where the connectors occurs
             /// </summary>
             private SimNetwork parentNetwork;
 

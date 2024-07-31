@@ -1,20 +1,21 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SIMULTAN.Data.Components;
 using SIMULTAN.Data.FlowNetworks;
+using SIMULTAN.Data.SimMath;
 using SIMULTAN.Tests.TestUtils;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Windows;
-using System.Windows.Media.Media3D;
+
+
 
 namespace SIMULTAN.Tests.Instances
 {
     [TestClass]
     public class InstanceNetworkTests : BaseProjectTest
     {
-        private static readonly FileInfo instanceProject = new FileInfo(@".\InstanceTestsProject.simultan");
+        private static readonly FileInfo instanceProject = new FileInfo(@"./InstanceTestsProject.simultan");
 
         #region Network Instances
 
@@ -29,7 +30,7 @@ namespace SIMULTAN.Tests.Instances
 
             Assert.AreEqual(null, node.Content);
 
-            var instance = new SimComponentInstance(node, new Point(0, 0));
+            var instance = new SimComponentInstance(node);
             nodeComponent.Instances.Add(instance);
 
             Assert.AreEqual(instance, node.Content);
@@ -53,7 +54,7 @@ namespace SIMULTAN.Tests.Instances
             var network = projectData.NetworkManager.NetworkRecord.First(x => x.Name == "Network");
             var node = network.ContainedNodes.Values.First(x => x.Name == "Node 912f497f-2a73-4798-85d6-bdd365da555f: 2");
 
-            var instance = new SimComponentInstance(node, new Point(0, 0));
+            var instance = new SimComponentInstance(node);
             nodeComponent.Instances.Add(instance);
 
             Assert.AreEqual(instance, node.Content);
@@ -73,7 +74,7 @@ namespace SIMULTAN.Tests.Instances
             var network = projectData.NetworkManager.NetworkRecord.First(x => x.Name == "Network");
             var node = network.ContainedNodes.Values.First(x => x.Name == "Node 912f497f-2a73-4798-85d6-bdd365da555f: 2");
 
-            var instance = new SimComponentInstance(node, new Point(0, 0));
+            var instance = new SimComponentInstance(node);
             nodeComponent.Instances.Add(instance);
 
             Assert.AreEqual(instance, node.Content);
@@ -87,7 +88,7 @@ namespace SIMULTAN.Tests.Instances
 
         private WeakReference NodeInstanceMemoryLeak_Action(SimComponent nodeComponent, SimFlowNetworkNode node)
         {
-            var instance = new SimComponentInstance(node, new Point(0, 0));
+            var instance = new SimComponentInstance(node);
             WeakReference instRef = new WeakReference(instance);
 
             nodeComponent.Instances.Add(instance);
@@ -121,7 +122,7 @@ namespace SIMULTAN.Tests.Instances
 
         private WeakReference NodePlacementMemoryLeak_Action(SimComponent nodeComponent, SimFlowNetworkNode node)
         {
-            var instance = new SimComponentInstance(node, new Point(0, 0));
+            var instance = new SimComponentInstance(node);
 
             nodeComponent.Instances.Add(instance);
 
@@ -166,7 +167,7 @@ namespace SIMULTAN.Tests.Instances
 
             Assert.AreEqual(null, edge.Content);
 
-            var instance = new SimComponentInstance(edge, new Point(0, 0));
+            var instance = new SimComponentInstance(edge);
             nodeComponent.Instances.Add(instance);
 
             Assert.AreEqual(instance, edge.Content);
@@ -190,7 +191,7 @@ namespace SIMULTAN.Tests.Instances
             var network = projectData.NetworkManager.NetworkRecord.First(x => x.Name == "Network");
             var edge = network.ContainedEdges.Values.First(x => x.Name == "Edge 4");
 
-            var instance = new SimComponentInstance(edge, new Point(0, 0));
+            var instance = new SimComponentInstance(edge);
             nodeComponent.Instances.Add(instance);
 
             Assert.AreEqual(instance, edge.Content);
@@ -210,7 +211,7 @@ namespace SIMULTAN.Tests.Instances
             var network = projectData.NetworkManager.NetworkRecord.First(x => x.Name == "Network");
             var edge = network.ContainedEdges.Values.First(x => x.Name == "Edge 4");
 
-            var instance = new SimComponentInstance(edge, new Point(0, 0));
+            var instance = new SimComponentInstance(edge);
             nodeComponent.Instances.Add(instance);
 
             Assert.AreEqual(instance, edge.Content);
@@ -223,7 +224,7 @@ namespace SIMULTAN.Tests.Instances
 
         private WeakReference EdgeInstanceMemoryLeak_Action(SimComponent nodeComponent, SimFlowNetworkEdge edge)
         {
-            var instance = new SimComponentInstance(edge, new Point(0, 0));
+            var instance = new SimComponentInstance(edge);
             WeakReference instRef = new WeakReference(instance);
 
             nodeComponent.Instances.Add(instance);
@@ -272,7 +273,7 @@ namespace SIMULTAN.Tests.Instances
             var network = projectData.NetworkManager.NetworkRecord.First(x => x.Name == "Network");
             var edge = network.ContainedEdges.Values.First(x => x.Name == "Edge 4");
 
-            var instance = new SimComponentInstance(edge, new Point(0, 0));
+            var instance = new SimComponentInstance(edge);
 
             nodeComponent.Instances.Add(instance);
 
@@ -303,7 +304,7 @@ namespace SIMULTAN.Tests.Instances
             var network = projectData.NetworkManager.NetworkRecord.First(x => x.Name == "Network");
             var node = network.ContainedNodes.Values.First(x => x.Name == "Node 912f497f-2a73-4798-85d6-bdd365da555f: 2");
 
-            var instance = new SimComponentInstance(node, new Point(0, 0));
+            var instance = new SimComponentInstance(node);
             nodeComponent.Instances.Add(instance);
 
             var cumulativeComponent = nodeComponent.Components.FirstOrDefault(x => x.Component != null && x.Component.Name == "Cumulative")?.Component;
@@ -335,7 +336,7 @@ namespace SIMULTAN.Tests.Instances
             var network = projectData.NetworkManager.NetworkRecord.First(x => x.Name == "Network");
             var node = network.ContainedEdges.Values.First(x => x.Name == "Edge 4");
 
-            var instance = new SimComponentInstance(node, new Point(0, 0));
+            var instance = new SimComponentInstance(node);
             nodeComponent.Instances.Add(instance);
 
             var cumulativeComponent = nodeComponent.Components.FirstOrDefault(x => x.Component != null && x.Component.Name == "Cumulative")?.Component;
@@ -367,7 +368,7 @@ namespace SIMULTAN.Tests.Instances
             var network = projectData.NetworkManager.NetworkRecord.First(x => x.Name == "Network");
             var node = network.ContainedNodes.Values.First(x => x.Name == "Node 912f497f-2a73-4798-85d6-bdd365da555f: 2");
 
-            var instance = new SimComponentInstance(node, new Point(0, 0));
+            var instance = new SimComponentInstance(node);
             nodeComponent.Instances.Add(instance);
 
             var cumulativeComponent = nodeComponent.Components.FirstOrDefault(x => x.Component != null && x.Component.Name == "Cumulative")?.Component;
@@ -395,7 +396,7 @@ namespace SIMULTAN.Tests.Instances
             AssertUtil.AssertDoubleEqual(1.0, cumulativeParameters[ReservedParameterKeys.RP_VOLUME_MAX_TOTAL].Value);
             AssertUtil.AssertDoubleEqual(1.0, cumulativeParameters[ReservedParameterKeys.RP_COUNT].Value);
 
-            instance.InstanceSize = new SimInstanceSize(new Vector3D(1.0, 2.0, 3.0), new Vector3D(4.0, 5.0, 6.0));
+            instance.InstanceSize = new SimInstanceSize(new SimVector3D(1.0, 2.0, 3.0), new SimVector3D(4.0, 5.0, 6.0));
 
             AssertUtil.AssertDoubleEqual(3.0, cumulativeParameters[ReservedParameterKeys.RP_LENGTH_MIN_TOTAL].Value);
             AssertUtil.AssertDoubleEqual(6.0, cumulativeParameters[ReservedParameterKeys.RP_LENGTH_MAX_TOTAL].Value);
@@ -415,7 +416,7 @@ namespace SIMULTAN.Tests.Instances
             var network = projectData.NetworkManager.NetworkRecord.First(x => x.Name == "Network");
             var node = network.ContainedNodes.Values.First(x => x.Name == "Node 912f497f-2a73-4798-85d6-bdd365da555f: 2");
 
-            var instance = new SimComponentInstance(node, new Point(0, 0));
+            var instance = new SimComponentInstance(node);
             nodeComponent.Instances.Add(instance);
 
             var cumulativeComponent = nodeComponent.Components.FirstOrDefault(x => x.Component != null && x.Component.Name == "Cumulative")?.Component;
@@ -443,7 +444,7 @@ namespace SIMULTAN.Tests.Instances
             AssertUtil.AssertDoubleEqual(121.0, cumulativeParameters[ReservedParameterKeys.RP_VOLUME_MAX_TOTAL].Value);
             AssertUtil.AssertDoubleEqual(2.0, cumulativeParameters[ReservedParameterKeys.RP_COUNT].Value);
 
-            instance.InstanceSize = new SimInstanceSize(new Vector3D(1.0, 2.0, 3.0), new Vector3D(4.0, 5.0, 6.0));
+            instance.InstanceSize = new SimInstanceSize(new SimVector3D(1.0, 2.0, 3.0), new SimVector3D(4.0, 5.0, 6.0));
 
             AssertUtil.AssertDoubleEqual(6.0, cumulativeParameters[ReservedParameterKeys.RP_LENGTH_MIN_TOTAL].Value);
             AssertUtil.AssertDoubleEqual(12.0, cumulativeParameters[ReservedParameterKeys.RP_LENGTH_MAX_TOTAL].Value);

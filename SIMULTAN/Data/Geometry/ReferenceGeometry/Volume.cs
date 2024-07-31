@@ -30,7 +30,7 @@ namespace SIMULTAN.Data.Geometry
                 if (isConsistentOriented != value)
                 {
                     isConsistentOriented = value;
-                    OnPropertyChanged(nameof(IsConsistentOriented));
+                    NotifyPropertyChanged(nameof(IsConsistentOriented));
                 }
             }
         }
@@ -110,19 +110,6 @@ namespace SIMULTAN.Data.Geometry
                 foreach (var f in this.Faces)
                     f.MakeConsistent();
 
-                for (int i = 0; i < Faces.Count; ++i)
-                {
-                    var face = Faces[i];
-
-                    //Check if any other parent is part of this volume
-                    if (face.Face.Boundary.Faces.Count(f => f.PFaces.Any(pf => pf.Volume == this)) >= 2)
-                    {
-                        face.Face.PFaces.Remove(face);
-                        Faces.RemoveAt(i);
-                        i--;
-                    }
-                }
-
                 //Attach events
                 foreach (var f in this.Faces)
                 {
@@ -198,6 +185,27 @@ namespace SIMULTAN.Data.Geometry
             }
 
             return pf;
+        }
+
+        /// <summary>
+        /// Removes a face from the volume if found.
+        /// </summary>
+        /// <param name="face">The face to remove.</param>
+        /// <returns>True if the face was removed, false if it could not be found.</returns>
+        public bool RemoveFace(Face face)
+        {
+            var existingPF = Faces.FirstOrDefault(x => x.Face == face);
+            if (existingPF == null) // face could not be found
+                return false;
+
+            Faces.Remove(existingPF);
+
+            if (ModelGeometry.HandleConsistency)
+            {
+                MakeConsistent(true, true);
+            }
+
+            return true;
         }
     }
 }

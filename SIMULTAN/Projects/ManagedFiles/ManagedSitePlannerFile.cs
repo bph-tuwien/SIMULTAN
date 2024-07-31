@@ -1,6 +1,9 @@
 ﻿using SIMULTAN.Data.Assets;
 using SIMULTAN.Data.SitePlanner;
+using SIMULTAN.Serializer.GMDXF;
 using SIMULTAN.Serializer.Projects;
+using SIMULTAN.Serializer.SPDXF;
+using System;
 using System.Collections.Specialized;
 using System.IO;
 
@@ -35,7 +38,8 @@ namespace SIMULTAN.Projects.ManagedFiles
         /// <inheritdoc />
         public override void Save()
         {
-            ProjectIO.SaveSitePlannerFile(this.File, ProjectData.SitePlannerManager, ProjectData);
+            SiteplannerDxfIO.Write(this.File, ProjectData.SitePlannerManager.GetSitePlannerProjectByFile(this.File), ProjectData);
+            this.File.LastWriteTime = DateTime.Now;
             this.OnFileUpToDateChanged(true);
         }
 

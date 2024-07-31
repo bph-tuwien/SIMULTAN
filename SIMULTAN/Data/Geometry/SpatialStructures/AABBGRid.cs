@@ -1,10 +1,10 @@
-﻿using SIMULTAN.Utils;
+﻿using SIMULTAN.Data.SimMath;
+using SIMULTAN.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Windows.Media.Media3D;
 
 namespace SIMULTAN.Data.Geometry
 {
@@ -21,15 +21,15 @@ namespace SIMULTAN.Data.Geometry
         /// <summary>
         /// The size of each cell in the grid. Might defer from the desired size due to equalization reasons
         /// </summary>
-		public Vector3D ActualCellSize { get; private set; }
+		public SimVector3D ActualCellSize { get; private set; }
         /// <summary>
         /// Minimum position of the grid
         /// </summary>
-		public Point3D Min { get; private set; }
+		public SimPoint3D Min { get; private set; }
         /// <summary>
         /// Maximum position in the grid
         /// </summary>
-		public Point3D Max { get; private set; }
+		public SimPoint3D Max { get; private set; }
 
         private double Eps { get { return 0.01; } }
 
@@ -43,7 +43,7 @@ namespace SIMULTAN.Data.Geometry
         /// cell sizes than expected
         /// </param>
         /// <param name="maxCellSize">The maximum number of cells along each axis. Prevents memory issues with very large models.</param>
-		public AABBGrid(Point3D min, Point3D max, Vector3D desiredCellSize, int maxCellSize = 1000)
+		public AABBGrid(SimPoint3D min, SimPoint3D max, SimVector3D desiredCellSize, int maxCellSize = 1000)
         {
             //Calculate size of grid
             Min = min;
@@ -53,7 +53,7 @@ namespace SIMULTAN.Data.Geometry
             int numCellsY = Math.Min(maxCellSize, Math.Max(1, (int)Math.Ceiling((Max.Y - Min.Y) / desiredCellSize.Y)));
             int numCellsZ = Math.Min(maxCellSize, Math.Max(1, (int)Math.Ceiling((Max.Z - Min.Z) / desiredCellSize.Z)));
 
-            this.ActualCellSize = new Vector3D(
+            this.ActualCellSize = new SimVector3D(
                 Math.Max((Max.X - Min.X) / numCellsX, 1),
                 Math.Max((Max.Y - Min.Y) / numCellsY, 1),
                 Math.Max((Max.Z - Min.Z) / numCellsZ, 1)
@@ -62,7 +62,7 @@ namespace SIMULTAN.Data.Geometry
             this.Cells = new List<AABB>[numCellsX, numCellsY, numCellsZ];
         }
 
-        private (IntIndex3D from, IntIndex3D to) CellFromValues(Point3D min, Point3D max)
+        private (IntIndex3D from, IntIndex3D to) CellFromValues(SimPoint3D min, SimPoint3D max)
         {
             var x = CellFromValues(min.X, max.X, this.Min.X, Cells.GetLength(0), this.ActualCellSize.X);
             var y = CellFromValues(min.Y, max.Y, this.Min.Y, Cells.GetLength(1), this.ActualCellSize.Y);
@@ -124,7 +124,7 @@ namespace SIMULTAN.Data.Geometry
         /// </summary>
         /// <param name="position">The position</param>
         /// <param name="action">The action</param>
-		public void ForCell(Point3D position, Action<IntIndex3D> action)
+		public void ForCell(SimPoint3D position, Action<IntIndex3D> action)
         {
             (var from, var to) = CellFromValues(position, position);
             action(new IntIndex3D(from.X, from.Y, from.Z));

@@ -3,24 +3,24 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Windows.Media.Media3D;
+using SIMULTAN.Data.SimMath;
 
 namespace SIMULTAN.Utils
 {
     /// <summary>
-    /// Common extensions or static methods for quaternions
+    /// Common extensions or static methods for SimQuaternions
     /// </summary>
-    public static class QuaternionExtensions
+    public static class SimQuaternionExtensions
     {
         /// <summary>
-        /// Creates a quaternion from Euler angles (in deg)
-        /// https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
+        /// Creates a SimQuaternion from Euler angles (in deg)
+        /// https://en.wikipedia.org/wiki/Conversion_between_SimQuaternions_and_Euler_angles
         /// </summary>
         /// <param name="yaw">Rotation around z-axis</param>
         /// <param name="pitch">Rotation around y-axis</param>
         /// <param name="roll">Rotation around x-axis</param>
-        /// <returns>Quaternion from Euler angles</returns>
-        public static Quaternion CreateFromYawPitchRoll(double yaw, double pitch, double roll)
+        /// <returns>SimQuaternion from Euler angles</returns>
+        public static SimQuaternion CreateFromYawPitchRoll(double yaw, double pitch, double roll)
         {
             double fromDeg = Math.PI / 180.0;
             yaw = yaw * fromDeg;
@@ -35,7 +35,7 @@ namespace SIMULTAN.Utils
             double cr = Math.Cos(roll * 0.5);
             double sr = Math.Sin(roll * 0.5);
 
-            Quaternion q = new Quaternion();
+            SimQuaternion q = new SimQuaternion();
             q.W = cr * cp * cy + sr * sp * sy;
             q.X = sr * cp * cy - cr * sp * sy;
             q.Y = cr * sp * cy + sr * cp * sy;
@@ -45,25 +45,25 @@ namespace SIMULTAN.Utils
         }
 
         /// <summary>
-        /// Creates a quaternion from Euler angles (in deg), where x is roll, y is pitch and z is yaw
+        /// Creates a SimQuaternion from Euler angles (in deg), where x is roll, y is pitch and z is yaw
         /// </summary>
         /// <param name="eulerAngles">Euler angles (in deg)</param>
-        /// <returns>Quaternion from Euler angles</returns>
-        public static Quaternion CreateFromYawPitchRoll(Vector3D eulerAngles)
+        /// <returns>SimQuaternion from Euler angles</returns>
+        public static SimQuaternion CreateFromYawPitchRoll(SimVector3D eulerAngles)
         {
             return CreateFromYawPitchRoll(eulerAngles.Z, eulerAngles.Y, eulerAngles.X);
         }
 
         /// <summary>
-        /// Converts this quaternion to Euler angles (in deg)
-        /// https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
+        /// Converts this SimQuaternion to Euler angles (in deg)
+        /// https://en.wikipedia.org/wiki/Conversion_between_SimQuaternions_and_Euler_angles
         /// </summary>
         /// <param name="q"></param>
         /// <returns></returns>
-        public static Vector3D ToEulerAngles(this Quaternion q)
+        public static SimVector3D ToEulerAngles(this SimQuaternion q)
         {
             double toDeg = 180.0 / Math.PI;
-            Vector3D angles = new Vector3D();
+            SimVector3D angles = new SimVector3D();
 
             // roll (x-axis rotation)
             double sinr_cosp = 2 * (q.W * q.X + q.Y * q.Z);

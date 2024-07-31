@@ -1,4 +1,5 @@
 ﻿using SIMULTAN.Data.FlowNetworks;
+using SIMULTAN.Data.SimMath;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -87,7 +88,7 @@ namespace SIMULTAN.Data.Components
         /// <param name="_name">the name of the new sub-network</param>
         /// <param name="_description">the description of the new sub-network</param>
         /// <returns>the id of the newly created netowrk, or -1 if the operation was unsuccessful</returns>
-        public static long AddNetworkToNetwork(this SimNetworkFactory _factory, SimFlowNetwork _parent, Point _pos, string _name, string _description)
+        public static long AddNetworkToNetwork(this SimNetworkFactory _factory, SimFlowNetwork _parent, SimPoint _pos, string _name, string _description)
         {
             if (_parent == null) return -1;
 

@@ -1,4 +1,4 @@
-﻿using SIMULTAN.Data.Assets.Links;
+﻿using SIMULTAN.Data.Assets;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,9 +9,9 @@ namespace SIMULTAN.Tests.TestUtils
 {
     internal class DummyMachineHashGenerator : IMachineHashGenerator
     {
-        public int GetMachineHash()
+        public string GetMachineHash()
         {
-            return 11223344;
+            return "11223344";
         }
     }
 }

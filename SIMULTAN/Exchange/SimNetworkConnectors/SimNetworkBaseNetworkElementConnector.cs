@@ -38,5 +38,6 @@ namespace SIMULTAN.Exchange.SimNetworkConnectors
         internal override void OnTopologyChanged()
         {
         }
+
     }
 }

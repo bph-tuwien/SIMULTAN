@@ -1,14 +1,12 @@
 ﻿using SIMULTAN.Exceptions;
+using SIMULTAN.Utils;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Controls.Primitives;
 using static SIMULTAN.Data.Taxonomy.SimTaxonomyEntryReference;
 
 namespace SIMULTAN.Data.Taxonomy
@@ -17,12 +15,23 @@ namespace SIMULTAN.Data.Taxonomy
     /// <summary>
     /// Data class for a Taxonomy entry
     /// </summary>
-    [DebuggerDisplay("[TaxonomyEntry] {Name}, {Key}")]
-    public class SimTaxonomyEntry : SimNamedObject<SimTaxonomyCollection>, IComparable<SimTaxonomyEntry>, IComparable
+    [DebuggerDisplay("[TaxonomyEntry] {Key}")]
+    public class SimTaxonomyEntry : SimObjectNew<SimTaxonomyCollection>, ISimTaxonomyElement, IComparable<SimTaxonomyEntry>, IComparable
     {
-        //~SimTaxonomyEntry() { Console.WriteLine("~SimTaxonomyEntry"); }
+        #region Fields
 
         private bool isDeleted = false;
+
+        private ConditionalWeakTable<SimTaxonomyEntryReference, TaxonomyReferenceDeleter> references;
+
+        #endregion
+
+        #region Properties
+
+        /// <summary>
+        /// Localization of the taxonomy entry
+        /// </summary>
+        public SimTaxonomyLocalization Localization { get; }
 
         /// <summary>
         /// Key of the taxonomy entry.
@@ -35,6 +44,9 @@ namespace SIMULTAN.Data.Taxonomy
             get => key;
             set
             {
+                if (string.IsNullOrEmpty(value))
+                    throw new ArgumentException("Taxonomy entry key cannot be null or empty");
+
                 if (key != value)
                 {
                     NotifyWriteAccess();
@@ -103,6 +115,17 @@ namespace SIMULTAN.Data.Taxonomy
                     if (taxonomy != null)
                     {
                         taxonomy.RegisterEntry(this);
+                        // add missing languages
+                        taxonomy.Languages.ForEach(x => Localization.AddLanguage(x));
+                        // add languages not in taxonomy
+                        foreach (var lang in this.Localization.Entries.Keys.ToList())
+                        {
+                            if (!taxonomy.Languages.Contains(lang))
+                            {
+                                throw new NotSupportedException(string.Format("Entry contains language {0} that is not supported by the Taxonomy",
+                                    lang.DisplayName));
+                            }
+                        }
                         if (taxonomy.Factory != null)
                         {
                             AddToFactory(taxonomy.Factory);
@@ -117,8 +140,72 @@ namespace SIMULTAN.Data.Taxonomy
                 }
             }
         }
+        private SimTaxonomy taxonomy;
 
-        private ConditionalWeakTable<SimTaxonomyEntryReference, TaxonomyReferenceDeleter> references;
+        #endregion
+
+        #region .CTOR
+
+        /// <summary>
+        /// Creates a new Taxonomy entry with a default translation
+        /// </summary>
+        /// <param name="id">Id of the entry</param>
+        /// <param name="key">The key of the taxonomy entry, cannot be null or empty</param>
+        /// <param name="name">The name of the taxonomy entry</param>
+        /// <param name="description">The description of the taxonomy entry</param>
+        /// <param name="culture">The culture to set the name and description for, used the InvariantCulture if null</param>
+        public SimTaxonomyEntry(SimId id, string key, string name, string description = "", CultureInfo culture = null) : base(id)
+        {
+            if (String.IsNullOrEmpty(key))
+                throw new ArgumentException("Taxonomy entry key cannot be null or empty");
+
+            this.Id = id;
+            this.Key = key;
+
+            this.Children = new SimChildTaxonomyEntryCollection(this);
+            this.references = new ConditionalWeakTable<SimTaxonomyEntryReference, TaxonomyReferenceDeleter>();
+            this.Localization = new SimTaxonomyLocalization(this);
+
+            if (name != null && description != null)
+            {
+                culture = culture ?? CultureInfo.InvariantCulture;
+                Localization.AddLanguage(culture);
+                Localization.SetLanguage(new SimTaxonomyLocalizationEntry(culture, name, description));
+            }
+        }
+
+        /// <summary>
+        /// Creates a new Taxonomy entry with a default translation
+        /// </summary>
+        /// <param name="key">The key of the taxonomy entry, cannot be null or empty</param>
+        /// <param name="name">The name of the taxonomy entry</param>
+        /// <param name="description">The description of the taxonomy entry</param>
+        /// <param name="culture">The culture to set the name and description for, used the InvariantCulture if null</param>
+        public SimTaxonomyEntry(string key, string name, string description = "", CultureInfo culture = null)
+            : this(SimId.Empty, key, name, description, culture) { }
+
+        /// <summary>
+        /// Creates a new Taxonomy entry with the given id
+        /// </summary>
+        /// <param name="id">The id</param>
+        /// <param name="key">The key of the taxonomy entry, cannot be null or empty</param>
+        public SimTaxonomyEntry(SimId id, string key) : this(id, key, null, null, null) { }
+
+        /// <summary>
+        /// Creates a new Taxonomy entry
+        /// </summary>
+        /// <param name="key">The key of the taxonomy entry, cannot be null or empty</param>
+        public SimTaxonomyEntry(string key) : this(SimId.Empty, key) { }
+
+        #endregion
+
+        #region Methods
+
+        /// <inheritdoc />
+        public void NotifyLocalizationChanged()
+        {
+            Factory?.NotifyTaxonomyEntryPropertyChanged(this, nameof(Localization));
+        }
 
         private void AddToFactory(SimTaxonomyCollection factory)
         {
@@ -129,13 +216,6 @@ namespace SIMULTAN.Data.Taxonomy
                 if (Id == SimId.Empty)
                 {
                     Id = factory.ProjectData.IdGenerator.NextId(this, factory.CalledFromLocation);
-                }
-                // was in a factory before because it has the same GlobalID, so set the id location again
-                // (was moved inside the taxonomy)
-                else if (factory.CalledFromLocation.GlobalID != Guid.Empty &&
-                    Id.GlobalId == factory.CalledFromLocation.GlobalID)
-                {
-                    Id = new SimId(factory.CalledFromLocation, Id.LocalId);
                 }
                 else
                 {
@@ -175,12 +255,13 @@ namespace SIMULTAN.Data.Taxonomy
         private void RemoveFromFactory(SimTaxonomyCollection factory)
         {
             factory.ProjectData.IdGenerator.Remove(this);
-            // remove location from SimId but keey global/local Ids
+            // remove location from SimId but key global/local Ids
             Id = new SimId(Id.GlobalId, Id.LocalId);
-            Factory = null;
 
             if (!factory.IsMergeInProgress)
                 OnIsBeingDeleted();
+
+            Factory = null;
         }
 
         /// <summary>
@@ -191,65 +272,18 @@ namespace SIMULTAN.Data.Taxonomy
             if (!isDeleted)
             {
                 isDeleted = true;
-                var values = references.GetType().GetProperty("Values", BindingFlags.Instance | BindingFlags.NonPublic);
-                var actual = (ICollection<TaxonomyReferenceDeleter>)values.GetValue(references);
-                foreach (var del in actual)
+                if (!this.Factory.IsClosing)
                 {
-                    del(this);
+                    foreach (var entry in references)
+                    {
+                        entry.Value(this);
+                    }
                 }
                 foreach (var child in Children)
                 {
                     child.OnIsBeingDeleted();
                 }
             }
-        }
-
-        private SimTaxonomy taxonomy;
-
-        /// <summary>
-        /// Creates a new Taxonomy entry
-        /// </summary>
-        /// <param name="key">The key of the taxonomy entry, cannot be null or empty</param>
-        /// <param name="name">The name of the taxonomy entry</param>
-        /// <param name="description">The description of the taxonomy entry</param>
-        public SimTaxonomyEntry(string key, string name, string description) : this(key, name)
-        {
-            Description = description ?? "";
-        }
-
-        /// <summary>
-        /// Creates a new Taxonomy entry
-        /// </summary>
-        /// <param name="key">The key of the taxonomy entry, cannot be null or empty</param>
-        /// <param name="name">The name of the taxonomy entry</param>
-        public SimTaxonomyEntry(string key, string name) : this()
-        {
-            if (String.IsNullOrEmpty(key))
-                throw new ArgumentException("Taxonomy entry key cannot be null or empty");
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-
-            Key = key;
-            Name = name;
-        }
-
-        /// <summary>
-        /// Creates a new Taxonomy entry
-        /// </summary>
-        public SimTaxonomyEntry() : base()
-        {
-            Children = new SimChildTaxonomyEntryCollection(this);
-            references = new ConditionalWeakTable<SimTaxonomyEntryReference, TaxonomyReferenceDeleter>();
-        }
-
-        /// <summary>
-        /// Creates a new Taxonomy entry with the given id
-        /// </summary>
-        /// <param name="id">The id</param>
-        public SimTaxonomyEntry(SimId id) : base(id)
-        {
-            Children = new SimChildTaxonomyEntryCollection(this);
-            references = new ConditionalWeakTable<SimTaxonomyEntryReference, TaxonomyReferenceDeleter>();
         }
 
         /// <summary>
@@ -313,9 +347,13 @@ namespace SIMULTAN.Data.Taxonomy
         }
 
         /// <inheritdoc/>
+        [Obsolete("Use compare manually using localized names")]
         public int CompareTo(SimTaxonomyEntry other)
         {
-            return String.Compare(Name, other.Name);
+            if (Debugger.IsAttached)
+                throw new NotImplementedException("Should not be used anymore, replace with localized compare");
+
+            return 0;
         }
 
         /// <inheritdoc/>
@@ -336,13 +374,30 @@ namespace SIMULTAN.Data.Taxonomy
         }
 
         /// <inheritdoc/>
+        [Obsolete("Use localized comparison")]
         public int CompareTo(object obj)
         {
+            if (Debugger.IsAttached)
+                throw new NotImplementedException("Should not be used anymore, replace with localized compare");
+
             if (obj is SimTaxonomyEntry entry)
             {
                 return CompareTo(entry);
             }
             return 1;
+        }
+
+        #endregion
+
+        /// <summary>
+        /// Returns true when the entry key as well as the taxonomy key of this entry match the parameters
+        /// </summary>
+        /// <param name="taxonomyKey">The key of the taxonomy</param>
+        /// <param name="entryKey">The key of the entry</param>
+        /// <returns>Returns true when the entry key as well as the taxonomy key of this entry match the parameters, otherwise False</returns>
+        public bool Matches(string taxonomyKey, string entryKey)
+        {
+            return this.Key == entryKey && this.Taxonomy != null && this.Taxonomy.Key == taxonomyKey;
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using MathNet.Numerics.LinearAlgebra;
+using SIMULTAN.Data.SimMath;
 using SIMULTAN.Utils;
 using System;
 using System.Collections.Generic;
@@ -6,7 +7,6 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Windows.Media.Media3D;
 
 namespace SIMULTAN.Data.Geometry
 {
@@ -48,14 +48,15 @@ namespace SIMULTAN.Data.Geometry
             if (model.Model.Exchange != null)
             {
                 List<(Face f1, int f1orient, Face f2, int f2orient)> setbackFaces = new List<(Face f1, int f1orient, Face f2, int f2orient)>();
+                Dictionary<(Face, Vertex, int), SimVector3D> offsetCalculationCache = new Dictionary<(Face, Vertex, int), SimVector3D>();
 
-                HandleExteriorFaces(model, model.Faces, ref setbackFaces);
-                HandleInteriorFaces(model, model.Volumes);
+                HandleExteriorFaces(model, model.Faces, ref setbackFaces, offsetCalculationCache);
+                HandleInteriorFaces(model, model.Volumes, offsetCalculationCache);
 
                 HandleMissingFaces(model);
 
-                HandleHoles(model.Faces, model);
-                HandleAdditionalSurfaces(model, setbackFaces);
+                HandleHoles(model.Faces, model, offsetCalculationCache);
+                //HandleAdditionalSurfaces(model, setbackFaces, offsetCalculationCache);
             }
         }
         /// <summary>
@@ -71,6 +72,7 @@ namespace SIMULTAN.Data.Geometry
 
             //Directly affected faces
             HashSet<Face> affectedFaces = new HashSet<Face>(invalidatedGeometry.Where(x => x is Face).Select(x => (Face)x));
+            Dictionary<(Face, Vertex, int), SimVector3D> offsetCalculationCache = new Dictionary<(Face, Vertex, int), SimVector3D>();
 
             if (model.Model != null && model.Model.Exchange != null)
             {
@@ -104,19 +106,18 @@ namespace SIMULTAN.Data.Geometry
                     }
 
                     List<(Face f1, int f1orient, Face f2, int f2orient)> setbackSurfaces = new List<(Face f1, int f1orient, Face f2, int f2orient)>();
-                    HandleExteriorFaces(model, affectedFaces, ref setbackSurfaces);
+                    HandleExteriorFaces(model, affectedFaces, ref setbackSurfaces, offsetCalculationCache);
                     var affectedVolumes = affectedFaces.SelectMany(x => x.PFaces.Select(pf => pf.Volume)).Distinct().ToList();
-                    HandleInteriorFaces(model, affectedVolumes);
+                    HandleInteriorFaces(model, affectedVolumes, offsetCalculationCache);
 
                     HandleMissingFaces(model);
 
-                    HandleHoles(affectedFaces.Concat(affectedVolumes.SelectMany(x => x.Faces).Select(x => x.Face)).Distinct(), model);
-                    HandleAdditionalSurfaces(model, setbackSurfaces);
+                    HandleHoles(affectedFaces.Concat(affectedVolumes.SelectMany(x => x.Faces).Select(x => x.Face)).Distinct(), model, offsetCalculationCache);
                 }
             }
 
             //watch.Stop();
-            //Console.WriteLine("Update for {0} faces: {1}", invalidatedGeometry.Count(x => x is Face), watch.ElapsedMilliseconds);
+            //Debug.WriteLine("Update for {0} faces: {1}", invalidatedGeometry.Count(x => x is Face), watch.ElapsedMilliseconds);
 
             return affectedFaces;
         }
@@ -134,9 +135,9 @@ namespace SIMULTAN.Data.Geometry
 
                 if (!forwardExists && !backwardExists)
                 {
-                    Console.WriteLine("Both sides missing: Face {0}", face.Id);
+                    Debug.WriteLine("Both sides missing: Face {0}", face.Id);
 
-                    model.OffsetModel.Faces[(face, GeometricOrientation.Forward)] = new OffsetFace(face);
+                    model.OffsetModel.Faces[(face, GeometricOrientation.Forward)] = new OffsetFace(face, GeometricOrientation.Forward);
                     model.OffsetModel.Faces[(face, GeometricOrientation.Forward)].Boundary.AddRange(face.Boundary.Edges.Select(x => x.StartVertex.Position));
 
                     foreach (var hole in face.Holes)
@@ -144,7 +145,7 @@ namespace SIMULTAN.Data.Geometry
                         model.OffsetModel.Faces[(face, GeometricOrientation.Forward)].Openings.Add(hole,
                             hole.Edges.Select(x => x.StartVertex.Position).ToList());
                     }
-                    model.OffsetModel.Faces[(face, GeometricOrientation.Backward)] = new OffsetFace(face);
+                    model.OffsetModel.Faces[(face, GeometricOrientation.Backward)] = new OffsetFace(face, GeometricOrientation.Backward);
                     model.OffsetModel.Faces[(face, GeometricOrientation.Backward)].Boundary.AddRange(face.Boundary.Edges.Select(x => x.StartVertex.Position));
 
                     foreach (var hole in face.Holes)
@@ -167,9 +168,9 @@ namespace SIMULTAN.Data.Geometry
 
         //Interior Faces
 
-        private static void HandleInteriorFaces(GeometryModelData model, IEnumerable<Volume> volumes)
+        private static void HandleInteriorFaces(GeometryModelData model, IEnumerable<Volume> volumes, 
+            Dictionary<(Face, Vertex, int), SimVector3D> offsetCalculationCache)
         {
-            Dictionary<(Face, Vertex, int), Vector3D> offsetCalculationCache = new Dictionary<(Face, Vertex, int), Vector3D>();
 
             foreach (var currentVolume in volumes.Where(x => x.IsConsistentOriented))
             {
@@ -177,9 +178,12 @@ namespace SIMULTAN.Data.Geometry
 
                 foreach (var currentPFace in currentVolume.Faces)
                 {
+                    if (currentPFace.Face.Id == 66)
+                        Debug.WriteLine("FACE");
+
                     int orientation = (int)currentPFace.Orientation;
 
-                    var offsetFace = new OffsetFace(currentPFace.Face);
+                    var offsetFace = new OffsetFace(currentPFace.Face, currentPFace.Orientation);
                     offsetFace.Offset = GetOffsetFromDir(model.Model.Exchange.GetFaceOffset(currentPFace.Face), orientation);
 
                     foreach (var currentPEdge in currentPFace.Face.Boundary.Edges)
@@ -199,7 +203,7 @@ namespace SIMULTAN.Data.Geometry
                                 offsetCalculationCache, true);
 
                             //if (!isValid)
-                            //	Console.WriteLine("Failed to solve offset-surface at Face {0}, Vertex {1}", face.Id, currentVertex.Id);
+                            //	Debug.WriteLine("Failed to solve offset-surface at Face {0}, Vertex {1}", face.Id, currentVertex.Id);
 
                             offsetFace.Boundary.Add(currentVertex.Position + offset);
 
@@ -208,7 +212,7 @@ namespace SIMULTAN.Data.Geometry
                     }
 
                     if (currentPFace.Face.Boundary.Edges.Count != offsetFace.Boundary.Count)
-                        Console.WriteLine("Mismatch between edge count and boundary count");
+                        Debug.WriteLine("Mismatch between edge count and boundary count");
 
                     //Add offset surface
                     model.OffsetModel.Faces[(currentPFace.Face, (GeometricOrientation)orientation)] = offsetFace;
@@ -220,10 +224,9 @@ namespace SIMULTAN.Data.Geometry
         //Exterior Faces
         private static void HandleExteriorFaces(GeometryModelData model,
             IEnumerable<Face> faces,
-            ref List<(Face f1, int f1orient, Face f2, int f2orient)> setbackSurfaces)
+            ref List<(Face f1, int f1orient, Face f2, int f2orient)> setbackSurfaces,
+            Dictionary<(Face, Vertex, int), SimVector3D> offsetCalculationCache)
         {
-            Dictionary<(Face, Vertex, int), Vector3D> offsetCalculationCache = new Dictionary<(Face, Vertex, int), Vector3D>();
-
             foreach (var face in faces.Where(x => x.PFaces.Count <= 1)) //Only exterior faces
             {
                 //For exterior faces of volume -> just calculate outside.
@@ -237,7 +240,7 @@ namespace SIMULTAN.Data.Geometry
 
                 foreach (var orientation in orientations)
                 {
-                    var offsetFace = new OffsetFace(face);
+                    var offsetFace = new OffsetFace(face, (GeometricOrientation)orientation);
                     offsetFace.Offset = GetOffsetFromDir(model.Model.Exchange.GetFaceOffset(face), orientation);
 
                     //Run around loop and calculate new points
@@ -262,7 +265,7 @@ namespace SIMULTAN.Data.Geometry
 
                                 if (fi != face &&
                                     face.Id < fi.Id &&
-                                    fidata.hasCommonEdge && Math.Abs(Vector3D.DotProduct(fi.Normal, face.Normal)) > 0.99) //Parallel
+                                    fidata.hasCommonEdge && Math.Abs(SimVector3D.DotProduct(fi.Normal, face.Normal)) > 0.99) //Parallel
                                 {
                                     if (Math.Abs(
                                             GetOffsetFromDir(model.Model.Exchange.GetFaceOffset(face), orientation) -
@@ -283,7 +286,7 @@ namespace SIMULTAN.Data.Geometry
                     }
 
                     if (face.Boundary.Edges.Count != offsetFace.Boundary.Count)
-                        Console.WriteLine("Exterior face: Mismatch between edge count and offsetsurface boundary count");
+                        Debug.WriteLine("Exterior face: Mismatch between edge count and offsetsurface boundary count");
 
                     //Add offset surface
                     model.OffsetModel.Faces[(face, (GeometricOrientation)orientation)] = offsetFace;
@@ -334,8 +337,9 @@ namespace SIMULTAN.Data.Geometry
             {
                 var currentFace = faceStack.Pop();
 
+                var potentialEdges = currentFace.Boundary.Edges;
                 //Find edges that contain v and are part of currentFace
-                var currentFaceEdges = currentFace.Boundary.Edges.Where(x => x.Edge.Vertices.Contains(sourceVertex) && x.Edge.PEdges.Count > 1);
+                var currentFaceEdges = potentialEdges.Where(x => x.Edge.Vertices.Contains(sourceVertex) && x.Edge.PEdges.Count > 1);
                 var currentOrient = result[currentFace].orientModifier;
 
                 //Find adj faces that are not handled yet
@@ -345,8 +349,8 @@ namespace SIMULTAN.Data.Geometry
                     var currentEdgeDirection = EdgeAlgorithms.Direction(currentPEdge);
                     var currentFaceDirection = DetectionAlgorithms.DirectionFromFaceAndEdge(currentFace, currentPEdge);
 
-                    double rotationDirection = Vector3D.DotProduct(
-                                                Vector3D.CrossProduct(currentEdgeDirection, currentFaceDirection),
+                    double rotationDirection = SimVector3D.DotProduct(
+                                                SimVector3D.CrossProduct(currentEdgeDirection, currentFaceDirection),
                                                 currentFace.Normal * currentOrient
                                                 );
 
@@ -366,14 +370,28 @@ namespace SIMULTAN.Data.Geometry
 
                     if (adjPEdge != null)
                     {
-                        var adjFaces = ((EdgeLoop)adjPEdge.Parent).Faces.Where(faceSelector);
+                        var adjLoop = ((EdgeLoop)adjPEdge.Parent);
+                        var adjFaces = adjLoop.Faces.Where(faceSelector);
 
                         foreach (var adjFace in adjFaces)
                         {
                             if (!result.ContainsKey(adjFace))
                             {
+                                int adjFaceOrientation = (int)adjFace.Orientation;
+                                //Check if adjFace is accessed through a hole, in this case we need to compare normals instead of face orientation
+                                //When accessed through a hole, the rule is inverted since we aren't crossing into the hole face, but into the face containing
+                                //the hole
+                                if (adjFace.Boundary != adjLoop)
+                                {
+                                    var holeNormal = EdgeLoopAlgorithms.NormalCCW(adjLoop);
+                                    if (SimVector3D.DotProduct(holeNormal, adjFace.Normal) > 0)
+                                        adjFaceOrientation = -1; //Holes have the exact other winding order than the face
+                                    else
+                                        adjFaceOrientation = 1;
+                                }
+
                                 int orientModifier = 1;
-                                if ((int)currentPEdge.Orientation * (int)currentFace.Orientation == (int)adjPEdge.Orientation * (int)adjFace.Orientation)
+                                if ((int)currentPEdge.Orientation * (int)currentFace.Orientation == (int)adjPEdge.Orientation * adjFaceOrientation)
                                     orientModifier = -1;
 
                                 bool isAdjacentToSource = false;
@@ -391,7 +409,7 @@ namespace SIMULTAN.Data.Geometry
             return result;
         }
 
-        private static double AngleBetweenFaces(PEdge x, Vector3D currentFaceDirection, Vector3D currentEdgeDirection)
+        private static double AngleBetweenFaces(PEdge x, SimVector3D currentFaceDirection, SimVector3D currentEdgeDirection)
         {
             if (((EdgeLoop)x.Parent).Faces.Count == 0)
                 return double.PositiveInfinity;
@@ -399,24 +417,24 @@ namespace SIMULTAN.Data.Geometry
             var face = ((EdgeLoop)x.Parent).Faces.First();
             var dir = DetectionAlgorithms.DirectionFromFaceAndEdge(face, x);
             var angle = Math.Atan2(
-                Vector3D.DotProduct(Vector3D.CrossProduct(currentFaceDirection, dir), currentEdgeDirection),
-                Vector3D.DotProduct(currentFaceDirection, dir));
+                SimVector3D.DotProduct(SimVector3D.CrossProduct(currentFaceDirection, dir), currentEdgeDirection),
+                SimVector3D.DotProduct(currentFaceDirection, dir));
             if (angle < 0)
                 angle = 2.0 * Math.PI + angle; //+ because angle is negative
             return angle;
         }
 
 
-        private static (Vector3D offset, bool isValid) SolveOffset(
+        private static (SimVector3D offset, bool isValid) SolveOffset(
             Dictionary<Face, (int orientModifier, bool hasCommonEdge)> faces,
             Face sourceFace,
             Vertex sourceVertex,
             IOffsetQueryable offsetQuery,
-            Dictionary<(Face, Vertex, int), Vector3D> offsetVertexCache,
+            Dictionary<(Face, Vertex, int), SimVector3D> offsetVertexCache,
             bool useFacesWithoutCommonEdge)
         {
             //Find all directions/offsets in the system
-            List<(Vector3D dir, double off, Face face)> availableDirections = new List<(Vector3D dir, double off, Face face)>();
+            List<(SimVector3D dir, double off, Face face)> availableDirections = new List<(SimVector3D dir, double off, Face face)>();
 
             //Make sure that source face is included and first in list
             var sourceOffset = GetOffsetFromDir(offsetQuery.GetFaceOffset(sourceFace), faces[sourceFace].orientModifier);
@@ -445,7 +463,7 @@ namespace SIMULTAN.Data.Geometry
 
 
             //Find three linear independed directions
-            List<(Vector3D dir, double off)> directions = new List<(Vector3D dir, double off)>();
+            List<(SimVector3D dir, double off)> directions = new List<(SimVector3D dir, double off)>();
 
             //Add sourceface to ensure that it gets used
             directions.Add(
@@ -456,7 +474,7 @@ namespace SIMULTAN.Data.Geometry
             //Second vector
             for (; i < availableDirections.Count; i++)
             {
-                if (Math.Abs(Vector3D.DotProduct(directions[0].dir, availableDirections[i].dir)) < 0.99)
+                if (Math.Abs(SimVector3D.DotProduct(directions[0].dir, availableDirections[i].dir)) < 0.99)
                 {
                     directions.Add((
                         availableDirections[i].dir,
@@ -471,9 +489,9 @@ namespace SIMULTAN.Data.Geometry
             //Third vector
             for (; i < availableDirections.Count; i++)
             {
-                if (Vector3D.CrossProduct(
-                        Vector3D.CrossProduct(directions[0].dir, availableDirections[i].dir),
-                        Vector3D.CrossProduct(directions[1].dir, availableDirections[i].dir)
+                if (SimVector3D.CrossProduct(
+                        SimVector3D.CrossProduct(directions[0].dir, availableDirections[i].dir),
+                        SimVector3D.CrossProduct(directions[1].dir, availableDirections[i].dir)
                     ).LengthSquared > 0.01)
                 {
                     directions.Add((
@@ -487,7 +505,7 @@ namespace SIMULTAN.Data.Geometry
             //Evaluate directions
             if (directions.Count == 2) //Two vectors, no third -> add a perpendicular = 0 constaint
             {
-                directions.Add((Vector3D.CrossProduct(directions[0].dir, directions[1].dir), 0));
+                directions.Add((SimVector3D.CrossProduct(directions[0].dir, directions[1].dir), 0));
             }
 
             //Calculate offset
@@ -507,7 +525,7 @@ namespace SIMULTAN.Data.Geometry
                 Vector<double> b = Vector<double>.Build.Dense(new double[] { directions[0].off, directions[1].off, directions[2].off });
 
                 var x = A.Solve(b);
-                var xvec = new Vector3D(x[0], x[1], x[2]);
+                var xvec = new SimVector3D(x[0], x[1], x[2]);
                 bool isValid = !x.Any(xval => double.IsInfinity(xval) || double.IsNaN(xval));
 
                 if (isValid)
@@ -515,7 +533,7 @@ namespace SIMULTAN.Data.Geometry
                     //Evaluate solution
                     foreach (var f in availableDirections)
                     {
-                        if (Math.Abs(Vector3D.DotProduct(f.dir, xvec) - f.off) > 0.001)
+                        if (Math.Abs(SimVector3D.DotProduct(f.dir, xvec) - f.off) > 0.001)
                             isValid = false;
                     }
                 }
@@ -550,7 +568,8 @@ namespace SIMULTAN.Data.Geometry
 
         // Holes
 
-        private static void HandleHoles(IEnumerable<Face> faces, GeometryModelData model)
+        private static void HandleHoles(IEnumerable<Face> faces, GeometryModelData model,
+            Dictionary<(Face, Vertex, int), SimVector3D> offsetCalculationCache)
         {
             foreach (var face in faces)
             {
@@ -565,154 +584,28 @@ namespace SIMULTAN.Data.Geometry
 
                         foreach (var faceOpening in face.Holes)
                         {
-                            faceEntry.Openings.Add(faceOpening, faceOpening.Edges.Select(x => x.StartVertex.Position + dir).ToList());
-                        }
-                    }
-                }
-            }
-        }
-
-
-        private static void HandleAdditionalSurfaces(GeometryModelData model, List<(Face f1, int f1orient, Face f2, int f2orient)> setbackFaces)
-        {
-
-            foreach (var face in model.Faces)
-            {
-                var ofaceOuter = model.OffsetModel.Faces[(face, GeometricOrientation.Forward)];
-                var ofaceInner = model.OffsetModel.Faces[(face, GeometricOrientation.Backward)];
-
-                //Closings for end-lines
-                for (int i = 0; i < face.Boundary.Edges.Count; ++i)
-                {
-                    var edge = face.Boundary.Edges[i];
-
-                    if (edge.Edge.PEdges.Count == 1)
-                    {
-                        var ip = (i + 1) % face.Boundary.Edges.Count;
-
-                        List<Point3D> addPoints = new List<Point3D>()
-                        {
-                            ofaceOuter.Boundary[ip],
-                            ofaceInner.Boundary[ip],
-                            ofaceInner.Boundary[i],
-                            ofaceOuter.Boundary[i],
-                        };
-
-                        ofaceInner.AdditionalQuads.Add(addPoints);
-
-                        //Prevents additional edges at t-junctions
-                        if (edge.StartVertex.Edges.Count < 4)
-                        {
-                            ofaceInner.AdditionalEdges.Add(addPoints[0]);
-                            ofaceInner.AdditionalEdges.Add(addPoints[1]);
-                        }
-                        if (edge.Next.StartVertex.Edges.Count < 4)
-                        {
-                            ofaceInner.AdditionalEdges.Add(addPoints[2]);
-                            ofaceInner.AdditionalEdges.Add(addPoints[3]);
-                        }
-                    }
-                }
-
-                //Opening side-faces					
-                foreach (var innerHole in ofaceInner.Openings)
-                {
-                    if (ofaceOuter.Openings.TryGetValue(innerHole.Key, out var outerHole))
-                    {
-                        for (int j = 0; j < innerHole.Value.Count; j++)
-                        {
-                            var jplus = (j + 1) % innerHole.Value.Count;
-
-                            //Cover faces
-                            List<Point3D> addFace = new List<Point3D>()
+                            List<SimPoint3D> holeLoop = new List<SimPoint3D>();
+                            foreach (var edge in faceOpening.Edges)
                             {
-                                innerHole.Value[j],
-                                outerHole[j],
-                                outerHole[jplus],
-                                innerHole.Value[jplus],
-                            };
+                                if (offsetCalculationCache.TryGetValue((face, edge.StartVertex, i), out var offset))
+                                    holeLoop.Add(edge.StartVertex.Position + offset);
+                                else
+                                {
+                                    offsetCalculationCache.Add((face, edge.StartVertex, i), dir);
+                                    holeLoop.Add(edge.StartVertex.Position + dir);
+                                }
+                            }
 
-                            ofaceInner.AdditionalQuads.Add(addFace);
-
-                            //Edges
-                            ofaceInner.AdditionalEdges.Add(innerHole.Value[j]);
-                            ofaceInner.AdditionalEdges.Add(innerHole.Value[jplus]);
-                            ofaceInner.AdditionalEdges.Add(outerHole[j]);
-                            ofaceInner.AdditionalEdges.Add(outerHole[jplus]);
-                            ofaceInner.AdditionalEdges.Add(innerHole.Value[j]);
-                            ofaceInner.AdditionalEdges.Add(outerHole[j]);
+                            faceEntry.Openings.Add(faceOpening, holeLoop);
                         }
                     }
                 }
             }
-
-
-            //Closing edges at vertices with 1 or two unclosed pedges
-            foreach (var setb in setbackFaces)
-            {
-                //Always store 
-                var oface = model.OffsetModel.Faces[(setb.f1, (GeometricOrientation)setb.f1orient)];
-                if (setb.f1.Id > setb.f2.Id)
-                    oface = model.OffsetModel.Faces[(setb.f2, (GeometricOrientation)setb.f2orient)];
-
-                //Find common edge
-                var commonPEdge1 = setb.f1.Boundary.Edges.FirstOrDefault(pe => pe.Edge.PEdges.Any(pe2 => pe2.Parent == setb.f2.Boundary));
-                if (commonPEdge1 != null)
-                {
-                    //Find offset faces
-                    var off1 = FaceOffsetFromDirection(model, setb.f1, setb.f1orient);
-                    var off2 = FaceOffsetFromDirection(model, setb.f2, setb.f2orient);
-
-                    //Find common edge and orientation
-                    int idx1 = setb.f1.Boundary.Edges.IndexOf(commonPEdge1);
-                    var commonPEdge2 = commonPEdge1.Edge.PEdges.FirstOrDefault(pe2 => pe2.Parent == setb.f2.Boundary);
-                    int idx2 = setb.f2.Boundary.Edges.IndexOf(commonPEdge2);
-                    var idx2plusminus = commonPEdge1.Orientation == commonPEdge2.Orientation ? 1 : -1;
-
-                    //make sure that off1 is the one with the smaller offset (for consistent winding order)
-                    if (off1.Offset > off2.Offset)
-                    {
-                        (off1, off2) = (off2, off1);
-                        (idx1, idx2) = (idx2, idx1);
-                    }
-
-                    List<Point3D> points = null;
-                    if (idx2plusminus == 1)
-                    {
-                        points = new List<Point3D>
-                        {
-                            off1.Boundary[(idx1 + 1) % off1.Boundary.Count],
-                            off2.Boundary[(idx2 + 1) % off2.Boundary.Count],
-                            off2.Boundary[idx2],
-                            off1.Boundary[idx1],
-                        };
-                    }
-                    else
-                    {
-                        points = new List<Point3D>
-                        {
-                            off1.Boundary[(idx1 + 1) % off1.Boundary.Count],
-                            off2.Boundary[idx2],
-                            off2.Boundary[(idx2 + 1) % off2.Boundary.Count],
-                            off1.Boundary[idx1],
-                        };
-                    }
-
-
-                    oface.AdditionalQuads.Add(points);
-                    oface.AdditionalEdges.AddRange(points);
-                }
-            }
-        }
-
-        private static OffsetFace FaceOffsetFromDirection(GeometryModelData model, Face face, int orient)
-        {
-            return model.OffsetModel.Faces[(face, (GeometricOrientation)orient)];
         }
 
         private static bool IsJumpFace(Face f1, double f1offset, Face f2, double f2offset)
         {
-            if (Math.Abs(Vector3D.DotProduct(f1.Normal, f2.Normal)) > 0.99)
+            if (Math.Abs(SimVector3D.DotProduct(f1.Normal, f2.Normal)) > 0.99)
             {
                 return Math.Abs(f1offset - f2offset) > 0.001;
             }

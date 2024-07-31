@@ -1,11 +1,12 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SIMULTAN.Data.Geometry;
+using SIMULTAN.Data.SimMath;
 using SIMULTAN.Tests.Geometry.EventData;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using System.Windows.Media.Media3D;
+
 
 namespace SIMULTAN.Tests.Geometry.BaseGeometries
 {
@@ -16,12 +17,12 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
         {
             Vertex[] v = new Vertex[]
             {
-                new Vertex(layer, "", new Point3D(0,0,0)),
-                new Vertex(layer, "", new Point3D(1,2,3)),
-                new Vertex(layer, "", new Point3D(2,4,6)),
-                new Vertex(layer, "", new Point3D(3,6,9)),
-                new Vertex(layer, "", new Point3D(4,8,12)),
-                new Vertex(layer, "", new Point3D(5,10,15)),
+                new Vertex(layer, "", new SimPoint3D(0,0,0)),
+                new Vertex(layer, "", new SimPoint3D(1,2,3)),
+                new Vertex(layer, "", new SimPoint3D(2,4,6)),
+                new Vertex(layer, "", new SimPoint3D(3,6,9)),
+                new Vertex(layer, "", new SimPoint3D(4,8,12)),
+                new Vertex(layer, "", new SimPoint3D(5,10,15)),
             };
 
             return v;
@@ -360,7 +361,7 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
             var data = GeometryModelHelper.EmptyModel();
             var models = new ObservableCollection<GeometryModel>() { data.model };
 
-            ShapeGenerator.GenerateCube(data.layer, new Point3D(0, 0, 0), new Point3D(1, 1, 1));
+            ShapeGenerator.GenerateCube(data.layer, new SimPoint3D(0, 0, 0), new SimPoint3D(1, 1, 1));
             var p1 = new ProxyGeometry(data.layer, "", data.model.Geometry.Vertices[0]);
             var pl1 = new Polyline(data.layer, "", new Edge[] { data.model.Geometry.Edges[0], data.model.Geometry.Edges[1] });
 
@@ -398,7 +399,7 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
             var data = GeometryModelHelper.EmptyModel();
             var models = new ObservableCollection<GeometryModel>() { data.model };
 
-            ShapeGenerator.GenerateCube(data.layer, new Point3D(0, 0, 0), new Point3D(1, 1, 1));
+            ShapeGenerator.GenerateCube(data.layer, new SimPoint3D(0, 0, 0), new SimPoint3D(1, 1, 1));
             var p1 = new ProxyGeometry(data.layer, "", data.model.Geometry.Vertices[0]);
             var pl1 = new Polyline(data.layer, "", new Edge[] { data.model.Geometry.Edges[0], data.model.Geometry.Edges[1] });
 

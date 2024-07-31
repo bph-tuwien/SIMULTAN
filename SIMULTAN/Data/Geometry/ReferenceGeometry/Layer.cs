@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
-using System.Windows.Media;
+using SIMULTAN.Data.SimMath;
 
 namespace SIMULTAN.Data.Geometry
 {
@@ -19,7 +19,7 @@ namespace SIMULTAN.Data.Geometry
         /// <summary>
         /// Gets or sets the Name of the Layer
         /// </summary>
-        public String Name
+        public string Name
         {
             get { return name; }
             set { name = value; PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Name))); }
@@ -34,15 +34,18 @@ namespace SIMULTAN.Data.Geometry
             get { return color; }
             set
             {
-                color = value;
                 if (color != null)
-                {
                     color.PropertyChanged -= Color_PropertyChanged;
+
+                color = value;
+                color.Parent = this.parent;
+
+                if (color != null)
                     color.PropertyChanged += Color_PropertyChanged;
-                }
 
                 Model.StartBatchOperation();
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Color)));
+                Elements.ForEach(x => x.Color.NotifyParentColorChanged());
                 Model.EndBatchOperation();
             }
         }
@@ -74,18 +77,12 @@ namespace SIMULTAN.Data.Geometry
                 {
                     if (parent != null)
                         parent.PropertyChanged -= Parent_PropertyChanged;
-                    parent = value;
-                    if (parent != null)
-                    {
-                        parent.PropertyChanged += Parent_PropertyChanged;
 
-                        bool isFromParent = color.IsFromParent;
-                        this.Color = new DerivedColor(color.Color, parent, nameof(parent.Color)) { IsFromParent = isFromParent };
-                    }
-                    else
-                    {
-                        this.Color = new DerivedColor(color.Color);
-                    }
+                    parent = value;
+                    color.Parent = value;
+
+                    if (parent != null)
+                        parent.PropertyChanged += Parent_PropertyChanged;
                 }
             }
         }
@@ -120,6 +117,10 @@ namespace SIMULTAN.Data.Geometry
                     Model.StartBatchOperation();
                     PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsVisible)));
                     PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsActuallyVisible)));
+
+                    //Notify children
+                    this.Elements.ForEach(x => x.NotifyActualVisibilityChanged());
+
                     Model.EndBatchOperation();
                 }
             }
@@ -161,17 +162,17 @@ namespace SIMULTAN.Data.Geometry
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
 
+            this.Elements = new ObservableCollection<BaseGeometry>();
+            this.Layers = new ObservableCollection<Layer>();
+            this.Layers.CollectionChanged += Layers_CollectionChanged;
+
             this.Id = id;
             this.Model = model;
             this.Name = name;
-            this.Color = new DerivedColor(Colors.White);
             this.Parent = null;
             this.IsVisible = true;
+            this.Color = new DerivedColor(SimColors.White);
 
-            this.Elements = new ObservableCollection<BaseGeometry>();
-            this.Layers = new ObservableCollection<Layer>();
-
-            this.Layers.CollectionChanged += Layers_CollectionChanged;
             AttachEvents();
         }
 
@@ -211,7 +212,10 @@ namespace SIMULTAN.Data.Geometry
         private void Model_PropertyChanged(object sender, PropertyChangedEventArgs e)
         {
             if (e.PropertyName == nameof(GeometryModelData.IsVisible))
+            {
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsActuallyVisible)));
+                Elements.ForEach(x => x.NotifyActualVisibilityChanged());
+            }
         }
 
         private void Model_GeometryRemoved(object sender, IEnumerable<BaseGeometry> geometry)
@@ -250,43 +254,20 @@ namespace SIMULTAN.Data.Geometry
         {
             if (parentTranslationTable.ContainsKey(e.PropertyName))
                 parentTranslationTable[e.PropertyName].ForEach(x => this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(x)));
+
+            if (e.PropertyName == nameof(Layer.IsActuallyVisible))
+            {
+                foreach (var element in this.Elements)
+                    element.NotifyActualVisibilityChanged();
+            }
         }
 
         private void Color_PropertyChanged(object sender, PropertyChangedEventArgs e)
         {
             Model.StartBatchOperation();
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Color)));
+            Elements.ForEach(x => x.Color.NotifyParentColorChanged());
             Model.EndBatchOperation();
-        }
-
-        /// <summary>
-        /// Clones a layer and all sublayers and copies them into given target GeometryModel.
-        /// </summary>
-        /// <param name="target">Target GeometryModel</param>
-        /// <returns>Cloned layer</returns>
-        [Obsolete]
-        public Layer Clone(GeometryModelData target)
-        {
-            return Clone(target, null);
-        }
-
-        /// <summary>
-        /// Clones a layer and all sublayers and copies them into given target GeometryModel. Additionally, a mapping between old and new layers is maintained.
-        /// </summary>
-        /// <param name="target">Target GeometryModel</param>
-        /// <param name="mapping">Mapping that contains old layers as keys and new (cloned) layers as values</param>
-        /// <returns>Cloned layer</returns>
-        [Obsolete]
-        public Layer Clone(GeometryModelData target, Dictionary<Layer, Layer> mapping)
-        {
-            Layer newLayer = new Layer(target, this.name);
-            newLayer.Color.Color = this.Color.LocalColor;
-
-            if (mapping != null)
-                mapping.Add(this, newLayer);
-
-            newLayer.Layers.AddRange(this.Layers.Select(x => x.Clone(target, mapping)));
-            return newLayer;
         }
 
         #endregion

@@ -5,7 +5,7 @@ using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Linq;
-using System.Windows.Media.Media3D;
+using SIMULTAN.Data.SimMath;
 
 namespace SIMULTAN.Utils
 {
@@ -127,7 +127,7 @@ namespace SIMULTAN.Utils
         /// <typeparam name="T">Item type of the collection</typeparam>
         /// <param name="collection">The collection</param>
         /// <param name="predicate">Predicate to determine which elements will be removed</param>
-        public static void RemoveWhere<T>(this List<T> collection, Func<T, bool> predicate)
+        public static void RemoveWhere<T>(this IList<T> collection, Func<T, bool> predicate)
         {
             for (int i = 0; i < collection.Count; i++)
             {
@@ -164,7 +164,7 @@ namespace SIMULTAN.Utils
         /// <param name="collection">The collection</param>
         /// <param name="predicate">Predicate to determine which elements will be removed</param> 
         /// <param name="removeAction">Action that gets called on all elements that are removed</param> 
-        public static void RemoveWhere<T>(this List<T> collection, Func<T, bool> predicate, Action<T> removeAction)
+        public static void RemoveWhere<T>(this IList<T> collection, Func<T, bool> predicate, Action<T> removeAction)
         {
             for (int i = 0; i < collection.Count; i++)
             {
@@ -226,30 +226,30 @@ namespace SIMULTAN.Utils
         }
 
         /// <summary>
-        /// Calculates the average Point3D
+        /// Calculates the average SimPoint3D
         /// </summary>
         /// <typeparam name="T">Type of the collection</typeparam>
         /// <param name="enumerable">The collection</param>
-        /// <param name="selector">Calculates a Point3D from a collection element</param>
-        /// <returns>The average Point3D</returns>
-        public static Point3D Average<T>(this IEnumerable<T> enumerable, Func<T, Point3D> selector)
+        /// <param name="selector">Calculates a SimPoint3D from a collection element</param>
+        /// <returns>The average SimPoint3D</returns>
+        public static SimPoint3D Average<T>(this IEnumerable<T> enumerable, Func<T, SimPoint3D> selector)
         {
-            Vector3D sum = new Vector3D(0, 0, 0);
+            SimVector3D sum = new SimVector3D(0, 0, 0);
             foreach (var i in enumerable)
-                sum += (Vector3D)selector(i);
+                sum += (SimVector3D)selector(i);
 
-            return (Point3D)(sum / enumerable.Count());
+            return (SimPoint3D)(sum / enumerable.Count());
         }
         /// <summary>
-        /// Calculates the average Vector3D
+        /// Calculates the average SimVector3D
         /// </summary>
         /// <typeparam name="T">Type of the collection</typeparam>
         /// <param name="enumerable">The collection</param>
-        /// <param name="selector">Calculates a Vector3D from a collection element</param>
-        /// <returns>The average Vector3D</returns>
-        public static Vector3D Average<T>(this IEnumerable<T> enumerable, Func<T, Vector3D> selector)
+        /// <param name="selector">Calculates a SimVector3D from a collection element</param>
+        /// <returns>The average SimVector3D</returns>
+        public static SimVector3D Average<T>(this IEnumerable<T> enumerable, Func<T, SimVector3D> selector)
         {
-            Vector3D sum = new Vector3D(0, 0, 0);
+            SimVector3D sum = new SimVector3D(0, 0, 0);
             foreach (var i in enumerable)
                 sum += selector(i);
 
@@ -472,6 +472,26 @@ namespace SIMULTAN.Utils
 
             result = default(T);
             return false;
+        }
+
+        /// <summary>
+        /// Searches through a collection and returns the indices at which the predicate matches
+        /// </summary>
+        /// <typeparam name="T">Type of the collection items</typeparam>
+        /// <param name="source">The collection</param>
+        /// <param name="predicate">Predicate to search for</param>
+        /// <returns>The indicies in the collection at which the predicate returned True</returns>
+        public static IEnumerable<int> IndicesWhere<T>(this IEnumerable<T> source, Func<T, bool> predicate)
+        {
+            int index = 0;
+            foreach (T element in source)
+            {
+                if (predicate(element))
+                {
+                    yield return index;
+                }
+                index++;
+            }
         }
     }
 }

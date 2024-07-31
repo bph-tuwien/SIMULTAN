@@ -6,8 +6,6 @@ SIMULTAN.Data.Components.SimComponentInstance
 3669
 1601
 Custom Instance
-1602
-5
 1609
 1
 1665
@@ -26,6 +24,8 @@ SIMULTAN.Data.Components.SimInstancePlacementGeometry
 58
 1672
 0
+1673
+512
 0
 SEQEND
 0
@@ -36,6 +36,8 @@ SIMULTAN.Data.Components.SimInstancePlacementNetwork
 123
 1666
 00000000-0000-0000-0000-000000000000
+1673
+4
 0
 SEQEND
 0
@@ -46,6 +48,8 @@ SIMULTAN.Data.Components.SimInstancePlacementNetwork
 124
 1666
 da7d8f7c-8eec-423b-b127-9d6e17f52522
+1673
+4
 0
 SEQEND
 0
@@ -56,6 +60,8 @@ SIMULTAN.Data.Components.SimInstancePlacementSimNetwork
 125
 1666
 00000000-0000-0000-0000-000000000000
+1673
+1024
 0
 SEQEND
 0

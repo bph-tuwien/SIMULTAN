@@ -1,8 +1,8 @@
-﻿using SIMULTAN.Utils;
+﻿using SIMULTAN.Data.SimMath;
+using SIMULTAN.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Windows.Media.Media3D;
 
 namespace SIMULTAN.Data.Geometry
 {
@@ -209,10 +209,10 @@ namespace SIMULTAN.Data.Geometry
         /// <param name="models">List of geometry models that should be contained in the bounding box</param>
         /// <param name="includeInvisible">Set to true when currently invisible geometry should be included</param>
         /// <returns></returns>
-        public static Rect3D Boundary(IEnumerable<GeometryModelData> models, bool includeInvisible)
+        public static SimRect3D Boundary(IEnumerable<GeometryModelData> models, bool includeInvisible)
         {
-            Point3D min = new Point3D(double.PositiveInfinity, double.PositiveInfinity, double.PositiveInfinity);
-            Point3D max = new Point3D(double.NegativeInfinity, double.NegativeInfinity, double.NegativeInfinity);
+            SimPoint3D min = new SimPoint3D(double.PositiveInfinity, double.PositiveInfinity, double.PositiveInfinity);
+            SimPoint3D max = new SimPoint3D(double.NegativeInfinity, double.NegativeInfinity, double.NegativeInfinity);
 
             foreach (var model in models)
             {
@@ -225,10 +225,10 @@ namespace SIMULTAN.Data.Geometry
                     .ForEach(x => BoundaryMinMax(x, ref min, ref max));
             }
 
-            return new Rect3D(min, (Size3D)(max - min));
+            return new SimRect3D(min, (SimSize3D)(max - min));
         }
 
-        private static void BoundaryMinMax(Vertex v, ref Point3D min, ref Point3D max)
+        private static void BoundaryMinMax(Vertex v, ref SimPoint3D min, ref SimPoint3D max)
         {
 
             var proxySize = ProxySize(v);
@@ -245,9 +245,9 @@ namespace SIMULTAN.Data.Geometry
 
 
 
-        private static Size3D ProxySize(Vertex vertex)
+        private static SimSize3D ProxySize(Vertex vertex)
         {
-            Size3D size = new Size3D();
+            SimSize3D size = new SimSize3D();
             foreach (var proxy in vertex.ProxyGeometries)
             {
                 size.X = Math.Max(size.X, proxy.Size.X);
@@ -265,10 +265,10 @@ namespace SIMULTAN.Data.Geometry
         /// <param name="geometry">List of geometry objects that should be contained in the bounding box</param>
         /// <param name="includeInvisible">Set to true when currently invisible geometry should be included</param>
         /// <returns></returns>
-        public static Rect3D Boundary(IEnumerable<BaseGeometry> geometry, bool includeInvisible)
+        public static SimRect3D Boundary(IEnumerable<BaseGeometry> geometry, bool includeInvisible)
         {
-            Point3D min = new Point3D(double.PositiveInfinity, double.PositiveInfinity, double.PositiveInfinity);
-            Point3D max = new Point3D(double.NegativeInfinity, double.NegativeInfinity, double.NegativeInfinity);
+            SimPoint3D min = new SimPoint3D(double.PositiveInfinity, double.PositiveInfinity, double.PositiveInfinity);
+            SimPoint3D max = new SimPoint3D(double.NegativeInfinity, double.NegativeInfinity, double.NegativeInfinity);
 
             foreach (var geom in geometry.Where(x => includeInvisible || x.IsActuallyVisible))
             {
@@ -278,7 +278,7 @@ namespace SIMULTAN.Data.Geometry
                 }
             }
 
-            return new Rect3D(min, (Size3D)(max - min));
+            return new SimRect3D(min, (SimSize3D)(max - min));
         }
 
         /// <summary>
@@ -646,7 +646,9 @@ namespace SIMULTAN.Data.Geometry
         /// <param name="from">The source model</param>
         /// <param name="to">The target model</param>
         /// <param name="preserveIds">When set to True, the ids are kept. Only works when the ids are not used in the to model.</param>
-        public static void CopyContent(GeometryModelData from, GeometryModelData to, bool preserveIds = false)
+        /// <returns>A tuple of dictionaries of base geometries that provides a lookup of old to new copied geometry and of old to new layers.</returns>
+        public static (Dictionary<BaseGeometry, BaseGeometry> geoLookup, Dictionary<Layer, Layer> layerLookup)
+            CopyContent(GeometryModelData from, GeometryModelData to, bool preserveIds = false)
         {
             to.StartBatchOperation();
 
@@ -675,13 +677,15 @@ namespace SIMULTAN.Data.Geometry
                 CopyGeoReference(g, to, layerLookup, geometryLookup, preserveIds);
 
             to.EndBatchOperation();
+
+            return (geometryLookup, layerLookup);
         }
 
 
         private static void CopyBaseGeometryProperties(BaseGeometry target, BaseGeometry source, Layer targetLayer)
         {
             target.IsVisible = source.IsVisible;
-            target.Color = CopyColorFromTo(source.Color, targetLayer, target.ModelGeometry);
+            target.Color = new DerivedColor(source.Color);
         }
 
         private static ulong GetCopyId(BaseGeometry source, Layer targetLayer, bool preserveIds)
@@ -706,7 +710,7 @@ namespace SIMULTAN.Data.Geometry
                 id = to.GetFreeId(false);
 
             Layer newLayer = new Layer(id, to, source.Name);
-            newLayer.Color = CopyColorFromTo(source.Color, parentLayer, newLayer.Model);
+            newLayer.Color = new DerivedColor(source.Color);
             newLayer.IsVisible = source.IsVisible;
             layers.Add(source, newLayer);
 
@@ -834,8 +838,11 @@ namespace SIMULTAN.Data.Geometry
                 holes.Add(loop);
             }
 
+            var baseEdgeIdx = source.Boundary.Edges.FindIndex(x => x.Edge == source.BaseEdge);
+            var baseEdge = boundary.Edges[baseEdgeIdx].Edge;
+
             var id = GetCopyId(source, targetLayer, preserveIds);
-            Face face = new Face(id, targetLayer, source.Name, boundary, source.Orientation, holes);
+            Face face = new Face(id, targetLayer, source.Name, boundary, source.Orientation, holes, baseEdge);
             CopyBaseGeometryProperties(face, source, targetLayer);
             copiedGeometries.Add(source, face);
 
@@ -911,30 +918,6 @@ namespace SIMULTAN.Data.Geometry
             to.GeoReferences.Add(g);
 
             return g;
-        }
-
-        private static DerivedColor CopyColorFromTo(DerivedColor source, Layer targetLayer, GeometryModelData model)
-        {
-            if (source.Parent is Layer)
-            {
-                DerivedColor result = new DerivedColor(source.LocalColor, targetLayer, source.PropertyName);
-                result.IsFromParent = source.IsFromParent;
-                return result;
-            }
-            else if (source.Parent is BaseGeometry && model.GeometryFromId(((BaseGeometry)source.Parent).Id) != null)
-            {
-                var sourceGeo = model.GeometryFromId(((BaseGeometry)source.Parent).Id);
-                DerivedColor result = new DerivedColor(source.LocalColor, sourceGeo, source.PropertyName)
-                {
-                    IsFromParent = source.IsFromParent
-                };
-                return result;
-            }
-            else
-            {
-                DerivedColor result = new DerivedColor(source.Color);
-                return result;
-            }
         }
     }
 }

@@ -119,13 +119,13 @@ namespace SIMULTAN.Utils
         /// <param name="lhs">First range</param>
         /// <param name="rhs">Second range</param>
         /// <returns>A range that contains both inputs</returns>
-        public static RowColumnRange Merge(RowColumnRange lhs, IntIndex2D rhs)
+        public static RowColumnRange Merge(RowColumnRange lhs, RowColumnIndex rhs)
         {
-            var startColumn = Math.Min(lhs.ColumnStart, rhs.X);
-            var startRow = Math.Min(lhs.RowStart, rhs.Y);
+            var startColumn = Math.Min(lhs.ColumnStart, rhs.Column);
+            var startRow = Math.Min(lhs.RowStart, rhs.Row);
 
-            var endColumn = Math.Max(lhs.ColumnStart + lhs.ColumnCount, rhs.X + 1);
-            var endRow = Math.Max(lhs.RowStart + lhs.RowCount, rhs.Y + 1);
+            var endColumn = Math.Max(lhs.ColumnStart + lhs.ColumnCount, rhs.Column + 1);
+            var endRow = Math.Max(lhs.RowStart + lhs.RowCount, rhs.Row + 1);
 
             return new RowColumnRange(startRow, startColumn, endRow - startRow, endColumn - startColumn);
         }

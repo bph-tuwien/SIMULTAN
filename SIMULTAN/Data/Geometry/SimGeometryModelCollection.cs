@@ -1,4 +1,6 @@
 ﻿using SIMULTAN.Data.Assets;
+using SIMULTAN.Data.Components;
+using SIMULTAN.Exchange.GeometryConnectors;
 using SIMULTAN.Projects;
 using System;
 using System.Collections;
@@ -29,6 +31,7 @@ namespace SIMULTAN.Data.Geometry
 
         private Dictionary<ResourceFileEntry, GeometryModelReference> geometryModels = new Dictionary<ResourceFileEntry, GeometryModelReference>();
         private GeometryImporterCache geometryCache = new GeometryImporterCache();
+        private Dictionary<ResourceFileEntry, GeometryModel> allLoadedModels = new Dictionary<ResourceFileEntry, GeometryModel>();
 
         /// <summary>
         /// The project data this collection belongs to
@@ -52,12 +55,12 @@ namespace SIMULTAN.Data.Geometry
         /// <inheritdoc />
         public IEnumerator<GeometryModel> GetEnumerator()
         {
-            return geometryModels.Values.Select(x => x.Model).GetEnumerator();
+            return allLoadedModels.Values.GetEnumerator();
         }
         /// <inheritdoc />
         IEnumerator IEnumerable.GetEnumerator()
         {
-            return geometryModels.Values.Select(x => x.Model).GetEnumerator();
+            return allLoadedModels.Values.GetEnumerator();
         }
 
         #endregion
@@ -83,30 +86,109 @@ namespace SIMULTAN.Data.Geometry
         /// <param name="model">The new model</param>
         public void AddGeometryModel(GeometryModel model)
         {
-            if (this.geometryModels.TryGetValue(model.File, out var entry))
+            AddGeometryModels(new[] { model });
+        }
+
+        /// <summary>
+        /// Registers new GeometryModels to the store.
+        /// Preferred as this optimizes connector creation more than adding a single one.
+        /// </summary>
+        /// <param name="models">The new models</param>
+
+        public void AddGeometryModels(IEnumerable<GeometryModel> models)
+        {
+            foreach (var model in models)
             {
-                entry.ReferenceCounter++;
+                if (this.geometryModels.TryGetValue(model.File, out var entry))
+                {
+                    entry.ReferenceCounter++;
+                }
+                else
+                {
+                    var newReference = new GeometryModelReference(model);
+                    newReference.ReferenceCounter++;
+                    this.geometryModels.Add(model.File, newReference);
+                }
             }
-            else
+
+            AddModelGraph(models);
+        }
+
+        private void AddModelGraph(IEnumerable<GeometryModel> models)
+        {
+            Dictionary<ResourceFileEntry, GeometryModel> all = new Dictionary<ResourceFileEntry, GeometryModel>();
+
+            var connectors = new List<GeometryModelConnector>();
+            foreach (var model in models)
             {
-                var newReference = new GeometryModelReference(model);
-                newReference.ReferenceCounter++;
+                GetAllReachableModels(model, all, new HashSet<ResourceFileEntry>());
 
-                this.geometryModels.Add(model.File, newReference);
-                NotifyCollectionChanged(
-                    new NotifyCollectionChangedEventArgs(
-                        NotifyCollectionChangedAction.Add,
-                        model
-                    ));
+                foreach (var toAdd in all)
+                {
+                    if (!allLoadedModels.ContainsKey(toAdd.Key))
+                    {
+                        allLoadedModels.Add(toAdd.Key, toAdd.Value);
 
-                ProjectData.ComponentGeometryExchange.AddGeometryModel(model);
+                        NotifyCollectionChanged(
+                            new NotifyCollectionChangedEventArgs(
+                                NotifyCollectionChangedAction.Add,
+                                toAdd.Value
+                            ));
 
-                model.LinkedModels.CollectionChanged += this.LinkedModels_CollectionChanged;
+                        connectors.Add(ProjectData.ComponentGeometryExchange.AddGeometryModel(toAdd.Value));
+
+                        toAdd.Value.LinkedModels.CollectionChanged += this.LinkedModels_CollectionChanged;
+                    }
+                }
             }
 
-            //Linked models
-            foreach (var linkedModel in model.LinkedModels)
-                AddGeometryModel(linkedModel);
+            // initialize all connectors at one to speed it up
+
+            //Performance disabling
+            var enableReferencePropagation = ProjectData.Components.EnableReferencePropagation;
+            ProjectData.Components.EnableReferencePropagation = false;
+            ProjectData.ComponentGeometryExchange.EnableNotifyGeometryInvalidated = false;
+
+            //Check the components to find instances that attach to this geometryModel
+            CreateConnectors(connectors.ToDictionary(x => x.GeometryModel.File.Key, x => x), ProjectData.Components);
+
+            ProjectData.ComponentGeometryExchange.EnableNotifyGeometryInvalidated = true;
+            ProjectData.ComponentGeometryExchange.NotifyGeometryInvalidated(null);
+
+            // initialize connectors before the rest of the initialization
+            foreach (var connector in connectors)
+            {
+                connector.InitializeConnectors();
+            }
+
+            //Invalidate/Recalculate all references
+            ProjectData.Components.EnableReferencePropagation = enableReferencePropagation;
+
+            foreach (var connector in connectors)
+            {
+                connector.Initialize(); //Has to be done after the connector has been added to connectors. Otherwise the offset surfaces can't be calculated
+            }
+        }
+
+        private void CreateConnectors(Dictionary<int, GeometryModelConnector> connectors, IEnumerable<SimComponent> components)
+        {
+            foreach (var component in components)
+            {
+                if (component != null)
+                {
+                    foreach (var inst in component.Instances)
+                    {
+                        foreach (var placement in inst.Placements.Where(x => x is SimInstancePlacementGeometry gp && connectors.Keys.Contains(gp.FileId)))
+                        {
+                            var p = placement as SimInstancePlacementGeometry;
+                            connectors[p.FileId].CreateConnector((SimInstancePlacementGeometry)placement, false);
+                        }
+                    }
+
+                    //Child components
+                    CreateConnectors(connectors, component.Components.Select(x => x.Component));
+                }
+            }
         }
 
         /// <summary>
@@ -114,23 +196,17 @@ namespace SIMULTAN.Data.Geometry
         /// </summary>
         /// <param name="model">The GeometryModel that should be removed</param>
         /// <returns>True when the GeometryModel is now deleted, False when some other references to the model exist</returns>
+
         public bool RemoveGeometryModel(GeometryModel model)
         {
+
             if (this.geometryModels.TryGetValue(model.File, out var entry))
             {
-                foreach (var linkedModel in model.LinkedModels)
-                    RemoveGeometryModel(linkedModel);
-
                 if (entry.ReferenceCounter == 1)
                 {
                     this.geometryModels.Remove(model.File);
-                    NotifyCollectionChanged(new NotifyCollectionChangedEventArgs(
-                        NotifyCollectionChangedAction.Remove,
-                        model
-                        ));
 
-                    ProjectData.ComponentGeometryExchange.RemoveGeometryModel(model);
-                    model.LinkedModels.CollectionChanged -= this.LinkedModels_CollectionChanged;
+                    RemoveUnusedModels();
 
                     return true;
                 }
@@ -142,6 +218,58 @@ namespace SIMULTAN.Data.Geometry
             }
             else
                 throw new Exception("Model has never been added");
+        }
+
+        private void RemoveUnusedModels()
+        {
+            Dictionary<ResourceFileEntry, GeometryModel> allInUse = new Dictionary<ResourceFileEntry, GeometryModel>();
+
+            // find all models that are still in used by all root models
+            foreach (var refs in geometryModels.Values)
+            {
+                GetAllReachableModels(refs.Model, allInUse, new HashSet<ResourceFileEntry>());
+            }
+
+            // get keys that remain
+            var removedKeys = allLoadedModels.Keys.Except(allInUse.Keys).ToList();
+            foreach (var removed in removedKeys)
+            {
+                var removedModel = allLoadedModels[removed];
+                allLoadedModels.Remove(removed);
+
+                NotifyCollectionChanged(new NotifyCollectionChangedEventArgs(
+                    NotifyCollectionChangedAction.Remove,
+                    removedModel
+                    ));
+
+                ProjectData.ComponentGeometryExchange.RemoveGeometryModel(removedModel);
+                removedModel.LinkedModels.CollectionChanged -= this.LinkedModels_CollectionChanged;
+            }
+
+        }
+
+        /// <summary>
+        /// Puts all the models that are linked to the root model (that are reachable from that) into the result.
+        /// Also includes the root model itself.
+        /// </summary>
+        /// <param name="rootModel">The root model to</param>
+        /// <param name="result">The result</param>
+        public static void GetAllReachableModels(GeometryModel rootModel, Dictionary<ResourceFileEntry, GeometryModel> result)
+        {
+            GetAllReachableModels(rootModel, result, new HashSet<ResourceFileEntry>());
+        }
+
+        private static void GetAllReachableModels(GeometryModel rootModel, Dictionary<ResourceFileEntry, GeometryModel> result, HashSet<ResourceFileEntry> processed)
+        {
+            if (processed.Contains(rootModel.File))
+                return;
+            processed.Add(rootModel.File);
+
+            if (!result.ContainsKey(rootModel.File))
+                result.Add(rootModel.File, rootModel);
+
+            foreach (var linked in rootModel.LinkedModels)
+                GetAllReachableModels(linked, result, processed);
         }
 
         /// <summary>
@@ -157,12 +285,23 @@ namespace SIMULTAN.Data.Geometry
         public bool TryGetGeometryModel(ResourceFileEntry file, out GeometryModel model, bool isOwning = true)
         {
             model = null;
-            if (this.geometryModels.TryGetValue(file, out var entry))
+            if (this.allLoadedModels.TryGetValue(file, out var entry))
             {
                 if (isOwning)
-                    entry.ReferenceCounter++;
+                {
+                    if (geometryModels.TryGetValue(file, out var rootmodel))
+                    {
+                        rootmodel.ReferenceCounter++;
+                    }
+                    else
+                    {
+                        var newref = new GeometryModelReference(entry);
+                        newref.ReferenceCounter++;
+                        geometryModels.Add(file, newref);
+                    }
+                }
 
-                model = entry.Model;
+                model = entry;
                 return true;
             }
             return false;
@@ -174,22 +313,20 @@ namespace SIMULTAN.Data.Geometry
             {
                 case NotifyCollectionChangedAction.Add:
                     {
-                        foreach (var model in e.NewItems.OfType<GeometryModel>())
-                            AddGeometryModel(model);
+                        AddModelGraph(e.NewItems.OfType<GeometryModel>());
                     }
                     break;
                 case NotifyCollectionChangedAction.Remove:
                     {
-                        foreach (var model in e.OldItems.OfType<GeometryModel>())
-                            RemoveGeometryModel(model);
+                        if (e.OldItems.OfType<GeometryModel>().Any())
+                            RemoveUnusedModels();
                     }
                     break;
                 case NotifyCollectionChangedAction.Replace:
                     {
-                        foreach (var model in e.OldItems.OfType<GeometryModel>())
-                            RemoveGeometryModel(model);
-                        foreach (var model in e.NewItems.OfType<GeometryModel>())
-                            AddGeometryModel(model);
+                        if (e.OldItems.OfType<GeometryModel>().Any())
+                            RemoveUnusedModels();
+                        AddModelGraph(e.NewItems.OfType<GeometryModel>());
                     }
                     break;
                 default:

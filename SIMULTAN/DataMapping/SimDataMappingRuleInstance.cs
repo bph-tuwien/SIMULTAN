@@ -98,24 +98,24 @@ namespace SIMULTAN.DataMapping
 
         private void HandleMatch(SimComponentInstance instance, SimTraversalState state, SimMappedData data)
         {
+            //Advance position for this rule
+            AdvanceReferencePoint(state);
+
             WriteProperties(state, property =>
             {
                 switch (property)
                 {
                     case SimDataMappingInstanceMappingProperties.Name:
-                        data.AddData(this.SheetName, state.CurrentPosition, instance.Name);
+                        data.AddData(this.SheetName, state.CurrentPosition, instance.Name, this);
                         break;
                     case SimDataMappingInstanceMappingProperties.Id:
-                        data.AddData(this.SheetName, state.CurrentPosition, (int)instance.Id.LocalId);
+                        data.AddData(this.SheetName, state.CurrentPosition, (int)instance.Id.LocalId, this);
                         break;
                 }
             });
 
             //Handle child rules
             ExecuteChildRules(this.Rules, instance, state, data);
-
-            //Advance position for next rule
-            AdvanceReferencePoint(state);
         }
 
         /// <inheritdoc />
@@ -141,7 +141,7 @@ namespace SIMULTAN.DataMapping
                 OffsetParent = this.OffsetParent,
                 OffsetConsecutive = this.OffsetConsecutive,
                 MappingDirection = this.MappingDirection,
-                ReferencePoint = this.ReferencePoint,
+                ReferencePointParent = this.ReferencePointParent,
             };
 
             copy.Properties.AddRange(this.Properties);
@@ -169,5 +169,14 @@ namespace SIMULTAN.DataMapping
         }
 
         #endregion
+
+        /// <inheritdoc />
+        public override void RestoreDefaultTaxonomyReferences()
+        {
+            base.RestoreDefaultTaxonomyReferences();
+
+            foreach (var childRule in Rules)
+                childRule.RestoreDefaultTaxonomyReferences();
+        }
     }
 }

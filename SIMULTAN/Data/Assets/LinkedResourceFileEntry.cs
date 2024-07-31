@@ -137,7 +137,6 @@ namespace SIMULTAN.Data.Assets
         internal void SetRelativePathOnDelete()
         {
             this.NotifyDeleting();
-            this.current_relative_path = this.CurrentFullPath;
             this.CurrentFullPath = AssetManager.PATH_NOT_FOUND;
             this.File = null;
             this.Name = FileSystemNavigation.ExtractNameFromPath(this.current_relative_path);

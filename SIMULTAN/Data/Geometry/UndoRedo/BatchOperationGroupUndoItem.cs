@@ -20,7 +20,7 @@ namespace SIMULTAN.Data.Geometry
         /// <summary>
         /// Stores the GeometryModel this undoitem operates on
         /// </summary>
-        public GeometryModelData Model { get; private set; }
+        public List<GeometryModelData> Models { get; private set; }
 
 
         /// <summary>
@@ -32,10 +32,21 @@ namespace SIMULTAN.Data.Geometry
         /// </summary>
         /// <param name="model">The model in which the batch operation is started</param>
         /// <param name="items">The list of IUndoItems</param>
-        public BatchOperationGroupUndoItem(GeometryModelData model, List<IUndoItem> items)
+        public BatchOperationGroupUndoItem(GeometryModelData model, List<IUndoItem> items) : this(new List<GeometryModelData> { model }, items) { }
+        /// <summary>
+        /// Initializes a new instance of the GroupUndoItem class
+        /// </summary>
+        /// <param name="models">The models for which the batch operation is started</param>
+        public BatchOperationGroupUndoItem(List<GeometryModelData> models) : this(models, new List<IUndoItem>()) { }
+        /// <summary>
+        /// Initializes a new instance of the GroupUndoItem class
+        /// </summary>
+        /// <param name="models">The models for which the batch operation is started</param>
+        /// <param name="items">The list of IUndoItems</param>
+        public BatchOperationGroupUndoItem(List<GeometryModelData> models, List<IUndoItem> items)
         {
             this.Items = items;
-            this.Model = model;
+            this.Models = models;
         }
 
         /// <inheritdoc/>
@@ -43,7 +54,9 @@ namespace SIMULTAN.Data.Geometry
         {
             var anyRemoved = false;
 
-            Model.StartBatchOperation();
+            for (int i = 0; i < Models.Count; ++i)
+                Models[i].StartBatchOperation();
+
             for (int i = 0; i < Items.Count; ++i)
             {
                 var result = Items[i].Execute();
@@ -54,7 +67,9 @@ namespace SIMULTAN.Data.Geometry
                     i--;
                 }
             }
-            Model.EndBatchOperation();
+
+            for (int i = Models.Count - 1; i >= 0; --i)
+                Models[i].EndBatchOperation();
 
             if (anyRemoved && Items.Count > 0)
                 return UndoExecutionResult.PartiallyExecuted;
@@ -66,18 +81,22 @@ namespace SIMULTAN.Data.Geometry
         /// <inheritdoc/>
         public void Redo()
         {
-            Model.StartBatchOperation();
+            for (int i = 0; i < Models.Count; ++i)
+                Models[i].StartBatchOperation();
             for (int i = 0; i < Items.Count; ++i)
                 Items[i].Redo();
-            Model.EndBatchOperation();
+            for (int i = Models.Count - 1; i >= 0; --i)
+                Models[i].EndBatchOperation();
         }
         /// <inheritdoc/>
         public void Undo()
         {
-            Model.StartBatchOperation();
+            for (int i = Models.Count - 1; i >= 0; --i)
+                Models[i].StartBatchOperation();
             for (int i = Items.Count - 1; i >= 0; --i)
                 Items[i].Undo();
-            Model.EndBatchOperation();
+            for (int i = 0; i < Models.Count; ++i)
+                Models[i].EndBatchOperation();
         }
     }
 }

@@ -18,7 +18,7 @@ namespace SIMULTAN.DataMapping
         /// The name of the instance.
         /// Supports string or Regex
         /// </summary>
-        Name = 0, 
+        Name = 0,
         /// <summary>
         /// The type of the instance.
         /// Supports <see cref="SimInstanceType"/>
@@ -67,7 +67,7 @@ namespace SIMULTAN.DataMapping
                         throw new NotSupportedException("Unsupported value type");
                 case SimDataMappingInstanceFilterProperties.InstanceType:
                     if (this.Value is SimInstanceType itype)
-                        return instance.InstanceType == itype;
+                        return instance.Placements.Any(x => x.InstanceType.HasFlag(itype));
                     else
                         throw new NotSupportedException("Unsupported value type");
                 default:

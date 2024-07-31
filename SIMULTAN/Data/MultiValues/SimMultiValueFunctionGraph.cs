@@ -1,11 +1,11 @@
-﻿using System;
+﻿using SIMULTAN.Data.SimMath;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Windows.Media.Media3D;
 
 namespace SIMULTAN.Data.MultiValues
 {
@@ -61,7 +61,7 @@ namespace SIMULTAN.Data.MultiValues
         /// </summary>
         /// <param name="name">Name of the graph</param>
         /// <param name="points">The control points of this graph</param>
-        public SimMultiValueFunctionGraph(string name, IEnumerable<Point3D> points)
+        public SimMultiValueFunctionGraph(string name, IEnumerable<SimPoint3D> points)
         {
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
@@ -92,17 +92,17 @@ namespace SIMULTAN.Data.MultiValues
         /// The distance between the two points and 
         /// the graph value at the closest point (Y value of the graph)
         /// </returns>
-        public (Point3D closestPoint, double distance, double value) ClosestPoint(Point3D position)
+        public (SimPoint3D closestPoint, double distance, double value) ClosestPoint(SimPoint3D position)
         {
             if (this.Points.Count == 0) //No points
-                return (new Point3D(double.NaN, double.NaN, double.NaN), double.NaN, double.NaN);
+                return (new SimPoint3D(double.NaN, double.NaN, double.NaN), double.NaN, double.NaN);
             else if (Math.Abs(this.Points[0].Z - position.Z) > 0.0001) //Other z layer
-                return (new Point3D(double.NaN, double.NaN, double.NaN), double.NaN, double.NaN);
+                return (new SimPoint3D(double.NaN, double.NaN, double.NaN), double.NaN, double.NaN);
             else if (this.Points.Count == 1) //Exactly one point
                 return (Points[0], (position - Points[0]).Length, Points[0].Y);
 
             double minDistance = double.PositiveInfinity;
-            Point3D minPoint = new Point3D(double.NaN, double.NaN, double.NaN);
+            SimPoint3D minPoint = new SimPoint3D(double.NaN, double.NaN, double.NaN);
             int minIndex = -1;
 
             var pLast = Points[0];
@@ -170,7 +170,7 @@ namespace SIMULTAN.Data.MultiValues
                 return double.NaN;
         }
 
-        private (Point3D p, double distance) ClosestPointOnLine(Point3D p1, Point3D p2, Point3D position)
+        private (SimPoint3D p, double distance) ClosestPointOnLine(SimPoint3D p1, SimPoint3D p2, SimPoint3D position)
         {
             var ap = position - p1;
             var ab = p2 - p1;

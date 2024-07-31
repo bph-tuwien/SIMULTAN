@@ -2,17 +2,14 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Management;
-using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace SIMULTAN.Utils.Files
 {
     /// <summary>
     /// Handles different types of paths to targets on the local file system.
     /// </summary>
-    public static class FileSystemNavigation
+    public static partial class FileSystemNavigation
     {
 
         #region RELATIVE & ABSOLUTE
@@ -34,10 +31,8 @@ namespace SIMULTAN.Utils.Files
             string fromRoot = Path.GetPathRoot(fromPath);
             string toRoot = Path.GetPathRoot(toPath);
             if (!string.Equals(fromRoot, toRoot, StringComparison.InvariantCultureIgnoreCase))
-            {
                 // relative path cannot be calculated, return the absolute path
                 return toPath;
-            }
 
             // 3. extract the common parts
             string fromPath_wo_Root = fromPath.Substring(fromRoot.Length);
@@ -90,7 +85,7 @@ namespace SIMULTAN.Utils.Files
                     return true;
                 else
                 {
-                    DriveInfo[] dis = DriveInfo.GetDrives();
+                    var dis = DriveInfo.GetDrives();
                     foreach (var d in dis)
                     {
                         if (string.Equals(d.Name, root, StringComparison.InvariantCultureIgnoreCase))
@@ -137,7 +132,7 @@ namespace SIMULTAN.Utils.Files
             int best_fit_start = fPath_parts.Length;
             if (overlapPossible && !(toPath.StartsWith(Path.DirectorySeparatorChar.ToString()) || toPath.StartsWith(Path.AltDirectorySeparatorChar.ToString()) || toPath.StartsWith(".")))
             {
-                Regex proper_fit = new Regex(@"^[-2]*[1]+$");
+                var proper_fit = new Regex(@"^[-2]*[1]+$");
                 for (int shift = 0; shift < fPath_parts.Length; shift++)
                 {
                     int[] sfit = Enumerable.Repeat(-1, fPath_parts.Length).ToArray();
@@ -152,11 +147,11 @@ namespace SIMULTAN.Utils.Files
                         else
                             sfit[f + shift] = -2;
                     }
-                    string sfit_str = (sfit.Length == 1) ? sfit[0].ToString() : sfit.Select(x => x.ToString()).Aggregate((x, y) => x + y);
-                    //Console.WriteLine("fit: {0}", sfit_str);
+                    string sfit_str = sfit.Length == 1 ? sfit[0].ToString() : sfit.Select(x => x.ToString()).Aggregate((x, y) => x + y);
+                    //Debug.WriteLine("fit: {0}", sfit_str);
                     if (proper_fit.IsMatch(sfit_str))
                     {
-                        //Console.WriteLine("MATCH for shift {0}", shift);
+                        //Debug.WriteLine("MATCH for shift {0}", shift);
                         best_fit_start = shift;
                         break;
                     }
@@ -174,7 +169,7 @@ namespace SIMULTAN.Utils.Files
             }
 
             // stitch the paths together
-            List<string> full_parts = new List<string> { fromRoot };
+            var full_parts = new List<string> { fromRoot };
             for (int i = 0; i < best_fit_start; i++)
             {
                 full_parts.Add(fPath_parts[i]);
@@ -213,17 +208,10 @@ namespace SIMULTAN.Utils.Files
                     throw new ArgumentException("Both directory paths must be valid!");
             }
 
-            DirectoryInfo diP = new DirectoryInfo(fullPathParent);
-            DirectoryInfo diC = new DirectoryInfo(fullPathChild);
-            while (diC.Parent != null)
-            {
-                if (string.Equals(diC.Parent.FullName, diP.FullName, StringComparison.InvariantCultureIgnoreCase))
-                    return true;
-                diC = diC.Parent;
-            }
+            string diP = Path.GetFullPath(fullPathParent);
+            string diC = Path.GetFullPath(fullPathChild);
 
-            return false;
-
+            return diC.StartsWith(diP + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
         }
 
         /// <summary>
@@ -246,8 +234,8 @@ namespace SIMULTAN.Utils.Files
                 // try child as a file
                 if (elementsExist && !File.Exists(fullPathChildFileOrFolder))
                     throw new ArgumentException("Both paths must be valid!");
-                FileInfo child = new FileInfo(fullPathChildFileOrFolder);
-                DirectoryInfo dChild = child.Directory;
+                var child = new FileInfo(fullPathChildFileOrFolder);
+                var dChild = child.Directory;
                 contained_as_file = IsSubdirectoryOf(fullPathParent, dChild.FullName, elementsExist)
                                         || string.Equals(fullPathParent, dChild.FullName, StringComparison.InvariantCultureIgnoreCase);
             }
@@ -271,15 +259,15 @@ namespace SIMULTAN.Utils.Files
             bool paths_exist = false;
 
             // 1. determine actual relative and full paths
-            bool rel_is_absolute = FileSystemNavigation.IsPathFullyQualified(relPath);
-            bool full_unknown = string.IsNullOrEmpty(fullPath) || (fullPath == invalidPathString);
+            bool rel_is_absolute = IsPathFullyQualified(relPath);
+            bool full_unknown = string.IsNullOrEmpty(fullPath) || fullPath == invalidPathString;
             if (rel_is_absolute && full_unknown)
             {
                 actual_rel_path = string.Empty;
                 actual_full_path = relPath;
             }
-            bool full_valid = !string.IsNullOrEmpty(actual_full_path) && (actual_full_path != invalidPathString);
-            bool rel_valid = !string.IsNullOrEmpty(actual_rel_path) && (actual_rel_path != invalidPathString);
+            bool full_valid = !string.IsNullOrEmpty(actual_full_path) && actual_full_path != invalidPathString;
+            bool rel_valid = !string.IsNullOrEmpty(actual_rel_path) && actual_rel_path != invalidPathString;
 
             // 2. check if the paths match
             if (!string.IsNullOrEmpty(actual_full_path) && actual_full_path != invalidPathString)
@@ -388,6 +376,26 @@ namespace SIMULTAN.Utils.Files
         #endregion
 
         /// <summary>
+        /// Enures that the path only contains platform specific seperators replacing other ones.
+        /// </summary>
+        /// <param name="path">The path</param>
+        /// <returns>The sanitized path</returns>
+        public static string SanitizePath(string path)
+        {
+            return DirectorySeperatorRegex().Replace(path, Path.DirectorySeparatorChar.ToString());
+        }
+
+        /// <summary>
+        /// Enures that the path only contains forward slashes for writing.
+        /// </summary>
+        /// <param name="path">The path</param>
+        /// <returns>The sanitized path</returns>
+        public static string SanitizeWritePath(string path)
+        {
+            return DirectorySeperatorRegex().Replace(path, "/");
+        }
+
+        /// <summary>
         /// Checks whether a file is locked by trying to open it in exclusive read mode
         /// </summary>
         /// <param name="file">The file to check</param>
@@ -420,5 +428,8 @@ namespace SIMULTAN.Utils.Files
             //file is not locked
             return false;
         }
+
+        [GeneratedRegex("[/\\\\]")]
+        private static partial Regex DirectorySeperatorRegex();
     }
 }

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Windows.Media.Media3D;
+using SIMULTAN.Data.SimMath;
 
 namespace SIMULTAN.Data.Geometry
 {
@@ -50,7 +50,7 @@ namespace SIMULTAN.Data.Geometry
             this.RefP2 = P2;
 
             // compute 2 directions in WGS space with a shared origin and their azimuth (angle to projected north), use average height for origin
-            Point3D originWGS = new Point3D(RefOrigin.WGS.X, RefOrigin.WGS.Y, RefOrigin.WGS.Z);
+            SimPoint3D originWGS = new SimPoint3D(RefOrigin.WGS.X, RefOrigin.WGS.Y, RefOrigin.WGS.Z);
             originWGS.Z = (1.0 / 3.0) * (RefOrigin.WGS.Z + RefP1.WGS.Z + RefP2.WGS.Z);
             double d1, d2;
             (d1, Azimuth1) = GeoReferenceAlgorithms.VincentyIndirect(originWGS, RefP1.WGS);

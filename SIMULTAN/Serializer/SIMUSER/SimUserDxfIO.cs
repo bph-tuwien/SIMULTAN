@@ -1,13 +1,10 @@
 ﻿using SIMULTAN.Data.Users;
-using SIMULTAN.Projects;
 using SIMULTAN.Serializer.DXF;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SIMULTAN.Serializer.SIMUSER
 {
@@ -223,7 +220,7 @@ namespace SIMULTAN.Serializer.SIMUSER
 
             writer.WriteVersionSection();
 
-            writer.StartSection(ParamStructTypes.USER_SECTION);
+            writer.StartSection(ParamStructTypes.USER_SECTION, users.Count());
 
             foreach (var user in users)
             {

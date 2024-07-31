@@ -31,7 +31,7 @@ namespace SIMULTAN.Tests.Calculations
     [TestClass]
     public class MultiValueCalculationOperandParameterTests : BaseProjectTest
     {
-        private static readonly FileInfo calculationProject = new FileInfo(@".\CalculationTestsProject.simultan");
+        private static readonly FileInfo calculationProject = new FileInfo(@"./CalculationTestsProject.simultan");
 
         private SimMultiValueExpressionParameter FindOperand(SimCalculation calc, string symbol)
         {
@@ -344,7 +344,7 @@ namespace SIMULTAN.Tests.Calculations
 
         #region Serialization File Version = 3
 
-        private static readonly FileInfo importFileV3 = new FileInfo(@".\FormatTest_V3.simultan");
+        private static readonly FileInfo importFileV3 = new FileInfo(@"./FormatTest_V3.simultan");
 
         [TestMethod]
         public void ImportConversionTestVersion3()
@@ -382,7 +382,7 @@ namespace SIMULTAN.Tests.Calculations
 
             calc.Calculate(projectData.ValueManager);
 
-            var resultParam = calcComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "out");
+            var resultParam = calcComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Text == "out");
 
             Assert.IsTrue(resultParam.ValueSource != null);
             Assert.IsTrue(resultParam.ValueSource is SimMultiValueBigTableParameterSource);

@@ -1,19 +1,20 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SIMULTAN.Data.Components;
 using SIMULTAN.Data.Geometry;
+using SIMULTAN.Data.SimMath;
 using SIMULTAN.Data.Taxonomy;
 using SIMULTAN.Tests.TestUtils;
 using System;
 using System.IO;
 using System.Linq;
-using System.Windows.Media.Media3D;
+
 
 namespace SIMULTAN.Tests.Geometry.GeometryValueSource
 {
     [TestClass]
     public class VolumeFloorAreaGeometrySourceTests : BaseProjectTest
     {
-        private static readonly FileInfo geometrySourceProject = new FileInfo(@".\GeometryValueSourceTests.simultan");
+        private static readonly FileInfo geometrySourceProject = new FileInfo(@"./GeometryValueSourceTests.simultan");
 
         #region Attach/Open
 
@@ -23,7 +24,7 @@ namespace SIMULTAN.Tests.Geometry.GeometryValueSource
             LoadProject(geometrySourceProject);
 
             var faceComp = this.projectData.Components.First(x => x.Name == "Volume 3");
-            var param = faceComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "GeometryParam");
+            var param = faceComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Text == "GeometryParam");
 
             Assert.IsTrue(double.IsNegativeInfinity(param.Value));
 
@@ -41,7 +42,7 @@ namespace SIMULTAN.Tests.Geometry.GeometryValueSource
             LoadProject(geometrySourceProject);
 
             var faceComp = this.projectData.Components.First(x => x.Name == "Volume 3");
-            var param = faceComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "GeometryParam");
+            var param = faceComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Text == "GeometryParam");
 
             //Add parameter source
             param.ValueSource = new SimGeometryParameterSource(SimGeometrySourceProperty.VolumeFloorArea);
@@ -57,7 +58,7 @@ namespace SIMULTAN.Tests.Geometry.GeometryValueSource
             LoadProject(geometrySourceProject);
 
             var faceComp = this.projectData.Components.First(x => x.Name == "Volume 3");
-            var param = faceComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "GeometryParam");
+            var param = faceComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Text == "GeometryParam");
 
             (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
 
@@ -78,15 +79,15 @@ namespace SIMULTAN.Tests.Geometry.GeometryValueSource
             LoadProject(geometrySourceProject);
 
             var faceComp = this.projectData.Components.First(x => x.Name == "Volume 3");
-            var param = faceComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "GeometryParam");
+            var param = faceComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Text == "GeometryParam");
 
             //Add parameter source
             param.ValueSource = new SimGeometryParameterSource(SimGeometrySourceProperty.VolumeFloorArea);
 
             (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
 
-            gm.Geometry.Vertices.First(x => x.Name == "Vertex - B3 - BackRightBottom").Position += new Vector3D(0, 0, -5);
-            gm.Geometry.Vertices.First(x => x.Name == "Vertex - B3 - BackLeftBottom").Position += new Vector3D(0, 0, -5);
+            gm.Geometry.Vertices.First(x => x.Name == "Vertex - B3 - BackRightBottom").Position += new SimVector3D(0, 0, -5);
+            gm.Geometry.Vertices.First(x => x.Name == "Vertex - B3 - BackLeftBottom").Position += new SimVector3D(0, 0, -5);
 
             AssertUtil.AssertDoubleEqual(250.0, param.Value);
             AssertUtil.AssertDoubleEqual(250.0, (double)faceComp.Instances[0].InstanceParameterValuesPersistent[param]);
@@ -97,7 +98,7 @@ namespace SIMULTAN.Tests.Geometry.GeometryValueSource
             LoadProject(geometrySourceProject);
 
             var faceComp = this.projectData.Components.First(x => x.Name == "Volume 3");
-            var param = faceComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "GeometryParam");
+            var param = faceComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Text == "GeometryParam");
 
             //Add parameter source
             param.ValueSource = new SimGeometryParameterSource(SimGeometrySourceProperty.VolumeFloorArea);
@@ -105,8 +106,8 @@ namespace SIMULTAN.Tests.Geometry.GeometryValueSource
             (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
 
             gm.Geometry.StartBatchOperation();
-            gm.Geometry.Vertices.First(x => x.Name == "Vertex - B3 - BackRightBottom").Position += new Vector3D(0, 0, -5);
-            gm.Geometry.Vertices.First(x => x.Name == "Vertex - B3 - BackLeftBottom").Position += new Vector3D(0, 0, -5);
+            gm.Geometry.Vertices.First(x => x.Name == "Vertex - B3 - BackRightBottom").Position += new SimVector3D(0, 0, -5);
+            gm.Geometry.Vertices.First(x => x.Name == "Vertex - B3 - BackLeftBottom").Position += new SimVector3D(0, 0, -5);
             gm.Geometry.EndBatchOperation();
 
             AssertUtil.AssertDoubleEqual(250.0, param.Value);
@@ -119,7 +120,7 @@ namespace SIMULTAN.Tests.Geometry.GeometryValueSource
             LoadProject(geometrySourceProject);
 
             var volComp = this.projectData.Components.First(x => x.Name == "Volume 3");
-            var param = volComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "GeometryParam");
+            var param = volComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Text == "GeometryParam");
 
             //Add parameter source
             param.ValueSource = new SimGeometryParameterSource(SimGeometrySourceProperty.VolumeFloorArea);
@@ -140,7 +141,7 @@ namespace SIMULTAN.Tests.Geometry.GeometryValueSource
             LoadProject(geometrySourceProject);
 
             var volComp = this.projectData.Components.First(x => x.Name == "Volume 3");
-            var param = volComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "GeometryParam");
+            var param = volComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Text == "GeometryParam");
 
             //Add parameter source
             param.ValueSource = new SimGeometryParameterSource(SimGeometrySourceProperty.VolumeFloorArea);
@@ -165,7 +166,7 @@ namespace SIMULTAN.Tests.Geometry.GeometryValueSource
             LoadProject(geometrySourceProject);
 
             var faceComp = this.projectData.Components.First(x => x.Name == "Volume 3");
-            var param = faceComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "GeometryParam");
+            var param = faceComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Text == "GeometryParam");
 
             //Add parameter source
             param.ValueSource = new SimGeometryParameterSource(SimGeometrySourceProperty.VolumeFloorArea);
@@ -191,7 +192,7 @@ namespace SIMULTAN.Tests.Geometry.GeometryValueSource
             LoadProject(geometrySourceProject);
 
             var faceComp = this.projectData.Components.First(x => x.Name == "Volume 3");
-            var param = faceComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "GeometryParam");
+            var param = faceComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Text == "GeometryParam");
 
             //Add parameter source
             param.ValueSource = new SimGeometryParameterSource(SimGeometrySourceProperty.VolumeFloorArea);
@@ -199,8 +200,8 @@ namespace SIMULTAN.Tests.Geometry.GeometryValueSource
             (var gm, var resource) = ProjectUtils.LoadGeometry("Geometry.simgeo", projectData, sp);
 
             var copyGeometry = gm.Geometry.Clone();
-            copyGeometry.Vertices.First(x => x.Name == "Vertex - B3 - BackRightBottom").Position += new Vector3D(0, 0, -5);
-            copyGeometry.Vertices.First(x => x.Name == "Vertex - B3 - BackLeftBottom").Position += new Vector3D(0, 0, -5);
+            copyGeometry.Vertices.First(x => x.Name == "Vertex - B3 - BackRightBottom").Position += new SimVector3D(0, 0, -5);
+            copyGeometry.Vertices.First(x => x.Name == "Vertex - B3 - BackLeftBottom").Position += new SimVector3D(0, 0, -5);
 
             AssertUtil.AssertDoubleEqual(200.0, param.Value);
             AssertUtil.AssertDoubleEqual(200.0, (double)faceComp.Instances[0].InstanceParameterValuesPersistent[param]);
@@ -216,7 +217,7 @@ namespace SIMULTAN.Tests.Geometry.GeometryValueSource
             LoadProject(geometrySourceProject);
 
             var faceComp = this.projectData.Components.First(x => x.Name == "Volume 3");
-            var param = faceComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "GeometryParam");
+            var param = faceComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Text == "GeometryParam");
 
             //Add parameter source
             param.ValueSource = new SimGeometryParameterSource(SimGeometrySourceProperty.VolumeFloorArea);
@@ -242,7 +243,7 @@ namespace SIMULTAN.Tests.Geometry.GeometryValueSource
             LoadProject(geometrySourceProject);
 
             var volComp = this.projectData.Components.First(x => x.Name == "Volume 3");
-            var param = volComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "GeometryParam");
+            var param = volComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Text == "GeometryParam");
 
             //Add parameter source
             param.ValueSource = new SimGeometryParameterSource(SimGeometrySourceProperty.VolumeFloorArea);
@@ -271,7 +272,7 @@ namespace SIMULTAN.Tests.Geometry.GeometryValueSource
             LoadProject(geometrySourceProject);
 
             var volComp = this.projectData.Components.First(x => x.Name == "Volume 3");
-            var param = volComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "GeometryParam");
+            var param = volComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Text == "GeometryParam");
 
             //Add parameter source
             param.ValueSource = new SimGeometryParameterSource(SimGeometrySourceProperty.VolumeFloorArea);
@@ -303,7 +304,7 @@ namespace SIMULTAN.Tests.Geometry.GeometryValueSource
             LoadProject(geometrySourceProject);
 
             var faceComp = this.projectData.Components.First(x => x.Name == "Volume 3");
-            var param = faceComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "GeometryParam");
+            var param = faceComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Text == "GeometryParam");
 
             //Add parameter source
             param.ValueSource = new SimGeometryParameterSource(SimGeometrySourceProperty.VolumeFloorArea);
@@ -312,7 +313,7 @@ namespace SIMULTAN.Tests.Geometry.GeometryValueSource
 
             //Add instance
             var bottomVolume = gm.Geometry.Volumes.First(x => x.Name == "Upper Volume");
-            faceComp.Instances.Add(new SimComponentInstance(SimInstanceType.Entity3D, gm.File.Key, bottomVolume.Id, null));
+            faceComp.Instances.Add(new SimComponentInstance(SimInstanceType.Entity3D, gm.File.Key, bottomVolume.Id));
 
             //Check
             AssertUtil.AssertDoubleEqual(400.0, param.Value);
@@ -325,7 +326,7 @@ namespace SIMULTAN.Tests.Geometry.GeometryValueSource
             LoadProject(geometrySourceProject);
 
             var faceComp = this.projectData.Components.First(x => x.Name == "Volume 3");
-            var param = faceComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "GeometryParam");
+            var param = faceComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Text == "GeometryParam");
 
             //Add parameter source
             param.ValueSource = new SimGeometryParameterSource(SimGeometrySourceProperty.VolumeFloorArea);
@@ -334,7 +335,7 @@ namespace SIMULTAN.Tests.Geometry.GeometryValueSource
 
             //Add second instance
             var bottomVolume = gm.Geometry.Volumes.First(x => x.Name == "Upper Volume");
-            faceComp.Instances.Add(new SimComponentInstance(SimInstanceType.Entity3D, gm.File.Key, bottomVolume.Id, null));
+            faceComp.Instances.Add(new SimComponentInstance(SimInstanceType.Entity3D, gm.File.Key, bottomVolume.Id));
 
             AssertUtil.AssertDoubleEqual(400.0, param.Value);
 
@@ -351,7 +352,7 @@ namespace SIMULTAN.Tests.Geometry.GeometryValueSource
             LoadProject(geometrySourceProject);
 
             var faceComp = this.projectData.Components.First(x => x.Name == "Volume 3");
-            var param = faceComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "GeometryParam");
+            var param = faceComp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Text == "GeometryParam");
 
             //Add parameter source
             param.ValueSource = new SimGeometryParameterSource(SimGeometrySourceProperty.VolumeFloorArea);
@@ -360,7 +361,7 @@ namespace SIMULTAN.Tests.Geometry.GeometryValueSource
 
             //Add second instance
             var bottomVolume = gm.Geometry.Volumes.First(x => x.Name == "Upper Volume");
-            faceComp.Instances.Add(new SimComponentInstance(SimInstanceType.Entity3D, gm.File.Key, bottomVolume.Id, null));
+            faceComp.Instances.Add(new SimComponentInstance(SimInstanceType.Entity3D, gm.File.Key, bottomVolume.Id));
 
             //Remove instance
             faceComp.Instances[0].Placements.RemoveAt(0);
@@ -404,18 +405,17 @@ namespace SIMULTAN.Tests.Geometry.GeometryValueSource
             var newComp = new SimComponent()
             {
                 InstanceType = SimInstanceType.Entity3D,
-                CurrentSlot = new SimTaxonomyEntryReference(projectData.Taxonomies.GetDefaultSlot(SimDefaultSlotKeys.Undefined))
             };
-
+            newComp.Slots.Add(new SimTaxonomyEntryReference(projectData.Taxonomies.GetDefaultSlot(SimDefaultSlotKeys.Undefined)));
             var param = new SimDoubleParameter("New Param", "", -1.0);
             param.ValueSource = new SimGeometryParameterSource(SimGeometrySourceProperty.VolumeFloorArea);
 
             newComp.Parameters.Add(param);
 
             var volume = gm.Geometry.Volumes.First(x => x.Name == "Split Volume");
-            newComp.Instances.Add(new SimComponentInstance(SimInstanceType.Entity3D, gm.File.Key, volume.Id, null));
+            newComp.Instances.Add(new SimComponentInstance(SimInstanceType.Entity3D, gm.File.Key, volume.Id));
 
-            volComp.Components.Add(new SimChildComponentEntry(new SimSlot(new SimTaxonomyEntryReference(newComp.CurrentSlot), ""), newComp));
+            volComp.Components.Add(new SimChildComponentEntry(new SimSlot(new SimTaxonomyEntryReference(newComp.Slots[0]), ""), newComp));
 
             AssertUtil.AssertDoubleEqual(200.0, param.Value);
             AssertUtil.AssertDoubleEqual(200.0, (double)newComp.Instances[0].InstanceParameterValuesPersistent[param]);
@@ -438,7 +438,7 @@ namespace SIMULTAN.Tests.Geometry.GeometryValueSource
             LoadProject(geometrySourceProject);
 
             var comp = projectData.Components.First(x => x.Name == "Volume 3");
-            var param = comp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "GeometryParam");
+            var param = comp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Text == "GeometryParam");
 
             //Add parameter source
             var ptrRef = MemoryLeakTestSourceRemoved_Action(param);
@@ -456,7 +456,7 @@ namespace SIMULTAN.Tests.Geometry.GeometryValueSource
         private WeakReference MemoryLeakTestParameterRemoved_Action()
         {
             var comp = projectData.Components.First(x => x.Name == "Volume 3");
-            var param = comp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Name == "GeometryParam");
+            var param = comp.Parameters.OfType<SimDoubleParameter>().First(x => x.NameTaxonomyEntry.Text == "GeometryParam");
 
             //Add parameter source
             param.ValueSource = new SimGeometryParameterSource(SimGeometrySourceProperty.VolumeFloorArea);

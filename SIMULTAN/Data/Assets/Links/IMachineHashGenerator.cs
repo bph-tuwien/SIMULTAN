@@ -4,10 +4,17 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SIMULTAN.Data.Assets.Links
+namespace SIMULTAN.Data.Assets
 {
-    internal interface IMachineHashGenerator
+    /// <summary>
+    /// Generator that returns the unique hash of a machine.
+    /// </summary>
+    public interface IMachineHashGenerator
     {
-        int GetMachineHash();
+        /// <summary>
+        /// Return the Sha256 has as a hex string that uniquely identifies the userers machine.
+        /// </summary>
+        /// <returns>The Sha256 has as a hex string that uniquely identifies the userers machine.</returns>
+        string GetMachineHash();
     }
 }

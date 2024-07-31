@@ -1,20 +1,22 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SIMULTAN.Data.Components;
 using SIMULTAN.Data.Geometry;
+using SIMULTAN.Data.SimMath;
 using SIMULTAN.Data.SimNetworks;
 using SIMULTAN.Data.Taxonomy;
 using SIMULTAN.Tests.TestUtils;
 using System;
 using System.IO;
 using System.Linq;
-using System.Windows.Media.Media3D;
+using System.Threading;
+
 
 namespace SIMULTAN.Tests.SimNetworks
 {
     [TestClass]
     public class SimNetworkGeometryConnectorTests : BaseProjectTest
     {
-        private static readonly FileInfo simNetworkProject = new FileInfo(@".\SimNetworkGeometryConnectorTest.simultan");
+        private static readonly FileInfo simNetworkProject = new FileInfo(@"./SimNetworkGeometryConnectorTest.simultan");
         private string _test_network = "TestSimNetwork";
         private string _static_block = "StaticBlock";
         private string _block1 = "Block1";
@@ -43,9 +45,12 @@ namespace SIMULTAN.Tests.SimNetworks
 
 
             //Creating components for the blocks
-            var block1Comp = new SimComponent() { Name = auto_network_block1_comp, InstanceType = SimInstanceType.SimNetworkBlock, CurrentSlot = new SimTaxonomyEntryReference(undefinedSlot) };
-            var block2Comp = new SimComponent() { Name = auto_network_block2_comp, InstanceType = SimInstanceType.SimNetworkBlock, CurrentSlot = new SimTaxonomyEntryReference(undefinedSlot) };
-            var block3Comp = new SimComponent() { Name = auto_network_block3_comp, InstanceType = SimInstanceType.SimNetworkBlock, CurrentSlot = new SimTaxonomyEntryReference(undefinedSlot) };
+            var block1Comp = new SimComponent() { Name = auto_network_block1_comp, InstanceType = SimInstanceType.SimNetworkBlock };
+            block1Comp.Slots.Add(new SimTaxonomyEntryReference(undefinedSlot));
+            var block2Comp = new SimComponent() { Name = auto_network_block2_comp, InstanceType = SimInstanceType.SimNetworkBlock };
+            block2Comp.Slots.Add(new SimTaxonomyEntryReference(undefinedSlot));
+            var block3Comp = new SimComponent() { Name = auto_network_block3_comp, InstanceType = SimInstanceType.SimNetworkBlock };
+            block3Comp.Slots.Add(new SimTaxonomyEntryReference(undefinedSlot));
             this.projectData.Components.Add(block1Comp);
             this.projectData.Components.Add(block2Comp);
             this.projectData.Components.Add(block3Comp);
@@ -60,7 +65,7 @@ namespace SIMULTAN.Tests.SimNetworks
 
 
             // BLOCK 1, Static
-            var block1 = new SimNetworkBlock(auto_network_block1, new System.Windows.Point(0, 0)); //Static
+            var block1 = new SimNetworkBlock(auto_network_block1, new SimPoint(0, 0)); //Static
             var port11 = new SimNetworkPort(PortType.Output);
             var port12 = new SimNetworkPort(PortType.Output);
             block1.Ports.Add(port11);
@@ -71,34 +76,36 @@ namespace SIMULTAN.Tests.SimNetworks
             {
                 if (item.PortType == PortType.Input)
                 {
-                    var targetSlot = block1Comp.Components.FindAvailableSlot(block1Comp.CurrentSlot.Target);
-                    var subComp = new SimComponent() { Name = auto_network_block1_comp, InstanceType = SimInstanceType.InPort, CurrentSlot = new SimTaxonomyEntryReference(undefinedSlot) };
+                    var targetSlot = block1Comp.Components.FindAvailableSlot(block1Comp.Slots[0].Target);
+                    var subComp = new SimComponent() { Name = auto_network_block1_comp, InstanceType = SimInstanceType.InPort };
+                    subComp.Slots.Add(new SimTaxonomyEntryReference(undefinedSlot));
                     var child = new SimChildComponentEntry(targetSlot, subComp);
                     block1Comp.Components.Add(child);
                 }
                 else
                 {
 
-                    var targetSlot = block1Comp.Components.FindAvailableSlot(block1Comp.CurrentSlot.Target);
-                    var subComp = new SimComponent() { Name = auto_network_block1_comp, InstanceType = SimInstanceType.OutPort, CurrentSlot = new SimTaxonomyEntryReference(undefinedSlot) };
+                    var targetSlot = block1Comp.Components.FindAvailableSlot(block1Comp.Slots[0].Target);
+                    var subComp = new SimComponent() { Name = auto_network_block1_comp, InstanceType = SimInstanceType.OutPort };
+                    subComp.Slots.Add(new SimTaxonomyEntryReference(undefinedSlot));
                     var child = new SimChildComponentEntry(targetSlot, subComp);
                     block1Comp.Components.Add(child);
                 }
 
             }
-            block1Comp.Instances.Add(componentInstance1);
+            block1.AssignComponent(block1Comp, true);
             block1.ConvertToStatic();
 
 
             Assert.IsTrue(block1.Ports.Any(p => p.ComponentInstance != null
-                            && p.ComponentInstance.Component.Parameters.Any(n => n.NameTaxonomyEntry.TaxonomyEntryReference.Target.Key == ReservedParameterKeys.SIMNW_STATIC_PORT_POSITION_X)
-                            && p.ComponentInstance.Component.Parameters.Any(t => t.NameTaxonomyEntry.TaxonomyEntryReference.Target.Key == ReservedParameterKeys.SIMNW_STATIC_PORT_POSITION_Y)
-                            && p.ComponentInstance.Component.Parameters.Any(k => k.NameTaxonomyEntry.TaxonomyEntryReference.Target.Key == ReservedParameterKeys.SIMNW_STATIC_PORT_POSITION_Z)));
+                            && p.ComponentInstance.Component.Parameters.Any(n => n.HasReservedTaxonomyEntry(ReservedParameterKeys.SIMNW_STATIC_PORT_POSITION_X))
+                            && p.ComponentInstance.Component.Parameters.Any(t => t.HasReservedTaxonomyEntry(ReservedParameterKeys.SIMNW_STATIC_PORT_POSITION_Y))
+                            && p.ComponentInstance.Component.Parameters.Any(k => k.HasReservedTaxonomyEntry(ReservedParameterKeys.SIMNW_STATIC_PORT_POSITION_Z))));
 
 
 
             // BLOCK 2, Static
-            var block2 = new SimNetworkBlock(auto_network_block1, new System.Windows.Point(0, 100)); //Static
+            var block2 = new SimNetworkBlock(auto_network_block1, new SimPoint(0, 100)); //Static
             var port21 = new SimNetworkPort(PortType.Input);
             var port22 = new SimNetworkPort(PortType.Input);
             block2.Ports.Add(port21);
@@ -108,34 +115,36 @@ namespace SIMULTAN.Tests.SimNetworks
             {
                 if (item.PortType == PortType.Input)
                 {
-                    var targetSlot = block2Comp.Components.FindAvailableSlot(block2Comp.CurrentSlot.Target);
-                    var subComp = new SimComponent() { Name = auto_network_block1_comp, InstanceType = SimInstanceType.InPort, CurrentSlot = new SimTaxonomyEntryReference(undefinedSlot) };
+                    var targetSlot = block2Comp.Components.FindAvailableSlot(block2Comp.Slots[0].Target);
+                    var subComp = new SimComponent() { Name = auto_network_block1_comp, InstanceType = SimInstanceType.InPort };
+                    subComp.Slots.Add(new SimTaxonomyEntryReference(undefinedSlot));
                     var child = new SimChildComponentEntry(targetSlot, subComp);
                     block2Comp.Components.Add(child);
                 }
                 else
                 {
 
-                    var targetSlot = block2Comp.Components.FindAvailableSlot(block2Comp.CurrentSlot.Target);
-                    var subComp = new SimComponent() { Name = auto_network_block1_comp, InstanceType = SimInstanceType.OutPort, CurrentSlot = new SimTaxonomyEntryReference(undefinedSlot) };
+                    var targetSlot = block2Comp.Components.FindAvailableSlot(block2Comp.Slots[0].Target);
+                    var subComp = new SimComponent() { Name = auto_network_block1_comp, InstanceType = SimInstanceType.OutPort };
+                    subComp.Slots.Add(new SimTaxonomyEntryReference(undefinedSlot));
                     var child = new SimChildComponentEntry(targetSlot, subComp);
                     block2Comp.Components.Add(child);
                 }
 
             }
             var componentInstance2 = new SimComponentInstance(block2);
-            block2Comp.Instances.Add(componentInstance2);
+            block2.AssignComponent(block2Comp, true);
             block2.ConvertToStatic();
 
 
             Assert.IsTrue(block2.Ports.Any(p => p.ComponentInstance != null
-                            && p.ComponentInstance.Component.Parameters.Any(n => n.NameTaxonomyEntry.TaxonomyEntryReference.Target.Key == ReservedParameterKeys.SIMNW_STATIC_PORT_POSITION_X)
-                            && p.ComponentInstance.Component.Parameters.Any(t => t.NameTaxonomyEntry.TaxonomyEntryReference.Target.Key == ReservedParameterKeys.SIMNW_STATIC_PORT_POSITION_Y)
-                            && p.ComponentInstance.Component.Parameters.Any(k => k.NameTaxonomyEntry.TaxonomyEntryReference.Target.Key == ReservedParameterKeys.SIMNW_STATIC_PORT_POSITION_Z)));
+                            && p.ComponentInstance.Component.Parameters.Any(n => n.HasReservedTaxonomyEntry(ReservedParameterKeys.SIMNW_STATIC_PORT_POSITION_X))
+                            && p.ComponentInstance.Component.Parameters.Any(t => t.HasReservedTaxonomyEntry(ReservedParameterKeys.SIMNW_STATIC_PORT_POSITION_Y))
+                            && p.ComponentInstance.Component.Parameters.Any(k => k.HasReservedTaxonomyEntry(ReservedParameterKeys.SIMNW_STATIC_PORT_POSITION_Z))));
 
 
             // BLOCK 3 Dynamic
-            var block3 = new SimNetworkBlock(auto_network_block3, new System.Windows.Point(100, 100)); //Dynamic
+            var block3 = new SimNetworkBlock(auto_network_block3, new SimPoint(100, 100)); //Dynamic
 
             var port31 = new SimNetworkPort(PortType.Output);
             var port32 = new SimNetworkPort(PortType.Input);
@@ -149,24 +158,25 @@ namespace SIMULTAN.Tests.SimNetworks
             {
                 if (item.PortType == PortType.Input)
                 {
-                    var targetSlot = block3Comp.Components.FindAvailableSlot(block3Comp.CurrentSlot.Target);
-                    var subComp = new SimComponent() { Name = auto_network_block1_comp, InstanceType = SimInstanceType.InPort, CurrentSlot = new SimTaxonomyEntryReference(undefinedSlot) };
+                    var targetSlot = block3Comp.Components.FindAvailableSlot(block3Comp.Slots[0].Target);
+                    var subComp = new SimComponent() { Name = auto_network_block1_comp, InstanceType = SimInstanceType.InPort };
+                    subComp.Slots.Add(new SimTaxonomyEntryReference(undefinedSlot));
                     var child = new SimChildComponentEntry(targetSlot, subComp);
                     block3Comp.Components.Add(child);
                 }
                 else
                 {
 
-                    var targetSlot = block3Comp.Components.FindAvailableSlot(block3Comp.CurrentSlot.Target);
-                    var subComp = new SimComponent() { Name = auto_network_block1_comp, InstanceType = SimInstanceType.OutPort, CurrentSlot = new SimTaxonomyEntryReference(undefinedSlot) };
+                    var targetSlot = block3Comp.Components.FindAvailableSlot(block3Comp.Slots[0].Target);
+                    var subComp = new SimComponent() { Name = auto_network_block1_comp, InstanceType = SimInstanceType.OutPort, };
+                    subComp.Slots.Add(new SimTaxonomyEntryReference(undefinedSlot));
                     var child = new SimChildComponentEntry(targetSlot, subComp);
                     block3Comp.Components.Add(child);
                 }
 
             }
 
-            var componentInstance3 = new SimComponentInstance(block3);
-            block3Comp.Instances.Add(componentInstance3);
+            block3.AssignComponent(block3Comp, true);
 
             //Connect the static Blocks
             port11.ConnectTo(port21);
@@ -174,7 +184,7 @@ namespace SIMULTAN.Tests.SimNetworks
             port31.ConnectTo(port22);
 
             // BLOCK 4  Dynamic
-            var block4 = new SimNetworkBlock(empty_block1, new System.Windows.Point(100, 100)); //Dynamic
+            var block4 = new SimNetworkBlock(empty_block1, new SimPoint(100, 100)); //Dynamic
 
             var port41 = new SimNetworkPort(PortType.Output);
             var port42 = new SimNetworkPort(PortType.Input);
@@ -185,7 +195,7 @@ namespace SIMULTAN.Tests.SimNetworks
 
 
             // BLOCK 5  Dynamic
-            var block5 = new SimNetworkBlock(empty_block2, new System.Windows.Point(100, 100)); //Dynamic
+            var block5 = new SimNetworkBlock(empty_block2, new SimPoint(100, 100)); //Dynamic
 
             var port51 = new SimNetworkPort(PortType.Output);
             var port52 = new SimNetworkPort(PortType.Input);
@@ -219,7 +229,7 @@ namespace SIMULTAN.Tests.SimNetworks
             var staticBlock = loadedNW.ContainedElements.FirstOrDefault(t => t.Name == _static_block);
             Assert.IsNotNull(staticBlock);
             var networkFileName = Guid.NewGuid() + ".simgeo";
-            var networkFile = new FileInfo(@".\" + networkFileName);
+            var networkFile = new FileInfo(@"./" + networkFileName);
 
 
             //Create new geometry file
@@ -227,7 +237,7 @@ namespace SIMULTAN.Tests.SimNetworks
             {
                 File.Delete(@".\" + networkFileName);
             }
-            var geometryModel = this.projectData.ComponentGeometryExchange.ConvertSimNetwork(loadedNW, networkFile);
+            var geometryModel = this.projectData.ComponentGeometryExchange.ConvertSimNetwork(loadedNW, networkFile, projectData.DispatcherTimerFactory);
 
 
             //Check if all the blocks got geometry assigned
@@ -267,7 +277,7 @@ namespace SIMULTAN.Tests.SimNetworks
             Assert.IsNotNull(staticBlock);
 
             var networkFileName = Guid.NewGuid() + ".simgeo";
-            var networkFile = new FileInfo(@".\" + networkFileName);
+            var networkFile = new FileInfo(@"./" + networkFileName);
 
 
             //Create new geometry file
@@ -275,7 +285,7 @@ namespace SIMULTAN.Tests.SimNetworks
             {
                 File.Delete(@".\" + networkFileName);
             }
-            var geometryModel = this.projectData.ComponentGeometryExchange.ConvertSimNetwork(loadedNW, networkFile);
+            var geometryModel = this.projectData.ComponentGeometryExchange.ConvertSimNetwork(loadedNW, networkFile, projectData.DispatcherTimerFactory);
 
 
             //Delete file
@@ -309,18 +319,18 @@ namespace SIMULTAN.Tests.SimNetworks
 
 
 
-            Assert.IsTrue(inports.All(t => t.Parameters.Any(p => p.NameTaxonomyEntry.TaxonomyEntryReference.Target.Key == ReservedParameterKeys.SIMNW_STATIC_PORT_POSITION_X)));
-            Assert.IsTrue(inports.All(t => t.Parameters.Any(p => p.NameTaxonomyEntry.TaxonomyEntryReference.Target.Key == ReservedParameterKeys.SIMNW_STATIC_PORT_POSITION_Y)));
-            Assert.IsTrue(inports.All(t => t.Parameters.Any(p => p.NameTaxonomyEntry.TaxonomyEntryReference.Target.Key == ReservedParameterKeys.SIMNW_STATIC_PORT_POSITION_Z)));
+            Assert.IsTrue(inports.All(t => t.Parameters.Any(p => p.HasReservedTaxonomyEntry(ReservedParameterKeys.SIMNW_STATIC_PORT_POSITION_X))));
+            Assert.IsTrue(inports.All(t => t.Parameters.Any(p => p.HasReservedTaxonomyEntry(ReservedParameterKeys.SIMNW_STATIC_PORT_POSITION_Y))));
+            Assert.IsTrue(inports.All(t => t.Parameters.Any(p => p.HasReservedTaxonomyEntry(ReservedParameterKeys.SIMNW_STATIC_PORT_POSITION_Z))));
 
-            Assert.IsTrue(outports.All(t => t.Parameters.Any(p => p.NameTaxonomyEntry.TaxonomyEntryReference.Target.Key == ReservedParameterKeys.SIMNW_STATIC_PORT_POSITION_X)));
-            Assert.IsTrue(outports.All(t => t.Parameters.Any(p => p.NameTaxonomyEntry.TaxonomyEntryReference.Target.Key == ReservedParameterKeys.SIMNW_STATIC_PORT_POSITION_Y)));
-            Assert.IsTrue(outports.All(t => t.Parameters.Any(p => p.NameTaxonomyEntry.TaxonomyEntryReference.Target.Key == ReservedParameterKeys.SIMNW_STATIC_PORT_POSITION_Z)));
+            Assert.IsTrue(outports.All(t => t.Parameters.Any(p => p.HasReservedTaxonomyEntry(ReservedParameterKeys.SIMNW_STATIC_PORT_POSITION_X))));
+            Assert.IsTrue(outports.All(t => t.Parameters.Any(p => p.HasReservedTaxonomyEntry(ReservedParameterKeys.SIMNW_STATIC_PORT_POSITION_Y))));
+            Assert.IsTrue(outports.All(t => t.Parameters.Any(p => p.HasReservedTaxonomyEntry(ReservedParameterKeys.SIMNW_STATIC_PORT_POSITION_Z))));
 
 
 
             var networkFileName = Guid.NewGuid() + ".simgeo";
-            var networkFile = new FileInfo(@".\" + networkFileName);
+            var networkFile = new FileInfo(@"./" + networkFileName);
 
 
             //Create new geometry file
@@ -328,7 +338,7 @@ namespace SIMULTAN.Tests.SimNetworks
             {
                 File.Delete(@".\" + networkFileName);
             }
-            var geometryModel = this.projectData.ComponentGeometryExchange.ConvertSimNetwork(loadedNW, networkFile);
+            var geometryModel = this.projectData.ComponentGeometryExchange.ConvertSimNetwork(loadedNW, networkFile, projectData.DispatcherTimerFactory);
 
 
             var gStaticBlock = geometryModel.Geometry.Vertices.First(c => c.Name == _static_block);
@@ -373,14 +383,14 @@ namespace SIMULTAN.Tests.SimNetworks
             Assert.IsNotNull(block1PortToBlock2);
             var block1PortToBlock2Connector = block1PortToBlock2.Connectors.FirstOrDefault();
 
-            var networkFile = new FileInfo(@".\SimNetworkGeo.simgeo");
+            var networkFile = new FileInfo(@"./SimNetworkGeo.simgeo");
             //Create new geometry file
             if (File.Exists(@".\SimNetworkGeo.simgeo"))
             {
                 File.Delete(@".\SimNetworkGeo.simgeo");
             }
 
-            var geometryModel = this.projectData.ComponentGeometryExchange.ConvertSimNetwork(loadedNW, networkFile);
+            var geometryModel = this.projectData.ComponentGeometryExchange.ConvertSimNetwork(loadedNW, networkFile, projectData.DispatcherTimerFactory);
             var geometryConnector = this.projectData.ComponentGeometryExchange.SimNetworkModelConnectors.FirstOrDefault(t => t.Value.Network == loadedNW);
             Assert.IsNotNull(geometryConnector);
             networkFile.Delete();
@@ -398,7 +408,7 @@ namespace SIMULTAN.Tests.SimNetworks
             this.LoadProject(simNetworkProject);
             var network = this.CreateTestNetwork();
             var networkFileName = Guid.NewGuid() + ".simgeo";
-            var networkFile = new FileInfo(@".\" + networkFileName);
+            var networkFile = new FileInfo(@"./" + networkFileName);
 
 
             //Create new geometry file
@@ -407,7 +417,7 @@ namespace SIMULTAN.Tests.SimNetworks
                 File.Delete(@".\" + networkFileName);
             }
 
-            var geometryModel = this.projectData.ComponentGeometryExchange.ConvertSimNetwork(network, networkFile);
+            var geometryModel = this.projectData.ComponentGeometryExchange.ConvertSimNetwork(network, networkFile, projectData.DispatcherTimerFactory);
             var dynamicBlock = network.ContainedElements.FirstOrDefault(t => t.Name == this.auto_network_block3);
             var dynamicToStaticConnector = network.ContainedConnectors.FirstOrDefault(c => ((SimNetworkBlock)c.Target.ParentNetworkElement).IsStatic && !((SimNetworkBlock)c.Source.ParentNetworkElement).IsStatic);
             var staticPort = dynamicToStaticConnector.Target;
@@ -432,7 +442,7 @@ namespace SIMULTAN.Tests.SimNetworks
             var network = CreateTestNetwork();
 
             var networkFileName = Guid.NewGuid() + ".simgeo";
-            var networkFile = new FileInfo(@".\" + networkFileName);
+            var networkFile = new FileInfo(@"./" + networkFileName);
 
 
             //Create new geometry file
@@ -440,7 +450,7 @@ namespace SIMULTAN.Tests.SimNetworks
             {
                 File.Delete(@".\" + networkFileName);
             }
-            var geometryModel = this.projectData.ComponentGeometryExchange.ConvertSimNetwork(network, networkFile);
+            var geometryModel = this.projectData.ComponentGeometryExchange.ConvertSimNetwork(network, networkFile, projectData.DispatcherTimerFactory);
             var geometryConnector = this.projectData.ComponentGeometryExchange.SimNetworkModelConnectors.FirstOrDefault(t => t.Value.Network == network);
 
             var staticConnector = network.ContainedConnectors.FirstOrDefault(t => ((SimNetworkBlock)t.Target.ParentNetworkElement).IsStatic && ((SimNetworkBlock)t.Source.ParentNetworkElement).IsStatic);
@@ -456,8 +466,8 @@ namespace SIMULTAN.Tests.SimNetworks
             Assert.IsNotNull(connectorGeom);
 
 
-            Assert.AreEqual<Point3D>(targetPortGeom.Position, sourePortGeom.Position);
-            Assert.AreEqual<Point3D>(targetPortGeom.Position, connectorGeom.Position);
+            Assert.AreEqual<SimPoint3D>(targetPortGeom.Position, sourePortGeom.Position);
+            Assert.AreEqual<SimPoint3D>(targetPortGeom.Position, connectorGeom.Position);
 
 
 
@@ -474,7 +484,7 @@ namespace SIMULTAN.Tests.SimNetworks
             var network = CreateTestNetwork();
 
             var networkFileName = Guid.NewGuid() + ".simgeo";
-            var networkFile = new FileInfo(@".\" + networkFileName);
+            var networkFile = new FileInfo(@"./" + networkFileName);
 
 
             //Create new geometry file
@@ -482,7 +492,7 @@ namespace SIMULTAN.Tests.SimNetworks
             {
                 File.Delete(@".\" + networkFileName);
             }
-            var geometryModel = this.projectData.ComponentGeometryExchange.ConvertSimNetwork(network, networkFile);
+            var geometryModel = this.projectData.ComponentGeometryExchange.ConvertSimNetwork(network, networkFile, projectData.DispatcherTimerFactory);
             var geometryConnector = this.projectData.ComponentGeometryExchange.SimNetworkModelConnectors.FirstOrDefault(t => t.Value.Network == network);
 
             var blockToRemove = network.ContainedElements.FirstOrDefault(t => t.Name == this.auto_network_block1);
@@ -509,7 +519,7 @@ namespace SIMULTAN.Tests.SimNetworks
             var network = CreateTestNetwork();
 
             var networkFileName = Guid.NewGuid() + ".simgeo";
-            var networkFile = new FileInfo(@".\" + networkFileName);
+            var networkFile = new FileInfo(@"./" + networkFileName);
 
 
             //Create new geometry file
@@ -517,7 +527,7 @@ namespace SIMULTAN.Tests.SimNetworks
             {
                 File.Delete(@".\" + networkFileName);
             }
-            var geometryModel = this.projectData.ComponentGeometryExchange.ConvertSimNetwork(network, networkFile);
+            var geometryModel = this.projectData.ComponentGeometryExchange.ConvertSimNetwork(network, networkFile, projectData.DispatcherTimerFactory);
             var geometryConnector = this.projectData.ComponentGeometryExchange.SimNetworkModelConnectors.FirstOrDefault(t => t.Value.Network == network);
 
             var blockToUpdate = network.ContainedElements.FirstOrDefault(t => t.Name == this.auto_network_block1);
@@ -525,15 +535,15 @@ namespace SIMULTAN.Tests.SimNetworks
             var blockGeo = geometryModel.Geometry.GeometryFromId(blockToUpdate.RepresentationReference.GeometryId) as Vertex;
             var portGeo = geometryModel.Geometry.GeometryFromId(portToUpdate.RepresentationReference.GeometryId) as Vertex;
             var relPosition = portGeo.Position - blockGeo.Position;
-            var oX = portToUpdate.ComponentInstance.Component.Parameters.OfType<SimDoubleParameter>().FirstOrDefault(t => t.NameTaxonomyEntry.TaxonomyEntryReference.Target.Key == ReservedParameterKeys.SIMNW_STATIC_PORT_POSITION_X).Value;
-            var oY = portToUpdate.ComponentInstance.Component.Parameters.OfType<SimDoubleParameter>().FirstOrDefault(t => t.NameTaxonomyEntry.TaxonomyEntryReference.Target.Key == ReservedParameterKeys.SIMNW_STATIC_PORT_POSITION_Y).Value;
-            var oZ = portToUpdate.ComponentInstance.Component.Parameters.OfType<SimDoubleParameter>().FirstOrDefault(t => t.NameTaxonomyEntry.TaxonomyEntryReference.Target.Key == ReservedParameterKeys.SIMNW_STATIC_PORT_POSITION_Z).Value;
+            var oX = portToUpdate.ComponentInstance.Component.Parameters.OfType<SimDoubleParameter>().FirstOrDefault(t => t.HasReservedTaxonomyEntry(ReservedParameterKeys.SIMNW_STATIC_PORT_POSITION_X)).Value;
+            var oY = portToUpdate.ComponentInstance.Component.Parameters.OfType<SimDoubleParameter>().FirstOrDefault(t => t.HasReservedTaxonomyEntry(ReservedParameterKeys.SIMNW_STATIC_PORT_POSITION_Y)).Value;
+            var oZ = portToUpdate.ComponentInstance.Component.Parameters.OfType<SimDoubleParameter>().FirstOrDefault(t => t.HasReservedTaxonomyEntry(ReservedParameterKeys.SIMNW_STATIC_PORT_POSITION_Z)).Value;
 
             Assert.AreEqual(relPosition.X, oX);
             Assert.AreEqual(relPosition.Y, oY);
             Assert.AreEqual(relPosition.Z, oZ);
 
-
+            Cleanup();
             networkFile.Delete();
         }
 
@@ -546,7 +556,7 @@ namespace SIMULTAN.Tests.SimNetworks
             var network = CreateTestNetwork();
 
             var networkFileName = Guid.NewGuid() + ".simgeo";
-            var networkFile = new FileInfo(@".\" + networkFileName);
+            var networkFile = new FileInfo(@"./" + networkFileName);
 
 
             //Create new geometry file
@@ -554,7 +564,7 @@ namespace SIMULTAN.Tests.SimNetworks
             {
                 File.Delete(@".\" + networkFileName);
             }
-            var geometryModel = this.projectData.ComponentGeometryExchange.ConvertSimNetwork(network, networkFile);
+            var geometryModel = this.projectData.ComponentGeometryExchange.ConvertSimNetwork(network, networkFile, projectData.DispatcherTimerFactory);
             var geometryConnector = this.projectData.ComponentGeometryExchange.SimNetworkModelConnectors.FirstOrDefault(t => t.Value.Network == network);
 
             var blockToUpdate = network.ContainedElements.FirstOrDefault(t => t.Name == this.auto_network_block1);
@@ -562,9 +572,9 @@ namespace SIMULTAN.Tests.SimNetworks
             var blockGeo = geometryModel.Geometry.GeometryFromId(blockToUpdate.RepresentationReference.GeometryId) as Vertex;
             var portGeo = geometryModel.Geometry.GeometryFromId(portToUpdate.RepresentationReference.GeometryId) as Vertex;
             var relPosition = portGeo.Position - blockGeo.Position;
-            var oX = portToUpdate.ComponentInstance.Component.Parameters.OfType<SimDoubleParameter>().FirstOrDefault(t => t.NameTaxonomyEntry.TaxonomyEntryReference.Target.Key == ReservedParameterKeys.SIMNW_STATIC_PORT_POSITION_X);
-            var oY = portToUpdate.ComponentInstance.Component.Parameters.OfType<SimDoubleParameter>().FirstOrDefault(t => t.NameTaxonomyEntry.TaxonomyEntryReference.Target.Key == ReservedParameterKeys.SIMNW_STATIC_PORT_POSITION_Y);
-            var oZ = portToUpdate.ComponentInstance.Component.Parameters.OfType<SimDoubleParameter>().FirstOrDefault(t => t.NameTaxonomyEntry.TaxonomyEntryReference.Target.Key == ReservedParameterKeys.SIMNW_STATIC_PORT_POSITION_Z);
+            var oX = portToUpdate.ComponentInstance.Component.Parameters.OfType<SimDoubleParameter>().FirstOrDefault(t => t.HasReservedTaxonomyEntry(ReservedParameterKeys.SIMNW_STATIC_PORT_POSITION_X));
+            var oY = portToUpdate.ComponentInstance.Component.Parameters.OfType<SimDoubleParameter>().FirstOrDefault(t => t.HasReservedTaxonomyEntry(ReservedParameterKeys.SIMNW_STATIC_PORT_POSITION_Y));
+            var oZ = portToUpdate.ComponentInstance.Component.Parameters.OfType<SimDoubleParameter>().FirstOrDefault(t => t.HasReservedTaxonomyEntry(ReservedParameterKeys.SIMNW_STATIC_PORT_POSITION_Z));
 
             Assert.AreEqual(relPosition.X, oX.Value);
             Assert.AreEqual(relPosition.Y, oY.Value);
@@ -578,8 +588,25 @@ namespace SIMULTAN.Tests.SimNetworks
             Assert.AreEqual(relPosition.X, oX.Value);
             Assert.AreEqual(relPosition.Y, oY.Value);
             Assert.AreEqual(relPosition.Z, oZ.Value);
+            Cleanup();
 
-            networkFile.Delete();
+            for (int i = 0; i < 10; i++)
+            {
+                try
+                {
+                    networkFile.Delete();
+                    break;
+                }
+                catch (IOException ex) //Happens when defender scans the file while trying to delete
+                {
+                    if (i == 9)
+                    {
+                        Assert.Fail($"Failed to delete temporary file. Reason: {ex.Message}");
+                    }
+                    else
+                        Thread.Sleep(500);
+                }
+            }
         }
 
 
@@ -591,7 +618,7 @@ namespace SIMULTAN.Tests.SimNetworks
             var network = CreateTestNetwork();
 
             var networkFileName = Guid.NewGuid() + ".simgeo";
-            var networkFile = new FileInfo(@".\" + networkFileName);
+            var networkFile = new FileInfo(@"./" + networkFileName);
 
 
             //Create new geometry file
@@ -599,7 +626,7 @@ namespace SIMULTAN.Tests.SimNetworks
             {
                 File.Delete(@".\" + networkFileName);
             }
-            var geometryModel = this.projectData.ComponentGeometryExchange.ConvertSimNetwork(network, networkFile);
+            var geometryModel = this.projectData.ComponentGeometryExchange.ConvertSimNetwork(network, networkFile, projectData.DispatcherTimerFactory);
             var geometryConnector = this.projectData.ComponentGeometryExchange.SimNetworkModelConnectors.FirstOrDefault(t => t.Value.Network == network);
             var blockToUpdate = network.ContainedElements.FirstOrDefault(t => t.Name == this.auto_network_block1);
 
@@ -608,9 +635,9 @@ namespace SIMULTAN.Tests.SimNetworks
             var portGeom = geometryModel.Geometry.GeometryFromId(portToRemove.RepresentationReference.GeometryId);
             Assert.IsNull(portGeom);
 
+            Cleanup();
 
             networkFile.Delete();
-
         }
 
 
@@ -624,7 +651,7 @@ namespace SIMULTAN.Tests.SimNetworks
         {
             var network = CreateTestNetwork();
             var networkFileName = Guid.NewGuid() + ".simgeo";
-            var networkFile = new FileInfo(@".\" + networkFileName);
+            var networkFile = new FileInfo(@"./" + networkFileName);
 
 
             //Create new geometry file
@@ -632,7 +659,7 @@ namespace SIMULTAN.Tests.SimNetworks
             {
                 File.Delete(@".\" + networkFileName);
             }
-            var geometryModel = this.projectData.ComponentGeometryExchange.ConvertSimNetwork(network, networkFile);
+            var geometryModel = this.projectData.ComponentGeometryExchange.ConvertSimNetwork(network, networkFile, projectData.DispatcherTimerFactory);
             var geometryConnector = this.projectData.ComponentGeometryExchange.SimNetworkModelConnectors.FirstOrDefault(t => t.Value.Network == network);
 
             var blockToUpdate = network.ContainedElements.FirstOrDefault(t => t.Name == this.auto_network_block1);
@@ -676,7 +703,7 @@ namespace SIMULTAN.Tests.SimNetworks
         {
             var network = CreateTestNetwork();
             var networkFileName = Guid.NewGuid() + ".simgeo";
-            var networkFile = new FileInfo(@".\" + networkFileName);
+            var networkFile = new FileInfo(@"./" + networkFileName);
 
 
             //Create new geometry file
@@ -684,7 +711,7 @@ namespace SIMULTAN.Tests.SimNetworks
             {
                 File.Delete(@".\" + networkFileName);
             }
-            var geometryModel = this.projectData.ComponentGeometryExchange.ConvertSimNetwork(network, networkFile);
+            var geometryModel = this.projectData.ComponentGeometryExchange.ConvertSimNetwork(network, networkFile, projectData.DispatcherTimerFactory);
             var geometryConnector = this.projectData.ComponentGeometryExchange.SimNetworkModelConnectors.FirstOrDefault(t => t.Value.Network == network);
 
 

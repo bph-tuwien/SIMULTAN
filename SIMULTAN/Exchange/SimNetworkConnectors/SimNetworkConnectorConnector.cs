@@ -1,11 +1,12 @@
 ﻿using SIMULTAN.Data.Geometry;
+using SIMULTAN.Data.SimMath;
 using SIMULTAN.Data.SimNetworks;
 using SIMULTAN.Serializer.Geometry;
+using SIMULTAN.Utils;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Windows.Media.Media3D;
 
 namespace SIMULTAN.Exchange.SimNetworkConnectors
 {
@@ -27,6 +28,9 @@ namespace SIMULTAN.Exchange.SimNetworkConnectors
 
         internal IEnumerable<SimNetworkConnector> SimNetworkConnectors { get; }
 
+        /// <inheritdoc />
+        internal override IEnumerable<ISimNetworkElement> SimNetworkElement => SimNetworkConnectors;
+
         /// <summary>
         /// Constructs a new SimNetworkConnectorConnector in the case of multi-level connection (connector connected to subnetwork to subnetwork.... to block) 
         /// In that case the connection is represented by one Vertex
@@ -44,7 +48,6 @@ namespace SIMULTAN.Exchange.SimNetworkConnectors
                 throw new ArgumentNullException(nameof(modelConnector));
 
 
-
             this.Vertex = geometry;
             this.SimNetworkConnectors = connectors;
 
@@ -55,8 +58,17 @@ namespace SIMULTAN.Exchange.SimNetworkConnectors
                 connector.Source.RepresentationReference = new Data.GeometricReference(Vertex.ModelGeometry.Model.File.Key, Vertex.Id);
             }
 
+
+            this.SimNetworkConnectors.ForEach(t => t.PropertyChanged += this.Connector_PropertyChanged);
             this.ModelConnector = modelConnector;
+            UpdateProxyGeometry();
             UpdateColor();
+        }
+
+        private void Connector_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(SimNetworkConnector.Color))
+                UpdateColor();
         }
 
 
@@ -110,11 +122,11 @@ namespace SIMULTAN.Exchange.SimNetworkConnectors
                 if (proxy == null)
                 {
                     proxy = ProxyShapeGenerator.GenerateCube(Vertex.ModelGeometry.Layers.First(),
-                        Vertex.Name, Vertex, new Point3D(1, 1, 1));
+                        Vertex.Name, Vertex, new SimPoint3D(1, 1, 1));
                 }
                 else
                 {
-                    ProxyShapeGenerator.UpdateCube(proxy, new Point3D(1, 1, 1));
+                    ProxyShapeGenerator.UpdateCube(proxy, new SimPoint3D(1, 1, 1));
                 }
             }
 
@@ -125,7 +137,7 @@ namespace SIMULTAN.Exchange.SimNetworkConnectors
 
         private void UpdateColor()
         {
-            Vertex.Color.IsFromParent = true;
+            Vertex.Color = new DerivedColor(this.SimNetworkConnectors.First().Color);
         }
 
         #region BaseNetworkConnector
@@ -148,8 +160,7 @@ namespace SIMULTAN.Exchange.SimNetworkConnectors
         /// <inheritdoc />
         public override void Dispose()
         {
-            //this.SimNetworkConnectors.ForEach(t => t.PropertyChanged -= this.Connector_PropertyChanged);
-
+            this.SimNetworkConnectors.ForEach(t => t.PropertyChanged -= this.Connector_PropertyChanged);
         }
 
         #endregion

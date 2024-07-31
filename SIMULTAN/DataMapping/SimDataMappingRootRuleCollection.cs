@@ -148,6 +148,17 @@ namespace SIMULTAN.DataMapping
             this.MappingChanged?.Invoke(this, EventArgs.Empty);
         }
         /// <summary>
+        /// Removes all mappings for a given component
+        /// </summary>
+        /// <param name="component">The component that should be disassociated from the component</param>
+        public void RemoveMapping(SimComponent component)
+        {
+            foreach (var mapping in this.Mappings.Values)
+                mapping.Remove(component);
+
+            this.MappingChanged?.Invoke(this, EventArgs.Empty);
+        }
+        /// <summary>
         /// Returns all components mapped to a rule
         /// </summary>
         /// <param name="rule">The rule to query</param>

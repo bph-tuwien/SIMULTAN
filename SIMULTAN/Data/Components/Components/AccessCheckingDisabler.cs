@@ -43,7 +43,7 @@ namespace SIMULTAN.Data.Components
 
             public void Dispose()
             {
-                //Console.WriteLine("Access Checking: {0}", this.manager.EnableAccessCheckingCounter - 1);
+                //Debug.WriteLine("Access Checking: {0}", this.manager.EnableAccessCheckingCounter - 1);
                 this.manager.EnableAccessCheckingCounter--;
 
 #if DEBUG
@@ -56,7 +56,7 @@ namespace SIMULTAN.Data.Components
             private AccessDisablingGuard(SimComponentCollection manager)
             {
                 this.manager = manager;
-                //Console.WriteLine("Access Checking: {0}", this.manager.EnableAccessCheckingCounter + 1);
+                //Debug.WriteLine("Access Checking: {0}", this.manager.EnableAccessCheckingCounter + 1);
                 this.manager.EnableAccessCheckingCounter++;
             }
 

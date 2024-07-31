@@ -1,9 +1,11 @@
 ﻿using SIMULTAN;
+using SIMULTAN.Projects;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Security;
@@ -19,7 +21,7 @@ namespace SIMULTAN.Data.Users
     /// </summary>
     public class SimUsersManager : INotifyPropertyChanged
     {
-        private static readonly long PASSWORD_SALT_LENGTH = 16;
+        private static readonly int PASSWORD_SALT_LENGTH = 16;
 
         /// <summary>
         /// Contains all users in the project
@@ -46,10 +48,6 @@ namespace SIMULTAN.Data.Users
             set
             {
                 encryptionKey = value;
-                //Console.Write("Key: ");
-                //foreach (var x in value)
-                //	Console.Write("{0:x2}", x);
-                //Console.WriteLine();
             }
         }
         private byte[] encryptionKey = null;
@@ -239,13 +237,12 @@ namespace SIMULTAN.Data.Users
         /// <returns>The hashed password</returns>
         public static byte[] HashPassword(byte[] password)
         {
-            byte[] salt;
-            new RNGCryptoServiceProvider().GetBytes(salt = new byte[16]);
+            var salt = RandomNumberGenerator.GetBytes(16);
             return HashPassword(password, salt);
         }
         private static byte[] HashPassword(byte[] password, byte[] salt)
         {
-            var pbkdf2 = new Rfc2898DeriveBytes(password, salt, 10000);
+            var pbkdf2 = new Rfc2898DeriveBytes(password, salt, 10000, HashAlgorithmName.SHA1);
             byte[] hash = pbkdf2.GetBytes(20);
 
             byte[] hashBytes = new byte[36];
@@ -315,8 +312,7 @@ namespace SIMULTAN.Data.Users
             byte[] encryptedKey = null;
 
             //Generate salt for hashing
-            var passwordSalt = new byte[PASSWORD_SALT_LENGTH];
-            new RNGCryptoServiceProvider().GetBytes(passwordSalt);
+            var passwordSalt = RandomNumberGenerator.GetBytes(PASSWORD_SALT_LENGTH);
 
             //Generate 32bit key from password
             byte[] key = KeyFromPassword(password, passwordSalt);
@@ -381,9 +377,82 @@ namespace SIMULTAN.Data.Users
 
         private static byte[] KeyFromPassword(byte[] password, byte[] salt)
         {
-            var pbkdf2 = new Rfc2898DeriveBytes(password, salt, 10000);
+            var pbkdf2 = new Rfc2898DeriveBytes(password, salt, 10000, HashAlgorithmName.SHA1);
             byte[] hash = pbkdf2.GetBytes(32);
             return hash;
+        }
+
+        /// <summary>
+        /// Encrypts a given text with the <see cref="CurrentUser"/> encryption key. 
+        /// The input get pre-pended with the marker string "ENC" to allow for checks whether the decryption is correct.
+        /// The result is the Base64 encoded IV (salt) concatenated with the Base64 encoded and AES encrypted input.
+        /// Note, that the encryption is on a per-user level. Only the same user will be able to decrypt the information with the
+        /// <see cref="DecryptUserSecret(string)"/> method.
+        /// </summary>
+        /// <param name="secret">The text to encode</param>
+        /// <returns>The Base64 encoded IV (salt) concatenated with the Base64 encoded and AES encrypted input</returns>
+        public string EncryptUserSecret(string secret)
+        {
+            using (Aes aesAlg = Aes.Create())
+            {
+                aesAlg.Key = this.EncryptionKey;
+                ICryptoTransform encryptor = aesAlg.CreateEncryptor(aesAlg.Key, aesAlg.IV);
+
+                using (MemoryStream ms = new MemoryStream())
+                {
+                    using (CryptoStream csEncrypt = new CryptoStream(ms, encryptor, CryptoStreamMode.Write))
+                    {
+                        using (StreamWriter sw = new StreamWriter(csEncrypt))
+                        {
+                            sw.Write("ENC");
+                            sw.Write(secret);
+                        }
+                    }
+
+                    return Convert.ToBase64String(aesAlg.IV) + Convert.ToBase64String(ms.ToArray());
+                }
+            }
+        }
+
+        /// <summary>
+        /// Decrypts information which has previously been encrypted by the <see cref="EncryptUserSecret(string)"/> method.
+        /// The input needs to be the Base64 encoded IV (salt) concatenated with the Base64 encoded and AES encrypted information.
+        /// The method assumes that the secret starts with a marker string "ENC". This string is checked to determine if decryption worked correctly. 
+        /// Note, that the encryption happens on a per-user level. Only information encrypted by the same user will be decoded correctly.
+        /// </summary>
+        /// <param name="encryptedSecret">The Base64 encoded IV (salt) concatenated with the Base64 encoded and AES encrypted information</param>
+        /// <returns>The decrypted information</returns>
+        public (string decryptedSecret, bool success) DecryptUserSecret(string encryptedSecret)
+        {
+            //Retrieve key
+            using (Aes aesAlg = Aes.Create())
+            {
+                aesAlg.Key = EncryptionKey;
+
+                //Decode IV
+                int ivLength = ((aesAlg.IV.Length * 4 / 3) + 3) & ~0x03;
+                var ivBase64 = encryptedSecret.Substring(0, ivLength);
+                var iv = Convert.FromBase64String(ivBase64);
+                aesAlg.IV = iv;
+
+                ICryptoTransform encryptor = aesAlg.CreateDecryptor(aesAlg.Key, aesAlg.IV);
+
+                var decoded = Convert.FromBase64String(encryptedSecret.Substring(ivLength));
+                using (MemoryStream ms = new MemoryStream(decoded))
+                {
+                    using (CryptoStream csEncrypt = new CryptoStream(ms, encryptor, CryptoStreamMode.Read))
+                    {
+                        using (StreamReader sr = new StreamReader(csEncrypt))
+                        {
+                            var decrypted = sr.ReadToEnd();
+                            if (decrypted.StartsWith("ENC"))
+                                return (decrypted.Substring(3), true);
+                            else
+                                return (decrypted, false);
+                        }
+                    }
+                }
+            }
         }
     }
 }

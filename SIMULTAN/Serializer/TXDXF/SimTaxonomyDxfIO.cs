@@ -4,10 +4,9 @@ using SIMULTAN.Projects;
 using SIMULTAN.Serializer.DXF;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SIMULTAN.Serializer.TXDXF
 {
@@ -29,10 +28,18 @@ namespace SIMULTAN.Serializer.TXDXF
                 new DXFSingleEntryParserElement<Guid>(ParamStructCommonSaveCode.ENTITY_GLOBAL_ID),
                 new DXFSingleEntryParserElement<long>(ParamStructCommonSaveCode.ENTITY_LOCAL_ID),
                 new DXFSingleEntryParserElement<string>(TaxonomySaveCode.TAXONOMY_KEY),
-                new DXFSingleEntryParserElement<string>(ParamStructCommonSaveCode.ENTITY_NAME),
-                new DXFMultiLineTextElement(TaxonomySaveCode.TAXONOMY_DESCRIPTION),
+                new DXFSingleEntryParserElement<string>(ParamStructCommonSaveCode.ENTITY_NAME) {MaxVersion = 22},
+                new DXFMultiLineTextElement(TaxonomySaveCode.TAXONOMY_DESCRIPTION) {MaxVersion = 22},
                 new DXFSingleEntryParserElement<bool>(TaxonomySaveCode.TAXONOMY_IS_READONLY) { IsOptional = true },
                 new DXFSingleEntryParserElement<bool>(TaxonomySaveCode.TAXONOMY_IS_DELETABLE) { IsOptional = true },
+                new DXFArrayEntryParserElement<CultureInfo>(TaxonomySaveCode.TAXONOMY_SUPPORTED_LANGUAGES, TaxonomySaveCode.TAXONOMY_LANGUAGE) {MinVersion = 23},
+                new DXFStructArrayEntryParserElement<SimTaxonomyLocalizationEntry>(TaxonomySaveCode.TAXONOMY_LOCALIZATIONS, ParseLocalizationEntry,
+                    new DXFEntryParserElement[]
+                    {
+                        new DXFSingleEntryParserElement<CultureInfo>(TaxonomySaveCode.TAXONOMY_LOCALIZATION_CULTURE),
+                        new DXFSingleEntryParserElement<string>(TaxonomySaveCode.TAXONOMY_LOCALIZATION_NAME),
+                        new DXFMultiLineTextElement(TaxonomySaveCode.TAXONOMY_LOCALIZATION_DESCRIPTION),
+                    }) {MinVersion = 23},
                 new DXFEntitySequenceEntryParserElement<SimTaxonomyEntry>(TaxonomySaveCode.TAXONOMY_ENTRIES,
                     new DXFComplexEntityParserElement<SimTaxonomyEntry>(new DXFEntityParserElement<SimTaxonomyEntry>(ParamStructTypes.TAXONOMY_ENTRY,
                         (re, inf) => ParseTaxonomyEntry(re, inf, false),
@@ -40,8 +47,15 @@ namespace SIMULTAN.Serializer.TXDXF
                         {
                             new DXFSingleEntryParserElement<string>(TaxonomySaveCode.TAXONOMY_ENTRY_KEY),
                             new DXFSingleEntryParserElement<long>(ParamStructCommonSaveCode.ENTITY_LOCAL_ID),
-                            new DXFSingleEntryParserElement<string>(ParamStructCommonSaveCode.ENTITY_NAME),
-                            new DXFMultiLineTextElement(TaxonomySaveCode.TAXONOMY_DESCRIPTION),
+                            new DXFSingleEntryParserElement<string>(ParamStructCommonSaveCode.ENTITY_NAME) {MaxVersion = 22},
+                            new DXFMultiLineTextElement(TaxonomySaveCode.TAXONOMY_DESCRIPTION) {MaxVersion = 22},
+                            new DXFStructArrayEntryParserElement<SimTaxonomyLocalizationEntry>(TaxonomySaveCode.TAXONOMY_LOCALIZATIONS, ParseLocalizationEntry,
+                                new DXFEntryParserElement[]
+                                {
+                                    new DXFSingleEntryParserElement<CultureInfo>(TaxonomySaveCode.TAXONOMY_LOCALIZATION_CULTURE),
+                                    new DXFSingleEntryParserElement<string>(TaxonomySaveCode.TAXONOMY_LOCALIZATION_NAME),
+                                    new DXFMultiLineTextElement(TaxonomySaveCode.TAXONOMY_LOCALIZATION_DESCRIPTION),
+                                }) {MinVersion = 23},
                             new DXFEntitySequenceEntryParserElement<SimTaxonomyEntry>(TaxonomySaveCode.TAXONOMY_ENTRIES,
                                 new DXFRecursiveEntityParserElement<SimTaxonomyEntry>(ParamStructTypes.TAXONOMY_ENTRY, TAXONOMY_ENTRY_IDENTIFIER))
                         })){Identifier = TAXONOMY_ENTRY_IDENTIFIER})
@@ -59,19 +73,34 @@ namespace SIMULTAN.Serializer.TXDXF
                 (r, i) => ParseTaxonomy(r, i, true),
                 new DXFEntryParserElement[]
             {
-                new DXFSingleEntryParserElement<string>(ParamStructCommonSaveCode.ENTITY_NAME),
+                new DXFSingleEntryParserElement<string>(ParamStructCommonSaveCode.ENTITY_NAME) {MaxVersion=22},
                 new DXFSingleEntryParserElement<string>(TaxonomySaveCode.TAXONOMY_KEY),
-                new DXFMultiLineTextElement(TaxonomySaveCode.TAXONOMY_DESCRIPTION),
+                new DXFMultiLineTextElement(TaxonomySaveCode.TAXONOMY_DESCRIPTION) { MaxVersion = 22 },
                 new DXFSingleEntryParserElement<bool>(TaxonomySaveCode.TAXONOMY_IS_READONLY) { IsOptional = true },
                 new DXFSingleEntryParserElement<bool>(TaxonomySaveCode.TAXONOMY_IS_DELETABLE) { IsOptional = true },
+                new DXFArrayEntryParserElement<CultureInfo>(TaxonomySaveCode.TAXONOMY_SUPPORTED_LANGUAGES, TaxonomySaveCode.TAXONOMY_LANGUAGE) {MinVersion = 23},
+                new DXFStructArrayEntryParserElement<SimTaxonomyLocalizationEntry>(TaxonomySaveCode.TAXONOMY_LOCALIZATIONS, ParseLocalizationEntry,
+                    new DXFEntryParserElement[]
+                    {
+                        new DXFSingleEntryParserElement<CultureInfo>(TaxonomySaveCode.TAXONOMY_LOCALIZATION_CULTURE),
+                        new DXFSingleEntryParserElement<string>(TaxonomySaveCode.TAXONOMY_LOCALIZATION_NAME),
+                        new DXFMultiLineTextElement(TaxonomySaveCode.TAXONOMY_LOCALIZATION_DESCRIPTION),
+                    }) {MinVersion = 23},
                 new DXFEntitySequenceEntryParserElement<SimTaxonomyEntry>(TaxonomySaveCode.TAXONOMY_ENTRIES,
                     new DXFComplexEntityParserElement<SimTaxonomyEntry>(new DXFEntityParserElement<SimTaxonomyEntry>(ParamStructTypes.TAXONOMY_ENTRY,
                         (r, i) => ParseTaxonomyEntry(r, i, true),
                         new DXFEntryParserElement[]
                         {
                             new DXFSingleEntryParserElement<string>(TaxonomySaveCode.TAXONOMY_ENTRY_KEY),
-                            new DXFSingleEntryParserElement<string>(ParamStructCommonSaveCode.ENTITY_NAME),
-                            new DXFMultiLineTextElement(TaxonomySaveCode.TAXONOMY_DESCRIPTION),
+                            new DXFSingleEntryParserElement<string>(ParamStructCommonSaveCode.ENTITY_NAME) { MaxVersion = 22 },
+                            new DXFMultiLineTextElement(TaxonomySaveCode.TAXONOMY_DESCRIPTION) { MaxVersion = 22 },
+                            new DXFStructArrayEntryParserElement<SimTaxonomyLocalizationEntry>(TaxonomySaveCode.TAXONOMY_LOCALIZATIONS, ParseLocalizationEntry,
+                                new DXFEntryParserElement[]
+                                {
+                                    new DXFSingleEntryParserElement<CultureInfo>(TaxonomySaveCode.TAXONOMY_LOCALIZATION_CULTURE),
+                                    new DXFSingleEntryParserElement<string>(TaxonomySaveCode.TAXONOMY_LOCALIZATION_NAME),
+                                    new DXFMultiLineTextElement(TaxonomySaveCode.TAXONOMY_LOCALIZATION_DESCRIPTION),
+                                }) {MinVersion = 23},
                             new DXFEntitySequenceEntryParserElement<SimTaxonomyEntry>(TaxonomySaveCode.TAXONOMY_ENTRIES,
                                 new DXFRecursiveEntityParserElement<SimTaxonomyEntry>(ParamStructTypes.TAXONOMY_ENTRY, TAXONOMY_ENTRY_IDENTIFIER))
                         })){Identifier = TAXONOMY_ENTRY_IDENTIFIER})
@@ -87,25 +116,55 @@ namespace SIMULTAN.Serializer.TXDXF
         #endregion
 
         #region Parsing
+        private static SimTaxonomyLocalizationEntry ParseLocalizationEntry(DXFParserResultSet result, DXFParserInfo parserInfo)
+        {
+            var culture = result.Get<CultureInfo>(TaxonomySaveCode.TAXONOMY_LOCALIZATION_CULTURE, null);
+            var name = result.Get<string>(TaxonomySaveCode.TAXONOMY_LOCALIZATION_NAME, "");
+            var descritpion = result.Get<string>(TaxonomySaveCode.TAXONOMY_LOCALIZATION_DESCRIPTION, "");
+
+            return new SimTaxonomyLocalizationEntry(culture, name, descritpion);
+        }
 
         private static SimTaxonomyEntry ParseTaxonomyEntry(DXFParserResultSet result, DXFParserInfo info, bool isImport)
         {
             var key = result.Get<string>(TaxonomySaveCode.TAXONOMY_ENTRY_KEY, "");
             var name = result.Get<string>(ParamStructCommonSaveCode.ENTITY_NAME, "");
             var description = result.Get<string>(TaxonomySaveCode.TAXONOMY_DESCRIPTION, "");
+            var localization = result.Get<SimTaxonomyLocalizationEntry[]>(TaxonomySaveCode.TAXONOMY_LOCALIZATIONS, new SimTaxonomyLocalizationEntry[] { });
 
             var entries = result.Get<SimTaxonomyEntry[]>(TaxonomySaveCode.TAXONOMY_ENTRIES, new SimTaxonomyEntry[] { });
+
+            if (string.IsNullOrEmpty(key))
+            {
+                key = Guid.NewGuid().ToString("N");
+                info.Log(string.Format("Taxonomy entry has an empty key, changing it to {0}", key));
+            }
 
             SimTaxonomyEntry taxEntry;
             if (!isImport)
             {
                 var localId = result.Get<long>(ParamStructCommonSaveCode.ENTITY_LOCAL_ID, 0);
                 var id = new SimId(Guid.Empty, localId);
-                taxEntry = new SimTaxonomyEntry(id) { Key = key, Name = name, Description = description };
+                taxEntry = new SimTaxonomyEntry(id, key);
             }
             else
             {
-                taxEntry = new SimTaxonomyEntry(key, name, description);
+                taxEntry = new SimTaxonomyEntry(key);
+            }
+
+
+            if (info.FileVersion < 23)
+            {
+                // Localization migration
+                taxEntry.Localization.AddLanguage(CultureInfo.InvariantCulture);
+                var loc = new SimTaxonomyLocalizationEntry(CultureInfo.InvariantCulture, name, description);
+                taxEntry.Localization.SetLanguage(loc);
+            }
+
+            foreach (var locEntry in localization)
+            {
+                taxEntry.Localization.AddLanguage(locEntry.Culture);
+                taxEntry.Localization.SetLanguage(locEntry);
             }
 
             foreach (var entry in entries)
@@ -123,29 +182,50 @@ namespace SIMULTAN.Serializer.TXDXF
             var description = result.Get<string>(TaxonomySaveCode.TAXONOMY_DESCRIPTION, "");
             var isReadonly = result.Get<bool>(TaxonomySaveCode.TAXONOMY_IS_READONLY, false);
             var isDeletable = result.Get<bool>(TaxonomySaveCode.TAXONOMY_IS_DELETABLE, true);
+            var languages = result.Get<CultureInfo[]>(TaxonomySaveCode.TAXONOMY_SUPPORTED_LANGUAGES, new CultureInfo[] { });
+            var localization = result.Get<SimTaxonomyLocalizationEntry[]>(TaxonomySaveCode.TAXONOMY_LOCALIZATIONS, new SimTaxonomyLocalizationEntry[] { });
 
             var entries = result.Get<SimTaxonomyEntry[]>(TaxonomySaveCode.TAXONOMY_ENTRIES, new SimTaxonomyEntry[] { });
 
-            SimTaxonomy taxnomy;
+            SimTaxonomy taxonomy;
             if (!isImport)
             {
                 var id = result.GetSimId(ParamStructCommonSaveCode.ENTITY_GLOBAL_ID, ParamStructCommonSaveCode.ENTITY_LOCAL_ID, info.GlobalId);
-                taxnomy = new SimTaxonomy(id) { Key = key, Name = name, Description = description, IsDeletable = isDeletable };
+                taxonomy = new SimTaxonomy(id) { Key = key, IsDeletable = isDeletable };
             }
             else
             {
-                taxnomy = new SimTaxonomy(key, name, description) { IsDeletable = isDeletable };
+                taxonomy = new SimTaxonomy() { Key = key, IsDeletable = isDeletable };
+            }
+
+            if (info.FileVersion < 23)
+            {
+                // Localization migration
+                taxonomy.Languages.Add(CultureInfo.InvariantCulture);
+                taxonomy.Localization.SetLanguage(CultureInfo.InvariantCulture, name, description);
+            }
+
+            foreach (var lang in languages)
+            {
+                if (!taxonomy.Languages.Contains(lang))
+                    taxonomy.Languages.Add(lang);
+            }
+
+            foreach (var locEntry in localization)
+            {
+                taxonomy.Localization.AddLanguage(locEntry.Culture);
+                taxonomy.Localization.SetLanguage(locEntry);
             }
 
             foreach (var entry in entries)
             {
-                taxnomy.Entries.Add(entry);
+                taxonomy.Entries.Add(entry);
             }
 
             // set at the end, cause otherwise entries cannot be added
-            taxnomy.IsReadonly = isReadonly;
+            taxonomy.IsReadonly = isReadonly;
 
-            return taxnomy;
+            return taxonomy;
         }
 
         #endregion
@@ -305,7 +385,7 @@ namespace SIMULTAN.Serializer.TXDXF
             writer.WriteVersionSection();
 
 
-            writer.StartSection(ParamStructTypes.TAXONOMY_SECTION);
+            writer.StartSection(ParamStructTypes.TAXONOMY_SECTION, -1);
 
             foreach (var taxonomy in taxonomies)
             {
@@ -315,6 +395,13 @@ namespace SIMULTAN.Serializer.TXDXF
             writer.EndSection();
 
             writer.WriteEOF();
+        }
+
+        private static void WriteLocalization(SimTaxonomyLocalizationEntry entry, DXFStreamWriter writer)
+        {
+            writer.Write(TaxonomySaveCode.TAXONOMY_LOCALIZATION_CULTURE, entry.Culture);
+            writer.Write(TaxonomySaveCode.TAXONOMY_LOCALIZATION_NAME, entry.Name);
+            writer.WriteMultilineText(TaxonomySaveCode.TAXONOMY_LOCALIZATION_DESCRIPTION, entry.Description);
         }
 
         private static void WriteTaxonomy(DXFStreamWriter writer, SimTaxonomy taxonomy, ExtendedProjectData projectData, bool isExport)
@@ -331,10 +418,13 @@ namespace SIMULTAN.Serializer.TXDXF
             }
 
             writer.Write(TaxonomySaveCode.TAXONOMY_KEY, taxonomy.Key);
-            writer.Write(ParamStructCommonSaveCode.ENTITY_NAME, taxonomy.Name);
-            writer.WriteMultilineText(TaxonomySaveCode.TAXONOMY_DESCRIPTION, taxonomy.Description);
             writer.Write(TaxonomySaveCode.TAXONOMY_IS_READONLY, taxonomy.IsReadonly);
             writer.Write(TaxonomySaveCode.TAXONOMY_IS_DELETABLE, taxonomy.IsDeletable);
+            writer.WriteArray(TaxonomySaveCode.TAXONOMY_SUPPORTED_LANGUAGES, taxonomy.Languages, (e, w) =>
+            {
+                w.Write(TaxonomySaveCode.TAXONOMY_LANGUAGE, e);
+            });
+            writer.WriteArray(TaxonomySaveCode.TAXONOMY_LOCALIZATIONS, taxonomy.Localization.Entries.Values, WriteLocalization);
 
             // Child Entries
             writer.WriteEntitySequence(TaxonomySaveCode.TAXONOMY_ENTRIES, taxonomy.Entries, (e, w) => WriteTaxonomyEntry(e, w, isExport));
@@ -356,8 +446,7 @@ namespace SIMULTAN.Serializer.TXDXF
                 writer.Write(ParamStructCommonSaveCode.ENTITY_LOCAL_ID, entry.Id.LocalId);
             }
 
-            writer.Write(ParamStructCommonSaveCode.ENTITY_NAME, entry.Name);
-            writer.WriteMultilineText(TaxonomySaveCode.TAXONOMY_DESCRIPTION, entry.Description);
+            writer.WriteArray(TaxonomySaveCode.TAXONOMY_LOCALIZATIONS, entry.Localization.Entries.Values, WriteLocalization);
 
             // Child Entries
             writer.WriteEntitySequence(TaxonomySaveCode.TAXONOMY_ENTRIES, entry.Children, (e, w) => WriteTaxonomyEntry(e, w, isExport));

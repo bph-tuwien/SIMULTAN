@@ -17,7 +17,7 @@ namespace SIMULTAN.Tests.DataMapping
     [TestClass]
     public class InstanceRuleTests : BaseProjectTest
     {
-        private static readonly FileInfo mappingProject = new FileInfo(@".\ExcelMappingTests.simultan");
+        private static readonly FileInfo mappingProject = new FileInfo(@"./ExcelMappingTests.simultan");
 
         #region Properties
 
@@ -32,18 +32,18 @@ namespace SIMULTAN.Tests.DataMapping
             compRule.MaxMatches = int.MaxValue;
             compRule.MaxDepth = int.MaxValue;
             compRule.TraversalStrategy = SimDataMappingRuleTraversalStrategy.Subtree;
-            compRule.OffsetParent = new IntIndex2D(0, 0);
-            compRule.OffsetConsecutive = new IntIndex2D(0, 1);
+            compRule.OffsetParent = new RowColumnIndex(0, 0);
+            compRule.OffsetConsecutive = new RowColumnIndex(1, 0);
             compRule.Properties.Add(SimDataMappingComponentMappingProperties.Name);
             compRule.Filter.Add(new SimDataMappingFilterComponent(SimDataMappingComponentFilterProperties.InstanceIsRealized, true));
 
             SimDataMappingRuleInstance rule = new SimDataMappingRuleInstance("SheetA");
             rule.MaxMatches = int.MaxValue;
             rule.MaxDepth = int.MaxValue;
-            rule.OffsetParent = new IntIndex2D(1, 0);
-            rule.OffsetConsecutive = new IntIndex2D(1, 0);
+            rule.OffsetParent = new RowColumnIndex(0, 1);
+            rule.OffsetConsecutive = new RowColumnIndex(0, 1);
             rule.MappingDirection = SimDataMappingDirection.Horizontal;
-            rule.ReferencePoint = SimDataMappingReferencePoint.TopRight;
+            rule.ReferencePointParent = SimDataMappingReferencePoint.TopRight;
             rule.Properties.Add(SimDataMappingInstanceMappingProperties.Name);
 
             compRule.Rules.Add(rule);
@@ -57,14 +57,14 @@ namespace SIMULTAN.Tests.DataMapping
 
             Assert.AreEqual(7, sheetData.Count);
 
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(0, 0), "ChildComponent1");
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(1, 0), "Geometry Placement 0:13");
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(2, 0), "Geometry Placement 0:20");
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(0, 0), "ChildComponent1");
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(0, 1), "Geometry Placement 0:13");
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(0, 2), "Geometry Placement 0:20");
 
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(0, 1), "ChildComponent2");
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(1, 1), "Geometry Placement 0:1");
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(2, 1), "Geometry Placement 0:14");
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(3, 1), "Geometry Placement 0:16");
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(1, 0), "ChildComponent2");
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(1, 1), "Geometry Placement 0:1");
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(1, 2), "Geometry Placement 0:14");
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(1, 3), "Geometry Placement 0:16");
 
         }
 
@@ -79,18 +79,18 @@ namespace SIMULTAN.Tests.DataMapping
             compRule.MaxMatches = int.MaxValue;
             compRule.MaxDepth = int.MaxValue;
             compRule.TraversalStrategy = SimDataMappingRuleTraversalStrategy.Subtree;
-            compRule.OffsetParent = new IntIndex2D(0, 0);
-            compRule.OffsetConsecutive = new IntIndex2D(0, 1);
+            compRule.OffsetParent = new RowColumnIndex(0, 0);
+            compRule.OffsetConsecutive = new RowColumnIndex(1, 0);
             compRule.Properties.Add(SimDataMappingComponentMappingProperties.Name);
             compRule.Filter.Add(new SimDataMappingFilterComponent(SimDataMappingComponentFilterProperties.InstanceIsRealized, true));
 
             SimDataMappingRuleInstance rule = new SimDataMappingRuleInstance("SheetA");
             rule.MaxMatches = int.MaxValue;
             rule.MaxDepth = int.MaxValue;
-            rule.OffsetParent = new IntIndex2D(1, 0);
-            rule.OffsetConsecutive = new IntIndex2D(1, 0);
+            rule.OffsetParent = new RowColumnIndex(0, 1);
+            rule.OffsetConsecutive = new RowColumnIndex(0, 1);
             rule.MappingDirection = SimDataMappingDirection.Horizontal;
-            rule.ReferencePoint = SimDataMappingReferencePoint.TopRight;
+            rule.ReferencePointParent = SimDataMappingReferencePoint.TopRight;
             rule.Properties.Add(SimDataMappingInstanceMappingProperties.Id);
 
             compRule.Rules.Add(rule);
@@ -104,14 +104,14 @@ namespace SIMULTAN.Tests.DataMapping
 
             Assert.AreEqual(7, sheetData.Count);
 
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(0, 0), "ChildComponent1");
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(1, 0), 73);
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(2, 0), 96);
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(0, 0), "ChildComponent1");
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(0, 1), 73);
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(0, 2), 96);
 
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(0, 1), "ChildComponent2");
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(1, 1), 76);
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(2, 1), 97);
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(3, 1), 98);
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(1, 0), "ChildComponent2");
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(1, 1), 76);
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(1, 2), 97);
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(1, 3), 98);
 
         }
 
@@ -128,19 +128,19 @@ namespace SIMULTAN.Tests.DataMapping
                 .Components.First(x => x.Component.Name == "Volume1").Component;
 
             SimDataMappingRuleComponent compRule = new SimDataMappingRuleComponent("SheetA");
-            compRule.OffsetParent = new IntIndex2D(0, 0);
+            compRule.OffsetParent = new RowColumnIndex(0, 0);
             compRule.Properties.Add(SimDataMappingComponentMappingProperties.Name);
 
             SimDataMappingRuleVolume volumeRule = new SimDataMappingRuleVolume("SheetA");
-            volumeRule.OffsetParent = new IntIndex2D(1, 0);
+            volumeRule.OffsetParent = new RowColumnIndex(0, 1);
             volumeRule.Properties.Add(SimDataMappingVolumeMappingProperties.Name);
             compRule.Rules.Add(volumeRule);
 
             SimDataMappingRuleInstance rule = new SimDataMappingRuleInstance("SheetA");
             rule.MaxMatches = int.MaxValue;
             rule.MaxDepth = int.MaxValue;
-            rule.OffsetParent = new IntIndex2D(1, 0);
-            rule.OffsetConsecutive = new IntIndex2D(0, 1);
+            rule.OffsetParent = new RowColumnIndex(0, 1);
+            rule.OffsetConsecutive = new RowColumnIndex(1, 0);
             rule.Properties.Add(SimDataMappingInstanceMappingProperties.Name);
             volumeRule.Rules.Add(rule);
 
@@ -153,9 +153,9 @@ namespace SIMULTAN.Tests.DataMapping
 
             Assert.AreEqual(3, sheetData.Count);
 
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(0, 0), "Volume1");
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(1, 0), "ShoeBox");
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(2, 0), "Geometry Placement 0:56");
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(0, 0), "Volume1");
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(0, 1), "ShoeBox");
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(0, 2), "Geometry Placement 0:56");
 
         }
 
@@ -168,11 +168,11 @@ namespace SIMULTAN.Tests.DataMapping
                 .Components.First(x => x.Component.Name == "Face1").Component;
 
             SimDataMappingRuleComponent compRule = new SimDataMappingRuleComponent("SheetA");
-            compRule.OffsetParent = new IntIndex2D(0, 0);
+            compRule.OffsetParent = new RowColumnIndex(0, 0);
             compRule.Properties.Add(SimDataMappingComponentMappingProperties.Name);
 
             SimDataMappingRuleFace faceRule = new SimDataMappingRuleFace("SheetA");
-            faceRule.OffsetParent = new IntIndex2D(1, 0);
+            faceRule.OffsetParent = new RowColumnIndex(0, 1);
             faceRule.Properties.Add(SimDataMappingFaceMappingProperties.Name);
             faceRule.Filter.Add(new SimDataMappingFilterFace(SimDataMappingFaceFilterProperties.Name, "Face 13"));
             compRule.Rules.Add(faceRule);
@@ -180,8 +180,8 @@ namespace SIMULTAN.Tests.DataMapping
             SimDataMappingRuleInstance rule = new SimDataMappingRuleInstance("SheetA");
             rule.MaxMatches = int.MaxValue;
             rule.MaxDepth = int.MaxValue;
-            rule.OffsetParent = new IntIndex2D(1, 0);
-            rule.OffsetConsecutive = new IntIndex2D(0, 1);
+            rule.OffsetParent = new RowColumnIndex(0, 1);
+            rule.OffsetConsecutive = new RowColumnIndex(1, 0);
             rule.Properties.Add(SimDataMappingInstanceMappingProperties.Name);
             faceRule.Rules.Add(rule);
 
@@ -194,9 +194,9 @@ namespace SIMULTAN.Tests.DataMapping
 
             Assert.AreEqual(3, sheetData.Count);
 
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(0, 0), "Face1");
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(1, 0), "Face 13");
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(2, 0), "Geometry Placement 0:13");
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(0, 0), "Face1");
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(0, 1), "Face 13");
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(0, 2), "Geometry Placement 0:13");
 
         }
 
@@ -215,18 +215,18 @@ namespace SIMULTAN.Tests.DataMapping
             compRule.MaxMatches = int.MaxValue;
             compRule.MaxDepth = int.MaxValue;
             compRule.TraversalStrategy = SimDataMappingRuleTraversalStrategy.Subtree;
-            compRule.OffsetParent = new IntIndex2D(0, 0);
-            compRule.OffsetConsecutive = new IntIndex2D(0, 1);
+            compRule.OffsetParent = new RowColumnIndex(0, 0);
+            compRule.OffsetConsecutive = new RowColumnIndex(1, 0);
             compRule.Properties.Add(SimDataMappingComponentMappingProperties.Name);
             compRule.Filter.Add(new SimDataMappingFilterComponent(SimDataMappingComponentFilterProperties.InstanceIsRealized, true));
 
             SimDataMappingRuleInstance rule = new SimDataMappingRuleInstance("SheetA");
             rule.MaxMatches = int.MaxValue;
             rule.MaxDepth = int.MaxValue;
-            rule.OffsetParent = new IntIndex2D(1, 0);
-            rule.OffsetConsecutive = new IntIndex2D(1, 0);
+            rule.OffsetParent = new RowColumnIndex(0, 1);
+            rule.OffsetConsecutive = new RowColumnIndex(0, 1);
             rule.MappingDirection = SimDataMappingDirection.Horizontal;
-            rule.ReferencePoint = SimDataMappingReferencePoint.TopRight;
+            rule.ReferencePointParent = SimDataMappingReferencePoint.TopRight;
             rule.Properties.Add(SimDataMappingInstanceMappingProperties.Name);
             rule.Filter.Add(new SimDataMappingFilterInstance(SimDataMappingInstanceFilterProperties.Name, "Geometry Placement 0:14"));
 
@@ -241,10 +241,10 @@ namespace SIMULTAN.Tests.DataMapping
 
             Assert.AreEqual(3, sheetData.Count);
 
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(0, 0), "ChildComponent1");
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(0, 0), "ChildComponent1");
 
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(0, 1), "ChildComponent2");
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(1, 1), "Geometry Placement 0:14");
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(1, 0), "ChildComponent2");
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(1, 1), "Geometry Placement 0:14");
 
         }
 
@@ -259,18 +259,18 @@ namespace SIMULTAN.Tests.DataMapping
             compRule.MaxMatches = int.MaxValue;
             compRule.MaxDepth = int.MaxValue;
             compRule.TraversalStrategy = SimDataMappingRuleTraversalStrategy.Subtree;
-            compRule.OffsetParent = new IntIndex2D(0, 0);
-            compRule.OffsetConsecutive = new IntIndex2D(0, 1);
+            compRule.OffsetParent = new RowColumnIndex(0, 0);
+            compRule.OffsetConsecutive = new RowColumnIndex(1, 0);
             compRule.Properties.Add(SimDataMappingComponentMappingProperties.Name);
             compRule.Filter.Add(new SimDataMappingFilterComponent(SimDataMappingComponentFilterProperties.InstanceIsRealized, true));
 
             SimDataMappingRuleInstance rule = new SimDataMappingRuleInstance("SheetA");
             rule.MaxMatches = int.MaxValue;
             rule.MaxDepth = int.MaxValue;
-            rule.OffsetParent = new IntIndex2D(1, 0);
-            rule.OffsetConsecutive = new IntIndex2D(1, 0);
+            rule.OffsetParent = new RowColumnIndex(0, 1);
+            rule.OffsetConsecutive = new RowColumnIndex(0, 1);
             rule.MappingDirection = SimDataMappingDirection.Horizontal;
-            rule.ReferencePoint = SimDataMappingReferencePoint.TopRight;
+            rule.ReferencePointParent = SimDataMappingReferencePoint.TopRight;
             rule.Properties.Add(SimDataMappingInstanceMappingProperties.Name);
             rule.Filter.Add(new SimDataMappingFilterInstance(SimDataMappingInstanceFilterProperties.Name,
                 new Regex("Geometry Placement 0:(14|16)+")));
@@ -286,11 +286,11 @@ namespace SIMULTAN.Tests.DataMapping
 
             Assert.AreEqual(4, sheetData.Count);
 
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(0, 0), "ChildComponent1");
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(0, 0), "ChildComponent1");
 
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(0, 1), "ChildComponent2");
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(1, 1), "Geometry Placement 0:14");
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(2, 1), "Geometry Placement 0:16");
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(1, 0), "ChildComponent2");
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(1, 1), "Geometry Placement 0:14");
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(1, 2), "Geometry Placement 0:16");
 
         }
 
@@ -305,18 +305,18 @@ namespace SIMULTAN.Tests.DataMapping
             compRule.MaxMatches = int.MaxValue;
             compRule.MaxDepth = int.MaxValue;
             compRule.TraversalStrategy = SimDataMappingRuleTraversalStrategy.Subtree;
-            compRule.OffsetParent = new IntIndex2D(0, 0);
-            compRule.OffsetConsecutive = new IntIndex2D(0, 1);
+            compRule.OffsetParent = new RowColumnIndex(0, 0);
+            compRule.OffsetConsecutive = new RowColumnIndex(1, 0);
             compRule.Properties.Add(SimDataMappingComponentMappingProperties.Name);
             compRule.Filter.Add(new SimDataMappingFilterComponent(SimDataMappingComponentFilterProperties.InstanceIsRealized, true));
 
             SimDataMappingRuleInstance rule = new SimDataMappingRuleInstance("SheetA");
             rule.MaxMatches = int.MaxValue;
             rule.MaxDepth = int.MaxValue;
-            rule.OffsetParent = new IntIndex2D(1, 0);
-            rule.OffsetConsecutive = new IntIndex2D(1, 0);
+            rule.OffsetParent = new RowColumnIndex(0, 1);
+            rule.OffsetConsecutive = new RowColumnIndex(0, 1);
             rule.MappingDirection = SimDataMappingDirection.Horizontal;
-            rule.ReferencePoint = SimDataMappingReferencePoint.TopRight;
+            rule.ReferencePointParent = SimDataMappingReferencePoint.TopRight;
             rule.Properties.Add(SimDataMappingInstanceMappingProperties.Name);
             rule.Filter.Add(new SimDataMappingFilterInstance(SimDataMappingInstanceFilterProperties.InstanceType, SimInstanceType.AttributesPoint));
 
@@ -331,12 +331,12 @@ namespace SIMULTAN.Tests.DataMapping
 
             Assert.AreEqual(5, sheetData.Count);
 
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(0, 0), "ChildComponent1");
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(0, 0), "ChildComponent1");
 
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(0, 1), "ChildComponent2");
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(1, 1), "Geometry Placement 0:1");
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(2, 1), "Geometry Placement 0:14");
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(3, 1), "Geometry Placement 0:16");
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(1, 0), "ChildComponent2");
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(1, 1), "Geometry Placement 0:1");
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(1, 2), "Geometry Placement 0:14");
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(1, 3), "Geometry Placement 0:16");
 
         }
 
@@ -353,18 +353,18 @@ namespace SIMULTAN.Tests.DataMapping
             compRule.MaxMatches = int.MaxValue;
             compRule.MaxDepth = int.MaxValue;
             compRule.TraversalStrategy = SimDataMappingRuleTraversalStrategy.Subtree;
-            compRule.OffsetParent = new IntIndex2D(0, 0);
-            compRule.OffsetConsecutive = new IntIndex2D(0, 1);
+            compRule.OffsetParent = new RowColumnIndex(0, 0);
+            compRule.OffsetConsecutive = new RowColumnIndex(1, 0);
             compRule.Properties.Add(SimDataMappingComponentMappingProperties.Name);
             compRule.Filter.Add(new SimDataMappingFilterComponent(SimDataMappingComponentFilterProperties.InstanceIsRealized, true));
 
             SimDataMappingRuleInstance rule = new SimDataMappingRuleInstance("SheetA");
             rule.MaxMatches = 2;
             rule.MaxDepth = int.MaxValue;
-            rule.OffsetParent = new IntIndex2D(1, 0);
-            rule.OffsetConsecutive = new IntIndex2D(1, 0);
+            rule.OffsetParent = new RowColumnIndex(0, 1);
+            rule.OffsetConsecutive = new RowColumnIndex(0, 1);
             rule.MappingDirection = SimDataMappingDirection.Horizontal;
-            rule.ReferencePoint = SimDataMappingReferencePoint.TopRight;
+            rule.ReferencePointParent = SimDataMappingReferencePoint.TopRight;
             rule.Properties.Add(SimDataMappingInstanceMappingProperties.Name);
 
             compRule.Rules.Add(rule);
@@ -378,13 +378,13 @@ namespace SIMULTAN.Tests.DataMapping
 
             Assert.AreEqual(7, sheetData.Count);
 
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(0, 0), "ChildComponent1");
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(1, 0), "Geometry Placement 0:13");
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(2, 0), "Geometry Placement 0:20");
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(0, 0), "ChildComponent1");
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(0, 1), "Geometry Placement 0:13");
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(0, 2), "Geometry Placement 0:20");
 
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(0, 1), "ChildComponent2");
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(1, 1), "Geometry Placement 0:1");
-            AssertUtil.AssertContains(sheetData, new IntIndex2D(2, 1), "Geometry Placement 0:14");
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(1, 0), "ChildComponent2");
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(1, 1), "Geometry Placement 0:1");
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(1, 2), "Geometry Placement 0:14");
 
         }
 
@@ -397,9 +397,9 @@ namespace SIMULTAN.Tests.DataMapping
                 MappingDirection = SimDataMappingDirection.Vertical,
                 MaxDepth = 3,
                 MaxMatches = 5,
-                OffsetConsecutive = new IntIndex2D(7, 8),
-                OffsetParent = new IntIndex2D(9, 10),
-                ReferencePoint = SimDataMappingReferencePoint.TopRight,
+                OffsetConsecutive = new RowColumnIndex(8, 7),
+                OffsetParent = new RowColumnIndex(10, 9),
+                ReferencePointParent = SimDataMappingReferencePoint.TopRight,
             };
 
             instanceRule.Filter.Add(new SimDataMappingFilterInstance(SimDataMappingInstanceFilterProperties.Name, "asdf"));
@@ -427,11 +427,11 @@ namespace SIMULTAN.Tests.DataMapping
             Assert.AreEqual(SimDataMappingDirection.Vertical, clonedRule.MappingDirection);
             Assert.AreEqual(3, clonedRule.MaxDepth);
             Assert.AreEqual(5, clonedRule.MaxMatches);
-            Assert.AreEqual(7, clonedRule.OffsetConsecutive.X);
-            Assert.AreEqual(8, clonedRule.OffsetConsecutive.Y);
-            Assert.AreEqual(9, clonedRule.OffsetParent.X);
-            Assert.AreEqual(10, clonedRule.OffsetParent.Y);
-            Assert.AreEqual(SimDataMappingReferencePoint.TopRight, clonedRule.ReferencePoint);
+            Assert.AreEqual(7, clonedRule.OffsetConsecutive.Column);
+            Assert.AreEqual(8, clonedRule.OffsetConsecutive.Row);
+            Assert.AreEqual(9, clonedRule.OffsetParent.Column);
+            Assert.AreEqual(10, clonedRule.OffsetParent.Row);
+            Assert.AreEqual(SimDataMappingReferencePoint.TopRight, clonedRule.ReferencePointParent);
 
             Assert.IsTrue(clonedRule.Rules[0] is SimDataMappingRuleComponent);
             Assert.IsTrue(clonedRule.Rules[1] is SimDataMappingRuleVolume);

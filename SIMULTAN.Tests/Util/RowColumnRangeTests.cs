@@ -75,7 +75,7 @@ namespace SIMULTAN.Tests.Util
         public void MergeIndex()
         {
             RowColumnRange range1 = new RowColumnRange(-1, -2, 10, 4);
-            IntIndex2D index = new IntIndex2D(7, 4);
+            RowColumnIndex index = new RowColumnIndex(4, 7);
 
             var merged = RowColumnRange.Merge(range1, index);
             Assert.AreEqual(-1, merged.RowStart);
