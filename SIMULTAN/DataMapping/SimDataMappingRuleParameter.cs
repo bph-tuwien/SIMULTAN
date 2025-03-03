@@ -158,7 +158,7 @@ namespace SIMULTAN.DataMapping
                     data.AddData(this.SheetName, state.CurrentPosition, parameter.NameTaxonomyEntry.TextOrKey, this);
                     break;
                 case SimDataMappingParameterMappingProperties.Id:
-                    data.AddData(this.SheetName, state.CurrentPosition, (int)parameter.Id.LocalId, this);
+                    data.AddData(this.SheetName, state.CurrentPosition, parameter.Id.LocalId, this);
                     break;
                 case SimDataMappingParameterMappingProperties.Value:
                     if (parameter.ValueSource is SimMultiValueBigTableParameterSource tableSource)

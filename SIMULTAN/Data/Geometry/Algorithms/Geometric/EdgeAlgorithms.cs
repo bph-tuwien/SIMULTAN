@@ -543,5 +543,17 @@ namespace SIMULTAN.Data.Geometry
         {
             return e1.Vertices[0] == e2.Vertices[0] || e1.Vertices[0] == e2.Vertices[1] || e1.Vertices[1] == e2.Vertices[0] || e1.Vertices[1] == e2.Vertices[1];
         }
+
+
+        /// <summary>
+        /// Returns if the edge is horizontal (the Y component of it's direction &lt;= epsilon)
+        /// </summary>
+        /// <param name="e">The edge</param>
+        /// <param name="epsilon">The epsilon</param>
+        /// <returns>If the edge is horizontal</returns>
+        public static bool IsHorizontal(Edge e, double epsilon = 0.001)
+        {
+            return Direction(e).Y < epsilon;
+        }
     }
 }

@@ -136,45 +136,63 @@ namespace SIMULTAN.Serializer.MVDXF
 
                 for (int n = 0; n < this.data.Count(1); n++)
                 {
-                    if (data[row, n] is double d)
+                    if (data[row, n] != null) //Null doesn't need to be written
                     {
-                        this.Result.Append("d");
-                        this.Result.Append(DXFDataConverter<double>.P.ToDXFString(d));
-                    }
-                    else if (data[row, n] is int i)
-                    {
-                        this.Result.Append("n");
-                        this.Result.Append(DXFDataConverter<int>.P.ToDXFString(i));
-                    }
-                    else if (data[row, n] is bool b)
-                    {
-                        this.Result.Append("b");
-                        this.Result.Append(DXFDataConverter<bool>.P.ToDXFString(b));
-                    }
-                    else if (data[row, n] is string s)
-                    {
-                        this.Result.Append("s");
-
-                        /* Replace the following characters 
-                         * ; with \;
-                         * line break with \n
-                         * \ with \\
-                         */
-                        foreach (var c in s)
+                        switch (data[row, n])
                         {
-                            if (c == '\\')
-                                this.Result.Append(@"\\");
-                            else if (c == ParamStructTypes.DELIMITER_WITHIN_ENTRY)
-                            {
-                                this.Result.Append('\\');
-                                this.Result.Append(ParamStructTypes.DELIMITER_WITHIN_ENTRY);
-                            }
-                            else if (c == '\n')
-                                this.Result.Append(@"\n");
-                            else if (c == '\r')
-                            { }
-                            else
-                                this.Result.Append(c);
+                            case double d:
+                                this.Result.Append("d");
+                                this.Result.Append(DXFDataConverter<double>.P.ToDXFString(d));
+                                break;
+                            case int i:
+                                this.Result.Append("n");
+                                this.Result.Append(DXFDataConverter<int>.P.ToDXFString(i));
+                                break;
+                            case uint ui:
+                                this.Result.Append("u");
+                                this.Result.Append(DXFDataConverter<uint>.P.ToDXFString(ui));
+                                break;
+                            case bool b:
+                                this.Result.Append("b");
+                                this.Result.Append(DXFDataConverter<bool>.P.ToDXFString(b));
+                                break;
+                            case long l:
+                                this.Result.Append("l");
+                                this.Result.Append(DXFDataConverter<long>.P.ToDXFString(l));
+                                break;
+                            case ulong ul:
+                                this.Result.Append("m");
+                                this.Result.Append(DXFDataConverter<ulong>.P.ToDXFString(ul));
+                                break;
+                            case string s:
+                                {
+                                    this.Result.Append("s");
+
+                                    /* Replace the following characters 
+                                     * ; with \;
+                                     * line break with \n
+                                     * \ with \\
+                                     */
+                                    foreach (var c in s)
+                                    {
+                                        if (c == '\\')
+                                            this.Result.Append(@"\\");
+                                        else if (c == ParamStructTypes.DELIMITER_WITHIN_ENTRY)
+                                        {
+                                            this.Result.Append('\\');
+                                            this.Result.Append(ParamStructTypes.DELIMITER_WITHIN_ENTRY);
+                                        }
+                                        else if (c == '\n')
+                                            this.Result.Append(@"\n");
+                                        else if (c == '\r')
+                                        { }
+                                        else
+                                            this.Result.Append(c);
+                                    }
+                                }
+                                break;
+                            default:
+                                throw new NotSupportedException("Datatype not supported");
                         }
                     }
 
@@ -283,6 +301,15 @@ namespace SIMULTAN.Serializer.MVDXF
                             case 'n':
                                 type = typeof(int);
                                 break;
+                            case 'u':
+                                type = typeof(uint);
+                                break;
+                            case 'l':
+                                type = typeof(long);
+                                break;
+                            case 'm':
+                                type = typeof(ulong);
+                                break;
                             case 'b':
                                 type = typeof(bool);
                                 break;
@@ -310,6 +337,18 @@ namespace SIMULTAN.Serializer.MVDXF
                         else if (type == typeof(int))
                         {
                             values.Add(DXFDataConverter<int>.P.FromDXFString(row.Substring(lastMatchEnd + 1, i - lastMatchEnd - 1), info));
+                        }
+                        else if (type == typeof(uint))
+                        {
+                            values.Add(DXFDataConverter<uint>.P.FromDXFString(row.Substring(lastMatchEnd + 1, i - lastMatchEnd - 1), info));
+                        }
+                        else if (type == typeof(long))
+                        {
+                            values.Add(DXFDataConverter<long>.P.FromDXFString(row.Substring(lastMatchEnd + 1, i - lastMatchEnd - 1), info));
+                        }
+                        else if (type == typeof(ulong))
+                        {
+                            values.Add(DXFDataConverter<ulong>.P.FromDXFString(row.Substring(lastMatchEnd + 1, i - lastMatchEnd - 1), info));
                         }
                         else if (type == typeof(bool))
                         {

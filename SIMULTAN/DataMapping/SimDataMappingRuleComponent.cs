@@ -227,7 +227,7 @@ namespace SIMULTAN.DataMapping
                 switch (property)
                 {
                     case SimDataMappingComponentMappingProperties.Id:
-                        data.AddData(this.SheetName, state.CurrentPosition, (int)comp.Id.LocalId, this);
+                        data.AddData(this.SheetName, state.CurrentPosition, comp.Id.LocalId, this);
                         break;
                     case SimDataMappingComponentMappingProperties.Name:
                         data.AddData(this.SheetName, state.CurrentPosition, comp.Name, this);

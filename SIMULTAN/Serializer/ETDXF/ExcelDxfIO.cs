@@ -451,6 +451,8 @@ namespace SIMULTAN.Serializer
 
             //Mapped Components
             var components = data.Get<SimComponent[]>(DataMappingSaveCode.RULE_MAPPED_COMPONENTS, null);
+            if (components != null)
+                components = components.Where(x => x != null).ToArray();
 
             return (rule, components);
         }

@@ -18,7 +18,7 @@ namespace SIMULTAN.Data.MultiValues
         /// </summary>
         public static HashSet<Type> SupportedValueTypes { get; } = new HashSet<Type>
         {
-            typeof(double), typeof(int), typeof(bool), typeof(string)
+            typeof(double), typeof(int), typeof(uint), typeof(bool), typeof(string), typeof(long), typeof(ulong)
         };
 
         #region Helper Classes
@@ -557,7 +557,7 @@ namespace SIMULTAN.Data.MultiValues
                     for (int c = 0; c < values[r].Count; c++)
                     {
                         if (values[r][c] != null && !SupportedValueTypes.Contains(values[r][c].GetType()))
-                            throw new ArgumentException(string.Format("Values contains unsupported types (Row {0}, Column {1}=", r, c));
+                            throw new ArgumentException(string.Format("Values contains unsupported types (Row {0}, Column {1})", r, c));
                     }
                 }
             }

@@ -1,4 +1,18 @@
 0
+SECTION
+2
+VERSION_SECTION
+0
+FILE_VERSION
+10
+30
+0
+ENDSEC
+0
+SECTION
+2
+ENTITIES
+0
 BIG_TABLE
 100
 SIMULTAN.Data.MultiValues.SimMultiValueBigTable
@@ -68,3 +82,7 @@ l-7;m8;u3;d4.00000000;b0;
 n-1;sa;sb\n\\	\;\nc;d5.00000000;n6;
 1121
 Additional Text[NewLine]With New Line
+0
+ENDSEC
+0
+EOF

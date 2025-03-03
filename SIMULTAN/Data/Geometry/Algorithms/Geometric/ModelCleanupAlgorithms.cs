@@ -1649,13 +1649,9 @@ namespace SIMULTAN.Data.Geometry
                         }
 
                     }
-                    catch (Exception e)
+                    catch (Exception e) when (!Debugger.IsAttached)
                     {
                         result = new SplitFaceResult { success = false, exception = e, exceptionFace = faces[i] };
-
-                        if (Debugger.IsAttached)
-                            throw;
-
                         break; //End method because something is already broken
                     }
 
@@ -1669,12 +1665,9 @@ namespace SIMULTAN.Data.Geometry
                     backgroundInfo.ReportProgress((int)((double)i / (double)model.Faces.Count * 100.0));
                 }
             }
-            catch (Exception e)
+            catch (Exception e) when (!Debugger.IsAttached)
             {
                 result = new SplitFaceResult { success = false, exception = e, exceptionFace = null };
-
-                if (Debugger.IsAttached)
-                    throw;
             }
 
             model.EndBatchOperation();

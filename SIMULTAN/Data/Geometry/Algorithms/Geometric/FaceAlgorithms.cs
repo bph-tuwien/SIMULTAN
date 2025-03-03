@@ -1378,5 +1378,53 @@ namespace SIMULTAN.Data.Geometry
             else
                 return false;
         }
+
+        /// <summary>
+        /// Tries to find a direction orthogonal to the <paramref name="inputEdge"/> that points into the plane of the given <paramref name="face"/>.
+        /// Returns the zero vector if it could not be found (Happens if face does not have an area)
+        /// </summary>
+        /// <param name="inputEdge">The input edge</param>
+        /// <param name="face">The face</param>
+        /// <param name="epsilon">The epsilon for numerical stability</param>
+        /// <returns>The direction orthogonal to the <paramref name="inputEdge"/> pointing into <paramref name="face"/></returns>
+        public static SimVector3D FindOrthogonalDirectionInFace(Edge inputEdge, Face face, double epsilon)
+        {
+            var startVertex = inputEdge.Vertices[0];
+            var edgeDir = EdgeAlgorithms.Direction(inputEdge);
+
+            // get vertices of boundary loop except the ones from the input edge
+            var vertices = face.Boundary.Edges.Where(x => !inputEdge.Vertices.Contains(x.StartVertex)).Select(x => x.StartVertex);
+            // try to find another edge with a vertex that forms a non collinear direction to the edgeDir
+            foreach (var vertex in vertices)
+            {
+                var dir = vertex.Position - startVertex.Position;
+                dir.Normalize();
+                // fails if colinear
+                if (GeometryAlgorithms.TryOrthogonalize(edgeDir, dir, epsilon, out var orth))
+                {
+                    return orth;
+                }
+            }
+
+            return new SimVector3D();
+        }
+
+        /// <summary>
+        /// Gets the angle between two orthogonal face directions around an edge direction.
+        /// </summary>
+        /// <param name="currentFaceDirection">is the direction orthogonal to the <paramref name="edgeDirection"/> of the current face.</param>
+        /// <param name="edgeDirection">is the edges direction</param>
+        /// <param name="otherFaceDirection">is the direction orthogonal to the <paramref name="edgeDirection"/> of the other edge to find the angle of</param>
+        /// <returns>The angle of <paramref name="otherFaceDirection"/> to <paramref name="currentFaceDirection"/> around <paramref name="edgeDirection"/> from 0 to 2 pi</returns>
+        public static double AngleBetweenOrthogonalFaceDirections(SimVector3D currentFaceDirection, SimVector3D edgeDirection, SimVector3D otherFaceDirection)
+        {
+            var angle = Math.Atan2(
+                SimVector3D.DotProduct(SimVector3D.CrossProduct(currentFaceDirection, otherFaceDirection), edgeDirection),
+                SimVector3D.DotProduct(currentFaceDirection, otherFaceDirection));
+            if (angle < 0)
+                angle = 2.0 * Math.PI + angle; //+ because angle is negative
+            return angle;
+        }
+
     }
 }

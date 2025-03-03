@@ -307,6 +307,21 @@ namespace SIMULTAN.Data.Geometry
             return false;
         }
 
+        /// <summary>
+        /// Returns the reference count of the provided file if loaded.
+        /// Returns -1 if not loaded.
+        /// </summary>
+        /// <param name="file">The resource file of the geometry model</param>
+        /// <returns>The reference count of the model or -1 if not loaded.</returns>
+        public int GetReferenceCount(ResourceFileEntry file)
+        {
+            if (geometryModels.TryGetValue(file, out var rootmodel))
+            {
+                return rootmodel.ReferenceCounter;
+            }
+            return -1;
+        }
+
         private void LinkedModels_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
             switch (e.Action)
@@ -333,6 +348,7 @@ namespace SIMULTAN.Data.Geometry
                     throw new NotSupportedException("This operation is not supported");
             }
         }
+
 
         #endregion
 

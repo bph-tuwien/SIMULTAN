@@ -33,10 +33,11 @@ namespace SIMULTAN.Serializer
         /// <param name="node">The XMLElement onto which the xpath is applied</param>
         /// <param name="xpath">The xpath expression</param>
         /// <param name="converter">Convert to convert the content string</param>
+        /// <param name="nsmgr">Namespace manager of the xml node</param>
         /// <returns>True when the xpath has selected an element, False otherwise</returns>
-        public static bool LoadInnerText(this XmlElement node, String xpath, Action<String> converter)
+        public static bool LoadInnerText(this XmlElement node, String xpath, Action<String> converter, XmlNamespaceManager nsmgr = null)
         {
-            var s = LoadString(node, xpath);
+            var s = LoadString(node, xpath, nsmgr);
             if (s != null)
             {
                 try
@@ -51,9 +52,14 @@ namespace SIMULTAN.Serializer
             }
             return false;
         }
-        private static String LoadString(XmlElement node, String xpath)
+        private static String LoadString(XmlElement node, String xpath, XmlNamespaceManager nsmgr = null)
         {
-            var element = node.SelectSingleNode(xpath) as XmlElement;
+            XmlElement element = null;
+
+            if (nsmgr != null) 
+                element = node.SelectSingleNode(xpath, nsmgr) as XmlElement;
+            else
+                element = node.SelectSingleNode(xpath) as XmlElement;
 
             if (element == null)
                 return null;

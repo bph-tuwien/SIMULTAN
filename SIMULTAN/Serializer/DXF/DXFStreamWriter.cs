@@ -16,7 +16,7 @@ namespace SIMULTAN.Serializer.DXF
         /// <summary>
         /// The DXF file version ( FileVersion )
         /// </summary>
-        public static ulong CurrentFileFormatVersion { get => 29L; }
+        public static ulong CurrentFileFormatVersion { get => 30L; }
 
         internal static readonly string NEWLINE_PLACEHOLDER = "[NewLine]";
 

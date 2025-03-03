@@ -85,7 +85,7 @@ namespace SIMULTAN.Tests.DataMapping
             Assert.IsTrue(data.Data.TryGetValue("SheetA", out var sheetData));
 
             Assert.AreEqual(1, sheetData.Count);
-            AssertUtil.AssertContains(sheetData, new RowColumnIndex(0, 0), 84);
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(0, 0), 84L);
         }
 
         [TestMethod]
@@ -221,7 +221,7 @@ namespace SIMULTAN.Tests.DataMapping
 
             Assert.AreEqual(3, sheetData.Count);
             AssertUtil.AssertContains(sheetData, new RowColumnIndex(0, 0), "Param1");
-            AssertUtil.AssertContains(sheetData, new RowColumnIndex(1, 0), 84);
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(1, 0), 84L);
             AssertUtil.AssertContains(sheetData, new RowColumnIndex(2, 0), 17.6);
         }
 
@@ -247,7 +247,7 @@ namespace SIMULTAN.Tests.DataMapping
 
             Assert.AreEqual(3, sheetData.Count);
             AssertUtil.AssertContains(sheetData, new RowColumnIndex(0, 0), "Param1");
-            AssertUtil.AssertContains(sheetData, new RowColumnIndex(0, 1), 84);
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(0, 1), 84L);
             AssertUtil.AssertContains(sheetData, new RowColumnIndex(0, 2), 17.6);
         }
 

@@ -190,7 +190,7 @@ namespace SIMULTAN.DataMapping
                         data.AddData(this.SheetName, state.CurrentPosition, volume.Name, this);
                         break;
                     case SimDataMappingVolumeMappingProperties.Id:
-                        data.AddData(this.SheetName, state.CurrentPosition, (int)volume.Id, this);
+                        data.AddData(this.SheetName, state.CurrentPosition, (long)volume.Id, this);
                         break;
                     case SimDataMappingVolumeMappingProperties.Volume:
                         data.AddData(this.SheetName, state.CurrentPosition,

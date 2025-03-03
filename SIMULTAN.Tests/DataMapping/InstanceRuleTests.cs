@@ -105,13 +105,13 @@ namespace SIMULTAN.Tests.DataMapping
             Assert.AreEqual(7, sheetData.Count);
 
             AssertUtil.AssertContains(sheetData, new RowColumnIndex(0, 0), "ChildComponent1");
-            AssertUtil.AssertContains(sheetData, new RowColumnIndex(0, 1), 73);
-            AssertUtil.AssertContains(sheetData, new RowColumnIndex(0, 2), 96);
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(0, 1), 73L);
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(0, 2), 96L);
 
             AssertUtil.AssertContains(sheetData, new RowColumnIndex(1, 0), "ChildComponent2");
-            AssertUtil.AssertContains(sheetData, new RowColumnIndex(1, 1), 76);
-            AssertUtil.AssertContains(sheetData, new RowColumnIndex(1, 2), 97);
-            AssertUtil.AssertContains(sheetData, new RowColumnIndex(1, 3), 98);
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(1, 1), 76L);
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(1, 2), 97L);
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(1, 3), 98L);
 
         }
 

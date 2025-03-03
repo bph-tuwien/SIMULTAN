@@ -508,5 +508,15 @@ namespace SIMULTAN.Data.Geometry
 
             return peri;
         }
+
+        /// <summary>
+        /// Returns the face that has the edge loop as boundary
+        /// </summary>
+        /// <param name="loop">The loop</param>
+        /// <returns>The face that has the edge loop as boundary</returns>
+        public static Face BoundaryFace(EdgeLoop loop)
+        {
+            return loop.Faces.FirstOrDefault(x => x.Boundary == loop);
+        }
     }
 }

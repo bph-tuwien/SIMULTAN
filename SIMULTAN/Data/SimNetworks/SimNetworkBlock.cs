@@ -169,7 +169,8 @@ namespace SIMULTAN.Data.SimNetworks
         /// <summary>
         /// Removes the assigned component instance from the block as well as from the ports of the block
         /// </summary>
-        public void RemoveComponentInstance()
+        /// <param name="sendAssociatedEvent">If the AssociationChanged event on the network should be called</param>
+        public void RemoveComponentInstance(bool sendAssociatedEvent = true)
         {
             var portComponents = this.componentInstance.Component.Components.Select(c => c.Component).Where(c => c.InstanceType.HasFlag(SimInstanceType.InPort) || c.InstanceType.HasFlag(SimInstanceType.OutPort));
             foreach (var portComponent in portComponents)
@@ -182,6 +183,8 @@ namespace SIMULTAN.Data.SimNetworks
 
             }
             this.ComponentInstance.Component.Instances.Remove(this.ComponentInstance);
+            if (sendAssociatedEvent)
+                this.ParentNetwork?.OnAssociationChanged(new[] { this });
         }
 
 
@@ -271,14 +274,14 @@ namespace SIMULTAN.Data.SimNetworks
         {
             if (component == null)
                 throw new ArgumentNullException("Component which should be assigned can not be null");
-            if (component.InstanceType != SimInstanceType.SimNetworkBlock)
+            if (!component.InstanceType.HasFlag(SimInstanceType.SimNetworkBlock))
                 throw new NotSupportedException("Only components with InstanceType SimInstanceType.SimNetworkBlock are allowed");
             this.isBeingAssignedToComponent = true;
 
             //Handle older components assigned to the block
             if (this.ComponentInstance != null)
             {
-                this.RemoveComponentInstance();
+                this.RemoveComponentInstance(false);
             }
 
             //Assign the component (an instance of the component) to the network Element
@@ -288,6 +291,8 @@ namespace SIMULTAN.Data.SimNetworks
             InitializePorts(component, syncBlockToComp);
             SubscribeToComponentEvents();
             this.isBeingAssignedToComponent = false;
+
+            ParentNetwork?.OnAssociationChanged(new[] { this });
         }
 
         private void SubscribeToComponentEvents()

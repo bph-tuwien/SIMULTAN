@@ -80,6 +80,11 @@ namespace SIMULTAN.Data.Geometry
                     if (edgeFaceLookup.TryGetValue(pedge, out var elist))
                     {
                         elist.faces.Add((face, isHole));
+                        // if it turns out that the edge is actually a hole edge, we need to update the entry
+                        if (elist.isHoleEdge != isHoleEdge && isHoleEdge)
+                        {
+                            edgeFaceLookup[pedge] = (true, elist.faces);
+                        }
                     }
                     else
                     {

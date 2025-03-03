@@ -65,8 +65,6 @@ namespace SIMULTAN.Tests.Values
             return ("BigTable", "UnitRows", "UnitColumns", rowHeaders, columnHeaders, values);
         }
 
-
-
         internal static (string name, string unitRow, string unitColumn,
             List<SimMultiValueBigTableHeader> rowHeaders, List<SimMultiValueBigTableHeader> columnHeaders, List<List<object>> values)
             BoolTestData(int rows, int columns)
@@ -93,10 +91,9 @@ namespace SIMULTAN.Tests.Values
             return ("BigTable", "UnitRows", "UnitColumns", rowHeaders, columnHeaders, values);
         }
 
-
         internal static (string name, string unitRow, string unitColumn,
-    List<SimMultiValueBigTableHeader> rowHeaders, List<SimMultiValueBigTableHeader> columnHeaders, List<List<object>> values)
-    IntTestData(int rows, int columns)
+            List<SimMultiValueBigTableHeader> rowHeaders, List<SimMultiValueBigTableHeader> columnHeaders, List<List<object>> values)
+            IntTestData(int rows, int columns)
         {
             List<SimMultiValueBigTableHeader> rowHeaders = new List<SimMultiValueBigTableHeader>(rows);
             for (int i = 0; i < rows; ++i)
@@ -121,10 +118,9 @@ namespace SIMULTAN.Tests.Values
             return ("BigTable", "UnitRows", "UnitColumns", rowHeaders, columnHeaders, values);
         }
 
-
         internal static (string name, string unitRow, string unitColumn,
-        List<SimMultiValueBigTableHeader> rowHeaders, List<SimMultiValueBigTableHeader> columnHeaders, List<List<object>> values)
-        StringTestData(int rows, int columns)
+            List<SimMultiValueBigTableHeader> rowHeaders, List<SimMultiValueBigTableHeader> columnHeaders, List<List<object>> values)
+            StringTestData(int rows, int columns)
         {
             List<SimMultiValueBigTableHeader> rowHeaders = new List<SimMultiValueBigTableHeader>(rows);
             for (int i = 0; i < rows; ++i)
@@ -148,12 +144,33 @@ namespace SIMULTAN.Tests.Values
             return ("BigTable", "UnitRows", "UnitColumns", rowHeaders, columnHeaders, values);
         }
 
+        internal static (string name, string unitRow, string unitColumn,
+            List<SimMultiValueBigTableHeader> rowHeaders, List<SimMultiValueBigTableHeader> columnHeaders, List<List<object>> values)
+            MixedTestData()
+        {
+            List<SimMultiValueBigTableHeader> rowHeaders = new List<SimMultiValueBigTableHeader>(3);
+            for (int i = 0; i < 3; ++i)
+                rowHeaders.Add(new SimMultiValueBigTableHeader(string.Format("Row {0}", i), string.Format("RowUnit {0}", i)));
+
+            List<SimMultiValueBigTableHeader> columnHeaders = new List<SimMultiValueBigTableHeader>(2);
+            for (int i = 0; i < 2; ++i)
+                columnHeaders.Add(new SimMultiValueBigTableHeader(string.Format("Column {0}", i), string.Format("ColUnit {0}", i)));
+
+            List<List<object>> values = new List<List<object>>
+            {
+                new List<object> { (double)1.0, (int)2, },
+                new List<object> { (uint)3, (bool)true, },
+                new List<object> { (long)-1, (ulong)4, },
+            };
+
+            return ("BigTable", "UnitRows", "UnitColumns", rowHeaders, columnHeaders, values);
+        }
 
 
         internal static ((string name, string unitRow, string unitColumn,
-                    List<SimMultiValueBigTableHeader> rowHeaders, List<SimMultiValueBigTableHeader> columnHeaders, List<List<object>> values) data,
-                    SimMultiValueBigTable table, ExtendedProjectData projectData)
-                    DoubleTestDataTable(int rows, int columns)
+            List<SimMultiValueBigTableHeader> rowHeaders, List<SimMultiValueBigTableHeader> columnHeaders, List<List<object>> values) data,
+            SimMultiValueBigTable table, ExtendedProjectData projectData)
+            DoubleTestDataTable(int rows, int columns)
         {
             ExtendedProjectData projectData = new ExtendedProjectData();
 
@@ -166,12 +183,10 @@ namespace SIMULTAN.Tests.Values
             return (data, table, projectData);
         }
 
-
-
         internal static ((string name, string unitRow, string unitColumn,
-                    List<SimMultiValueBigTableHeader> rowHeaders, List<SimMultiValueBigTableHeader> columnHeaders, List<List<object>> values) data,
-                    SimMultiValueBigTable table, ExtendedProjectData projectData)
-                  IntTestDataTable(int rows, int columns)
+            List<SimMultiValueBigTableHeader> rowHeaders, List<SimMultiValueBigTableHeader> columnHeaders, List<List<object>> values) data,
+            SimMultiValueBigTable table, ExtendedProjectData projectData)
+            IntTestDataTable(int rows, int columns)
         {
             ExtendedProjectData projectData = new ExtendedProjectData();
 
@@ -184,10 +199,9 @@ namespace SIMULTAN.Tests.Values
             return (data, table, projectData);
         }
 
-
         internal static ((string name, string unitRow, string unitColumn,
-               List<SimMultiValueBigTableHeader> rowHeaders, List<SimMultiValueBigTableHeader> columnHeaders, List<List<object>> values) data,
-               SimMultiValueBigTable table, ExtendedProjectData projectData)
+            List<SimMultiValueBigTableHeader> rowHeaders, List<SimMultiValueBigTableHeader> columnHeaders, List<List<object>> values) data,
+            SimMultiValueBigTable table, ExtendedProjectData projectData)
             StringTestDataTable(int rows, int columns)
         {
             ExtendedProjectData projectData = new ExtendedProjectData();
@@ -201,12 +215,10 @@ namespace SIMULTAN.Tests.Values
             return (data, table, projectData);
         }
 
-
-
         internal static ((string name, string unitRow, string unitColumn,
-               List<SimMultiValueBigTableHeader> rowHeaders, List<SimMultiValueBigTableHeader> columnHeaders, List<List<object>> values) data,
-               SimMultiValueBigTable table, ExtendedProjectData projectData)
-               BoolTestDataTable(int rows, int columns)
+            List<SimMultiValueBigTableHeader> rowHeaders, List<SimMultiValueBigTableHeader> columnHeaders, List<List<object>> values) data,
+            SimMultiValueBigTable table, ExtendedProjectData projectData)
+            BoolTestDataTable(int rows, int columns)
         {
             ExtendedProjectData projectData = new ExtendedProjectData();
 
@@ -218,6 +230,7 @@ namespace SIMULTAN.Tests.Values
 
             return (data, table, projectData);
         }
+
 
         internal static SimMultiValueBigTable TestDataTableAggregate()
         {
@@ -317,12 +330,28 @@ namespace SIMULTAN.Tests.Values
             Assert.ThrowsException<ArgumentException>(() =>
                 { var table = new SimMultiValueBigTable(data.name, data.unitColumn, data.unitRow, data.columnHeaders, data.rowHeaders, smallData); });
 
-
             var bigTable = new SimMultiValueBigTable(data.name, data.unitColumn, data.unitRow, data.columnHeaders, data.rowHeaders, data.values);
             CheckTestData(bigTable, data);
             Assert.AreEqual(SimId.Empty, bigTable.Id);
             Assert.AreEqual(null, bigTable.Factory);
         }
+
+        [TestMethod]
+        public void CtorMixedData()
+        {
+            var data = MixedTestData();
+
+            var bigTable = new SimMultiValueBigTable(data.name, data.unitColumn, data.unitRow, data.columnHeaders, data.rowHeaders, data.values);
+            CheckTestData(bigTable, data);
+            Assert.AreEqual(SimId.Empty, bigTable.Id);
+            Assert.AreEqual(null, bigTable.Factory);
+
+            //Wrong type
+            data.values[0][0] = (float)0.5;
+            Assert.ThrowsException<ArgumentException>(() =>
+            { new SimMultiValueBigTable(data.name, data.unitColumn, data.unitRow, data.columnHeaders, data.rowHeaders, data.values); });
+        }
+
 
         [TestMethod]
         public void PropertyChanged()
