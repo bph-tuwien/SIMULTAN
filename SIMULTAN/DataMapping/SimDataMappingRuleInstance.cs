@@ -109,7 +109,7 @@ namespace SIMULTAN.DataMapping
                         data.AddData(this.SheetName, state.CurrentPosition, instance.Name, this);
                         break;
                     case SimDataMappingInstanceMappingProperties.Id:
-                        data.AddData(this.SheetName, state.CurrentPosition, (int)instance.Id.LocalId, this);
+                        data.AddData(this.SheetName, state.CurrentPosition, instance.Id.LocalId, this);
                         break;
                 }
             });

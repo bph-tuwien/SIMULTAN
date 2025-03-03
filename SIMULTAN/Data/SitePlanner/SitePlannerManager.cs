@@ -36,24 +36,12 @@ namespace SIMULTAN.Data.SitePlanner
         /// </summary>
         public ProjectData ProjectData { get; }
 
-        private HashSet<GeoMap> OpenGeoMaps { get; set; }
-        private HashSet<SitePlannerProject> OpenSitePlannerProjects { get; }
 
         /// <inheritdoc/>
         public IReferenceLocation CalledFromLocation
         {
             get; private set;
         }
-
-        /// <summary>
-        /// Invoked when a SitePlannerProjects is opened.
-        /// </summary>
-        public event SitePlannerProjectOpenedEventHandler SitePlannerProjectOpened;
-
-        /// <summary>
-        /// Invoked when a SitePlannerProjects is opened.
-        /// </summary>
-        public event SitePlannerProjectClosedEventHandler SitePlannerProjectClosed;
 
         /// <summary>
         /// List of all GeoMaps in the project
@@ -74,9 +62,6 @@ namespace SIMULTAN.Data.SitePlanner
 
             GeoMaps = new ObservableCollection<GeoMap>();
             SitePlannerProjects = new SitePlannerProjectsCollection(this);
-
-            OpenGeoMaps = new HashSet<GeoMap>();
-            OpenSitePlannerProjects = new HashSet<SitePlannerProject>();
         }
 
         /// <summary>
@@ -115,92 +100,6 @@ namespace SIMULTAN.Data.SitePlanner
         {
             if (file == null) return null;
             return SitePlannerProjects.Where(x => x.SitePlannerFile.Name.Equals(file.Name)).FirstOrDefault();
-        }
-
-        /// <summary>
-        /// Marks the project as opened
-        /// </summary>
-        /// <param name="proj">SitePlannerProject</param>
-        public void OpenSitePlannerProject(SitePlannerProject proj)
-        {
-            if (!OpenSitePlannerProjects.Contains(proj))
-            {
-                OpenSitePlannerProjects.Add(proj);
-                SitePlannerProjectOpened?.Invoke(this, proj);
-            }
-        }
-
-        /// <summary>
-        /// Marks the project as closed
-        /// </summary>
-        /// <param name="proj">SitePlannerProject</param>
-        public void CloseSitePlannerProject(SitePlannerProject proj)
-        {
-            if (OpenSitePlannerProjects.Contains(proj))
-            {
-                OpenSitePlannerProjects.Remove(proj);
-                SitePlannerProjectClosed?.Invoke(this, proj);
-            }
-        }
-
-        /// <summary>
-        /// Marks the map as opened
-        /// </summary>
-        /// <param name="map">SitePlannerMap</param>
-        public void OpenSitePlannerMap(GeoMap map)
-        {
-            if (!OpenGeoMaps.Contains(map))
-                OpenGeoMaps.Add(map);
-        }
-
-        /// <summary>
-        /// Marks the map as closed
-        /// </summary>
-        /// <param name="map">SitePlannerMap</param>
-        public void CloseSitePlannerMap(GeoMap map)
-        {
-            if (OpenGeoMaps.Contains(map))
-                OpenGeoMaps.Remove(map);
-        }
-
-        /// <summary>
-        /// Returns whether the given file (SitePlannerProject or SitePlannerMap) is currently opened 
-        /// </summary>
-        /// <param name="file">file to check</param>
-        /// <returns>true, if file is currently opened in a tab</returns>
-        public bool IsFileOpen(FileInfo file)
-        {
-            return IsSitePlannerFileOpen(file) || IsMapFileOpen(file);
-        }
-
-        /// <summary>
-        /// Returns whether the given file (SitePlannerProject or SitePlannerMap) is currently opened 
-        /// </summary>
-        /// <param name="file">file to check</param>
-        /// <returns>true, if file is currently opened in a tab</returns>
-        public bool IsFileOpen(ResourceFileEntry file)
-        {
-            return IsFileOpen(new FileInfo(file.CurrentFullPath));
-        }
-
-        /// <summary>
-        /// Returns whether the given SitePlannerProject is currently opened 
-        /// </summary>
-        /// <param name="file">SitePlannerProject to check</param>
-        /// <returns>true, if SitePlannerProject is currently opened in a tab</returns>
-        public bool IsSitePlannerFileOpen(FileInfo file)
-        {
-            return OpenSitePlannerProjects.Select(x => x.SitePlannerFile.Name).Contains(file.Name);
-        }
-
-        /// <summary>
-        /// Returns whether the given SitePlannerMap is currently opened 
-        /// </summary>
-        /// <param name="file">SitePlannerMap to check</param>
-        /// <returns>true, if SitePlannerMap is currently opened in a tab</returns>
-        public bool IsMapFileOpen(FileInfo file)
-        {
-            return OpenGeoMaps.Select(x => x.GeoMapFile.Name).Contains(file.Name);
         }
 
         /// <summary>

@@ -92,9 +92,9 @@ namespace SIMULTAN.Tests.DataMapping
 
             Assert.AreEqual(4, sheetData.Count);
             AssertUtil.AssertContains(sheetData, new RowColumnIndex(0, 0), "Volume1");
-            AssertUtil.AssertContains(sheetData, new RowColumnIndex(0, 2), 56);
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(0, 2), 56L);
             AssertUtil.AssertContains(sheetData, new RowColumnIndex(1, 0), "Volume2");
-            AssertUtil.AssertContains(sheetData, new RowColumnIndex(1, 2), 79);
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(1, 2), 79L);
         }
 
         [TestMethod]

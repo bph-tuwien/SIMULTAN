@@ -291,8 +291,9 @@ namespace SIMULTAN.Data.Geometry
         /// </summary>
         /// <param name="point">A point in the catesian space with [0,0,0] being the earths center.</param>
         /// <param name="precision">The precision of the calculation.</param>
+        /// <param name="maxIterations">Maximum number of iterations to prevent infinite loops</param>
         /// <returns>The point in the WGS coordinate system.</returns>
-        public static SimPoint3D CartToWGS84(SimPoint3D point, double precision = 0.0000001)
+        public static SimPoint3D CartToWGS84(SimPoint3D point, double precision = 0.0000001, int maxIterations = 1000000)
         {
             double lng = Math.Atan2(point.Y, point.X);
             double p = Math.Sqrt(point.X * point.X + point.Y * point.Y);
@@ -303,6 +304,7 @@ namespace SIMULTAN.Data.Geometry
             double phiNew = 0;
             double h = 0;
 
+            int count = 0;
             do
             {
                 double s = Math.Sin(phi0);
@@ -311,7 +313,8 @@ namespace SIMULTAN.Data.Geometry
                 phiNew = Math.Atan(point.Z / ((1.0 - e2 * (n / (n + h))) * p));
                 phiOld = phi0;
                 phi0 = phiNew;
-            } while (Math.Abs(phiOld - phiNew) > precision);
+                count++;
+            } while (Math.Abs(phiOld - phiNew) > precision && count < maxIterations);
 
             return new SimPoint3D(lng * radToDeg, phiNew * radToDeg, h);
         }
@@ -706,6 +709,55 @@ namespace SIMULTAN.Data.Geometry
                     Math.Cos(wgsDir.bearing * degToRad) * wgsDir.distance);
                 yield return flatCoordinate;
             }
+        }
+
+        /// <summary>
+        /// Computes the signed angle (in counter clockwise direction) between two vectors in 3D.
+        /// </summary>
+        /// <param name="v1">vector 1</param>
+        /// <param name="v2">vector 2</param>
+        /// <param name="n">The normal vector around which the rotation happens.</param>
+        /// <param name="epsilon">Tolerance for determining if the two vectors point in the same direction (in radians)</param>
+        /// <returns>Signed angle between two 3D vectors in the range [-pi, pi].</returns>
+        public static double SignedAngle(SimVector3D v1, SimVector3D v2, SimVector3D n, double epsilon = 0.001)
+        {
+            v1.Normalize();
+            v2.Normalize();
+
+            var dot = SimVector3D.DotProduct(v1, v2);
+            if (dot > 1 - epsilon) // point in the same direction
+                return 0;
+            if (dot < -1 + epsilon) // point in opposite direction
+                return Math.PI;
+            var cross = SimVector3D.CrossProduct(v1, v2);
+            cross.Normalize();
+            var dotAxis = SimVector3D.DotProduct(n, cross);
+
+            var angle = Math.Acos(dot) * dotAxis;
+
+            return angle;
+        }
+
+        /// <summary>
+        /// Wraps around WGS so its in [-180,180];[-90,90] again
+        /// </summary>
+        /// <param name="point">The WGS point</param>
+        /// <returns>The normalized point</returns>
+        public static SimPoint3D NormalizeWGSCoordinate(SimPoint3D point)
+        {
+            var lng = point.X;
+            var lat = point.Y;
+            var ele = point.Z;
+
+            if (lng < -180.0)
+                lng += 360.0;
+            else if (lng > 180.0)
+                lng -= 360.0;
+            if (lat < -90.0)
+                lat += 180;
+            else if (lat > 90)
+                lat -= 180;
+            return new SimPoint3D(lng, lat, ele);
         }
     }
 }

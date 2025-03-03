@@ -2,8 +2,8 @@
 using SIMULTAN.Data.Assets;
 using SIMULTAN.Data.Components;
 using SIMULTAN.Data.Geometry;
-using SIMULTAN.Data.SimMath;
 using SIMULTAN.Data.MultiValues;
+using SIMULTAN.Data.SimMath;
 using SIMULTAN.Data.Users;
 using SIMULTAN.Exceptions;
 using SIMULTAN.Projects.ManagedFiles;
@@ -19,10 +19,10 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Diagnostics;
 
 namespace SIMULTAN.Projects
 {
@@ -834,12 +834,6 @@ namespace SIMULTAN.Projects
                 if (string.Equals(rfEntry.Extension, ParamStructFileExtensions.FILE_EXT_GEOMETRY_INTERNAL, StringComparison.InvariantCultureIgnoreCase))
                 {
                     if (this.AllProjectDataManagers.GeometryModels.TryGetGeometryModel(rfEntry, out _, false))
-                        return (true, false);
-                }
-                // site planner
-                if (_resource_to_delete.CurrentFullPath.EndsWith(ParamStructFileExtensions.FILE_EXT_SITEPLANNER) || _resource_to_delete.CurrentFullPath.EndsWith(ParamStructFileExtensions.FILE_EXT_GEOMAP))
-                {
-                    if (this.AllProjectDataManagers.SitePlannerManager.IsFileOpen(new FileInfo(_resource_to_delete.CurrentFullPath)))
                         return (true, false);
                 }
             }

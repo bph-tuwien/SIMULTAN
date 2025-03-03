@@ -50,7 +50,7 @@ namespace SIMULTAN.Serializer.CSV
         {
             // Read the BOM
             var byteOrderMark = new byte[4];
-            using (var file = new FileStream(filename, FileMode.Open, FileAccess.Read))
+            using (var file = new FileStream(filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
             {
                 file.Read(byteOrderMark, 0, 4);
             }
@@ -73,15 +73,18 @@ namespace SIMULTAN.Serializer.CSV
 
             try
             {
-                using (var textReader = new StreamReader(filename, encodingVerifier, detectEncodingFromByteOrderMarks: true))
+                using (var fs = new FileStream(filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
                 {
-                    while (!textReader.EndOfStream)
+                    using (var textReader = new StreamReader(fs, encodingVerifier, true))
                     {
-                        textReader.ReadLine();   // in order to increment the stream position
-                    }
+                        while (!textReader.EndOfStream)
+                        {
+                            textReader.ReadLine();   // in order to increment the stream position
+                        }
 
-                    // all text parsed ok
-                    return textReader.CurrentEncoding;
+                        // all text parsed ok
+                        return textReader.CurrentEncoding;
+                    }
                 }
             }
             catch (Exception) { }

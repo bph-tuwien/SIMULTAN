@@ -135,8 +135,6 @@ namespace SIMULTAN.Data.Geometry
 
                 if (!forwardExists && !backwardExists)
                 {
-                    Debug.WriteLine("Both sides missing: Face {0}", face.Id);
-
                     model.OffsetModel.Faces[(face, GeometricOrientation.Forward)] = new OffsetFace(face, GeometricOrientation.Forward);
                     model.OffsetModel.Faces[(face, GeometricOrientation.Forward)].Boundary.AddRange(face.Boundary.Edges.Select(x => x.StartVertex.Position));
 
@@ -178,9 +176,6 @@ namespace SIMULTAN.Data.Geometry
 
                 foreach (var currentPFace in currentVolume.Faces)
                 {
-                    if (currentPFace.Face.Id == 66)
-                        Debug.WriteLine("FACE");
-
                     int orientation = (int)currentPFace.Orientation;
 
                     var offsetFace = new OffsetFace(currentPFace.Face, currentPFace.Orientation);
@@ -201,9 +196,6 @@ namespace SIMULTAN.Data.Geometry
 
                             (var offset, var isValid) = SolveOffset(currentVertexFaces, currentPFace.Face, currentVertex, model.Model.Exchange,
                                 offsetCalculationCache, true);
-
-                            //if (!isValid)
-                            //	Debug.WriteLine("Failed to solve offset-surface at Face {0}, Vertex {1}", face.Id, currentVertex.Id);
 
                             offsetFace.Boundary.Add(currentVertex.Position + offset);
 

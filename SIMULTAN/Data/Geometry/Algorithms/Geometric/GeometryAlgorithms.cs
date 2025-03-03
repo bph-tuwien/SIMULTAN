@@ -1,9 +1,9 @@
-﻿using System;
+﻿using SIMULTAN.Data.SimMath;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using SIMULTAN.Data.SimMath;
 
 namespace SIMULTAN.Data.Geometry
 {
@@ -130,6 +130,32 @@ namespace SIMULTAN.Data.Geometry
             var sctc = LineLineSCTC(l0Origin, l0Direction, l1Origin, l1Direction);
 
             return (l0Origin + sctc.sc * l0Direction, sctc.sc, l1Origin + sctc.tc * l1Direction, sctc.tc);
+        }
+
+        /// <summary>
+        /// Tries to orthogonalize a vector to a reference vector using the Gram-Schmidt process.
+        /// Fails if the two vectors are collinear.
+        /// </summary>
+        /// <param name="reference">The reference vector</param>
+        /// <param name="toOrthogonalize">The vector that should be made orthogonal to the reference vector</param>
+        /// <param name="epsilon">The epsilon for numeric comparisons</param>
+        /// <param name="result">The resulting orthogonalized vector</param>
+        /// <returns>True if successful, false if both vectors are collinear</returns>
+        public static bool TryOrthogonalize(SimVector3D reference, SimVector3D toOrthogonalize, double epsilon, out SimVector3D result)
+        {
+            var dot = SimVector3D.DotProduct(toOrthogonalize, reference);
+
+            // check if not colinear
+            if (!(Math.Abs(Math.Abs(dot) - 1.0) <= epsilon))
+            {
+                var orth = toOrthogonalize - dot * reference; // orthogonalize
+                orth.Normalize();
+                result = orth;
+                return true;
+            }
+
+            result = new SimVector3D();
+            return false;
         }
 
         /*public static (SimPoint3D point, SimVector3D direction) PlanePlaneIntersection((SimPoint3D pos, SimVector3D direction) plane1, (SimPoint3D pos, SimVector3D direction) plane2, double tolerance)

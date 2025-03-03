@@ -216,7 +216,7 @@ namespace SIMULTAN.DataMapping
                     data.AddData(this.SheetName, state.CurrentPosition, face.Name, this);
                     break;
                 case SimDataMappingFaceMappingProperties.Id:
-                    data.AddData(this.SheetName, state.CurrentPosition, (int)face.Id, this);
+                    data.AddData(this.SheetName, state.CurrentPosition, (long)face.Id, this);
                     break;
                 case SimDataMappingFaceMappingProperties.Area:
                     data.AddData(this.SheetName, state.CurrentPosition, FaceAlgorithms.Area(face), this);

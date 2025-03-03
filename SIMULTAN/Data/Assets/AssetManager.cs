@@ -48,27 +48,27 @@ namespace SIMULTAN.Data.Assets
         {
             if (this.isResetting) return;
 
-            object old_item = (e.OldItems == null) ? null : e.OldItems[0];
-            object new_item = (e.NewItems == null) ? null : e.NewItems[0];
-            if (e.Action == NotifyCollectionChangedAction.Add && new_item is string)
+            var old_item = e.OldItems?[0] as string;
+            var new_item = e.NewItems?[0] as string;
+            if (e.Action == NotifyCollectionChangedAction.Add && new_item != null)
             {
                 // update the linked resource files
                 foreach (var entry in this.resource_look_up)
                 {
-                    if (!entry.Value.Exists && (entry.Value is LinkedResourceFileEntry))
+                    if (!entry.Value.Exists && entry.Value is LinkedResourceFileEntry lrfe)
                     {
-                        //entry.Value.ReplacePath(_new_file.FullName, true);
+                        lrfe.ReplacePath(Path.Join(new_item, lrfe.Name), true);
                     }
                 }
             }
-            else if (e.Action == NotifyCollectionChangedAction.Remove && old_item is string)
+            else if (e.Action == NotifyCollectionChangedAction.Remove && old_item != null)
             {
                 // update the linked resource files
                 foreach (var entry in this.resource_look_up)
                 {
-                    if (entry.Value.Exists && (entry.Value is LinkedResourceFileEntry))
+                    if (entry.Value.Exists && entry.Value is LinkedResourceFileEntry)
                     {
-                        if (FileSystemNavigation.IsContainedIn(old_item as string, entry.Value.CurrentFullPath, false))
+                        if (FileSystemNavigation.IsContainedIn(old_item, entry.Value.CurrentFullPath, false))
                         {
                             // the linked file or a folder that contained it was deleted
                             (entry.Value as LinkedResourceFileEntry).SetRelativePathOnDelete();
@@ -76,16 +76,16 @@ namespace SIMULTAN.Data.Assets
                     }
                 }
             }
-            else if (e.Action == NotifyCollectionChangedAction.Replace && new_item is string && old_item is string)
+            else if (e.Action == NotifyCollectionChangedAction.Replace && old_item != null && new_item != null)
             {
                 // update the linked resource files
                 foreach (var entry in this.resource_look_up)
                 {
                     if (entry.Value.Exists && (entry.Value is LinkedResourceFileEntry))
                     {
-                        if (FileSystemNavigation.IsContainedIn(old_item as string, entry.Value.CurrentFullPath, false))
+                        if (FileSystemNavigation.IsContainedIn(old_item, entry.Value.CurrentFullPath, false))
                         {
-                            string new_full_path = entry.Value.CurrentFullPath.Replace(old_item as string, new_item as string);
+                            string new_full_path = entry.Value.CurrentFullPath.Replace(old_item, new_item);
                             this.ReLinkLinkedFileEntry((entry.Value as LinkedResourceFileEntry), new FileInfo(new_full_path));
                         }
                     }
@@ -697,7 +697,6 @@ namespace SIMULTAN.Data.Assets
                 if (_entry.CurrentFullPath == "?")
                 {
                     entry_dir = new DirectoryInfo(this.WorkingDirectory);
-                    Debug.WriteLine("BS to GP: Please fix non-existing resources. They crash CG and RM");
                 }
                 else
                     entry_dir = new FileInfo(_entry.CurrentFullPath).Directory;
@@ -1983,6 +1982,44 @@ namespace SIMULTAN.Data.Assets
         {
             if (this.resource_look_up.TryFirstOrDefault(x => x.Value is ResourceFileEntry && string.Equals(x.Value.CurrentFullPath, _file.FullName, StringComparison.InvariantCultureIgnoreCase), out var value))
                 return value.Value as ResourceFileEntry;
+            return null;
+        }
+
+        /// <summary>
+        /// Tries to find a resource file by a tag
+        /// </summary>
+        /// <param name="taxonomyKey">Taxonomy key of the tag</param>
+        /// <param name="taxonomyEntryKey">Taxonomy entry key of the tag</param>
+        /// <returns>The first resource with the tag or null if not found</returns>
+        /// <exception cref="ArgumentNullException">If an argument is null</exception>
+        public ResourceFileEntry GetFirstResourceWithTag(string taxonomyKey, string taxonomyEntryKey)
+        {
+            if (string.IsNullOrEmpty(taxonomyKey))
+                throw new ArgumentNullException(nameof(taxonomyKey));
+            if (string.IsNullOrEmpty(taxonomyEntryKey))
+                throw new ArgumentNullException(nameof(taxonomyEntryKey));
+
+            return GetFirstResourceWithTag(Resources, taxonomyKey, taxonomyEntryKey);
+        }
+
+        private ResourceFileEntry GetFirstResourceWithTag(IEnumerable<ResourceEntry> resources, string taxonomyKey, string taxonomyEntryKey)
+        {
+            foreach (var res in resources)
+            {
+                switch (res)
+                {
+                    case ResourceFileEntry file:
+                        if (file.Tags.Any(t => t.Target != null && t.Target.Matches(taxonomyKey, taxonomyEntryKey)))
+                            return file;
+                        break;
+                    case ResourceDirectoryEntry dir:
+                        var dirResult = GetFirstResourceWithTag(dir.Children, taxonomyKey, taxonomyEntryKey);
+                        if (dirResult != null)
+                            return dirResult;
+                        break;
+                }
+            }
+
             return null;
         }
 

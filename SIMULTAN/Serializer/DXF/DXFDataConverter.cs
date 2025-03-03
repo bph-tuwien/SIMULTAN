@@ -68,8 +68,8 @@ namespace SIMULTAN.Serializer.DXF
     /// </summary>
     internal class DXFDataConverter : IDXFDataConverter<string>, IDXFDataConverter<Type>,
         IDXFDataConverter<Guid>, IDXFDataConverter<bool>,
-        IDXFDataConverter<long>, IDXFDataConverter<ulong>, IDXFDataConverter<int>, IDXFDataConverter<byte>,
-        IDXFDataConverter<double>,
+        IDXFDataConverter<long>, IDXFDataConverter<ulong>, IDXFDataConverter<int>, IDXFDataConverter<uint>,
+        IDXFDataConverter<byte>, IDXFDataConverter<double>,
         IDXFDataConverter<SimMultiValueType>, IDXFDataConverter<SimCategory>, IDXFDataConverter<SimInfoFlow>,
         IDXFDataConverter<SimParameterInstancePropagation>, IDXFDataConverter<SimParameterOperations>,
         IDXFDataConverter<ResourceReference>,
@@ -191,6 +191,17 @@ namespace SIMULTAN.Serializer.DXF
         int IDXFDataConverter<int>.FromDXFString(string value, DXFParserInfo info)
         {
             return Int32.Parse(value);
+        }
+
+        /// <inheritdoc />
+        public string ToDXFString(uint value)
+        {
+            return value.ToString();
+        }
+        /// <inheritdoc />
+        uint IDXFDataConverter<uint>.FromDXFString(string value, DXFParserInfo info)
+        {
+            return UInt32.Parse(value);
         }
 
         /// <inheritdoc />

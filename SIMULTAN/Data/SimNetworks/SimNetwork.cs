@@ -65,7 +65,21 @@ namespace SIMULTAN.Data.SimNetworks
             }
         }
 
+        /// <summary>
+        /// Event handler delegate for the <see cref="AssociationChanged"/> event.
+        /// </summary>
+        /// <param name="sender">The sender</param>
+        /// <param name="elements">The network elements of which the association changed</param>
+        public delegate void AssociationChangedEventHandler(object sender, IEnumerable<BaseSimNetworkElement> elements);
+        /// <summary>
+        /// Invoked when the association relationship in one or more network elements changed
+        /// </summary>
+        public event AssociationChangedEventHandler AssociationChanged;
 
+        internal void OnAssociationChanged(IEnumerable<BaseSimNetworkElement> elements)
+        {
+            AssociationChanged?.Invoke(this, elements);
+        }
 
 
         #region .CTOR

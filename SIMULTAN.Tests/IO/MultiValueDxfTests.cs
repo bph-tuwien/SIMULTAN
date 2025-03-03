@@ -182,6 +182,45 @@ namespace SIMULTAN.Tests.IO
         }
 
         [TestMethod]
+        public void ParseMultipleV30()
+        {
+            ExtendedProjectData projectData = new ExtendedProjectData();
+            Guid guid = Guid.NewGuid();
+
+            using (DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_ReadMVDXF_MultipleV30)))
+            {
+                MultiValueDxfIO.Read(reader, new DXFParserInfo(guid, projectData));
+            }
+
+            Assert.AreEqual(3, projectData.ValueManager.Count);
+
+            var table = (SimMultiValueBigTable)projectData.ValueManager.First(x => x is SimMultiValueBigTable);
+            Assert.IsNotNull(table);
+            Assert.AreEqual(3, table.RowHeaders.Count);
+            Assert.AreEqual(5, table.ColumnHeaders.Count);
+            Assert.AreEqual(Guid.Empty, table.Id.GlobalId);
+            Assert.AreEqual(99, table.Id.LocalId);
+
+            var field = (SimMultiValueField3D)projectData.ValueManager.First(x => x is SimMultiValueField3D);
+            Assert.IsNotNull(field);
+            Assert.AreEqual(4, field.XAxis.Count);
+            Assert.AreEqual(2, field.YAxis.Count);
+            Assert.AreEqual(3, field.ZAxis.Count);
+            Assert.AreEqual(Guid.Empty, field.Id.GlobalId);
+            Assert.AreEqual(101, field.Id.LocalId);
+
+            var func = (SimMultiValueFunction)projectData.ValueManager.First(x => x is SimMultiValueFunction);
+            Assert.IsNotNull(field);
+            Assert.AreEqual(0.0, func.Range.Minimum.X);
+            Assert.AreEqual(3.0, func.Range.Maximum.X);
+            Assert.AreEqual(-1.0, func.Range.Minimum.Y);
+            Assert.AreEqual(1.0, func.Range.Maximum.Y);
+            Assert.AreEqual(3, func.ZAxis.Count);
+            Assert.AreEqual(Guid.Empty, func.Id.GlobalId);
+            Assert.AreEqual(103, func.Id.LocalId);
+        }
+
+        [TestMethod]
         public void WriteMultiple()
         {
             ExtendedProjectData data = new ExtendedProjectData();
@@ -235,7 +274,7 @@ namespace SIMULTAN.Tests.IO
                 new object[,]
                 {
                     { 1.0, 2, true, null, "abc" },
-                    { null, null, 3, 4.0, false},
+                    { (long)-7, (ulong)8, (uint)3, 4.0, false},
                     { -1, "a", "b\n\\\t;\nc", 5.0, 6 }
                 });
 
@@ -267,6 +306,7 @@ namespace SIMULTAN.Tests.IO
 
             AssertUtil.AreEqualMultiline(Properties.Resources.DXFSerializer_WriteBigTable, exportedString);
         }
+
 
         [TestMethod]
         public void ParseBigTableV5()
@@ -453,6 +493,59 @@ namespace SIMULTAN.Tests.IO
                 {
                     { 1.0, 2, true, null, "abc" },
                     { null, null, 3, 4.0, false},
+                    { -1, "a", "b\n\\\t;\nc", 5.0, 6 }
+                },
+                table);
+            Assert.AreEqual(Guid.Empty, table.Id.GlobalId);
+            Assert.AreEqual(99, table.Id.LocalId);
+
+            Assert.AreEqual("Additional Text" + Environment.NewLine + "With New Line", table.AdditionalInfo);
+        }
+
+        [TestMethod]
+        public void ParseBigTableV30()
+        {
+            ExtendedProjectData projectData = new ExtendedProjectData();
+            Guid guid = Guid.NewGuid();
+
+            using (DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_ReadMVDXF_BigTableV30)))
+            {
+                MultiValueDxfIO.Read(reader, new DXFParserInfo(guid, projectData));
+            }
+
+            Assert.AreEqual(1, projectData.ValueManager.Count);
+
+            var table = projectData.ValueManager[0] as SimMultiValueBigTable;
+            Assert.IsNotNull(table);
+
+            Assert.AreEqual("table name", table.Name);
+            Assert.AreEqual("unit column", table.UnitX);
+            Assert.AreEqual("unit row", table.UnitY);
+
+            Assert.AreEqual(5, table.ColumnHeaders.Count);
+            Assert.AreEqual("column header 1", table.ColumnHeaders[0].Name);
+            Assert.AreEqual("column unit 1", table.ColumnHeaders[0].Unit);
+            Assert.AreEqual("column header 2", table.ColumnHeaders[1].Name);
+            Assert.AreEqual("column unit 2", table.ColumnHeaders[1].Unit);
+            Assert.AreEqual("column header 3", table.ColumnHeaders[2].Name);
+            Assert.AreEqual("column unit 3", table.ColumnHeaders[2].Unit);
+            Assert.AreEqual("column header 4", table.ColumnHeaders[3].Name);
+            Assert.AreEqual("column unit 4", table.ColumnHeaders[3].Unit);
+            Assert.AreEqual("column header 5", table.ColumnHeaders[4].Name);
+            Assert.AreEqual("column unit 5", table.ColumnHeaders[4].Unit);
+
+            Assert.AreEqual(3, table.RowHeaders.Count);
+            Assert.AreEqual("row header 1", table.RowHeaders[0].Name);
+            Assert.AreEqual("row unit 1", table.RowHeaders[0].Unit);
+            Assert.AreEqual("row header 2", table.RowHeaders[1].Name);
+            Assert.AreEqual("row unit 2", table.RowHeaders[1].Unit);
+            Assert.AreEqual("row header 3", table.RowHeaders[2].Name);
+            Assert.AreEqual("row unit 3", table.RowHeaders[2].Unit);
+
+            AssertUtil.ContainEqualValues(new object[,]
+                {
+                    { 1.0, 2, true, null, "abc" },
+                    { (long)-7, (ulong)8, (uint)3, 4.0, false},
                     { -1, "a", "b\n\\\t;\nc", 5.0, 6 }
                 },
                 table);

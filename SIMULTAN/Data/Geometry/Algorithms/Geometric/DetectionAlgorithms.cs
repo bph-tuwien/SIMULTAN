@@ -1,5 +1,4 @@
-﻿using Assimp;
-using MathNet.Numerics.LinearAlgebra;
+﻿using MathNet.Numerics.LinearAlgebra;
 using SIMULTAN.Data.SimMath;
 using SIMULTAN.Utils;
 using Sprache;
@@ -7,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Windows;
 
 namespace SIMULTAN.Data.Geometry
 {
@@ -136,39 +134,43 @@ namespace SIMULTAN.Data.Geometry
 
 
         /// <summary>
-        /// Detects faces from a set of edges. First removes dangling edges, then tries to find one closed edge loop.
+        /// Detects faces from a set of edges. First removes dangling edges, then tries to find closed edge loops and creates faces.
         /// </summary>
-        /// <param name="edges">List of edges which could define a face</param>
-        /// <param name="model">The model into which the face should be generated</param>
-        /// <returns></returns>
+        /// <param name="edges">List of edges which could define faces</param>
+        /// <param name="model">The model into which the faces should be generated</param>
+        /// <returns>A list of added geometry</returns>
         public static List<BaseGeometry> DetectFacesFromEdges(List<Edge> edges, GeometryModelData model)
         {
+            if (edges == null || edges.Count < 3)
+                return new();
+
             List<BaseGeometry> addedGeometry = new List<BaseGeometry>();
 
             var noDangling = RemoveDanglingEdges(edges);
-
             var edgeGroups = EdgeConnectedVertexGroups(noDangling);
 
-            if (edges != null && edges.Count >= 3 && edgeGroups.Count == 1 && edgeGroups[0].First() == edgeGroups[0].Last())
+            model.StartBatchOperation();
+            foreach (var group in edgeGroups)
             {
-                var connectedEdges = new List<Edge>();
-
-                for (int i = 0; i < edgeGroups[0].Count - 1; ++i)
+                if (group.First() == group.Last())
                 {
-                    connectedEdges.Add(edges.First(x => x.Vertices.Contains(edgeGroups[0][i]) && x.Vertices.Contains(edgeGroups[0][(i + 1)])));
-                }
+                    var connectedEdges = new List<Edge>();
 
-                if (EdgeAlgorithms.OrderLoop(connectedEdges).isLoop)
-                {
-                    model.StartBatchOperation();
-                    var specialCaseEL = new EdgeLoop(edges[0].Layer, "{0}", connectedEdges);
-                    Face specialCaseF = new Face(edges[0].Layer, "{0}", specialCaseEL);
-                    addedGeometry.Add(specialCaseEL);
-                    addedGeometry.Add(specialCaseF);
-                    model.EndBatchOperation();
-                    return addedGeometry;
+                    for (int i = 0; i < group.Count - 1; ++i)
+                    {
+                        connectedEdges.Add(edges.First(x => x.Vertices.Contains(group[i]) && x.Vertices.Contains(group[i + 1])));
+                    }
+
+                    if (EdgeAlgorithms.OrderLoop(connectedEdges).isLoop)
+                    {
+                        var loop = new EdgeLoop(edges[0].Layer, "{0}", connectedEdges);
+                        Face face = new Face(edges[0].Layer, "{0}", loop);
+                        addedGeometry.Add(loop);
+                        addedGeometry.Add(face);
+                    }
                 }
             }
+            model.EndBatchOperation();
 
             return addedGeometry;
         }
@@ -357,7 +359,14 @@ namespace SIMULTAN.Data.Geometry
         {
             v1.Normalize();
             v2.Normalize();
-            double angle = Math.Acos(SimVector3D.DotProduct(v1, v2));
+
+            var dot = SimVector3D.DotProduct(v1, v2);
+            if (dot < -1.0)
+                dot = -1.0;
+            else if (dot > 1.0)
+                dot = 1.0;
+
+            double angle = Math.Acos(dot);
             SimVector3D cross = SimVector3D.CrossProduct(v1, v2);
             if (SimVector3D.DotProduct(vn, cross) < 0)
             {
@@ -545,7 +554,11 @@ namespace SIMULTAN.Data.Geometry
                 result.Add(group);
 
                 if (localEdges.Count > 0)
-                    start = localEdges.SelectMany(x => x.Vertices).First(x => x.Edges.Count(xe => localEdges.Contains(xe)) <= 1);
+                {
+                    start = localEdges.SelectMany(x => x.Vertices).FirstOrDefault(x => x.Edges.Count(xe => localEdges.Contains(xe)) <= 1);
+                    if (start == null)
+                        start = localEdges[0].Vertices[0];
+                }
             }
 
             return result;

@@ -387,7 +387,6 @@ namespace SIMULTAN.Data.Components
             this.Name = string.Format("SimNetwork Placement {0}", simNetworkBlock.Name);
             var placement = new SimInstancePlacementSimNetwork(simNetworkBlock, SimInstanceType.SimNetworkBlock);
             this.Placements.Add(placement);
-
         }
 
         /// <summary>

@@ -44,7 +44,7 @@ namespace SIMULTAN.Tests.DataMapping
 
             Assert.AreEqual(3, sheetData.Count);
             AssertUtil.AssertContains(sheetData, new RowColumnIndex(0, 0), "Component1");
-            AssertUtil.AssertContains(sheetData, new RowColumnIndex(0, 1), 64);
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(0, 1), 64L);
             AssertUtil.AssertContains(sheetData, new RowColumnIndex(0, 2), "heating");
         }
 
@@ -70,7 +70,7 @@ namespace SIMULTAN.Tests.DataMapping
 
             Assert.AreEqual(3, sheetData.Count);
             AssertUtil.AssertContains(sheetData, new RowColumnIndex(0, 0), "Component1");
-            AssertUtil.AssertContains(sheetData, new RowColumnIndex(1, 0), 64);
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(1, 0), 64L);
             AssertUtil.AssertContains(sheetData, new RowColumnIndex(2, 0), "heating");
         }
 
@@ -97,7 +97,7 @@ namespace SIMULTAN.Tests.DataMapping
 
             Assert.AreEqual(3, sheetData.Count);
             AssertUtil.AssertContains(sheetData, new RowColumnIndex(3, 2), "Component1");
-            AssertUtil.AssertContains(sheetData, new RowColumnIndex(3, 3), 64);
+            AssertUtil.AssertContains(sheetData, new RowColumnIndex(3, 3), 64L);
             AssertUtil.AssertContains(sheetData, new RowColumnIndex(3, 4), "heating");
         }
 

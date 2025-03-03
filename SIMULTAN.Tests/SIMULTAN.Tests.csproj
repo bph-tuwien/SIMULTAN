@@ -7,6 +7,7 @@
     <PlatformTarget>x64</PlatformTarget>
   </PropertyGroup>
   <ItemGroup>
+    <None Remove="IO\MultiValueDXFResults\DXFSerializer_ReadMVDXF_MultipleV30.txt" />
     <None Remove="Serializer\XMIResults\XMISerializer_Empty.txt" />
   </ItemGroup>
   <ItemGroup>
@@ -51,6 +52,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="DataMappingDemo.simultan">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="DonutVolumeTest.simultan">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="EmptyProject.simultan">
@@ -145,6 +149,7 @@
     <Content Include="IO\ComponentDXFInstanceResults\DXFSerializer_ReadCODXF_InstanceV21.txt" />
     <Content Include="IO\ComponentDXFParameterResults\DXFSerializer_ReadMVPointer_Field3DV19_Int.txt" />
     <Content Include="IO\ComponentDXFParameterResults\DXFSerializer_WriteParameterWithTaxonomyEntry.txt" />
+    <Content Include="IO\MultiValueDXFResults\DXFSerializer_ReadMVDXF_MultipleV30.txt" />
     <None Include="IO\ComponentDXFResourceResults\DXFSerializer_ReadCODXF_ResourceDirectoryV16.txt" />
     <None Include="IO\ComponentDXFResourceResults\DXFSerializer_ReadCODXF_LinkedFileV16.txt" />
     <None Include="IO\ComponentDXFResourceResults\DXFSerializer_ReadCODXF_ContainedFileV16.txt" />

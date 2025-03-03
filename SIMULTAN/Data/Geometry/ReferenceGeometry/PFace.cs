@@ -19,6 +19,7 @@ namespace SIMULTAN.Data.Geometry
 
         /// <summary>
         /// Returns the orientation relative to the Face
+        /// Forward means the Normal of the Face points inside the volume
         /// </summary>
         public GeometricOrientation Orientation { get; set; }
 

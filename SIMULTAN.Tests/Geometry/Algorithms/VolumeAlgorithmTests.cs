@@ -1,8 +1,10 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SIMULTAN.Data.Assets;
 using SIMULTAN.Data.Geometry;
+using SIMULTAN.Serializer.SimGeo;
 using SIMULTAN.Tests.Geometry.BaseGeometries;
 using SIMULTAN.Tests.Geometry.EventData;
+using SIMULTAN.Tests.TestUtils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,7 +14,7 @@ using System.Threading.Tasks;
 namespace SIMULTAN.Tests.Geometry.Algorithms
 {
     [TestClass]
-    public class VolumeAlgorithmTests
+    public class VolumeAlgorithmTests : BaseProjectTest
     {
         #region Volume Calculation
         [TestMethod]
@@ -261,6 +263,45 @@ namespace SIMULTAN.Tests.Geometry.Algorithms
             Assert.AreEqual(0, area.areaReference);
             Assert.AreEqual(Double.NaN, area.areaBrutto);
             Assert.AreEqual(0, area.areaNetto);
+        }
+
+
+        /// <summary>
+        /// Test uses a generated donut volume that has a face on one of the holes.
+        /// This volume had inconsistent orientation because of a bug.
+        /// (edge was not detected as an hole edge because of wrong lookup table)
+        /// </summary>
+        [TestMethod]
+        public void GeneratedDonutVolumeTest()
+        {
+            LoadProject(new System.IO.FileInfo("DonutVolumeTest.simultan"));
+            var res = projectData.AssetManager.Resources.First(x => x.Name == "vol_donut.simgeo") as ResourceFileEntry;
+            var model = SimGeoIO.Load(res, projectData, null);
+
+            var volume = model.Geometry.Volumes[0];
+            Assert.AreEqual(10, volume.Faces.Count);
+
+            var vol = VolumeAlgorithms.Volume(volume);
+            Assert.AreEqual(0.6, vol, 0.001);
+
+            var expectedOrientations = new[]
+            {
+                GeometricOrientation.Backward,
+                GeometricOrientation.Backward,
+                GeometricOrientation.Backward,
+                GeometricOrientation.Backward,
+                GeometricOrientation.Backward,
+                GeometricOrientation.Backward,
+                GeometricOrientation.Backward,
+                GeometricOrientation.Backward,
+                GeometricOrientation.Backward,
+                GeometricOrientation.Backward,
+            };
+
+            for (int i = 0; i < expectedOrientations.Length; i++)
+            {
+                Assert.AreEqual(expectedOrientations[i], volume.Faces[i].Orientation);
+            }
         }
 
         #endregion

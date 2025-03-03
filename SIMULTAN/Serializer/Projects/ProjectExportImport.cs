@@ -784,7 +784,8 @@ namespace SIMULTAN.Serializer.Projects
             {
                 foreach (var slot in component.Slots)
                 {
-                    if (component.ParentContainer == null && !result.Contains(slot.Target.Taxonomy))
+                    if ((component.ParentContainer == null || component == rootComponent) //container are handled by the parent, unless there is no parent
+                        && !result.Contains(slot.Target.Taxonomy))
                     {
                         result.Add(slot.Target.Taxonomy);
                     }

@@ -3520,7 +3520,7 @@ namespace SIMULTAN.Tests.Properties {
         ///0
         ///FILE_VERSION
         ///10
-        ///29
+        ///30
         ///0
         ///ENDSEC
         ///0
@@ -4766,7 +4766,7 @@ namespace SIMULTAN.Tests.Properties {
         ///0
         ///FILE_VERSION
         ///10
-        ///29
+        ///30
         ///0
         ///ENDSEC
         ///0
@@ -4805,7 +4805,7 @@ namespace SIMULTAN.Tests.Properties {
         ///0
         ///FILE_VERSION
         ///10
-        ///29
+        ///30
         ///0
         ///ENDSEC
         ///0
@@ -4864,7 +4864,7 @@ namespace SIMULTAN.Tests.Properties {
         ///0
         ///FILE_VERSION
         ///10
-        ///29
+        ///30
         ///0
         ///ENDSEC
         ///0
@@ -4987,7 +4987,7 @@ namespace SIMULTAN.Tests.Properties {
         ///0
         ///FILE_VERSION
         ///10
-        ///29
+        ///30
         ///0
         ///ENDSEC
         ///0
@@ -5018,7 +5018,7 @@ namespace SIMULTAN.Tests.Properties {
         ///0
         ///FILE_VERSION
         ///10
-        ///29
+        ///30
         ///0
         ///ENDSEC
         ///0
@@ -5152,7 +5152,7 @@ namespace SIMULTAN.Tests.Properties {
         ///0
         ///FILE_VERSION
         ///10
-        ///29
+        ///30
         ///0
         ///ENDSEC
         ///0
@@ -5187,7 +5187,7 @@ namespace SIMULTAN.Tests.Properties {
         ///0
         ///FILE_VERSION
         ///10
-        ///29
+        ///30
         ///0
         ///ENDSEC
         ///0
@@ -5312,7 +5312,7 @@ namespace SIMULTAN.Tests.Properties {
         ///0
         ///FILE_VERSION
         ///10
-        ///29
+        ///30
         ///0
         ///ENDSEC
         ///0
@@ -5368,7 +5368,7 @@ namespace SIMULTAN.Tests.Properties {
         ///0
         ///FILE_VERSION
         ///10
-        ///29
+        ///30
         ///0
         ///ENDSEC
         ///0
@@ -5614,7 +5614,7 @@ namespace SIMULTAN.Tests.Properties {
         ///0
         ///FILE_VERSION
         ///10
-        ///29
+        ///30
         ///0
         ///ENDSEC
         ///0
@@ -10911,6 +10911,76 @@ namespace SIMULTAN.Tests.Properties {
         ///0
         ///FILE_VERSION
         ///10
+        ///30
+        ///0
+        ///ENDSEC
+        ///0
+        ///SECTION
+        ///2
+        ///ENTITIES
+        ///0
+        ///BIG_TABLE
+        ///100
+        ///SIMULTAN.Data.MultiValues.SimMultiValueBigTable
+        ///900
+        ///99
+        ///1101
+        ///2
+        ///1103
+        ///table name
+        ///1102
+        ///0
+        ///1104
+        ///unit column
+        ///1105
+        ///unit row
+        ///1106
+        ///-
+        ///1116
+        ///5
+        ///909
+        ///column header 1
+        ///909
+        ///column header 2
+        ///909
+        ///column header 3
+        ///909
+        ///column header 4
+        ///909
+        ///column header 5
+        ///1117
+        ///5
+        ///909
+        ///column unit 1
+        ///909
+        ///column unit 2
+        ///909
+        ///column unit 3
+        ///909
+        ///column unit 4
+        ///909
+        ///column unit 5
+        ///1120
+        ///3
+        ///909
+        ///row header 1
+        ///909
+        ///r [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string DXFSerializer_ReadMVDXF_BigTableV30 {
+            get {
+                return ResourceManager.GetString("DXFSerializer_ReadMVDXF_BigTableV30", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to 0
+        ///SECTION
+        ///2
+        ///VERSION_SECTION
+        ///0
+        ///FILE_VERSION
+        ///10
         ///5
         ///0
         ///ENDSEC
@@ -11443,6 +11513,86 @@ namespace SIMULTAN.Tests.Properties {
         internal static string DXFSerializer_ReadMVDXF_MultipleV3 {
             get {
                 return ResourceManager.GetString("DXFSerializer_ReadMVDXF_MultipleV3", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to 0
+        ///SECTION
+        ///2
+        ///VERSION_SECTION
+        ///901
+        ///-1
+        ///0
+        ///FILE_VERSION
+        ///10
+        ///30
+        ///0
+        ///ENDSEC
+        ///0
+        ///SECTION
+        ///2
+        ///ENTITIES
+        ///901
+        ///3
+        ///0
+        ///VALUE_FIELD
+        ///100
+        ///SIMULTAN.Data.MultiValues.SimMultiValueField3D
+        ///900
+        ///101
+        ///1101
+        ///1
+        ///1103
+        ///field name
+        ///1102
+        ///1
+        ///1104
+        ///unit X
+        ///1105
+        ///unit Y
+        ///1106
+        ///unit Z
+        ///1107
+        ///4
+        ///1110
+        ///2
+        ///1113
+        ///3
+        ///1116
+        ///4
+        ///910
+        ///0.10000000
+        ///910
+        ///0.20000000
+        ///910
+        ///0.40000000
+        ///910
+        ///0.50000000
+        ///1117
+        ///2
+        ///910
+        ///1.10000000
+        ///910
+        ///4.40000000
+        ///1118
+        ///3
+        ///910
+        ///-1.50000000
+        ///910
+        ///-1.20000000
+        ///910
+        ///-1.10000000
+        ///1119
+        ///24
+        ///910
+        ///0.00000000
+        ///920
+        ///0.0 [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string DXFSerializer_ReadMVDXF_MultipleV30 {
+            get {
+                return ResourceManager.GetString("DXFSerializer_ReadMVDXF_MultipleV30", resourceCulture);
             }
         }
         
@@ -12326,7 +12476,7 @@ namespace SIMULTAN.Tests.Properties {
         ///0
         ///FILE_VERSION
         ///10
-        ///29
+        ///30
         ///0
         ///ENDSEC
         ///0
@@ -12423,7 +12573,7 @@ namespace SIMULTAN.Tests.Properties {
         ///0
         ///FILE_VERSION
         ///10
-        ///29
+        ///30
         ///0
         ///ENDSEC
         ///0
@@ -12454,7 +12604,7 @@ namespace SIMULTAN.Tests.Properties {
         ///0
         ///FILE_VERSION
         ///10
-        ///29
+        ///30
         ///0
         ///ENDSEC
         ///0
@@ -13213,7 +13363,7 @@ namespace SIMULTAN.Tests.Properties {
         ///0
         ///FILE_VERSION
         ///10
-        ///29
+        ///30
         ///0
         ///ENDSEC
         ///0
@@ -13262,7 +13412,7 @@ namespace SIMULTAN.Tests.Properties {
         ///0
         ///FILE_VERSION
         ///10
-        ///29
+        ///30
         ///0
         ///ENDSEC
         ///0
@@ -13317,7 +13467,7 @@ namespace SIMULTAN.Tests.Properties {
         ///0
         ///FILE_VERSION
         ///10
-        ///29
+        ///30
         ///0
         ///ENDSEC
         ///0
@@ -13356,7 +13506,7 @@ namespace SIMULTAN.Tests.Properties {
         ///0
         ///FILE_VERSION
         ///10
-        ///29
+        ///30
         ///0
         ///ENDSEC
         ///0
@@ -13727,7 +13877,7 @@ namespace SIMULTAN.Tests.Properties {
         ///0
         ///FILE_VERSION
         ///10
-        ///29
+        ///30
         ///0
         ///ENDSEC
         ///0
@@ -13810,7 +13960,7 @@ namespace SIMULTAN.Tests.Properties {
         ///0
         ///FILE_VERSION
         ///10
-        ///29
+        ///30
         ///0
         ///ENDSEC
         ///0
@@ -13896,7 +14046,7 @@ namespace SIMULTAN.Tests.Properties {
         ///0
         ///FILE_VERSION
         ///10
-        ///29
+        ///30
         ///0
         ///ENDSEC
         ///0
@@ -14903,7 +15053,7 @@ namespace SIMULTAN.Tests.Properties {
         ///0
         ///FILE_VERSION
         ///10
-        ///29
+        ///30
         ///0
         ///ENDSEC
         ///0
@@ -15895,7 +16045,7 @@ namespace SIMULTAN.Tests.Properties {
         ///0
         ///FILE_VERSION
         ///10
-        ///29
+        ///30
         ///0
         ///ENDSEC
         ///0

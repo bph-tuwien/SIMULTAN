@@ -188,10 +188,16 @@ namespace SIMULTAN.Tests.TestUtils
                             AssertDoubleEqual(d1, d2);
                         else if (expected[i, j] is int i1 && actual[i, j] is int i2)
                             Assert.AreEqual(i1, i2);
+                        else if (expected[i, j] is uint ui1 && actual[i, j] is uint ui2)
+                            Assert.AreEqual(ui1, ui2);
                         else if (expected[i, j] is bool b1 && actual[i, j] is bool b2)
                             Assert.AreEqual(b1, b2);
                         else if (expected[i, j] is string s1 && actual[i, j] is string s2)
                             Assert.AreEqual(s1, s2);
+                        else if (expected[i, j] is long l1 && actual[i, j] is long l2)
+                            Assert.AreEqual(l1, l2);
+                        else if (expected[i, j] is ulong ul1 && actual[i, j] is ulong ul2)
+                            Assert.AreEqual(ul1, ul2);
                         else
                             Assert.Fail("Unknown error");
                     }
@@ -233,10 +239,16 @@ namespace SIMULTAN.Tests.TestUtils
                                 AssertDoubleEqual(d1, d2);
                             else if (expected[i][j] is int i1 && actual[i, j] is int i2)
                                 Assert.AreEqual(i1, i2);
+                            else if (expected[i][j] is uint ui1 && actual[i, j] is uint ui2)
+                                Assert.AreEqual(ui1, ui2);
                             else if (expected[i][j] is bool b1 && actual[i, j] is bool b2)
                                 Assert.AreEqual(b1, b2);
                             else if (expected[i][j] is string s1 && actual[i, j] is string s2)
                                 Assert.AreEqual(s1, s2);
+                            else if (expected[i][j] is long l1 && actual[i, j] is long l2)
+                                Assert.AreEqual(l1, l2);
+                            else if (expected[i][j] is ulong ul1 && actual[i, j] is ulong ul2)
+                                Assert.AreEqual(ul1, ul2);
                             else
                                 Assert.Fail("Unknown error");
                         }
