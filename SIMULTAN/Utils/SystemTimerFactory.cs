@@ -7,8 +7,13 @@ using System.Timers;
 
 namespace SIMULTAN.Utils
 {
+    /// <summary>
+    /// Implementation of the <see cref="IDispatcherTimerFactory"/>
+    /// </summary>
+    [Obsolete("Only used in OffsetSurfaceGenerator which should be refactored")]
     public class SystemTimerFactory : IDispatcherTimerFactory
     {
+        /// <inheritdoc />
         public IDispatcherTimer Create()
         {
             return new SystemTimer();

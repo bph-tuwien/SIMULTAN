@@ -1,5 +1,6 @@
 ﻿using SIMULTAN;
 using SIMULTAN.Data.SimMath;
+using SIMULTAN.Utils;
 using SIMULTAN.Utils.UndoRedo;
 using System;
 using System.Collections.Generic;
@@ -254,17 +255,42 @@ namespace SIMULTAN.Data.Geometry
         /// <returns>A bool indicating if the edges form a closed loop. The list contains the ordered edges or null when they don't form a loop.</returns>
         public static (bool isLoop, List<PEdge> loop) OrderLoop(IEnumerable<PEdge> edges)
         {
+            if (edges == null)
+                throw new ArgumentNullException(nameof(edges));
+            if (!edges.Any())
+                throw new ArgumentException("Input has to contain at least one edge");
+
+            return OrderLoop(edges, edges.First().Edge, GeometricOrientation.Forward);
+        }
+        /// <summary>
+        /// Tries to order the pedges such that they form a closed loop by following the edges.
+        /// Starts with a startEdge and moves in startEdgeOrientation direction
+        /// </summary>
+        /// <param name="edges">The PEdges</param>
+        /// <param name="startEdge">The first Edge to handle</param>
+        /// <param name="startEdgeOrientation">The orientation in which the first edge should be handled</param>
+        /// <returns>A bool indicating if the edges form a closed loop. The list contains the ordered edges or null when they don't form a loop.</returns>
+        public static (bool isLoop, List<PEdge> loop) OrderLoop(IEnumerable<PEdge> edges, Edge startEdge, GeometricOrientation startEdgeOrientation)
+        {
             //Error handling
             if (edges == null)
                 throw new ArgumentNullException(nameof(edges));
+            if (startEdge == null)
+                throw new ArgumentNullException(nameof(startEdge));
+            if (startEdgeOrientation == GeometricOrientation.Undefined)
+                throw new ArgumentException("Undefined orientation is not supported");
 
             var notHandled = new List<PEdge>(edges);
             if (notHandled.Count == 0)
                 throw new ArgumentException("Input has to contain at least one edge");
 
             //Run around loop
-            var loop = new List<PEdge>();
-            var currentVertex = notHandled[0].Edge.Vertices[0];
+            var loop = new List<PEdge>() { };
+            var currentVertex = startEdgeOrientation == GeometricOrientation.Forward ? startEdge.Vertices[1] : startEdge.Vertices[0];
+
+            var startEdgeIdx = notHandled.FindIndex(x => x.Edge == startEdge);
+            loop.Add(notHandled[startEdgeIdx]);
+            notHandled.RemoveAt(startEdgeIdx);
 
             while (notHandled.Count > 0)
             {

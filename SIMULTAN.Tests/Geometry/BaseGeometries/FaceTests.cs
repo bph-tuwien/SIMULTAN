@@ -312,7 +312,7 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
         }
 
         [TestMethod]
-        public void GeomeryChanged()
+        public void GeometryChanged()
         {
             var data = GeometryModelHelper.EmptyModelWithEvents();
             (var v, var e, var l) = TestData(data.layer);
@@ -357,7 +357,7 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
         }
 
         [TestMethod]
-        public void GeomeryChangedHole()
+        public void GeometryChangedHole()
         {
             var data = GeometryModelHelper.EmptyModelWithEvents();
             (var v, var e, var l) = TestData(data.layer);
@@ -380,7 +380,7 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
         }
 
         [TestMethod]
-        public void BatchGeomeryChanged()
+        public void BatchGeometryChanged()
         {
             var data = GeometryModelHelper.EmptyModelWithEvents();
             (var v, var e, var l) = TestData(data.layer);
@@ -419,7 +419,7 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
         }
 
         [TestMethod]
-        public void BatchGeomeryChangedHole()
+        public void BatchGeometryChangedHole()
         {
             var data = GeometryModelHelper.EmptyModelWithEvents();
             (var v, var e, var l) = TestData(data.layer);

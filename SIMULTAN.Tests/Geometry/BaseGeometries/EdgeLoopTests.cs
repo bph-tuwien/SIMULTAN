@@ -2,6 +2,7 @@
 using SIMULTAN.Data.Geometry;
 using SIMULTAN.Data.SimMath;
 using SIMULTAN.Tests.Geometry.EventData;
+using SIMULTAN.Tests.TestUtils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -90,6 +91,47 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
                     Assert.IsTrue(l2.Edges.Contains(pedge));
                 }
             }
+        }
+
+        [TestMethod]
+        public void CtorBaseEdge()
+        {
+            //Prepare data
+            var data = GeometryModelHelper.EmptyModel();
+            (var v, var e) = TestData(data.layer);
+
+            //Exceptions
+            Assert.ThrowsException<ArgumentException>(() => {
+                new EdgeLoop(data.layer, "", new Edge[] { e[0], e[1], e[2] },
+                e[3], GeometricOrientation.Forward); });
+
+            //Ordering
+            EdgeLoop l1 = new EdgeLoop(data.layer, "", new Edge[] { e[0], e[1], e[2] });
+
+            Assert.AreEqual(e[0], l1.BaseEdge);
+            Assert.AreEqual(GeometricOrientation.Forward, l1.BaseEdgeOrientation);
+
+            EdgeLoop l2 = new EdgeLoop(data.layer, "", new Edge[] { e[0], e[1], e[2] }, e[1], GeometricOrientation.Forward);
+            Assert.AreEqual(e[1], l2.BaseEdge);
+            Assert.AreEqual(GeometricOrientation.Forward, l2.BaseEdgeOrientation);
+
+            Assert.AreEqual(e[1], l2.Edges[0].Edge);
+            Assert.AreEqual(GeometricOrientation.Forward, l2.Edges[0].Orientation);
+            Assert.AreEqual(e[2], l2.Edges[1].Edge);
+            Assert.AreEqual(GeometricOrientation.Backward, l2.Edges[1].Orientation);
+            Assert.AreEqual(e[0], l2.Edges[2].Edge);
+            Assert.AreEqual(GeometricOrientation.Forward, l2.Edges[2].Orientation);
+
+            EdgeLoop l3 = new EdgeLoop(data.layer, "", new Edge[] { e[0], e[1], e[2] }, e[1], GeometricOrientation.Backward);
+            Assert.AreEqual(e[1], l3.BaseEdge);
+            Assert.AreEqual(GeometricOrientation.Backward, l3.BaseEdgeOrientation);
+
+            Assert.AreEqual(e[1], l3.Edges[0].Edge);
+            Assert.AreEqual(GeometricOrientation.Backward, l3.Edges[0].Orientation);
+            Assert.AreEqual(e[0], l3.Edges[1].Edge);
+            Assert.AreEqual(GeometricOrientation.Backward, l3.Edges[1].Orientation);
+            Assert.AreEqual(e[2], l3.Edges[2].Edge);
+            Assert.AreEqual(GeometricOrientation.Forward, l3.Edges[2].Orientation);
         }
 
         [TestMethod]
@@ -720,6 +762,225 @@ namespace SIMULTAN.Tests.Geometry.BaseGeometries
             Assert.IsTrue(data.eventData.TopologyChangedEventData[0].Contains(e[2]));
             Assert.IsTrue(data.eventData.TopologyChangedEventData[0].Contains(l0.loop));
             Assert.AreEqual(1, l0.eventData.TopologyChangedCount);
+        }
+
+
+        [TestMethod]
+        public void ChangeBaseEdge()
+        {
+            var data = GeometryModelHelper.EmptyModelWithEvents();
+            (var v, var e) = TestData(data.layer);
+
+            var l0edges = new Edge[] { e[0], e[1], e[2] };
+            var l0 = LoopWithEvents(new EdgeLoop(data.layer, "", l0edges));
+            data.eventData.Reset();
+
+            l0.loop.BaseEdge = e[1];
+            Assert.AreEqual(e[1], l0.loop.BaseEdge);
+            Assert.AreEqual(e[1], l0.loop.Edges[0].Edge);
+            Assert.AreEqual(GeometricOrientation.Forward, l0.loop.Edges[0].Orientation);
+            Assert.AreEqual(e[2], l0.loop.Edges[1].Edge);
+            Assert.AreEqual(GeometricOrientation.Backward, l0.loop.Edges[1].Orientation);
+            Assert.AreEqual(e[0], l0.loop.Edges[2].Edge);
+            Assert.AreEqual(GeometricOrientation.Forward, l0.loop.Edges[2].Orientation);
+
+            l0.loop.BaseEdge = e[2];
+            Assert.AreEqual(e[2], l0.loop.BaseEdge);
+            Assert.AreEqual(e[2], l0.loop.Edges[0].Edge);
+            Assert.AreEqual(GeometricOrientation.Forward, l0.loop.Edges[0].Orientation);
+            Assert.AreEqual(e[1], l0.loop.Edges[1].Edge);
+            Assert.AreEqual(GeometricOrientation.Backward, l0.loop.Edges[1].Orientation);
+            Assert.AreEqual(e[0], l0.loop.Edges[2].Edge);
+            Assert.AreEqual(GeometricOrientation.Backward, l0.loop.Edges[2].Orientation);
+        }
+
+        [TestMethod]
+        public void ChangeBaseEdgeWrongEdge()
+        {
+            var data = GeometryModelHelper.EmptyModelWithEvents();
+            (var v, var e) = TestData(data.layer);
+
+            var l0edges = new Edge[] { e[0], e[1], e[2] };
+            var l0 = LoopWithEvents(new EdgeLoop(data.layer, "", l0edges));
+            data.eventData.Reset();
+
+            Assert.ThrowsException<ArgumentException>(() => { l0.loop.BaseEdge = e[3]; });
+        }
+
+        [TestMethod]
+        public void ChangeBaseEdgeEvents()
+        {
+            var data = GeometryModelHelper.EmptyModelWithEvents();
+            (var v, var e) = TestData(data.layer);
+
+            var l0edges = new Edge[] { e[0], e[1], e[2] };
+            var l0 = LoopWithEvents(new EdgeLoop(data.layer, "", l0edges));
+            data.eventData.Reset();
+
+            l0.loop.BaseEdge = e[1];
+            Assert.AreEqual(1, data.eventData.TopologyChangedEventData.Count);
+            Assert.AreEqual(0, data.eventData.GeometryChangedEventData.Count);
+        }
+
+        [TestMethod]
+        public void ChangeBaseEdgeBatch()
+        {
+            var data = GeometryModelHelper.EmptyModelWithEvents();
+            (var v, var e) = TestData(data.layer);
+
+            var l0edges = new Edge[] { e[0], e[1], e[2] };
+            var l0 = LoopWithEvents(new EdgeLoop(data.layer, "", l0edges));
+            data.eventData.Reset();
+
+            data.model.Geometry.StartBatchOperation();
+
+            l0.loop.BaseEdge = e[1];
+            Assert.AreEqual(e[1], l0.loop.BaseEdge);
+            Assert.AreEqual(e[0], l0.loop.Edges[0].Edge);
+            Assert.AreEqual(GeometricOrientation.Forward, l0.loop.Edges[0].Orientation);
+            Assert.AreEqual(e[1], l0.loop.Edges[1].Edge);
+            Assert.AreEqual(GeometricOrientation.Forward, l0.loop.Edges[1].Orientation);
+            Assert.AreEqual(e[2], l0.loop.Edges[2].Edge);
+            Assert.AreEqual(GeometricOrientation.Backward, l0.loop.Edges[2].Orientation);
+
+            l0.loop.BaseEdge = e[2];
+            Assert.AreEqual(e[2], l0.loop.BaseEdge);
+            Assert.AreEqual(e[0], l0.loop.Edges[0].Edge);
+            Assert.AreEqual(GeometricOrientation.Forward, l0.loop.Edges[0].Orientation);
+            Assert.AreEqual(e[1], l0.loop.Edges[1].Edge);
+            Assert.AreEqual(GeometricOrientation.Forward, l0.loop.Edges[1].Orientation);
+            Assert.AreEqual(e[2], l0.loop.Edges[2].Edge);
+            Assert.AreEqual(GeometricOrientation.Backward, l0.loop.Edges[2].Orientation);
+
+            data.model.Geometry.EndBatchOperation();
+
+            Assert.AreEqual(e[2], l0.loop.Edges[0].Edge);
+            Assert.AreEqual(GeometricOrientation.Forward, l0.loop.Edges[0].Orientation);
+            Assert.AreEqual(e[1], l0.loop.Edges[1].Edge);
+            Assert.AreEqual(GeometricOrientation.Backward, l0.loop.Edges[1].Orientation);
+            Assert.AreEqual(e[0], l0.loop.Edges[2].Edge);
+            Assert.AreEqual(GeometricOrientation.Backward, l0.loop.Edges[2].Orientation);
+        }
+
+        [TestMethod]
+        public void ChangeBaseEdgeBatchEvents()
+        {
+            var data = GeometryModelHelper.EmptyModelWithEvents();
+            (var v, var e) = TestData(data.layer);
+
+            var l0edges = new Edge[] { e[0], e[1], e[2] };
+            var l0 = LoopWithEvents(new EdgeLoop(data.layer, "", l0edges));
+            data.eventData.Reset();
+
+            data.model.Geometry.StartBatchOperation();
+
+            l0.loop.BaseEdge = e[1];
+            l0.loop.BaseEdge = e[2];
+
+            Assert.AreEqual(0, data.eventData.TopologyChangedEventData.Count);
+            Assert.AreEqual(0, data.eventData.GeometryChangedEventData.Count);
+            Assert.AreEqual(0, data.eventData.BatchOperationFinishedCount);
+
+            data.model.Geometry.EndBatchOperation();
+
+            Assert.AreEqual(1, data.eventData.TopologyChangedEventData.Count);
+            Assert.AreEqual(0, data.eventData.GeometryChangedEventData.Count);
+            Assert.AreEqual(1, data.eventData.BatchOperationFinishedCount);
+        }
+
+
+        [TestMethod]
+        public void ChangeBaseEdgeDirection()
+        {
+            var data = GeometryModelHelper.EmptyModelWithEvents();
+            (var v, var e) = TestData(data.layer);
+
+            var l0edges = new Edge[] { e[0], e[1], e[2] };
+            var l0 = LoopWithEvents(new EdgeLoop(data.layer, "", l0edges));
+            data.eventData.Reset();
+
+            l0.loop.BaseEdgeOrientation = GeometricOrientation.Backward;
+            Assert.AreEqual(e[0], l0.loop.BaseEdge);
+            Assert.AreEqual(GeometricOrientation.Backward, l0.loop.BaseEdgeOrientation);
+            Assert.AreEqual(e[0], l0.loop.Edges[0].Edge);
+            Assert.AreEqual(GeometricOrientation.Backward, l0.loop.Edges[0].Orientation);
+            Assert.AreEqual(e[2], l0.loop.Edges[1].Edge);
+            Assert.AreEqual(GeometricOrientation.Forward, l0.loop.Edges[1].Orientation);
+            Assert.AreEqual(e[1], l0.loop.Edges[2].Edge);
+            Assert.AreEqual(GeometricOrientation.Backward, l0.loop.Edges[2].Orientation);
+        }
+
+        [TestMethod]
+        public void ChangeBaseEdgeDirectionEvents()
+        {
+            var data = GeometryModelHelper.EmptyModelWithEvents();
+            (var v, var e) = TestData(data.layer);
+
+            var l0edges = new Edge[] { e[0], e[1], e[2] };
+            var l0 = LoopWithEvents(new EdgeLoop(data.layer, "", l0edges));
+            data.eventData.Reset();
+
+            l0.loop.BaseEdgeOrientation = GeometricOrientation.Backward;
+            Assert.AreEqual(1, data.eventData.TopologyChangedEventData.Count);
+            Assert.AreEqual(0, data.eventData.GeometryChangedEventData.Count);
+            Assert.AreEqual(0, data.eventData.BatchOperationFinishedCount);
+        }
+
+        [TestMethod]
+        public void ChangeBaseEdgeDirectionBatch()
+        {
+            var data = GeometryModelHelper.EmptyModelWithEvents();
+            (var v, var e) = TestData(data.layer);
+
+            var l0edges = new Edge[] { e[0], e[1], e[2] };
+            var l0 = LoopWithEvents(new EdgeLoop(data.layer, "", l0edges));
+            data.eventData.Reset();
+
+            data.model.Geometry.StartBatchOperation();
+
+            l0.loop.BaseEdgeOrientation = GeometricOrientation.Backward;
+            Assert.AreEqual(e[0], l0.loop.BaseEdge);
+            Assert.AreEqual(GeometricOrientation.Backward, l0.loop.BaseEdgeOrientation);
+            Assert.AreEqual(e[0], l0.loop.Edges[0].Edge);
+            Assert.AreEqual(GeometricOrientation.Forward, l0.loop.Edges[0].Orientation);
+            Assert.AreEqual(e[1], l0.loop.Edges[1].Edge);
+            Assert.AreEqual(GeometricOrientation.Forward, l0.loop.Edges[1].Orientation);
+            Assert.AreEqual(e[2], l0.loop.Edges[2].Edge);
+            Assert.AreEqual(GeometricOrientation.Backward, l0.loop.Edges[2].Orientation);
+
+            data.model.Geometry.EndBatchOperation();
+
+            Assert.AreEqual(e[0], l0.loop.BaseEdge);
+            Assert.AreEqual(GeometricOrientation.Backward, l0.loop.BaseEdgeOrientation);
+            Assert.AreEqual(e[0], l0.loop.Edges[0].Edge);
+            Assert.AreEqual(GeometricOrientation.Backward, l0.loop.Edges[0].Orientation);
+            Assert.AreEqual(e[2], l0.loop.Edges[1].Edge);
+            Assert.AreEqual(GeometricOrientation.Forward, l0.loop.Edges[1].Orientation);
+            Assert.AreEqual(e[1], l0.loop.Edges[2].Edge);
+            Assert.AreEqual(GeometricOrientation.Backward, l0.loop.Edges[2].Orientation);
+        }
+
+        [TestMethod]
+        public void ChangeBaseEdgeDirectionBatchEvents()
+        {
+            var data = GeometryModelHelper.EmptyModelWithEvents();
+            (var v, var e) = TestData(data.layer);
+
+            var l0edges = new Edge[] { e[0], e[1], e[2] };
+            var l0 = LoopWithEvents(new EdgeLoop(data.layer, "", l0edges));
+            data.eventData.Reset();
+
+            data.model.Geometry.StartBatchOperation();
+
+            l0.loop.BaseEdgeOrientation = GeometricOrientation.Backward;
+            Assert.AreEqual(0, data.eventData.TopologyChangedEventData.Count);
+            Assert.AreEqual(0, data.eventData.GeometryChangedEventData.Count);
+            Assert.AreEqual(0, data.eventData.BatchOperationFinishedCount);
+
+            data.model.Geometry.EndBatchOperation();
+            Assert.AreEqual(1, data.eventData.TopologyChangedEventData.Count);
+            Assert.AreEqual(0, data.eventData.GeometryChangedEventData.Count);
+            Assert.AreEqual(1, data.eventData.BatchOperationFinishedCount);
         }
     }
 }

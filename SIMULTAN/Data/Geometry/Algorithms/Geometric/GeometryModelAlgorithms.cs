@@ -783,8 +783,11 @@ namespace SIMULTAN.Data.Geometry
                 edges.Add(ce);
             }
 
+            var baseEdgeIdx = source.Edges.FindIndex(x => x.Edge == source.BaseEdge);
+            var baseEdge = edges[baseEdgeIdx];
+
             var id = GetCopyId(source, targetLayer, preserveIds);
-            var loop = new EdgeLoop(id, targetLayer, source.Name, edges);
+            var loop = new EdgeLoop(id, targetLayer, source.Name, edges, baseEdge, source.BaseEdgeOrientation);
             CopyBaseGeometryProperties(loop, source, targetLayer);
             copiedGeometries.Add(source, loop);
 
@@ -838,11 +841,8 @@ namespace SIMULTAN.Data.Geometry
                 holes.Add(loop);
             }
 
-            var baseEdgeIdx = source.Boundary.Edges.FindIndex(x => x.Edge == source.BaseEdge);
-            var baseEdge = boundary.Edges[baseEdgeIdx].Edge;
-
             var id = GetCopyId(source, targetLayer, preserveIds);
-            Face face = new Face(id, targetLayer, source.Name, boundary, source.Orientation, holes, baseEdge);
+            Face face = new Face(id, targetLayer, source.Name, boundary, source.Orientation, holes);
             CopyBaseGeometryProperties(face, source, targetLayer);
             copiedGeometries.Add(source, face);
 

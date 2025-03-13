@@ -29,13 +29,68 @@ namespace SIMULTAN.Data.Geometry
         public override List<Face> Faces { get; }
 
         /// <summary>
+        /// Base Edge of the Face as defined by the user.
+        /// Can be used to get a consistent base direction for the Face
+        /// </summary>
+        public Edge BaseEdge
+        {
+            get { return baseEdge; }
+            set
+            {
+                if (value == null)
+                    throw new ArgumentNullException();
+
+                if (value != baseEdge)
+                {
+                    if (value.PEdges.Any(x => x.Parent == this))
+                    {
+                        baseEdge = value;
+                        NotifyPropertyChanged(nameof(BaseEdge));
+
+                        if (this.ModelGeometry.HandleConsistency)
+                        {
+                            MakePEdgesConsistent();
+                        }
+                        NotifyTopologyChanged();
+                    }
+                    else
+                        throw new ArgumentException($"BaseEdge is not part of the EdgeLoop {this.Name} (Id={this.Id}");
+                }
+            }
+        }
+        private Edge baseEdge;
+
+        /// <summary>
+        /// Orientation of the <see cref="BaseEdge"/>. Defines the starting orientation for ordering the PEdges
+        /// </summary>
+        public GeometricOrientation BaseEdgeOrientation
+        {
+            get { return baseEdgeOrientation; }
+            set
+            {
+                baseEdgeOrientation = value;
+                NotifyPropertyChanged(nameof(BaseEdgeOrientation));
+
+                if (this.ModelGeometry.HandleConsistency)
+                {
+                    MakePEdgesConsistent();
+                }
+                NotifyTopologyChanged();
+            }
+        }
+        private GeometricOrientation baseEdgeOrientation = GeometricOrientation.Forward;
+
+        /// <summary>
         /// Initializes a new instance of the EdgeLoop class
         /// </summary>
         /// <param name="layer">The layer this object is placed on</param>
         /// <param name="nameFormat">The display name</param>
         /// <param name="edges">A list of edges in this loop</param>
-        public EdgeLoop(Layer layer, string nameFormat, IEnumerable<Edge> edges)
-            : this(layer != null ? layer.Model.GetFreeId() : ulong.MaxValue, layer, nameFormat, edges) { }
+        /// <param name="baseEdge">Base edge of the loop. Needs to be part of the edges of this loop</param>
+        /// <param name="baseEdgeOrientation">Orientation of the baseEdge. Defines the starting orientation for ordering the PEdges</param>
+        public EdgeLoop(Layer layer, string nameFormat, IEnumerable<Edge> edges, Edge baseEdge = null, 
+            GeometricOrientation baseEdgeOrientation = GeometricOrientation.Undefined)
+            : this(layer != null ? layer.Model.GetFreeId() : ulong.MaxValue, layer, nameFormat, edges, baseEdge, baseEdgeOrientation) { }
         /// <summary>
         /// Initializes a new instance of the EdgeLoop class
         /// </summary>
@@ -43,7 +98,10 @@ namespace SIMULTAN.Data.Geometry
         /// <param name="layer">The layer this object is placed on</param>
         /// <param name="nameFormat">The display name</param>
         /// <param name="edges">A list of edges in this loop</param>
-        public EdgeLoop(ulong id, Layer layer, string nameFormat, IEnumerable<Edge> edges)
+        /// <param name="baseEdge">Base edge of the loop. Needs to be part of the edges of this loop</param>
+        /// <param name="baseEdgeOrientation">Orientation of the baseEdge. Defines the starting orientation for ordering the PEdges</param>
+        public EdgeLoop(ulong id, Layer layer, string nameFormat, IEnumerable<Edge> edges, 
+            Edge baseEdge = null, GeometricOrientation baseEdgeOrientation = GeometricOrientation.Undefined)
             : base(id, layer)
         {
             if (edges == null)
@@ -52,9 +110,19 @@ namespace SIMULTAN.Data.Geometry
                 throw new ArgumentException("EdgeLoops need at least three edges");
             if (nameFormat == null)
                 throw new ArgumentNullException(nameof(nameFormat));
+            if (baseEdge != null && !edges.Contains(baseEdge))
+                throw new ArgumentException("BaseEdge is not part of the edges");
+            if (baseEdge != null && baseEdgeOrientation == GeometricOrientation.Undefined)
+                throw new ArgumentException("Undefined orientation is not supported when a baseEdge is supplied");
 
             this.Name = string.Format(nameFormat, id);
             this.Faces = new List<Face>();
+
+            if (baseEdge != null)
+            {
+                this.baseEdge = baseEdge; //Do not use Property since it checks if this BaseEdge is in the edge list (which it isn't during setup)
+                this.baseEdgeOrientation = baseEdgeOrientation;
+            }
 
             //Sort edges such that they form a closed loop
             (bool isloop, var orderedEdges) = EdgeAlgorithms.OrderLoop(edges);
@@ -87,8 +155,20 @@ namespace SIMULTAN.Data.Geometry
 
         private void MakePEdgesConsistent()
         {
+            var baseEdge = this.BaseEdge;
+            var baseEdgeOrientation = this.BaseEdgeOrientation;
+            bool baseEdgeExists = BaseEdge != null && Edges.Any(pe => pe.Edge == BaseEdge);
+
+            if (!baseEdgeExists)
+            {
+                baseEdge = this.Edges.First().Edge;
+                baseEdgeOrientation = this.Edges.First().Orientation;
+                if (baseEdgeOrientation == GeometricOrientation.Undefined)
+                    baseEdgeOrientation = GeometricOrientation.Forward;
+            }
+
             //Sort pedges
-            (var isClosed, var sortedEdges) = EdgeAlgorithms.OrderLoop(this.Edges);
+            (var isClosed, var sortedEdges) = EdgeAlgorithms.OrderLoop(this.Edges, baseEdge, baseEdgeOrientation);
 
             if (!isClosed)
                 throw new Exception("The edges do not form a closed loop");
@@ -128,6 +208,12 @@ namespace SIMULTAN.Data.Geometry
             {
                 this.Edges[i].Next = this.Edges[(i + 1) % this.Edges.Count];
                 this.Edges[(i + 1) % this.Edges.Count].Prev = this.Edges[i];
+            }
+
+            //Invalid BaseEdge -> guess new base edge
+            if (!baseEdgeExists)
+            {                
+                GuessBaseEdge();
             }
         }
 
@@ -194,6 +280,42 @@ namespace SIMULTAN.Data.Geometry
 
             if (this.Layer != null && !this.Layer.Elements.Contains(this))
                 this.Layer.Elements.Add(this);
+        }
+
+
+        private void GuessBaseEdge()
+        {
+            PEdge bestEdge = null;
+
+            var normal = EdgeLoopAlgorithms.NormalCCW(this);
+
+            if (!FaceAlgorithms.IsFloor(normal) && !FaceAlgorithms.IsCeiling(normal)) //Wall mode
+            {
+                //Try to find an edge in the XZ plane, then take the one with the lowest Y value
+                double bestY = double.PositiveInfinity;
+                foreach (var edge in this.Edges)
+                {
+                    if ((edge.StartVertex.Position.Y - edge.EndVertex.Position.Y < 0.00001) && edge.StartVertex.Position.Y < bestY)
+                    {
+                        bestEdge = edge;
+                        bestY = edge.StartVertex.Position.Y;
+                    }
+                }
+
+            }
+
+            if (bestEdge == null) //Either wall not found or no wall
+            {
+                bestEdge = Edges.First();
+            }
+
+            this.baseEdge = bestEdge.Edge;
+            this.baseEdgeOrientation = bestEdge.Orientation;
+
+            if (this.Edges[0].Edge != this.baseEdge || this.Edges[0].Orientation != baseEdgeOrientation) //Resort
+            {
+                MakePEdgesConsistent();
+            }
         }
     }
 }

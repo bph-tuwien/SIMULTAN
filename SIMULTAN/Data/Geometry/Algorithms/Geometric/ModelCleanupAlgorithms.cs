@@ -1730,6 +1730,7 @@ namespace SIMULTAN.Data.Geometry
                             if (i != j && !testsDone.Contains((fi, fj)))
                             {
                                 if (!fi.Holes.Contains(fj.Boundary) && //Not already a hole
+                                    Math.Abs(SimVector3D.DotProduct(fi.Normal, fj.Normal)) >= 1.0 - tolerance &&
                                     !fj.Boundary.Edges.Any(ej => ej.Edge.PEdges.Any(ejOtherPEdge => ejOtherPEdge.Parent == fi.Boundary)) && //No common edge
                                     FaceAlgorithms.Contains2D(fi, fj, 0.0, tolerance) == GeometricRelation.Contained) //Contained in face
                                 {
