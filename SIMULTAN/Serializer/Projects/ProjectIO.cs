@@ -340,6 +340,47 @@ namespace SIMULTAN.Serializer.Projects
         }
 
         /// <summary>
+        /// Imports and merges taxonomies form a txdf file.
+        /// For details on merging see <see cref="SimTaxonomyCollection.Merge(SimTaxonomyCollection, out List{ValueTuple{SimTaxonomy, SimTaxonomy}}, bool, bool)"/>
+        /// </summary>
+        /// <param name="file">The file to import</param>
+        /// <param name="projectData">The project data to import to</param>
+        /// <param name="conflicts">Conflicts generated while importing</param>
+        /// <param name="deleteMissing">If missing entries in the import should be deleted</param>
+        /// <param name="force">If merging should be forced, even if conflicts were detected. Uses the first match.</param>
+        public static void ImportTaxonomyAnMergeFile(FileInfo file, ExtendedProjectData projectData, out List<(SimTaxonomy other, SimTaxonomy existing)> conflicts,
+            bool deleteMissing = false, bool force = false)
+        {
+            var tmpProjectData = new ExtendedProjectData(projectData.SynchronizationContext, projectData.DispatcherTimerFactory);
+            tmpProjectData.SetCallingLocation(new DummyReferenceLocation(Guid.Empty));
+            var parserInfo = new DXFParserInfo(Guid.Empty, tmpProjectData);
+            SimTaxonomyDxfIO.Import(file, parserInfo);
+            projectData.Taxonomies.Merge(tmpProjectData.Taxonomies, out conflicts, deleteMissing, force);
+        }
+
+        /// <summary>
+        /// Imports and merges with a single taxonomy form a txdf file.
+        /// For details on merging see <see cref="SimTaxonomyCollection.Merge(SimTaxonomyCollection, out List{ValueTuple{SimTaxonomy, SimTaxonomy}}, bool, bool)"/>
+        /// </summary>
+        /// <param name="file">The file to import</param>
+        /// <param name="projectData">The project data to import to</param>
+        /// <param name="targetTaxonomy">The target taxonomy</param>
+        /// <param name="deleteMissing">If missing entries in the import should be deleted</param>
+        /// <returns>True if the merge was successful.</returns>
+        public static bool ImportTaxonomyAnMergeFile(FileInfo file, SimTaxonomy targetTaxonomy, ExtendedProjectData projectData, bool deleteMissing = false)
+        {
+            var tmpProjectData = new ExtendedProjectData(projectData.SynchronizationContext, projectData.DispatcherTimerFactory);
+            tmpProjectData.SetCallingLocation(new DummyReferenceLocation(Guid.Empty));
+            var parserInfo = new DXFParserInfo(Guid.Empty, tmpProjectData);
+            SimTaxonomyDxfIO.Import(file, parserInfo);
+            var other = tmpProjectData.Taxonomies.FirstOrDefault(x => x.Key == targetTaxonomy.Key);
+            if (other == null)
+                return false;
+            targetTaxonomy.MergeWith(other, deleteMissing);
+            return true;
+        }
+
+        /// <summary>
         /// Imports a taxonomy file into the project data.
         /// </summary>
         /// <param name="file">The taxonomy file to import</param>
@@ -354,8 +395,11 @@ namespace SIMULTAN.Serializer.Projects
                 throw new ArgumentNullException(nameof(projectData));
 
 
-            var parserInfo = new DXFParserInfo(projectData.Owner.GlobalID, projectData);
+            var tmpProjectData = new ExtendedProjectData(projectData.SynchronizationContext, projectData.DispatcherTimerFactory);
+            tmpProjectData.SetCallingLocation(new DummyReferenceLocation(Guid.Empty));
+            var parserInfo = new DXFParserInfo(Guid.Empty, tmpProjectData);
             SimTaxonomyDxfIO.Import(file, parserInfo);
+            projectData.Taxonomies.Import(tmpProjectData.Taxonomies);
         }
 
         /// <summary>

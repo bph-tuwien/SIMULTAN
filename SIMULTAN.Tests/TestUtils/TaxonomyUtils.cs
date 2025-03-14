@@ -1,4 +1,5 @@
-﻿using SIMULTAN.Data;
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using SIMULTAN.Data;
 using SIMULTAN.Data.Components;
 using SIMULTAN.Data.Taxonomy;
 using SIMULTAN.Projects;
@@ -6,6 +7,7 @@ using SIMULTAN.Serializer.DXF;
 using SIMULTAN.Serializer.TXDXF;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -15,6 +17,14 @@ namespace SIMULTAN.Tests.TestUtils
 {
     public static class TaxonomyUtils
     {
+        private static readonly string TaxKey = "taxkey {0}";
+        private static readonly string TaxName = "{1} tax {0} name {2}";
+        private static readonly string TaxDesc = "{1} tax {0} desc {2}";
+
+        private static readonly string EntryKey = "entrykey {0}";
+        private static readonly string EntryName = "{1} entry {0} name {2}";
+        private static readonly string EntryDesc = "{1} entry {0} desc {2}";
+
         /// <summary>
         /// Loads and returns the default taxonomies without loading a whole project.
         /// </summary>
@@ -52,6 +62,69 @@ namespace SIMULTAN.Tests.TestUtils
         {
             var taxonomies = GetDefaultTaxonomies();
             return taxonomies.GetDefaultSlot(key);
+        }
+        public static void AssertLocalization(SimTaxonomyEntry entry, int i, string tag, IEnumerable<string> locales)
+        {
+            foreach (var loc in GenEntryLoc(i, tag, locales))
+            {
+                Assert.IsTrue(entry.Localization.Entries.ContainsKey(loc.Culture));
+                var l = entry.Localization.Entries[loc.Culture];
+                Assert.AreEqual(loc, l);
+            }
+        }
+
+        public static void AssertLocalization(SimTaxonomy tax, int i, string tag, IEnumerable<string> locales)
+        {
+            foreach (var loc in GenTaxonomyLoc(i, tag, locales))
+            {
+                Assert.IsTrue(tax.Languages.Contains(loc.Culture));
+                Assert.IsTrue(tax.Localization.Entries.ContainsKey(loc.Culture));
+                var l = tax.Localization.Entries[loc.Culture];
+                Assert.AreEqual(loc, l);
+            }
+        }
+
+        public static IEnumerable<SimTaxonomyLocalizationEntry> GenTaxonomyLoc(int i, string tag, IEnumerable<string> locales)
+        {
+            foreach (var loc in locales)
+            {
+                yield return new SimTaxonomyLocalizationEntry(new CultureInfo(loc),
+                    string.Format(TaxName, i, loc, tag),
+                    string.Format(TaxDesc, i, loc, tag));
+            }
+        }
+        public static IEnumerable<SimTaxonomyLocalizationEntry> GenEntryLoc(int i, string tag, IEnumerable<string> locales)
+        {
+            foreach (var loc in locales)
+            {
+                yield return new SimTaxonomyLocalizationEntry(new CultureInfo(loc),
+                    string.Format(EntryName, i, loc, tag),
+                    string.Format(EntryDesc, i, loc, tag));
+            }
+        }
+
+        public static SimTaxonomyEntry GenerateEntry(int i, string tag, IEnumerable<string> locales)
+        {
+            var entry = new SimTaxonomyEntry(string.Format(EntryKey, i));
+            foreach (var loc in GenEntryLoc(i, tag, locales))
+            {
+                entry.Localization.AddLanguage(loc.Culture);
+                entry.Localization.SetLanguage(loc);
+            }
+            return entry;
+        }
+        public static SimTaxonomy GenerateTaxonomy(int i, string tag, IEnumerable<string> locales)
+        {
+            var tax = new SimTaxonomy() { Key = string.Format(TaxKey, i) };
+            foreach (var loc in GenTaxonomyLoc(i, tag, locales))
+            {
+                if (!tax.Languages.Contains(loc.Culture))
+                    tax.Languages.Add(loc.Culture);
+                tax.Localization.AddLanguage(loc.Culture);
+                tax.Localization.SetLanguage(loc);
+            }
+
+            return tax;
         }
     }
 }

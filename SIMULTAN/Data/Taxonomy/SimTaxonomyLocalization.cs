@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SIMULTAN.Utils;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -165,7 +166,7 @@ namespace SIMULTAN.Data.Taxonomy
         /// <summary>
         /// Returns the localized entry that best fits the given culture.
         /// First returns the translation that directly fits the culture.
-        /// If that is not found it looks up the languages parent languages up to the invariant cultue.
+        /// If that is not found it looks up the languages parent languages up to the invariant culture.
         /// If none matches, the first entry is returned.
         /// If there are no entries, an empty entry with null culture is returned.
         /// </summary>
@@ -227,6 +228,36 @@ namespace SIMULTAN.Data.Taxonomy
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// Merges this localization with another. Existing entries get replaced, new ones get added.
+        /// </summary>
+        /// <param name="others">Other localization to merge into this one.</param>
+        /// <param name="deleteMissing">If entries that exist in this localization but not in the other one should be deleted.</param>
+        public void MergeWith(SimTaxonomyLocalization others, bool deleteMissing = false)
+        {
+            if (IsIdenticalTo(others))
+                return;
+
+            var allkeys = entries.Keys.ToHashSet();
+            foreach (var other in others.Entries)
+            {
+                allkeys.Remove(other.Key);
+                if (entries.TryGetValue(other.Key, out var existing))
+                {
+                    entries[other.Key] = other.Value;
+                }
+                else
+                {
+                    entries.Add(other.Key, other.Value);
+                }
+            }
+            if (deleteMissing)
+            {
+                allkeys.ForEach(x => entries.Remove(x));
+            }
+            NotifyChanged();
         }
     }
 }

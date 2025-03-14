@@ -201,7 +201,7 @@ namespace SIMULTAN.Serializer.Projects
                 }
 
                 // merge taxonomies
-                var existingTaxonomies = _project.AllProjectDataManagers.Taxonomies.Merge(mergeData.Taxonomies);
+                var existingTaxonomies = _project.AllProjectDataManagers.Taxonomies.Import(mergeData.Taxonomies);
 
                 // 3a. merge the values with the existing
                 _project.AllProjectDataManagers.ValueManager.Merge(mergeData.ValueManager);
@@ -489,7 +489,7 @@ namespace SIMULTAN.Serializer.Projects
             }
 
             // Merge the taxonomies
-            var existingTaxonomies = _project.AllProjectDataManagers.Taxonomies.Merge(mergeData.Taxonomies);
+            var existingTaxonomies = _project.AllProjectDataManagers.Taxonomies.Import(mergeData.Taxonomies);
 
             // migrate the geometry relations from the import to the existing project
             foreach (var relation in mergeData.GeometryRelations)

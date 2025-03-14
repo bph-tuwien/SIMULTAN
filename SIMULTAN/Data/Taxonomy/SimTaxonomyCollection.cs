@@ -27,7 +27,7 @@ namespace SIMULTAN.Data.Taxonomy
         /// <summary>
         /// If the taxonomy collection is being merged into another one
         /// </summary>
-        public bool IsMergeInProgress { get; private set; }
+        public bool IsMergeInProgress { get; internal set; }
         /// <summary>
         /// Disables certain notifications while a project is closed
         /// </summary>
@@ -338,12 +338,106 @@ namespace SIMULTAN.Data.Taxonomy
 
         /// <summary>
         /// Merges this taxonomy collection with another and returns the taxonomies that already existed.
-        /// References to taxonomy entries of the existing taxonomies need to be manually reset to the existing ones after import.
+        /// Merge happen by taxonomy key, if multiple have the same key they will generate conflicts if they are different (unless force is used)
+        /// Identical taxonomies are ignored, new taxonomies will be added. If two have the same key but different content, they will be merged.
+        /// References to merged taxonomy entries in other imported data need to be manually reset to the new ids of the entries.
+        /// All merged taxonomies get removed from the other collection.
         /// </summary>
         /// <param name="other">The other taxonomies to merge into this collection.</param>
-        /// <returns>taxonomies that already existed in this collection.</returns>
+        /// <param name="conflicts">All conflicting taxonomies, these were not merged yet.</param>
+        /// <param name="deleteMissing">If missing entries and localizations should be removed in updated taxonomies. Taxonomies themselves are not deleted.</param>
+        /// <param name="force">If true, always merge the first conflict of a taxonomy (conflicts list will be empty in the end). Otherwise conflicts are only merged if only a single matching pair is found.</param>
+        /// <returns>taxonomies that already existed in this collection. Key is the imported one, value the existing one.</returns>
         /// <exception cref="ArgumentNullException">if an argument is null</exception>
-        public Dictionary<SimTaxonomy, SimTaxonomy> Merge(SimTaxonomyCollection other)
+        public Dictionary<SimTaxonomy, SimTaxonomy> Merge(SimTaxonomyCollection other, out List<(SimTaxonomy other, SimTaxonomy existing)> conflicts, bool deleteMissing, bool force)
+        {
+            if (other == null)
+                throw new ArgumentNullException(nameof(other));
+
+            IsMergeInProgress = true;
+            other.IsMergeInProgress = true;
+            var existingTaxonomies = new Dictionary<SimTaxonomy, SimTaxonomy>();
+            conflicts = new();
+            var newTaxonomies = new List<SimTaxonomy>();
+            foreach (var otherTax in other)
+            {
+                // check all localizations if we find a match in one
+                var foundTaxonomies = this.Where(x => x.Key == otherTax.Key);
+                if (foundTaxonomies.Any())
+                {
+                    foreach (var found in foundTaxonomies)
+                    {
+                        // track all conflicting taxonomies, could be multiple with same key
+                        if (found.IsIdentical(otherTax))
+                        {
+                            existingTaxonomies.Add(otherTax, found);
+                        }
+                        else
+                        {
+                            conflicts.Add((otherTax, found));
+                        }
+                    }
+                }
+                else
+                {
+                    newTaxonomies.Add(otherTax);
+                }
+            }
+
+            ResetIDs(newTaxonomies);
+
+            // add new taxonomies
+            foreach (var newTax in newTaxonomies)
+            {
+                other.Remove(newTax);
+                Add(newTax);
+            }
+
+            var otherGroup = conflicts.GroupBy(x => x.other).ToDictionary(x => x.Key, x => x.Select(y => y.existing).ToHashSet());
+            conflicts.Clear();
+
+            foreach (var toMerge in otherGroup.Keys.ToList())
+            {
+                if (otherGroup.TryGetValue(toMerge, out var values))
+                {
+                    // if we only found one conflict or force is enabled merge with the first one
+                    if (values.Count == 1 || force)
+                    {
+                        var existing = values.First();
+                        existing.MergeWith(toMerge, deleteMissing);
+                        other.Remove(toMerge);
+                        // remove all with same key in others (if there were multiple taxonomies with the same key)
+                        otherGroup.Keys.Where(x => x.Key == toMerge.Key).ForEach(x =>
+                        {
+                            otherGroup.Remove(x);
+                            other.Remove(x);
+                        });
+                    }
+                    else // add them back to conflicts
+                    {
+                        foreach (var existing in values)
+                        {
+                            conflicts.Add((toMerge, existing));
+                        }
+                    }
+                }
+            }
+
+            IsMergeInProgress = false;
+            other.IsMergeInProgress = false;
+
+            return existingTaxonomies;
+        }
+
+        /// <summary>
+        /// Imports another taxonomy collection into this collection and returns the taxonomies that already existed (duplicates).
+        /// Identical taxonomies are ignored, all other taxonomies get imported as new taxonomies.
+        /// References to imported taxonomy entries in other imported data need to be manually reset to the new ids of the entries.
+        /// </summary>
+        /// <param name="other">The other taxonomies to import into this collection.</param>
+        /// <returns>taxonomies that already existed in this collection. Key is the imported one, value the existing one.</returns>
+        /// <exception cref="ArgumentNullException">if an argument is null</exception>
+        public Dictionary<SimTaxonomy, SimTaxonomy> Import(SimTaxonomyCollection other)
         {
             if (other == null)
                 throw new ArgumentNullException(nameof(other));
@@ -373,53 +467,11 @@ namespace SIMULTAN.Data.Taxonomy
                 }
             }
 
-            List<(SimTaxonomy value, long id)> oldIds = newTaxonomies.Select(x => (x, x.LocalID)).ToList();
-            Dictionary<SimTaxonomyEntry, long> oldEntryIds = new Dictionary<SimTaxonomyEntry, long>();
-
-            // gather all entry ids
-            Stack<SimTaxonomyEntry> entryStack = new Stack<SimTaxonomyEntry>();
-            foreach (var tax in newTaxonomies)
-            {
-                foreach (var entry in tax.Entries)
-                    entryStack.Push(entry);
-            }
-
-            while (entryStack.Count > 0)
-            {
-                var e = entryStack.Pop();
-                oldEntryIds.Add(e, e.LocalID);
-                foreach (var entry in e.Children)
-                {
-                    entryStack.Push(entry);
-                }
-            }
-
             ResetIDs(other);
             other.ClearAllItems(true);
 
-            Dictionary<long, long> id_change_record = new Dictionary<long, long>();
-
-            // get changed taxonomy ids
-            foreach ((var tax, var oldId) in oldIds)
-            {
-                this.Add(tax);
-                id_change_record.Add(oldId, tax.LocalID);
-                foreach (var entry in tax.Entries)
-                    entryStack.Push(entry);
-            }
-
-            // get changed taxonomy entry ids
-            while (entryStack.Count > 0)
-            {
-                var e = entryStack.Pop();
-                var oldId = oldEntryIds[e];
-                id_change_record.Add(oldId, e.LocalID);
-
-                foreach (var entry in e.Children)
-                {
-                    entryStack.Push(entry);
-                }
-            }
+            // add all new taxonomies
+            newTaxonomies.ForEach(x => this.Add(x));
 
             IsMergeInProgress = false;
             other.IsMergeInProgress = false;

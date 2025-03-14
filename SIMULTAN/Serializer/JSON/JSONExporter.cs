@@ -1,9 +1,12 @@
 ﻿using SIMULTAN.Data.Components;
 using SIMULTAN.Data.SimNetworks;
+using SIMULTAN.Data.Taxonomy;
 using SIMULTAN.Projects;
+using SIMULTAN.Serializer.JSON.Serializables;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
 
 namespace SIMULTAN.Serializer.JSON
@@ -119,6 +122,32 @@ namespace SIMULTAN.Serializer.JSON
                 });
                 file.Write(json);
             }
+        }
+
+        /// <summary>
+        /// Exports taxonomies to a JSON file
+        /// </summary>
+        /// <param name="taxonomies">The taxonomies export</param>
+        /// <param name="file">The file to export to</param>
+        public static void ExportTaxonomy(IEnumerable<SimTaxonomy> taxonomies, FileInfo file)
+        {
+            using var fileStream = file.Open(FileMode.Create, FileAccess.Write);
+            using var writer = new StreamWriter(fileStream);
+            writer.Write(ExportTaxonomy(taxonomies));
+        }
+
+        /// <summary>
+        /// Exports taxonomies to a JSON string
+        /// </summary>
+        /// <param name="taxonomies">The taxonomies export</param>
+        /// <returns>The taxonomy JSON</returns>
+        public static string ExportTaxonomy(IEnumerable<SimTaxonomy> taxonomies)
+        {
+            return JsonSerializer.Serialize(taxonomies.Select(x => new SimTaxonomySerializable(x)), new JsonSerializerOptions
+            {
+                WriteIndented = true,
+                DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
+            });
         }
     }
 }
