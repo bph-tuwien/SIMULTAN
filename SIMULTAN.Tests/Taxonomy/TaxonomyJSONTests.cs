@@ -15,6 +15,7 @@ public class TaxonomyJSONTests : BaseProjectTest
     private static readonly FileInfo emptyProject = new FileInfo(@"./EmptyProject.simultan");
 
     private static readonly List<string> locales = new() { "", "en", "de" };
+    private static readonly List<string> localesAlt = new() { "en", "de" };
     private void Load()
     {
         LoadProject(emptyProject);
@@ -127,10 +128,10 @@ public class TaxonomyJSONTests : BaseProjectTest
     public void SerializableToTaxonomyTest()
     {
         Load();
-        var tax = TaxonomyUtils.GenerateTaxonomy(0, "A", locales);
-        var e1 = TaxonomyUtils.GenerateEntry(0, "A", locales);
-        var e2 = TaxonomyUtils.GenerateEntry(1, "A", locales);
-        var e3 = TaxonomyUtils.GenerateEntry(2, "A", locales);
+        var tax = TaxonomyUtils.GenerateTaxonomy(0, "A", localesAlt);
+        var e1 = TaxonomyUtils.GenerateEntry(0, "A", localesAlt);
+        var e2 = TaxonomyUtils.GenerateEntry(1, "A", localesAlt);
+        var e3 = TaxonomyUtils.GenerateEntry(2, "A", localesAlt);
         tax.Entries.Add(e1);
         e1.Children.Add(e2);
         tax.Entries.Add(e3);
@@ -143,10 +144,11 @@ public class TaxonomyJSONTests : BaseProjectTest
             Key = tax.Key,
             Name = inv.Name,
             Description = inv.Description,
+            SupportedLanguages = localesAlt.ToList(),
             Localization = new()
             {
-                new SimTaxonomyLocalizationSerializable(en.Culture.Name, en.Name, en.Description),
-                new SimTaxonomyLocalizationSerializable(de.Culture.Name, de.Name, de.Description),
+                new SimTaxonomyLocalizationSerializable(en),
+                new SimTaxonomyLocalizationSerializable(de),
             }
         };
         inv = e1.Localization.Localize();
@@ -159,8 +161,8 @@ public class TaxonomyJSONTests : BaseProjectTest
             Description = inv.Description,
             Localization = new()
             {
-                new SimTaxonomyLocalizationSerializable(en.Culture.Name, en.Name, en.Description),
-                new SimTaxonomyLocalizationSerializable(de.Culture.Name, de.Name, de.Description),
+                new SimTaxonomyLocalizationSerializable(en),
+                new SimTaxonomyLocalizationSerializable(de),
             }
         };
         inv = e2.Localization.Localize();
@@ -173,8 +175,8 @@ public class TaxonomyJSONTests : BaseProjectTest
             Description = inv.Description,
             Localization = new()
             {
-                new SimTaxonomyLocalizationSerializable(en.Culture.Name, en.Name, en.Description),
-                new SimTaxonomyLocalizationSerializable(de.Culture.Name, de.Name, de.Description),
+                new SimTaxonomyLocalizationSerializable(en),
+                new SimTaxonomyLocalizationSerializable(de),
             }
         };
         inv = e3.Localization.Localize();
@@ -187,8 +189,8 @@ public class TaxonomyJSONTests : BaseProjectTest
             Description = inv.Description,
             Localization = new()
             {
-                new SimTaxonomyLocalizationSerializable(en.Culture.Name, en.Name, en.Description),
-                new SimTaxonomyLocalizationSerializable(de.Culture.Name, de.Name, de.Description),
+                new SimTaxonomyLocalizationSerializable(en),
+                new SimTaxonomyLocalizationSerializable(de),
             }
         };
 
@@ -202,17 +204,17 @@ public class TaxonomyJSONTests : BaseProjectTest
         projectData.Taxonomies.Add(converted);
 
         Assert.AreEqual(ser.Key, converted.Key);
-        foreach (var loc in locales)
+        foreach (var loc in localesAlt)
             Assert.IsTrue(converted.Languages.Contains(new CultureInfo(loc)));
-        TaxonomyUtils.AssertLocalization(converted, 0, "A", locales);
+        TaxonomyUtils.AssertLocalization(converted, 0, "A", localesAlt);
         var ce1 = converted.GetTaxonomyEntryByKey(se1.Key);
         Assert.IsNotNull(ce1);
-        TaxonomyUtils.AssertLocalization(ce1, 0, "A", locales);
+        TaxonomyUtils.AssertLocalization(ce1, 0, "A", localesAlt);
         ce1 = converted.GetTaxonomyEntryByKey(se2.Key);
         Assert.IsNotNull(ce1);
-        TaxonomyUtils.AssertLocalization(ce1, 1, "A", locales);
+        TaxonomyUtils.AssertLocalization(ce1, 1, "A", localesAlt);
         ce1 = converted.GetTaxonomyEntryByKey(se3.Key);
         Assert.IsNotNull(ce1);
-        TaxonomyUtils.AssertLocalization(ce1, 2, "A", locales);
+        TaxonomyUtils.AssertLocalization(ce1, 2, "A", localesAlt);
     }
 }

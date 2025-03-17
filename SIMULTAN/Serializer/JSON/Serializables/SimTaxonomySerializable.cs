@@ -41,6 +41,10 @@ namespace SIMULTAN.Serializer.JSON
         /// </summary>
         public List<SimTaxonomyEntrySerializable> Children { get; set; }
 
+        /// <summary>
+        /// Creates an empty <see cref="SimTaxonomySerializable"/>
+        /// Needed for JSON serialization
+        /// </summary>
         public SimTaxonomySerializable() { }
 
         /// <summary>
@@ -63,14 +67,13 @@ namespace SIMULTAN.Serializer.JSON
             SupportedLanguages = taxonomy.Languages.Select(x => x.Name).ToList();
             var filteredLoc = taxonomy.Localization.Entries.Where(x => !x.Key.Equals(CultureInfo.InvariantCulture));
             Localization = filteredLoc.Any() ? filteredLoc.Select(x =>
-                new SimTaxonomyLocalizationSerializable(x.Key.Name, x.Value.Name, x.Value.Description)).ToList() : null;
+                new SimTaxonomyLocalizationSerializable(x.Value)).ToList() : null;
             Children = taxonomy.Entries.Any() ? taxonomy.Entries.Select(x => new SimTaxonomyEntrySerializable(x)).ToList() : null;
         }
 
         /// <summary>
         /// Converts the <see cref="SimTaxonomySerializable"/> to its equivalent SIMULTAN model <see cref="SimTaxonomy"/>
         /// </summary>
-        /// <param name="jsonTaxonomy">The taxonomy</param>
         /// <returns>The SIMULTAN model of the taxonomy</returns>
         public SimTaxonomy ToSimTaxonomy()
         {

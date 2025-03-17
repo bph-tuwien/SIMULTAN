@@ -59,7 +59,7 @@ namespace SIMULTAN.Serializer.JSON
             Description = invariant.Description;
             var filteredLoc = entry.Localization.Entries.Where(x => !x.Key.Equals(CultureInfo.InvariantCulture));
             Localization = filteredLoc.Any() ? filteredLoc.Select(x =>
-                new SimTaxonomyLocalizationSerializable(x.Key.Name, x.Value.Name, x.Value.Description)).ToList() : null;
+                new SimTaxonomyLocalizationSerializable(x.Value)).ToList() : null;
             Children = entry.Children.Any() ? entry.Children.Select(x => new SimTaxonomyEntrySerializable(x)).ToList() : null;
         }
 
