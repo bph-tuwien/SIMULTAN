@@ -6,6 +6,8 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Security.Permissions;
+using System.Text.Json;
 
 namespace SIMULTAN.Tests.Taxonomy;
 
@@ -16,6 +18,8 @@ public class TaxonomyJSONTests : BaseProjectTest
 
     private static readonly List<string> locales = new() { "", "en", "de" };
     private static readonly List<string> localesAlt = new() { "en", "de" };
+    private static readonly List<string> localesInv = new() { "" };
+
     private void Load()
     {
         LoadProject(emptyProject);
@@ -57,6 +61,7 @@ public class TaxonomyJSONTests : BaseProjectTest
             }
         }
     }
+    #region Conversion
 
     [TestMethod]
     public void TaxonomyToSerializableEmptyTest()
@@ -217,4 +222,176 @@ public class TaxonomyJSONTests : BaseProjectTest
         Assert.IsNotNull(ce1);
         TaxonomyUtils.AssertLocalization(ce1, 2, "A", localesAlt);
     }
+
+    [TestMethod]
+    public void SerializableToTaxonomyNoLocTest()
+    {
+        var locales = localesInv;
+        Load();
+        var tax = TaxonomyUtils.GenerateTaxonomy(0, "A", locales);
+        var e1 = TaxonomyUtils.GenerateEntry(0, "A", locales);
+        var e2 = TaxonomyUtils.GenerateEntry(1, "A", locales);
+        var e3 = TaxonomyUtils.GenerateEntry(2, "A", locales);
+        tax.Entries.Add(e1);
+        e1.Children.Add(e2);
+        tax.Entries.Add(e3);
+
+        var inv = tax.Localization.Localize();
+        var ser = new SimTaxonomySerializable()
+        {
+            Key = tax.Key,
+            Name = inv.Name,
+            Description = inv.Description,
+            SupportedLanguages = null,
+            Localization = null
+        };
+        inv = e1.Localization.Localize();
+        var se1 = new SimTaxonomyEntrySerializable()
+        {
+            Key = e1.Key,
+            Name = inv.Name,
+            Description = inv.Description,
+            Localization = null
+        };
+        inv = e2.Localization.Localize();
+        var se2 = new SimTaxonomyEntrySerializable()
+        {
+            Key = e2.Key,
+            Name = inv.Name,
+            Description = inv.Description,
+            Localization = null
+        };
+        inv = e3.Localization.Localize();
+        var se3 = new SimTaxonomyEntrySerializable()
+        {
+            Key = e3.Key,
+            Name = inv.Name,
+            Description = inv.Description,
+            Localization = null
+        };
+
+        ser.Children = new();
+        ser.Children.Add(se1);
+        se1.Children = new();
+        se1.Children.Add(se2);
+        ser.Children.Add(se3);
+
+        var json = JSONExporter.ExportTaxonomy(new[] { ser });
+
+        // without localization it should generate invariant translation
+        var converted = ser.ToSimTaxonomy();
+        projectData.Taxonomies.Add(converted);
+
+        Assert.AreEqual(ser.Key, converted.Key);
+        foreach (var loc in locales)
+            Assert.IsTrue(converted.Languages.Contains(new CultureInfo(loc)));
+        TaxonomyUtils.AssertLocalization(converted, 0, "A", locales);
+        var ce1 = converted.GetTaxonomyEntryByKey(se1.Key);
+        Assert.IsNotNull(ce1);
+        TaxonomyUtils.AssertLocalization(ce1, 0, "A", locales);
+        ce1 = converted.GetTaxonomyEntryByKey(se2.Key);
+        Assert.IsNotNull(ce1);
+        TaxonomyUtils.AssertLocalization(ce1, 1, "A", locales);
+        ce1 = converted.GetTaxonomyEntryByKey(se3.Key);
+        Assert.IsNotNull(ce1);
+        TaxonomyUtils.AssertLocalization(ce1, 2, "A", locales);
+    }
+    #endregion
+
+    #region JSON Import
+
+    private static readonly string TestFilesDir = "Taxonomy/TestFiles";
+    private static readonly string TestFileNoLoc = "NoLoc.json";
+    private static readonly string TestFileWithLoc = "WithLoc.json";
+
+    [TestMethod]
+    public void ImportNoLocTest()
+    {
+        Load();
+        var file = new FileInfo(Path.Combine(TestFilesDir, TestFileNoLoc));
+        JSONImporter.ImportTaxonomy(projectData, file);
+
+        // generate test tax
+        var locales = localesInv;
+        var tax = TaxonomyUtils.GenerateTaxonomy(0, "A", locales);
+        var e1 = TaxonomyUtils.GenerateEntry(0, "A", locales);
+        var e2 = TaxonomyUtils.GenerateEntry(1, "A", locales);
+        var e3 = TaxonomyUtils.GenerateEntry(2, "A", locales);
+        tax.Entries.Add(e1);
+        e1.Children.Add(e2);
+        tax.Entries.Add(e3);
+
+        // TODO FIx
+        var iTax = projectData.Taxonomies.FirstOrDefault(x => x.Key == tax.Key);
+        Assert.IsNotNull(iTax);
+        Assert.IsTrue(tax.IsIdentical(iTax));
+    }
+
+
+    [TestMethod]
+    public void ImportWithLocTest()
+    {
+        Load();
+        var file = new FileInfo(Path.Combine(TestFilesDir, TestFileWithLoc));
+        JSONImporter.ImportTaxonomy(projectData, file);
+
+        var tax = TaxonomyUtils.GenerateTaxonomy(0, "A", localesAlt);
+        var e1 = TaxonomyUtils.GenerateEntry(0, "A", localesAlt);
+        var e2 = TaxonomyUtils.GenerateEntry(1, "A", localesAlt);
+        var e3 = TaxonomyUtils.GenerateEntry(2, "A", localesAlt);
+        tax.Entries.Add(e1);
+        e1.Children.Add(e2);
+        tax.Entries.Add(e3);
+
+        var iTax = projectData.Taxonomies.FirstOrDefault(x => x.Key == tax.Key);
+        Assert.IsNotNull(iTax);
+        Assert.IsTrue(tax.IsIdentical(iTax));
+    }
+    #endregion
+
+    #region Export
+
+    [TestMethod]
+    public void ExportNoLocTest()
+    {
+        Load();
+        var file = new FileInfo(Path.Combine(TestFilesDir, TestFileNoLoc));
+
+        // generate test tax
+        var locales = localesInv;
+        var tax = TaxonomyUtils.GenerateTaxonomy(0, "A", locales);
+        var e1 = TaxonomyUtils.GenerateEntry(0, "A", locales);
+        var e2 = TaxonomyUtils.GenerateEntry(1, "A", locales);
+        var e3 = TaxonomyUtils.GenerateEntry(2, "A", locales);
+        tax.Entries.Add(e1);
+        e1.Children.Add(e2);
+        tax.Entries.Add(e3);
+
+        var json = JSONExporter.ExportTaxonomy(new[] { tax });
+
+        AssertUtil.AreEqualMultiline(File.ReadAllText(file.FullName), json);
+    }
+
+
+    [TestMethod]
+    public void ExportWithLocTest()
+    {
+        Load();
+        var file = new FileInfo(Path.Combine(TestFilesDir, TestFileWithLoc));
+        JSONImporter.ImportTaxonomy(projectData, file);
+
+        var tax = TaxonomyUtils.GenerateTaxonomy(0, "A", localesAlt);
+        var e1 = TaxonomyUtils.GenerateEntry(0, "A", localesAlt);
+        var e2 = TaxonomyUtils.GenerateEntry(1, "A", localesAlt);
+        var e3 = TaxonomyUtils.GenerateEntry(2, "A", localesAlt);
+        tax.Entries.Add(e1);
+        e1.Children.Add(e2);
+        tax.Entries.Add(e3);
+
+        // TODO FIx
+        var iTax = projectData.Taxonomies.FirstOrDefault(x => x.Key == tax.Key);
+        Assert.IsNotNull(iTax);
+        Assert.IsTrue(tax.IsIdentical(iTax));
+    }
+    #endregion
 }

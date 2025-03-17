@@ -26,6 +26,13 @@ namespace SIMULTAN.Serializer.JSON
         /// </summary>
         public string Description { get; set; }
 
+
+        /// <summary>
+        /// Creates a new <see cref="SimTaxonomyLocalizationSerializable"/>
+        /// </summary>
+        public SimTaxonomyLocalizationSerializable()
+        { }
+
         /// <summary>
         /// Creates a new <see cref="SimTaxonomyLocalizationSerializable"/>
         /// </summary>

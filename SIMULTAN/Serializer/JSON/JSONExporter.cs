@@ -51,9 +51,6 @@ namespace SIMULTAN.Serializer.JSON
     /// </summary>
     public static class JSONExporter
     {
-        //public static JsonSchema Schema { get; } = new JsonSchemaBuilder().FromType<ProjectSerializable>().Build();
-
-
 
         /// <summary>
         /// Exports the project data into a JSON file
@@ -142,7 +139,17 @@ namespace SIMULTAN.Serializer.JSON
         /// <returns>The taxonomy JSON</returns>
         public static string ExportTaxonomy(IEnumerable<SimTaxonomy> taxonomies)
         {
-            return JsonSerializer.Serialize(taxonomies.Select(x => new SimTaxonomySerializable(x)), new JsonSerializerOptions
+            return ExportTaxonomy(taxonomies.Select(x => new SimTaxonomySerializable(x)));
+        }
+
+        /// <summary>
+        /// Exports taxonomies to a JSON string
+        /// </summary>
+        /// <param name="taxonomies">The taxonomies export</param>
+        /// <returns>The taxonomy JSON</returns>
+        public static string ExportTaxonomy(IEnumerable<SimTaxonomySerializable> taxonomies)
+        {
+            return JsonSerializer.Serialize(taxonomies, new JsonSerializerOptions
             {
                 WriteIndented = true,
                 DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,

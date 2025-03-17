@@ -1,0 +1,29 @@
+﻿[
+  {
+    "Key": "taxkey 0",
+    "Name": " tax 0 name A",
+    "Description": " tax 0 desc A",
+    "SupportedLanguages": [
+      ""
+    ],
+    "Children": [
+      {
+        "Key": "entrykey 0",
+        "Name": " entry 0 name A",
+        "Description": " entry 0 desc A",
+        "Children": [
+          {
+            "Key": "entrykey 1",
+            "Name": " entry 1 name A",
+            "Description": " entry 1 desc A"
+          }
+        ]
+      },
+      {
+        "Key": "entrykey 2",
+        "Name": " entry 2 name A",
+        "Description": " entry 2 desc A"
+      }
+    ]
+  }
+]
