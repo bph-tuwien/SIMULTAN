@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SIMULTAN.Serializer.JSON.Serializables
+namespace SIMULTAN.Serializer.JSON
 {
     public class SimTaxonomyLocalizationSerializable
     {

@@ -2,7 +2,6 @@
 using SIMULTAN.Data.SimNetworks;
 using SIMULTAN.Data.Taxonomy;
 using SIMULTAN.Projects;
-using SIMULTAN.Serializer.JSON.Serializables;
 using System;
 using System.Collections.Generic;
 using System.IO;

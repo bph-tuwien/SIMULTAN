@@ -8,7 +8,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SIMULTAN.Serializer.JSON.Serializables
+namespace SIMULTAN.Serializer.JSON
 {
     /// <summary>
     /// JSON import/export model of the <see cref="SimTaxonomy"/>

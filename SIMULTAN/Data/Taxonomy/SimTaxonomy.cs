@@ -189,7 +189,7 @@ namespace SIMULTAN.Data.Taxonomy
 
             if (IsKeyInUse(entry.Key))
             {
-                throw new Exception("Taxonomy entry key is already in use");
+                throw new Exception($"Taxonomy entry key '{entry.Key}' is already in use in taxonomy '{Key}'");
             }
             allEntries.Add(entry.Key, entry);
         }

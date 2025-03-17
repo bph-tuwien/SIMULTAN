@@ -1,6 +1,6 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SIMULTAN.Data.Taxonomy;
-using SIMULTAN.Serializer.JSON.Serializables;
+using SIMULTAN.Serializer.JSON;
 using SIMULTAN.Tests.TestUtils;
 using System.Collections.Generic;
 using System.Globalization;

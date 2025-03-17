@@ -1,7 +1,6 @@
 ﻿using MathNet.Numerics.LinearAlgebra;
 using SIMULTAN.Data.Taxonomy;
 using SIMULTAN.Projects;
-using SIMULTAN.Serializer.JSON.Serializables;
 using SIMULTAN.Utils;
 using System;
 using System.Collections.Generic;

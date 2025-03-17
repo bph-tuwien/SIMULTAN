@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SIMULTAN.Serializer.JSON.Serializables
+namespace SIMULTAN.Serializer.JSON
 {
     /// <summary>
     /// JSON import/export model of the <see cref="SimTaxonomyEntry"/>
