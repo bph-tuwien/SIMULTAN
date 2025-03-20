@@ -20,9 +20,11 @@ namespace SIMULTAN.Serializer.JSON
         /// </summary>
         /// <param name="projectData">The project data</param>
         /// <param name="file">The JSON file</param>
+        /// <param name="statistics">Returns the number of taxonomies imported and the number of taxonomies that were skipped</param>
         /// <exception cref="ArgumentException">If the file does not exist</exception>
         /// <exception cref="ArgumentNullException">If an argument is null</exception>
-        public static void ImportTaxonomy(ExtendedProjectData projectData, FileInfo file)
+        public static void ImportTaxonomy(ExtendedProjectData projectData, FileInfo file,
+            out (int loadedCount, int skippedCount) statistics)
         {
             if (projectData == null)
                 throw new ArgumentNullException(nameof(projectData));
@@ -31,9 +33,37 @@ namespace SIMULTAN.Serializer.JSON
             if (!file.Exists)
                 throw new ArgumentException("File does not exist");
             var content = File.ReadAllText(file.FullName);
-            ImportTaxonomy(projectData, content);
+            ImportTaxonomy(projectData, content, out statistics);
+        }
+        /// <summary>
+        /// Imports a taxonomy JSON file into the project
+        /// </summary>
+        /// <param name="projectData">The project data</param>
+        /// <param name="file">The JSON file</param>
+        /// <exception cref="ArgumentException">If the file does not exist</exception>
+        /// <exception cref="ArgumentNullException">If an argument is null</exception>
+        public static void ImportTaxonomy(ExtendedProjectData projectData, FileInfo file)
+        {
+            ImportTaxonomy(projectData, file, out _);
         }
 
+        /// <summary>
+        /// Imports a taxonomy JSON string into the project
+        /// </summary>
+        /// <param name="projectData">The project data</param>
+        /// <param name="json">The JSON string</param>
+        /// <param name="statistics">Returns the number of taxonomies imported and the number of taxonomies that were skipped</param>
+        /// <exception cref="ArgumentNullException">If an argument is null</exception>
+        public static void ImportTaxonomy(ExtendedProjectData projectData, string json,
+            out (int loadedCount, int skippedCount) statistics)
+        {
+            if (projectData == null)
+                throw new ArgumentNullException(nameof(projectData));
+            if (json == null)
+                throw new ArgumentNullException(nameof(json));
+            var jsonTaxonomies = JsonSerializer.Deserialize<SimTaxonomySerializable[]>(json);
+            ImportTaxonomy(projectData, jsonTaxonomies, out statistics);
+        }
         /// <summary>
         /// Imports a taxonomy JSON string into the project
         /// </summary>
@@ -42,14 +72,33 @@ namespace SIMULTAN.Serializer.JSON
         /// <exception cref="ArgumentNullException">If an argument is null</exception>
         public static void ImportTaxonomy(ExtendedProjectData projectData, string json)
         {
-            if (projectData == null)
-                throw new ArgumentNullException(nameof(projectData));
-            if (json == null)
-                throw new ArgumentNullException(nameof(json));
-            var jsonTaxonomies = JsonSerializer.Deserialize<SimTaxonomySerializable[]>(json);
-            ImportTaxonomy(projectData, jsonTaxonomies);
+            ImportTaxonomy(projectData, json, out _);
         }
 
+
+        /// <summary>
+        /// Imports a taxonomy JSON serializables into the project
+        /// </summary>
+        /// <param name="projectData">The project data</param>
+        /// <param name="jsonTaxonomies">The JSON taxonomies</param>
+        /// <param name="statistics">Returns the number of taxonomies imported and the number of taxonomies that were skipped</param>
+        /// <exception cref="ArgumentNullException">If an argument is null</exception>
+        public static void ImportTaxonomy(ExtendedProjectData projectData, IEnumerable<SimTaxonomySerializable> jsonTaxonomies,
+            out (int loadedCount, int skippedCount) statistics)
+        {
+            if (projectData == null)
+                throw new ArgumentNullException(nameof(projectData));
+            if (jsonTaxonomies == null)
+                throw new ArgumentNullException(nameof(jsonTaxonomies));
+            var taxonomies = jsonTaxonomies.Select(x => x.ToSimTaxonomy());
+            int importCount = taxonomies.Count();
+
+            var tmpProjectData = new ExtendedProjectData(projectData.SynchronizationContext, projectData.DispatcherTimerFactory);
+            tmpProjectData.Taxonomies.AddRange(taxonomies);
+            var existing = projectData.Taxonomies.Import(tmpProjectData.Taxonomies);
+
+            statistics = (importCount - existing.Count, existing.Count);
+        }
         /// <summary>
         /// Imports a taxonomy JSON serializables into the project
         /// </summary>
@@ -58,15 +107,9 @@ namespace SIMULTAN.Serializer.JSON
         /// <exception cref="ArgumentNullException">If an argument is null</exception>
         public static void ImportTaxonomy(ExtendedProjectData projectData, IEnumerable<SimTaxonomySerializable> jsonTaxonomies)
         {
-            if (projectData == null)
-                throw new ArgumentNullException(nameof(projectData));
-            if (jsonTaxonomies == null)
-                throw new ArgumentNullException(nameof(jsonTaxonomies));
-            var taxonomies = jsonTaxonomies.Select(x => x.ToSimTaxonomy());
-            var tmpProjectData = new ExtendedProjectData(projectData.SynchronizationContext, projectData.DispatcherTimerFactory);
-            tmpProjectData.Taxonomies.AddRange(taxonomies);
-            projectData.Taxonomies.Import(tmpProjectData.Taxonomies);
+            ImportTaxonomy(projectData, jsonTaxonomies, out _);
         }
+
 
         /// <summary>
         /// Imports and merges the Taxonomies with the existing ones.
