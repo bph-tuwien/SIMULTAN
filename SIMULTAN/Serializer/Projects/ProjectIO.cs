@@ -340,7 +340,7 @@ namespace SIMULTAN.Serializer.Projects
         }
 
         /// <summary>
-        /// Imports and merges taxonomies form a txdf file.
+        /// Imports and merges taxonomies from a txdf file.
         /// For details on merging see <see cref="SimTaxonomyCollection.Merge(SimTaxonomyCollection, out List{ValueTuple{SimTaxonomy, SimTaxonomy}}, bool, bool)"/>
         /// </summary>
         /// <param name="file">The file to import</param>

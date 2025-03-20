@@ -123,7 +123,7 @@ namespace SIMULTAN.Serializer.JSON
         /// <summary>
         /// Exports taxonomies to a JSON file
         /// </summary>
-        /// <param name="taxonomies">The taxonomies export</param>
+        /// <param name="taxonomies">The taxonomies to export</param>
         /// <param name="file">The file to export to</param>
         public static void ExportTaxonomy(IEnumerable<SimTaxonomy> taxonomies, FileInfo file)
         {
@@ -135,7 +135,7 @@ namespace SIMULTAN.Serializer.JSON
         /// <summary>
         /// Exports taxonomies to a JSON string
         /// </summary>
-        /// <param name="taxonomies">The taxonomies export</param>
+        /// <param name="taxonomies">The taxonomies to export</param>
         /// <returns>The taxonomy JSON</returns>
         public static string ExportTaxonomy(IEnumerable<SimTaxonomy> taxonomies)
         {
@@ -145,7 +145,7 @@ namespace SIMULTAN.Serializer.JSON
         /// <summary>
         /// Exports taxonomies to a JSON string
         /// </summary>
-        /// <param name="taxonomies">The taxonomies export</param>
+        /// <param name="taxonomies">The taxonomies to export</param>
         /// <returns>The taxonomy JSON</returns>
         public static string ExportTaxonomy(IEnumerable<SimTaxonomySerializable> taxonomies)
         {
