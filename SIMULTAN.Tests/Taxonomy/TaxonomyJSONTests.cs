@@ -321,7 +321,6 @@ public class TaxonomyJSONTests : BaseProjectTest
         e1.Children.Add(e2);
         tax.Entries.Add(e3);
 
-        // TODO FIx
         var iTax = projectData.Taxonomies.FirstOrDefault(x => x.Key == tax.Key);
         Assert.IsNotNull(iTax);
         Assert.IsTrue(tax.IsIdentical(iTax));
@@ -378,7 +377,6 @@ public class TaxonomyJSONTests : BaseProjectTest
     {
         Load();
         var file = new FileInfo(Path.Combine(TestFilesDir, TestFileWithLoc));
-        JSONImporter.ImportTaxonomy(projectData, file);
 
         var tax = TaxonomyUtils.GenerateTaxonomy(0, "A", localesAlt);
         var e1 = TaxonomyUtils.GenerateEntry(0, "A", localesAlt);
@@ -388,10 +386,9 @@ public class TaxonomyJSONTests : BaseProjectTest
         e1.Children.Add(e2);
         tax.Entries.Add(e3);
 
-        // TODO FIx
-        var iTax = projectData.Taxonomies.FirstOrDefault(x => x.Key == tax.Key);
-        Assert.IsNotNull(iTax);
-        Assert.IsTrue(tax.IsIdentical(iTax));
+        var json = JSONExporter.ExportTaxonomy(new[] { tax });
+
+        AssertUtil.AreEqualMultiline(File.ReadAllText(file.FullName), json);
     }
     #endregion
 }

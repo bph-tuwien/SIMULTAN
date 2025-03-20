@@ -83,6 +83,7 @@ namespace SIMULTAN.Serializer.JSON
             };
 
             bool supportsInvariantCulture = false;
+            // if no supported languages, add invariant culture
             if (SupportedLanguages == null || !SupportedLanguages.Any())
             {
                 taxonomy.Languages.Add(CultureInfo.InvariantCulture);
@@ -95,6 +96,11 @@ namespace SIMULTAN.Serializer.JSON
                 foreach (var sl in SupportedLanguages)
                 {
                     taxonomy.Languages.Add(new CultureInfo(sl));
+                    // if invariant is in supported language set name and desc too as it may not be in localization section
+                    if (sl == "")
+                    {
+                        taxonomy.Localization.SetLanguage(CultureInfo.InvariantCulture, Name, Description);
+                    }
                 }
             }
 
