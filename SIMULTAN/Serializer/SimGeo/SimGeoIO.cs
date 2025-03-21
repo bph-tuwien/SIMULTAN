@@ -1451,7 +1451,9 @@ namespace SIMULTAN.Serializer.SimGeo
                 Normals = normals,
                 Indices = indices,
             };
-            ReadColor(sr, proxy.Color, ref row, ref column, "Proxy Color");
+
+            DerivedColor x = new DerivedColor(SimColors.Red);
+            ReadColor(sr, x, ref row, ref column, "Proxy Color");
 
             geometries.Add(proxy.Id, proxy);
         }
