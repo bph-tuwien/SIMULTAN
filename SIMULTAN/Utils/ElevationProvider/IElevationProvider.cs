@@ -68,5 +68,10 @@ namespace SIMULTAN.Utils.ElevationProvider
         /// </summary>
         /// <returns>The localized display name of this Provider implementation.</returns>
         string GetDisplayName();
+
+        /// <summary>
+        /// Clears the cache if one is used.
+        /// </summary>
+        void ClearCache();
     }
 }
