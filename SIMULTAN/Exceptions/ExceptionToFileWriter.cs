@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -41,6 +42,8 @@ namespace SIMULTAN.Exceptions
 
                     sw.WriteLine("{0}", DateTime.Now.ToLongDateString());
                     sw.WriteLine("{0}\n", DateTime.Now.ToLongTimeString());
+                    sw.WriteLine("Application Version {0}", Assembly.GetEntryAssembly().GetName().Version);
+                    sw.WriteLine("Simultan DataModel Version {0}", typeof(ExceptionToFileWriter).Assembly.GetName().Version);
 
                     WriteException(sw, e);
 
