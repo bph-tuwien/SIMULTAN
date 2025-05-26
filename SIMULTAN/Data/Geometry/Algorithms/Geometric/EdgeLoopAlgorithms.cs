@@ -313,6 +313,8 @@ namespace SIMULTAN.Data.Geometry
         public static GeometricRelation Contains(List<Edge> loop, List<Edge> other, SimMatrix3D mapping, double tolerance, double zTolerance)
         {
             var verts = EdgeAlgorithms.OrderedVertexLoop(loop);
+            if (!verts.Any())
+                throw new ArgumentException("loop does not form a closed loop");
             var polygon = verts.Select(x => mapping.Transform(x.Position)).ToList();
             var otherVerts = EdgeAlgorithms.OrderedVertexLoop(other);
 

@@ -51,7 +51,9 @@ namespace SIMULTAN.Data.Geometry
 
             try
             {
-                var matrix = FaceToXZMapping(face, orientation);
+                var (success, matrix) = FaceToXZMapping(face, orientation);
+                if (!success)
+                    return (new List<SimPoint3D>(), new List<SimVector3D>(), new List<int>());
 
                 (var poly, var holes, var additionalFaces) = BoundaryAndHoles(face, matrix);
 
@@ -118,7 +120,9 @@ namespace SIMULTAN.Data.Geometry
 
             try
             {
-                var matrix = FaceToXZMapping(boundary, normal);
+                var (success, matrix) = FaceToXZMapping(boundary, normal);
+                if (!success) // return if we did not find a mapping
+                    return (new List<SimPoint3D>(), new List<SimVector3D>(), new List<int>());
                 var poly = boundary.Select(x => matrix.Transform(x)).ToList();
 
                 CleanupPolygon(poly, GeometrySettings.Instance.Tolerance);
@@ -194,12 +198,12 @@ namespace SIMULTAN.Data.Geometry
         /// <param name="face">The face which should be mapped</param>
         /// <param name="orientation">Defines which side of the Face will point upwards</param>
         /// <returns>A rotation matrix</returns>
-        private static SimMatrix3D FaceToXZMapping(Face face, GeometricOrientation orientation)
+        private static (bool success, SimMatrix3D matrix) FaceToXZMapping(Face face, GeometricOrientation orientation)
         {
             return FaceToXZMapping(face.Boundary.Edges.Select(x => x.StartVertex.Position).ToList(), face.Normal * (int)face.Orientation);
         }
 
-        private static SimMatrix3D FaceToXZMapping(List<SimPoint3D> boundary, SimVector3D normal)
+        private static (bool success, SimMatrix3D matrix) FaceToXZMapping(List<SimPoint3D> boundary, SimVector3D normal)
         {
             var basey = normal;
 
@@ -212,18 +216,18 @@ namespace SIMULTAN.Data.Geometry
                 idx++;
             }
             if (basex.LengthSquared < GeometrySettings.Instance.ToleranceSquared)
-                throw new ArgumentException("Face does not define a plane (no non-zero length edges)");
+                return (false, new SimMatrix3D());
 
             basex.Normalize();
 
             var basez = SimVector3D.CrossProduct(basex, basey);
 
-            return new SimMatrix3D(
+            return (true, new SimMatrix3D(
                 basex.X, basey.X, basez.X, 0.0,
                 basex.Y, basey.Y, basez.Y, 0.0,
                 basex.Z, basey.Z, basez.Z, 0.0,
                 0.0, 0.0, 0.0, 1.0
-                );
+                ));
         }
 
         /// <summary>

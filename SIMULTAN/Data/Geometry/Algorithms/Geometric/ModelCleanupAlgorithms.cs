@@ -12,6 +12,8 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Windows;
 
 namespace SIMULTAN.Data.Geometry
@@ -508,6 +510,10 @@ namespace SIMULTAN.Data.Geometry
                                 {
                                     tracker?.Track(ivertex, jvertex);
                                     j--;
+                                }
+                                else
+                                {
+                                    Debug.WriteLine("Could not merge vertices: " + ivertex + " and " + jvertex);
                                 }
                             }
                         }
@@ -1086,6 +1092,115 @@ namespace SIMULTAN.Data.Geometry
         }
 
         /// <summary>
+        /// Removes all triangles with area smaller than the areaTolerance. Only triangles will be removed, not polygons.
+        /// Will not merge triangles that are not adjacent to other faces.
+        /// </summary>
+        /// <param name="model">The model</param>
+        /// <param name="areaTolerance">The area tolerance.</param>
+        /// <param name="faceGrid">The face grid</param>
+        /// <param name="backgroundInfo">The background info</param>
+        /// <returns>The number of removed triangles</returns>
+        public static int RemoveZeroAreaTriangles(GeometryModelData model, double areaTolerance, ref AABBGrid faceGrid,
+            IBackgroundAlgorithmInfo backgroundInfo = null)
+        {
+            if (backgroundInfo == null)
+                backgroundInfo = new EmptyBackgroundAlgorithmInfo();
+            backgroundInfo.ReportProgress(0);
+
+            if (faceGrid == null)
+            {
+                var aabbs = model.Faces.Select(x => new AABB(x));
+                var range = AABB.Merge(aabbs);
+                faceGrid = new AABBGrid(range.min, range.max, new SimVector3D(5, 5, 5));
+                faceGrid.AddRange(aabbs);
+            }
+
+            model.StartBatchOperation();
+
+            var triangles = model.Faces.Where(x =>
+            {
+                if (x.Boundary.Edges.Count != 3)
+                    return false;
+                var area = EdgeLoopAlgorithms.Area(x.Boundary);
+                if (double.IsNaN(area) || area < areaTolerance)
+                    return true;
+                return false;
+            }).ToHashSet();
+
+            if (backgroundInfo.CancellationPending)
+            {
+                model.EndBatchOperation();
+                backgroundInfo.Cancel = true;
+                return 0;
+            }
+
+            var all = new List<(Face face, PEdge longest, Vertex middle)>();
+            foreach (var tris in triangles)
+            {
+                if (backgroundInfo.CancellationPending)
+                {
+                    model.EndBatchOperation();
+                    backgroundInfo.Cancel = true;
+                    return 0;
+                }
+                var longestEdge = tris.Boundary.Edges.OrderByDescending(x => (x.StartVertex.Position - x.EndVertex.Position).LengthSquared).First();
+                var middleVert = tris.Boundary.Edges.SelectMany(x => x.Edge.Vertices).First(x => !longestEdge.Edge.Vertices.Contains(x));
+                all.Add((tris, longestEdge, middleVert));
+            }
+
+            int removedCount = 0;
+            var allCount = (double)all.Count;
+
+            while (all.Any())
+            {
+                if (backgroundInfo.CancellationPending)
+                {
+                    model.EndBatchOperation();
+                    backgroundInfo.Cancel = true;
+                    return 0;
+                }
+                // find next tris where longest edge only has non zero area faces adjacent
+                var current = all.FindIndex(x =>
+                {
+                    return x.longest.Edge.PEdges.Where(y => y != x.longest).All(y => y.Parent.Faces.All(f =>
+                    {
+                        if (triangles.Contains(f))
+                            return false;
+                        var area = FaceAlgorithms.Area(f);
+                        if (double.IsNaN(area) || area < areaTolerance)
+                            return false;
+                        return true;
+                    }));
+                });
+                if (current < 0) // could not find one
+                    break;
+                var (faceToRemove, longest, middle) = all[current];
+                all.RemoveAt(current);
+                backgroundInfo.ReportProgress((int)(100.0 * (1.0 - (double)all.Count / allCount)));
+
+                var otherFaces = longest.Edge.PEdges.Where(x => x != longest).Select(x => x.Parent);
+                var otherEdges = faceToRemove.Boundary.Edges.Where(x => x.Edge != longest.Edge);
+                foreach (var face in otherFaces)
+                {
+                    face.Edges.RemoveWhere(x => x.Edge == longest.Edge);
+                    face.Edges.AddRange(otherEdges.Select(x => new PEdge(x.Edge, GeometricOrientation.Undefined, face)));
+                }
+                RemoveDegeneratedFace(model, faceToRemove, faceGrid);
+                longest.Edge.RemoveFromModel();
+                longest.Edge.Vertices.ForEach(x => x.Edges.Remove(longest.Edge));
+                longest.Edge.PEdges.ForEach(x => x.Parent.Edges.RemoveWhere(pe => pe.Edge == x.Edge));
+
+                removedCount++;
+            }
+
+            model.EndBatchOperation();
+
+            backgroundInfo.ReportProgress(100);
+
+            return removedCount;
+        }
+
+        /// <summary>
         /// Removes faces with 0 size
         /// </summary>
         /// <param name="model">The model in which the faces should be removed</param>
@@ -1111,9 +1226,14 @@ namespace SIMULTAN.Data.Geometry
 
             //Search all degenerated faces
             List<Face> degenFaces = new List<Face>(model.Faces.Where(x =>
-                x.Boundary.Edges.Count < 3 ||
-                EdgeLoopAlgorithms.Area(x.Boundary) < areaTolerance)
-                );
+            {
+                if (x.Boundary.Edges.Count < 3)
+                    return true;
+                var area = EdgeLoopAlgorithms.Area(x.Boundary);
+                if (double.IsNaN(area) || area < areaTolerance)
+                    return true;
+                return false;
+            }));
             //We could add several more constraints here, but this one should do it for now
 
             backgroundInfo.ReportProgress(50);
@@ -1824,7 +1944,7 @@ namespace SIMULTAN.Data.Geometry
 
                 cycles = FindCycles(currentEdges, vertex2D);
 
-                if (!cycles.Any()) //Cycle detection failed, abort here
+                if (!cycles.Any(x => x.signedArea > 0)) //Cycle detection failed, abort here
                     return null;
 
                 var boundaryCycle = cycles.First(x => x.signedArea > 0);
@@ -2178,6 +2298,371 @@ namespace SIMULTAN.Data.Geometry
 
             modelData.EndBatchOperation();
             return removedLoops;
+        }
+
+        /// <summary>
+        /// Merges all connected faces that are coplanar (normal angle cosine below coplanarTolerance) and reprojects their vertices to the common plane.
+        /// </summary>
+        /// <param name="faces">The faces to check</param>
+        /// <param name="cleanupTolerance">The cleanup tolerance</param>
+        /// <param name="coplanarTolerance">The coplanar tolerance</param>
+        /// <param name="ignoreOppositeNormals">If opposing normals should also count as coplanar</param>
+        /// <param name="reprojectPoints">If the vertices of the faces should be reprojected to the best fitting plane of the merged face vertices to make them completely planar</param>
+        /// <param name="backgroundInfo">The background info</param>
+        /// <returns>The number of merged faces</returns>
+        /// <exception cref="ArgumentNullException">If the faces are null</exception>
+        /// <exception cref="ArgumentException">If the faces are in multiple models</exception>
+        /// <exception cref="Exception">If an error occurred</exception>
+        public static int MergeCoplanarFaces(IEnumerable<Face> faces, double cleanupTolerance, double coplanarTolerance, bool reprojectPoints = false, bool ignoreOppositeNormals = false,
+            IBackgroundAlgorithmInfo backgroundInfo = null)
+        {
+            if (faces == null)
+                throw new ArgumentNullException(nameof(faces));
+            if (!faces.Any())
+                return 0;
+            var models = faces.Select(x => x.ModelGeometry).ToHashSet();
+            if (models.Count > 1)
+                throw new ArgumentException("Faces cannot be in multiple models");
+            var model = models.First();
+            if (backgroundInfo == null)
+                backgroundInfo = new EmptyBackgroundAlgorithmInfo();
+
+            model.StartBatchOperation();
+            backgroundInfo.ReportProgress(0);
+
+            var mergeCount = 0;
+
+            // Merge coplanar faces
+            var allFaces = faces.ToList();
+            var allCount = (double)allFaces.Count;
+            while (allFaces.Any())
+            {
+                if (backgroundInfo.CancellationPending)
+                {
+                    model.EndBatchOperation();
+                    backgroundInfo.Cancel = true;
+                    return 0;
+                }
+                var startFace = allFaces[0];
+                allFaces.RemoveAt(0);
+                backgroundInfo.ReportProgress((int)(100.0 * (1.0 - allFaces.Count / allCount)));
+                var facesToProcess = new Queue<Face>();
+                facesToProcess.Enqueue(startFace);
+                var mergeGroup = new HashSet<Face>() { startFace };
+                while (facesToProcess.Any())
+                {
+                    var currentFace = facesToProcess.Dequeue();
+                    foreach (var pEdge in currentFace.Boundary.Edges.Where(pe => pe.Edge.PEdges.Count == 2))
+                    {
+                        if (backgroundInfo.CancellationPending)
+                        {
+                            model.EndBatchOperation();
+                            backgroundInfo.Cancel = true;
+                            return 0;
+                        }
+                        var otherPedge = pEdge.Edge.PEdges.First(x => x != pEdge);
+                        var otherFace = otherPedge.Parent.Faces.Find(x => x.Boundary == otherPedge.Parent);
+                        if (otherFace == null) // happens on holes
+                            continue;
+                        if (mergeGroup.Contains(otherFace))
+                            continue;
+                        // check if coplanar
+                        var normal = currentFace.Normal;
+                        var othernNormal = otherFace.Normal;
+                        bool isCoplanar = !ignoreOppositeNormals ?
+                            SimVector3D.DotProduct(normal, othernNormal) > 1.0 - coplanarTolerance :
+                            Math.Abs(SimVector3D.DotProduct(normal, othernNormal)) > 1.0 - coplanarTolerance;
+
+                        if (isCoplanar)
+                        {
+                            mergeGroup.Add(otherFace);
+                            facesToProcess.Enqueue(otherFace);
+                            allFaces.Remove(otherFace);
+                        }
+                    }
+                }
+
+                if (mergeGroup.Count > 1)
+                {
+                    if (backgroundInfo.CancellationPending)
+                    {
+                        model.EndBatchOperation();
+                        backgroundInfo.Cancel = true;
+                        return 0;
+                    }
+                    var couldMerge = true;
+                    var allVertices = new HashSet<Vertex>(); // for reprojection
+                    var edges = mergeGroup.SelectMany(f => f.Boundary.Edges.Select(x => x));
+                    var toDissolve = edges.Select(x => x.Edge)
+                        .Where(e => e.PEdges.Count == 2 && e.PEdges.TrueForAll(pe => mergeGroup.Contains(pe.Parent.Faces.Find(el => el.Boundary == pe.Parent))))
+                        .ToHashSet();
+                    var remainder = edges.Select(x => x.Edge).Distinct().Except(toDissolve).ToList();
+                    if (!remainder.Any())
+                        throw new Exception("Too many faces to merge found, check the tolerances");
+
+                    var allHoles = mergeGroup.SelectMany(x => x.Holes).ToList();
+                    foreach (var hole in allHoles)
+                    {
+                        hole.Faces.Where(x => x.Boundary != hole).ToArray()
+                            .ForEach(f =>
+                            {
+                                f.Holes.Remove(hole);
+                                hole.Faces.Remove(f);
+                            });
+                        hole.Edges.SelectMany(x => x.Edge.Vertices).ForEach(x => allVertices.Add(x));
+                    }
+
+                    var firstEdge = remainder[0];
+                    var pedge = edges.First(x => x.Edge == firstEdge);
+                    var (remIsLoop, remLoop) = EdgeAlgorithms.OrderLoop(remainder, firstEdge, pedge.Orientation);
+                    if (remIsLoop)
+                    {
+                        var newLoop = new EdgeLoop(remainder.First().Layer, "Merged loop {0}", remLoop, firstEdge, pedge.Orientation);
+                        var newFace = new Face(newLoop.Layer, "Merged Face {0}", newLoop)
+                        {
+                            Color = new DerivedColor(startFace.Color),
+                        };
+                        newLoop.Edges.SelectMany(x => x.Edge.Vertices).ForEach(x => allVertices.Add(x));
+
+                        allHoles.ForEach(x => newFace.Holes.Add(x));
+                        mergeGroup.ForEach(DeleteFaceClean);
+                        // because we only merge faces with a single adjacent one, we only have to consider volumes of the start face as they will be the same for all
+                        startFace.PFaces.ForEach(x => x.Volume.AddFace(newFace));
+                    }
+                    else
+                    {
+                        if (backgroundInfo.CancellationPending)
+                        {
+                            model.EndBatchOperation();
+                            backgroundInfo.Cancel = true;
+                            return 0;
+                        }
+                        // find loop that contains all others
+                        var mapping = FaceAlgorithms.FaceToXYMapping(startFace);
+                        var connected = DetectionAlgorithms.FindConnectedEdgeGroups(remainder);
+                        var loops = connected.Select(x => EdgeAlgorithms.OrderLoop(x)).ToList();
+                        List<Edge> foundLoop = null;
+                        for (int i = 0; i < loops.Count; i++)
+                        {
+                            var (isloop, loop) = loops[i];
+                            if (isloop)
+                            {
+                                // check if all other edges are contained in that loop
+                                var containsAll = true;
+                                for (int j = 0; j < connected.Length && containsAll; j++)
+                                {
+                                    if (backgroundInfo.CancellationPending)
+                                    {
+                                        model.EndBatchOperation();
+                                        backgroundInfo.Cancel = true;
+                                        return 0;
+                                    }
+                                    if (i != j) // using normal for loops so we can easily exclude the same loop from check
+                                        containsAll &= EdgeLoopAlgorithms.Contains(loop, connected[j], mapping, cleanupTolerance, cleanupTolerance) == GeometricRelation.Contained;
+                                }
+                                if (containsAll)
+                                    foundLoop = loop;
+                            }
+                        }
+
+                        if (foundLoop != null)
+                        {
+                            var newLoop = new EdgeLoop(remainder.First().Layer, "Merged loop {0}", foundLoop);
+                            var newFace = new Face(newLoop.Layer, "Merged Face {0}", newLoop)
+                            {
+                                Color = new DerivedColor(startFace.Color),
+                            };
+                            newLoop.Edges.SelectMany(x => x.Edge.Vertices).ForEach(x => allVertices.Add(x));
+                            allHoles.ForEach(x => newFace.Holes.Add(x));
+                            // add other found loops as holes
+                            foreach (var (isloop, loop) in loops)
+                            {
+                                if (isloop && loop != foundLoop)
+                                {
+                                    newFace.Holes.Add(new EdgeLoop(newFace.Layer, "Hole {0}", loop));
+                                }
+                            }
+
+                            mergeGroup.ForEach(DeleteFaceClean);
+                            // because we only merge faces with a single adjacent one, we only have to consider volumes of the start face as they will be the same for all
+                            startFace.PFaces.ForEach(x => x.Volume.AddFace(newFace));
+                        }
+                        else
+                        {
+                            couldMerge = false;
+                        }
+                    }
+
+                    // reproject vertices to best fitting plane so they are really coplanar
+                    if (couldMerge)
+                    {
+                        if (backgroundInfo.CancellationPending)
+                        {
+                            model.EndBatchOperation();
+                            backgroundInfo.Cancel = true;
+                            return 0;
+                        }
+                        mergeCount += mergeGroup.Count;
+
+                        // reproject vertices if enabled
+                        if (reprojectPoints)
+                        {
+                            var bestPlane = DetectionAlgorithms.BestFittingPlane(allVertices.Select(x => x.Position));
+                            foreach (var vertex in allVertices)
+                            {
+                                var dist = SimVector3D.DotProduct(bestPlane.normal, (SimVector3D)vertex.Position) + bestPlane.d;
+                                vertex.Position = vertex.Position - dist * bestPlane.normal;
+                            }
+                        }
+                    }
+                }
+            }
+
+            backgroundInfo.ReportProgress(100);
+            model.EndBatchOperation();
+            return mergeCount;
+        }
+
+        /// <summary>
+        /// Merges all collinear edges that only connect to one other edge.
+        /// </summary>
+        /// <param name="edges">The edges to check</param>
+        /// <param name="cleanupTolerance">The tolerance</param>
+        /// <param name="backgroundInfo">The background info</param>
+        /// <returns>The number of merged edges</returns>
+        /// <exception cref="ArgumentNullException">If the edges are null</exception>
+        /// <exception cref="ArgumentException">If the edges are in multiple models</exception>
+        public static int MergeCollinearEdges(IEnumerable<Edge> edges, double cleanupTolerance, IBackgroundAlgorithmInfo backgroundInfo = null)
+        {
+            if (edges == null)
+                throw new ArgumentNullException(nameof(edges));
+            if (!edges.Any())
+                return 0;
+            var models = edges.Select(x => x.ModelGeometry).ToHashSet();
+            if (models.Count > 1)
+                throw new ArgumentException("Edges cannot be in multiple models");
+            var model = models.First();
+            if (backgroundInfo == null)
+                backgroundInfo = new EmptyBackgroundAlgorithmInfo();
+
+            model.StartBatchOperation();
+            backgroundInfo.ReportProgress(0);
+
+            var mergeCount = 0;
+
+            var allEdges = edges.ToHashSet();
+            var allCount = (double)allEdges.Count;
+            while (allEdges.Any())
+            {
+                var firstEdge = allEdges.First();
+                allEdges.Remove(firstEdge);
+                backgroundInfo.ReportProgress((int)(100.0 * (1.0 - allEdges.Count / allCount)));
+                if (backgroundInfo.CancellationPending)
+                {
+                    model.EndBatchOperation();
+                    backgroundInfo.Cancel = true;
+                    return -1;
+                }
+
+                var edgesToProcess = new Queue<Edge>();
+                edgesToProcess.Enqueue(firstEdge);
+                var mergeGroup = new HashSet<Edge>() { firstEdge };
+                var toDissolve = new HashSet<Vertex>();
+                while (edgesToProcess.Any())
+                {
+                    var currentEdge = edgesToProcess.Dequeue();
+                    foreach (var vertex in currentEdge.Vertices)
+                    {
+                        if (backgroundInfo.CancellationPending)
+                        {
+                            model.EndBatchOperation();
+                            backgroundInfo.Cancel = true;
+                            return -1;
+                        }
+                        if (vertex.Edges.Count != 2)
+                            continue;
+                        var otherEdge = vertex.Edges.First(e => e != currentEdge);
+                        if (mergeGroup.Contains(otherEdge))
+                            continue;
+                        var curDir = vertex.Position - currentEdge.Vertices.First(x => x != vertex).Position;
+                        curDir.Normalize();
+                        var otherDir = otherEdge.Vertices.First(x => x != vertex).Position - vertex.Position;
+                        otherDir.Normalize();
+                        var dot = SimVector3D.DotProduct(curDir, otherDir);
+                        if (dot < 1.0 - cleanupTolerance)
+                            continue;
+                        edgesToProcess.Enqueue(otherEdge);
+                        mergeGroup.Add(otherEdge);
+                        allEdges.Remove(otherEdge);
+                        toDissolve.Add(vertex);
+                    }
+                }
+
+                if (mergeGroup.Count > 1)
+                {
+                    if (backgroundInfo.CancellationPending)
+                    {
+                        model.EndBatchOperation();
+                        backgroundInfo.Cancel = true;
+                        return -1;
+                    }
+                    var startEnd = mergeGroup.SelectMany(x => x.Vertices).Distinct().Except(toDissolve).ToList();
+                    if (startEnd.Count != 2) // tolerance too high, probably found a loop
+                        continue;
+                    var faces = new HashSet<Face>();
+                    mergeGroup.ForEach(e => e.AdjacentFaces(ref faces));
+                    // find all edgeloops where we need to remove which edges
+                    var toRemove = mergeGroup.SelectMany(x => x.PEdges.Select(pe => pe.Parent)).Distinct()
+                        .ToDictionary(x => x, x => x.Edges.Where(e => mergeGroup.Contains(e.Edge)).ToHashSet());
+                    if (toRemove.Any(x => x.Key is EdgeLoop && x.Key.Edges.Count - x.Value.Count < 3)) // check if we would destroy an EdgeLoop
+                        continue;
+
+                    var newEdge = new Edge(mergeGroup.First().Layer, "Merged Edge {0}", startEnd)
+                    {
+                        Color = new DerivedColor(mergeGroup.First().Color),
+                    };
+                    startEnd.ForEach(x => x.Edges.Add(newEdge));
+                    mergeGroup.ForEach(DeleteEdgeClean);
+                    // update face boundaries
+                    foreach (var (parentContainer, remEdges) in toRemove)
+                    {
+                        remEdges.ForEach(x => parentContainer.Edges.Remove(x));
+                        parentContainer.Edges.Add(new PEdge(newEdge, GeometricOrientation.Undefined, parentContainer));
+                    }
+                }
+            }
+
+            backgroundInfo.ReportProgress(100);
+            model.EndBatchOperation();
+            return mergeCount;
+        }
+        private static void DeleteFaceClean(Face face)
+        {
+            var boundary = face.Boundary;
+            face.PFaces.ForEach(pf => pf.Volume.Faces.Remove(pf));
+            face.RemoveFromModel();
+            if (!boundary.Faces.Any())
+            {
+                var edges = boundary.Edges;
+                boundary.RemoveFromModel();
+                foreach (var edge in edges)
+                {
+                    if (!edge.Edge.PEdges.Any())
+                    {
+                        DeleteEdgeClean(edge.Edge);
+                    }
+                }
+            }
+        }
+        private static void DeleteEdgeClean(Edge edge)
+        {
+            var vertices = edge.Vertices;
+            edge.RemoveFromModel();
+            foreach (var vertex in vertices)
+            {
+                if (!vertex.Edges.Any())
+                    vertex.RemoveFromModel();
+            }
         }
 
         #endregion

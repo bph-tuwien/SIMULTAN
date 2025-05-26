@@ -72,7 +72,7 @@ namespace SIMULTAN.Data.Geometry
         /// <param name="boundary">The boundary loop</param>
         /// <param name="orientation">Orientation of the face</param>
         /// <param name="holes">A list of hole loops</param>
-        public Face(Layer layer, string nameFormat, EdgeLoop boundary, GeometricOrientation orientation = GeometricOrientation.Forward, 
+        public Face(Layer layer, string nameFormat, EdgeLoop boundary, GeometricOrientation orientation = GeometricOrientation.Forward,
             IEnumerable<EdgeLoop> holes = null)
             : this(layer != null ? layer.Model.GetFreeId() : ulong.MaxValue, layer, nameFormat, boundary, orientation, holes) { }
         /// <summary>
@@ -190,7 +190,13 @@ namespace SIMULTAN.Data.Geometry
         public override bool RemoveFromModel()
         {
             this.Boundary.Faces.Remove(this);
-            this.Holes.ForEach(x => x.Faces.Remove(this));
+            this.Boundary.GeometryChanged -= Loop_GeometryChanged;
+            this.Boundary.TopologyChanged -= Loop_TopologyChanged;
+            this.Holes.ForEach(x =>
+            {
+                x.Faces.Remove(this);
+                x.GeometryChanged -= Loop_GeometryChanged;
+            });
 
             bool result = this.ModelGeometry.Faces.Remove(this);
             return result;

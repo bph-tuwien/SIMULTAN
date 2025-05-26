@@ -88,7 +88,7 @@ namespace SIMULTAN.Data.Geometry
         /// <param name="edges">A list of edges in this loop</param>
         /// <param name="baseEdge">Base edge of the loop. Needs to be part of the edges of this loop</param>
         /// <param name="baseEdgeOrientation">Orientation of the baseEdge. Defines the starting orientation for ordering the PEdges</param>
-        public EdgeLoop(Layer layer, string nameFormat, IEnumerable<Edge> edges, Edge baseEdge = null, 
+        public EdgeLoop(Layer layer, string nameFormat, IEnumerable<Edge> edges, Edge baseEdge = null,
             GeometricOrientation baseEdgeOrientation = GeometricOrientation.Undefined)
             : this(layer != null ? layer.Model.GetFreeId() : ulong.MaxValue, layer, nameFormat, edges, baseEdge, baseEdgeOrientation) { }
         /// <summary>
@@ -100,7 +100,7 @@ namespace SIMULTAN.Data.Geometry
         /// <param name="edges">A list of edges in this loop</param>
         /// <param name="baseEdge">Base edge of the loop. Needs to be part of the edges of this loop</param>
         /// <param name="baseEdgeOrientation">Orientation of the baseEdge. Defines the starting orientation for ordering the PEdges</param>
-        public EdgeLoop(ulong id, Layer layer, string nameFormat, IEnumerable<Edge> edges, 
+        public EdgeLoop(ulong id, Layer layer, string nameFormat, IEnumerable<Edge> edges,
             Edge baseEdge = null, GeometricOrientation baseEdgeOrientation = GeometricOrientation.Undefined)
             : base(id, layer)
         {
@@ -125,7 +125,7 @@ namespace SIMULTAN.Data.Geometry
             }
 
             //Sort edges such that they form a closed loop
-            (bool isloop, var orderedEdges) = EdgeAlgorithms.OrderLoop(edges);
+            (bool isloop, var orderedEdges) = baseEdge == null ? EdgeAlgorithms.OrderLoop(edges) : EdgeAlgorithms.OrderLoop(edges, baseEdge, baseEdgeOrientation);
             if (!isloop)
             {
                 throw new ArgumentException("The edges do not form a closed loop");
@@ -212,7 +212,7 @@ namespace SIMULTAN.Data.Geometry
 
             //Invalid BaseEdge -> guess new base edge
             if (!baseEdgeExists)
-            {                
+            {
                 GuessBaseEdge();
             }
         }
@@ -261,7 +261,12 @@ namespace SIMULTAN.Data.Geometry
         public override bool RemoveFromModel()
         {
             bool result = this.ModelGeometry.EdgeLoops.Remove(this);
-            this.Edges.ForEach(x => x.Edge.PEdges.Remove(x));
+            this.Edges.ForEach(x =>
+            {
+                x.Edge.GeometryChanged -= Edge_GeometryChanged;
+                x.Edge.TopologyChanged -= Edge_TopologyChanged;
+                x.Edge.PEdges.Remove(x);
+            });
 
             return result;
         }
