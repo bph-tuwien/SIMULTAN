@@ -120,7 +120,7 @@ namespace SIMULTAN.Data.SitePlanner
         /// <returns>true if specified file is contained in this project</returns>
         public bool ContainsGeometryModel(ResourceFileEntry simgeo)
         {
-            return this.Buildings.FirstOrDefault(x => x.GeometryModelRes.ResourceFile.Key == simgeo.Key) != null;
+            return this.Buildings.Any(x => x.GeometryModelRes.ResourceFile.Key == simgeo.Key);
         }
 
         /// <summary>
