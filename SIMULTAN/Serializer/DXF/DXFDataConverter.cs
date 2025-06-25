@@ -488,7 +488,7 @@ namespace SIMULTAN.Serializer.DXF
             { '@', SimInfoFlow.Mixed },
             { '\"', SimInfoFlow.FromReference },
             { '&', SimInfoFlow.Automatic },
-            { '/', SimInfoFlow.FromExternal },
+            { '/', SimInfoFlow.SyncedWithExternal },
         };
         /// <inheritdoc />
         public string ToDXFString(SimInfoFlow value)

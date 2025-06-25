@@ -145,7 +145,12 @@ namespace SIMULTAN.Data.Geometry
         {
             bool result = this.ModelGeometry.Volumes.Remove(this);
 
-            this.Faces.ForEach(x => x.Face.PFaces.Remove(x));
+            this.Faces.ForEach(x =>
+            {
+                x.Face.PFaces.Remove(x);
+                x.Face.GeometryChanged -= Face_GeometryChanged;
+                x.Face.TopologyChanged -= Face_TopologyChanged;
+            });
 
             return result;
         }

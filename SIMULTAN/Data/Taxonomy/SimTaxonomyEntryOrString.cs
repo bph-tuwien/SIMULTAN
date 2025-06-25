@@ -139,5 +139,16 @@ namespace SIMULTAN.Data.Taxonomy
             return hashCode;
         }
 
+        /// <summary>
+        /// Returns True when a TaxonomyEntry is present and the keys match.
+        /// Always returns False when the <see cref="Text"/> is used instead of the <see cref="TaxonomyEntryReference"/>.
+        /// </summary>
+        /// <param name="taxonomyKey">The key of the taxonomy</param>
+        /// <param name="taxonomyEntryKey">The key of the taxonomy entry</param>
+        /// <returns>True when a TaxonomyEntry is present and the keys match.</returns>
+        public bool Matches(string taxonomyKey, string taxonomyEntryKey)
+        {
+            return HasTaxonomyEntry && TaxonomyEntryReference.Matches(taxonomyKey, taxonomyEntryKey);
+        }
     }
 }

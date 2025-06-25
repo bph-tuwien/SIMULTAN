@@ -220,6 +220,15 @@ namespace SIMULTAN.Data.Geometry
                 throw new Exception("Model has never been added");
         }
 
+        /// <summary>
+        /// Clears alls loaded geometry models irregardless of reference count. Only call this on project close for cleanup.
+        /// </summary>
+        internal void Clear()
+        {
+            geometryModels.Clear();
+            RemoveUnusedModels();
+        }
+
         private void RemoveUnusedModels()
         {
             Dictionary<ResourceFileEntry, GeometryModel> allInUse = new Dictionary<ResourceFileEntry, GeometryModel>();

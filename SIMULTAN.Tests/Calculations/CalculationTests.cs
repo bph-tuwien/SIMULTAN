@@ -950,5 +950,100 @@ namespace SIMULTAN.Tests.Calculations
         }
 
         #endregion
+
+        #region Instance Calculations
+
+        [TestMethod]
+        public void InstanceCalculation()
+        {
+            LoadProject(calculationProject);
+
+            var comp = projectData.Components.First(x => x.Name == "InstanceCalculation");
+            var in1 = (SimDoubleParameter)comp.Parameters.First(x => x.NameTaxonomyEntry.TextOrKey == "in1");
+            var in2 = (SimDoubleParameter)comp.Parameters.First(x => x.NameTaxonomyEntry.TextOrKey == "in2");
+            var out1 = (SimDoubleParameter)comp.Parameters.First(x => x.NameTaxonomyEntry.TextOrKey == "out1");
+
+            var inst1 = comp.Instances.First(x => x.Name == "Instance 1");
+            var inst2 = comp.Instances.First(x => x.Name == "Instance 2");
+            var inst3 = comp.Instances.First(x => x.Name == "Instance 3");
+
+            var calc = new SimCalculation("a+b", "",
+                new Dictionary<string, SimDoubleParameter> { { "a", in1 }, { "b", in2 } },
+                new Dictionary<string, SimDoubleParameter> { { "out1", out1 } }
+                );
+
+            calc.Calculate(projectData.ValueManager);
+
+            AssertUtil.AssertDoubleEqual(3.0, out1.Value);
+
+            AssertUtil.AssertDoubleEqual(4.0, (double)inst1.InstanceParameterValuesPersistent[out1]);
+            AssertUtil.AssertDoubleEqual(4.5, (double)inst2.InstanceParameterValuesPersistent[out1]);
+            AssertUtil.AssertDoubleEqual(3.5, (double)inst3.InstanceParameterValuesPersistent[out1]);
+
+        }
+
+        [TestMethod]
+        public void InstanceCalculationAlwaysPropagate()
+        {
+            LoadProject(calculationProject);
+
+            var comp = projectData.Components.First(x => x.Name == "InstanceCalculation");
+            var in1 = (SimDoubleParameter)comp.Parameters.First(x => x.NameTaxonomyEntry.TextOrKey == "in1");
+            var in2 = (SimDoubleParameter)comp.Parameters.First(x => x.NameTaxonomyEntry.TextOrKey == "in2");
+            var out1 = (SimDoubleParameter)comp.Parameters.First(x => x.NameTaxonomyEntry.TextOrKey == "out1");
+
+            out1.InstancePropagationMode = SimParameterInstancePropagation.PropagateAlways;
+
+            var inst1 = comp.Instances.First(x => x.Name == "Instance 1");
+            var inst2 = comp.Instances.First(x => x.Name == "Instance 2");
+            var inst3 = comp.Instances.First(x => x.Name == "Instance 3");
+
+            var calc = new SimCalculation("a+b", "",
+                new Dictionary<string, SimDoubleParameter> { { "a", in1 }, { "b", in2 } },
+                new Dictionary<string, SimDoubleParameter> { { "out1", out1 } }
+                );
+
+            calc.Calculate(projectData.ValueManager);
+
+            AssertUtil.AssertDoubleEqual(3.0, out1.Value);
+
+            AssertUtil.AssertDoubleEqual(3.0, (double)inst1.InstanceParameterValuesPersistent[out1]);
+            AssertUtil.AssertDoubleEqual(3.0, (double)inst2.InstanceParameterValuesPersistent[out1]);
+            AssertUtil.AssertDoubleEqual(3.0, (double)inst3.InstanceParameterValuesPersistent[out1]);
+
+        }
+
+        [TestMethod]
+        public void InstanceCalculationChildInput()
+        {
+            LoadProject(calculationProject);
+
+            var comp = projectData.Components.First(x => x.Name == "InstanceCalculation");
+            var in1 = (SimDoubleParameter)comp.Parameters.First(x => x.NameTaxonomyEntry.TextOrKey == "in1");
+            var in2 = (SimDoubleParameter)comp.Parameters.First(x => x.NameTaxonomyEntry.TextOrKey == "in2");
+            var out1 = (SimDoubleParameter)comp.Parameters.First(x => x.NameTaxonomyEntry.TextOrKey == "out1");
+            var child = comp.Components.First().Component;
+            var in3 = (SimDoubleParameter)child.Parameters.First(x => x.NameTaxonomyEntry.TextOrKey == "in3");
+
+            var inst1 = comp.Instances.First(x => x.Name == "Instance 1");
+            var inst2 = comp.Instances.First(x => x.Name == "Instance 2");
+            var inst3 = comp.Instances.First(x => x.Name == "Instance 3");
+
+            var calc = new SimCalculation("a+b", "",
+                new Dictionary<string, SimDoubleParameter> { { "a", in1 }, { "b", in3 } },
+                new Dictionary<string, SimDoubleParameter> { { "out1", out1 } }
+                );
+
+            calc.Calculate(projectData.ValueManager);
+
+            AssertUtil.AssertDoubleEqual(16.0, out1.Value);
+
+            AssertUtil.AssertDoubleEqual(16.5, (double)inst1.InstanceParameterValuesPersistent[out1]);
+            AssertUtil.AssertDoubleEqual(16.75, (double)inst2.InstanceParameterValuesPersistent[out1]);
+            AssertUtil.AssertDoubleEqual(16.25, (double)inst3.InstanceParameterValuesPersistent[out1]);
+
+        }
+
+        #endregion
     }
 }

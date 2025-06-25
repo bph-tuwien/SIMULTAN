@@ -562,6 +562,7 @@ namespace SIMULTAN.Data.Geometry
 
             return false;
         }
+
         /// <summary>
         /// Returns the BaseGeometry with the given ID
         /// </summary>

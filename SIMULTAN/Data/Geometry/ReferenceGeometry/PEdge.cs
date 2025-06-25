@@ -41,7 +41,7 @@ namespace SIMULTAN.Data.Geometry
         /// </summary>
         public PEdge Next { get; set; }
         /// <summary>
-        /// The previouse pedge in the container (might be null)
+        /// The previous pedge in the container (might be null)
         /// </summary>
         public PEdge Prev { get; set; }
 

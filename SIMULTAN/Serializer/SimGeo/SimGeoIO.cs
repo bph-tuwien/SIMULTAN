@@ -79,7 +79,7 @@ namespace SIMULTAN.Serializer.SimGeo
         /// <summary>
         /// The current version of the SimGeo Format
         /// </summary>
-        public static int SimGeoVersion => 15;
+        public static int SimGeoVersion => 16;
 
         /// <summary>
         /// Describes which format should be written
@@ -563,6 +563,8 @@ namespace SIMULTAN.Serializer.SimGeo
         private static void WriteEdgeLoopPlaintext(StreamWriter sw, EdgeLoop loop)
         {
             WriteBaseGeometryPlaintext(sw, loop);
+            WriteNumberPlaintext<UInt64>(sw, loop.BaseEdge.Id);
+            WriteOrientationPlaintext(sw, loop.BaseEdgeOrientation);
             WriteNumberPlaintext<Int32>(sw, loop.Edges.Count);
 
             foreach (var e in loop.Edges)
@@ -587,7 +589,6 @@ namespace SIMULTAN.Serializer.SimGeo
             WriteBaseGeometryPlaintext(sw, face);
 
             WriteNumberPlaintext<UInt64>(sw, face.Boundary.Id);
-            WriteNumberPlaintext<UInt64>(sw, face.BaseEdge.Id);
 
             WriteNumberPlaintext<Int32>(sw, face.Holes.Count);
             foreach (var h in face.Holes)
@@ -1143,6 +1144,14 @@ namespace SIMULTAN.Serializer.SimGeo
                 layers.Add(bg.layer, destroyedLayer);
             }
 
+            ulong baseEdgeId = 0;
+            GeometricOrientation baseEdgeOrientation = GeometricOrientation.Undefined;
+            if (versionNumber >= 16)
+            {
+                baseEdgeId = ReadNumber<UInt64>(sr, ref row, ref column, "EdgeLoop - BaseEdge ID");
+                baseEdgeOrientation = ReadOrientation(sr, ref row, ref column, "EdgeLoop - BaseEdge Orientation");
+            }
+
             var edgeCount = ReadNumber<Int32>(sr, ref row, ref column, "EdgeLoop - Edge Count");
             List<Edge> edges = new List<Edge>();
             edges.Capacity = edgeCount;
@@ -1180,7 +1189,16 @@ namespace SIMULTAN.Serializer.SimGeo
                 }
             }
 
-            EdgeLoop loop = new EdgeLoop(bg.id, layers[bg.layer], bg.name, edges)
+            Edge baseEdge = null;
+            if (versionNumber < 16)
+            {
+                baseEdge = edges[0];
+                baseEdgeOrientation = GeometricOrientation.Forward;
+            }
+            else
+                baseEdge = (Edge)geometries[baseEdgeId];
+
+            EdgeLoop loop = new EdgeLoop(bg.id, layers[bg.layer], bg.name, edges, baseEdge, baseEdgeOrientation)
             {
                 IsVisible = bg.isVisible,
             };
@@ -1250,7 +1268,7 @@ namespace SIMULTAN.Serializer.SimGeo
             }
 
             Edge baseEdge = null;
-            if (versionNumber >= 15)
+            if (versionNumber >= 15 && versionNumber < 16) //BaseEdge was added in 15, moved to EdgeLoop in 16
             {
                 var baseEdgeId = ReadNumber<UInt64>(sr, ref row, ref column, "Face BaseEdge ID");
                 baseEdge = (Edge)geometries[baseEdgeId];
@@ -1272,8 +1290,16 @@ namespace SIMULTAN.Serializer.SimGeo
                 holes.Add((EdgeLoop)geometries[hid]);
             }
 
+            var boundary = (EdgeLoop)geometries[boundaryId];
+            if (versionNumber >= 15 && versionNumber < 16) //BaseEdge was added in 15, moved to EdgeLoop in 16
+            {
+                var originalOrientation = boundary.Edges.First(x => x.Edge == baseEdge).Orientation;
+                boundary.BaseEdge = baseEdge;
+                boundary.BaseEdgeOrientation = originalOrientation;
+            }
+
             GeometricOrientation orient = ReadOrientation(sr, ref row, ref column, "Face Orientation");
-            Face f = new Face(bg.id, layers[bg.layer], bg.name, (EdgeLoop)geometries[boundaryId], orient, holes, baseEdge)
+            Face f = new Face(bg.id, layers[bg.layer], bg.name, boundary, orient, holes)
             {
                 IsVisible = bg.isVisible,
             };
@@ -1425,7 +1451,9 @@ namespace SIMULTAN.Serializer.SimGeo
                 Normals = normals,
                 Indices = indices,
             };
-            ReadColor(sr, proxy.Color, ref row, ref column, "Proxy Color");
+
+            DerivedColor x = new DerivedColor(SimColors.Red);
+            ReadColor(sr, x, ref row, ref column, "Proxy Color");
 
             geometries.Add(proxy.Id, proxy);
         }
