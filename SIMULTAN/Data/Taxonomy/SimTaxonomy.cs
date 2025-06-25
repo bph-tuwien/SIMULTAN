@@ -1,8 +1,11 @@
 ﻿using SIMULTAN.Exceptions;
+using SIMULTAN.Utils;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.Linq;
+using System.Security;
 
 namespace SIMULTAN.Data.Taxonomy
 {
@@ -186,7 +189,7 @@ namespace SIMULTAN.Data.Taxonomy
 
             if (IsKeyInUse(entry.Key))
             {
-                throw new Exception("Taxonomy entry key is already in use");
+                throw new Exception($"Taxonomy entry key '{entry.Key}' is already in use in taxonomy '{Key}'");
             }
             allEntries.Add(entry.Key, entry);
         }
@@ -294,6 +297,141 @@ namespace SIMULTAN.Data.Taxonomy
         public void NotifyLocalizationChanged()
         {
             Factory?.NotifyTaxonomyEntryPropertyChanged(this, nameof(Localization));
+        }
+
+        /// <summary>
+        /// Merges this taxonomy with another taxonomy. (add or update)
+        /// All entries get the localization merged with the other taxonomies entries (update or add).
+        /// Hierarchy will be adjusted to that of the other taxonomy. 
+        /// Missing entries (that were in original but not in other)
+        /// will stay at their original locations in the hierarchy.
+        /// If deleteMissing is set to true, all missing entries in the other taxonomy and missing localizations 
+        /// will be removed from the original.
+        /// </summary>
+        /// <param name="other">The other taxonomy to merge into this.</param>
+        /// <param name="deleteMissing">If missing entries and localizations should be removed</param>
+        /// <exception cref="Exception">If taxonomy was changed while merging and cause and error.</exception>
+        public void MergeWith(SimTaxonomy other, bool deleteMissing = false)
+        {
+            if (Key != other.Key)
+                throw new ArgumentException("Merging taxonomies do not have the same key");
+
+            // check if merge was in progress on the outside so we don't accidentally turn off the flag at the end
+            bool wasMergeInProgress = false;
+            bool wasOtherMergeInProgress = false;
+            if (Factory != null)
+            {
+                wasMergeInProgress = Factory.IsMergeInProgress;
+                Factory.IsMergeInProgress = true;
+            }
+            if (other.Factory != null)
+            {
+                wasOtherMergeInProgress = other.Factory.IsMergeInProgress;
+                other.Factory.IsMergeInProgress = true;
+            }
+
+            // Merge languages and localization
+            foreach (var loc in other.Localization.Entries.Keys)
+            {
+                if (!Languages.Contains(loc))
+                    Languages.Add(loc);
+            }
+            if (deleteMissing)
+            {
+                foreach (var loc in Localization.Entries.Keys.Except(other.Localization.Entries.Keys))
+                {
+                    Languages.Remove(loc);
+                }
+            }
+            Localization.MergeWith(other.Localization, deleteMissing);
+
+            var updatedKeys = new HashSet<string>();
+            var entryStack = new Stack<SimTaxonomyEntry>();
+            other.Entries.ForEach(x => entryStack.Push(x));
+            // first traversal updates existing entries 
+            while (entryStack.Any())
+            {
+                var entry = entryStack.Pop();
+                if (updatedKeys.Contains(entry.Key)) // already handled
+                    continue;
+                updatedKeys.Add(entry.Key);
+
+                // found existing entry, update and check hierarchy
+                if (allEntries.TryGetValue(entry.Key, out var existing))
+                {
+                    existing.Localization.MergeWith(entry.Localization);
+                    // not same hierarchy (both parents are not null or both keys don't match)
+                    if (existing.Parent?.Key != entry.Parent?.Key)
+                    {
+                        // move to taxonomy directly
+                        if (entry.Parent == null)
+                        {
+                            Entries.Add(existing);
+                        }
+                        // move to other child entry
+                        else
+                        {
+                            if (allEntries.TryGetValue(entry.Parent.Key, out var parent))
+                            {
+                                parent.Children.Add(existing);
+                            }
+                            else
+                            {
+                                // parent must have been migrated already
+                                throw new Exception("Taxonomy changed while migrating.");
+                            }
+                        }
+                    }
+                }
+                // is a new entry
+                else
+                {
+                    // create a copy of the entry instead of reusing it, is simpler here (would also break traversal probably)
+                    var newEntry = new SimTaxonomyEntry(entry.Key);
+                    newEntry.Localization.MergeWith(entry.Localization);
+                    // add to taxonomy
+                    if (entry.Parent == null)
+                    {
+                        Entries.Add(newEntry);
+                    }
+                    // find and add to parent entry
+                    else
+                    {
+                        if (allEntries.TryGetValue(entry.Parent.Key, out var parent))
+                        {
+                            parent.Children.Add(newEntry);
+                        }
+                        else
+                        {
+                            // parent must have been migrated already
+                            throw new Exception("Taxonomy changed while migrating.");
+                        }
+                    }
+                }
+                entry.Children.ForEach(x => entryStack.Push(x));
+            }
+
+            // delete all missing entries
+            if (deleteMissing)
+            {
+                var missingKeys = allEntries.Keys.Except(other.allEntries.Keys);
+                foreach (var missing in missingKeys)
+                {
+                    // may have been removed by other parent entry
+                    if (allEntries.TryGetValue(missing, out var entry))
+                    {
+                        if (entry.Parent == null)
+                            entry.Taxonomy?.Entries.Remove(entry);
+                        else
+                            entry.Parent.Children.Remove(entry);
+                    }
+                }
+            }
+
+            if (Factory != null && !wasMergeInProgress)
+                Factory.IsMergeInProgress = false;
+            if (other.Factory != null && !wasOtherMergeInProgress)
+                other.Factory.IsMergeInProgress = false;
         }
     }
 }

@@ -1,9 +1,11 @@
 ﻿using SIMULTAN.Data.MultiValues;
 using SIMULTAN.Utils;
+using SIMULTAN.Utils.Collections;
 using Sprache;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Drawing.Text;
 using System.Linq;
 using System.Linq.Expressions;
 
@@ -722,6 +724,15 @@ namespace SIMULTAN.Data.Components
 
         private void ExecuteAsNormalCalculation(Dictionary<SimDoubleParameter, SimDoubleParameter> parameterReplacements)
         {
+            ExecuteOnComponent(parameterReplacements);
+
+            if (parameterReplacements == null) //Only execute on instance when no parameter overrides are present
+            {
+                ExecuteOnInstances();
+            }
+        }
+        private void ExecuteOnComponent(Dictionary<SimDoubleParameter, SimDoubleParameter> parameterReplacements)
+        { 
             double result = double.NaN;
 
             if (State == SimCalculationValidity.Valid)
@@ -761,6 +772,66 @@ namespace SIMULTAN.Data.Components
                 if (param.ValueSource != null)
                     param.ValueSource = null;
                 param.Value = result;
+            }
+        }
+
+        private void ExecuteOnInstances()
+        {
+            //Collect all instances for which calculations are necessary
+            MultiDictionary<SimComponentInstance, SimBaseParameter> outputParameters = new MultiDictionary<SimComponentInstance, SimBaseParameter>();
+
+            foreach (var outputParam in this.ReturnParams.Where(x => x.Value != null))
+            {
+                foreach (var outputInstance in outputParam.Value.Component.Instances)
+                {
+                    if (outputParam.Value.InstancePropagationMode == SimParameterInstancePropagation.PropagateNever ||
+                        (outputParam.Value.InstancePropagationMode == SimParameterInstancePropagation.PropagateIfInstance && outputInstance.PropagateParameterChanges))
+                    {
+                        outputParameters.Add(outputInstance, outputParam.Value);
+                    }
+                }
+            }
+
+            foreach (var output in outputParameters)
+            {
+                double result = double.NaN;
+
+                if (State == SimCalculationValidity.Valid)
+                {
+                    //Collect input data
+                    Dictionary<string, double> params_in_value = new Dictionary<string, double>();
+                    foreach (var entry in this.InputParams.Where(x => x.Value != null))
+                    {
+                        var inputParam = entry.Value;
+                        var inputParamValue = inputParam.Value;
+
+                        if (inputParam.Component == output.Key.Component)
+                            inputParamValue = (double)output.Key.InstanceParameterValuesPersistent[inputParam];
+
+                        params_in_value.Add(entry.Key, inputParamValue);
+                    }
+
+                    try
+                    {
+                        if (expressionFunction != null)
+                        {
+                            result = expressionFunction(params_in_value);
+                        }
+                    }
+                    catch
+                    {
+                        result = double.NaN;
+                    }
+                }
+
+                // assign the return value to all return parameters
+                foreach (var param in output.Value)
+                {
+                    if (param.ValueSource != null)
+                        param.ValueSource = null;
+
+                    output.Key.InstanceParameterValuesPersistent[param] = result;
+                }
             }
         }
 

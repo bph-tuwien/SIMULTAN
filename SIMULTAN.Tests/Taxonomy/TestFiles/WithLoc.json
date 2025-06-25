@@ -1,0 +1,78 @@
+﻿[
+  {
+    "Key": "taxkey 0",
+    "Name": "en tax 0 name A",
+    "Description": "en tax 0 desc A",
+    "SupportedLanguages": [
+      "en",
+      "de"
+    ],
+    "Localization": [
+      {
+        "CultureCode": "en",
+        "Name": "en tax 0 name A",
+        "Description": "en tax 0 desc A"
+      },
+      {
+        "CultureCode": "de",
+        "Name": "de tax 0 name A",
+        "Description": "de tax 0 desc A"
+      }
+    ],
+    "Children": [
+      {
+        "Key": "entrykey 0",
+        "Name": "en entry 0 name A",
+        "Description": "en entry 0 desc A",
+        "Localization": [
+          {
+            "CultureCode": "en",
+            "Name": "en entry 0 name A",
+            "Description": "en entry 0 desc A"
+          },
+          {
+            "CultureCode": "de",
+            "Name": "de entry 0 name A",
+            "Description": "de entry 0 desc A"
+          }
+        ],
+        "Children": [
+          {
+            "Key": "entrykey 1",
+            "Name": "en entry 1 name A",
+            "Description": "en entry 1 desc A",
+            "Localization": [
+              {
+                "CultureCode": "en",
+                "Name": "en entry 1 name A",
+                "Description": "en entry 1 desc A"
+              },
+              {
+                "CultureCode": "de",
+                "Name": "de entry 1 name A",
+                "Description": "de entry 1 desc A"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "Key": "entrykey 2",
+        "Name": "en entry 2 name A",
+        "Description": "en entry 2 desc A",
+        "Localization": [
+          {
+            "CultureCode": "en",
+            "Name": "en entry 2 name A",
+            "Description": "en entry 2 desc A"
+          },
+          {
+            "CultureCode": "de",
+            "Name": "de entry 2 name A",
+            "Description": "de entry 2 desc A"
+          }
+        ]
+      }
+    ]
+  }
+]

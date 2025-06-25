@@ -1,5 +1,6 @@
 ﻿using SIMULTAN;
 using SIMULTAN.Data.SimMath;
+using SIMULTAN.Utils;
 using SIMULTAN.Utils.UndoRedo;
 using System;
 using System.Collections.Generic;
@@ -210,19 +211,43 @@ namespace SIMULTAN.Data.Geometry
         /// <returns>A bool indicating if the edges form a closed loop. The list contains the ordered edges or null when they don't form a loop.</returns>
         public static (bool isLoop, List<Edge> loop) OrderLoop(IEnumerable<Edge> edges)
         {
+            if (edges == null)
+                throw new ArgumentNullException(nameof(edges));
+            if (!edges.Any())
+                throw new ArgumentException("Input has to contain at least one edge");
+            var first = edges.First();
+            return OrderLoop(edges, first, GeometricOrientation.Forward);
+        }
+
+        /// <summary>
+        /// Tries to order the edges such that they form a closed loop by following the edges.
+        /// Self intersecting loops will return false.
+        /// Loop will be ordered starting with the startEdge and moving in the direction of the startVertex.
+        /// </summary>
+        /// <param name="edges">The edges</param>
+        /// <param name="startEdge">Edge to start with</param>
+        /// <param name="startEdgeOrientation">Orientation of the start edge</param>
+        /// <returns>A bool indicating if the edges form a closed loop. The list contains the ordered edges or null when they don't form a loop.</returns>
+        public static (bool isLoop, List<Edge> loop) OrderLoop(IEnumerable<Edge> edges, Edge startEdge, GeometricOrientation startEdgeOrientation)
+        {
             //Error handling
             if (edges == null)
                 throw new ArgumentNullException(nameof(edges));
+            if (startEdge == null)
+                throw new ArgumentNullException(nameof(startEdge));
 
-            List<Edge> notHandled = new List<Edge>(edges);
+            var notHandled = new List<Edge>(edges);
             if (notHandled.Count == 0)
                 throw new ArgumentException("Input has to contain at least one edge");
 
             //Run around loop
-            List<Edge> loop = new List<Edge>();
-            var startVertex = notHandled[0].Vertices[0];
-            var currentVertex = startVertex;
-            var addedVertices = new HashSet<Vertex>();
+            var loop = new List<Edge>();
+            var currentVertex = startEdgeOrientation == GeometricOrientation.Forward ? startEdge.Vertices[1] : startEdge.Vertices[0];
+            var lastVertex = startEdge.Vertices.First(x => x != currentVertex);
+            var addedVertices = new HashSet<Vertex> { currentVertex };
+
+            loop.Add(startEdge);
+            notHandled.Remove(startEdge);
 
             while (notHandled.Count > 0)
             {
@@ -242,29 +267,58 @@ namespace SIMULTAN.Data.Geometry
             }
 
             //Check if last point == first point
-            if (startVertex != currentVertex)
+            if (currentVertex != lastVertex)
                 return (false, null);
 
             return (true, loop);
         }
         /// <summary>
         /// Tries to order the pedges such that they form a closed loop by following the edges.
+        /// Self intersecting loops will return false.
         /// </summary>
         /// <param name="edges">The PEdges</param>
         /// <returns>A bool indicating if the edges form a closed loop. The list contains the ordered edges or null when they don't form a loop.</returns>
         public static (bool isLoop, List<PEdge> loop) OrderLoop(IEnumerable<PEdge> edges)
         {
+            if (edges == null)
+                throw new ArgumentNullException(nameof(edges));
+            if (!edges.Any())
+                throw new ArgumentException("Input has to contain at least one edge");
+
+            return OrderLoop(edges, edges.First().Edge, GeometricOrientation.Forward);
+        }
+
+        /// <summary>
+        /// Tries to order the pedges such that they form a closed loop by following the edges.
+        /// Starts with a startEdge and moves in startEdgeOrientation direction
+        /// </summary>
+        /// <param name="edges">The PEdges</param>
+        /// <param name="startEdge">The first Edge to handle</param>
+        /// <param name="startEdgeOrientation">The orientation in which the first edge should be handled</param>
+        /// <returns>A bool indicating if the edges form a closed loop. The list contains the ordered edges or null when they don't form a loop.</returns>
+        public static (bool isLoop, List<PEdge> loop) OrderLoop(IEnumerable<PEdge> edges, Edge startEdge, GeometricOrientation startEdgeOrientation)
+        {
             //Error handling
             if (edges == null)
                 throw new ArgumentNullException(nameof(edges));
+            if (startEdge == null)
+                throw new ArgumentNullException(nameof(startEdge));
+            if (startEdgeOrientation == GeometricOrientation.Undefined)
+                throw new ArgumentException("Undefined orientation is not supported");
 
             var notHandled = new List<PEdge>(edges);
             if (notHandled.Count == 0)
                 throw new ArgumentException("Input has to contain at least one edge");
 
             //Run around loop
-            var loop = new List<PEdge>();
-            var currentVertex = notHandled[0].Edge.Vertices[0];
+            var loop = new List<PEdge>() { };
+            var currentVertex = startEdgeOrientation == GeometricOrientation.Forward ? startEdge.Vertices[1] : startEdge.Vertices[0];
+            var lastVertex = startEdge.Vertices.First(x => x != currentVertex);
+            var addedVertices = new HashSet<Vertex> { currentVertex };
+
+            var startEdgeIdx = notHandled.FindIndex(x => x.Edge == startEdge);
+            loop.Add(notHandled[startEdgeIdx]);
+            notHandled.RemoveAt(startEdgeIdx);
 
             while (notHandled.Count > 0)
             {
@@ -278,7 +332,14 @@ namespace SIMULTAN.Data.Geometry
                 loop.Add(nextEdge);
 
                 currentVertex = nextEdge.Edge.Vertices.First(x => x != currentVertex);
+                if (addedVertices.Contains(currentVertex))
+                    return (false, null);
+                addedVertices.Add(currentVertex);
             }
+
+            // check if we reached the last vertex of the first edge (if is closed)
+            if (currentVertex != lastVertex)
+                return (false, null);
 
             return (true, loop);
         }
@@ -314,7 +375,9 @@ namespace SIMULTAN.Data.Geometry
 
             while (hedges.Count > 0)
             {
-                var nextEdge = currentVertex.Edges.FirstOrDefault(x => hedges.Contains(x));
+                // This is faster but could be wrong if vertices are not consistent
+                // var nextEdge = currentVertex.Edges.FirstOrDefault(x => hedges.Contains(x));
+                var nextEdge = hedges.FirstOrDefault(x => x.Vertices.Contains(currentVertex));
 
                 if (nextEdge == null)
                     return new List<Vertex>();

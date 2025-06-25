@@ -199,7 +199,6 @@ namespace SIMULTAN.Data.Components
             if (this.Target == null)
             {
                 this.Target = this.Owner.Factory.ProjectData.IdGenerator.GetById<SimComponent>(this.TargetId);
-                Debug.WriteLine("Search: {0}; Found {1}", this.TargetId, this.Target != null);
             }
         }
 

@@ -1661,7 +1661,7 @@ namespace SIMULTAN.Tests.IO
             {
                 using (DXFStreamWriter writer = new DXFStreamWriter(stream, true))
                 {
-                    ExcelDxfIO.WriteFilterValue(SimInfoFlow.FromExternal, writer);
+                    ExcelDxfIO.WriteFilterValue(SimInfoFlow.SyncedWithExternal, writer);
                 }
 
                 stream.Flush();

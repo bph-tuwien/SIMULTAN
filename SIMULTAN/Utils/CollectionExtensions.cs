@@ -1,11 +1,11 @@
-﻿using System;
+﻿using SIMULTAN.Data.SimMath;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Linq;
-using SIMULTAN.Data.SimMath;
 
 namespace SIMULTAN.Utils
 {
@@ -57,6 +57,20 @@ namespace SIMULTAN.Utils
         {
             foreach (var element in collection)
                 action(element);
+        }
+
+
+
+        /// <summary>
+        /// Adds a range of items to the collection
+        /// </summary>
+        /// <typeparam name="T">Item type</typeparam>
+        /// <param name="collection">The collection</param>
+        /// <param name="items">The items to add</param>
+        public static void AddRange<T>(this HashSet<T> collection, IEnumerable<T> items)
+        {
+            foreach (var i in items)
+                collection.Add(i);
         }
 
         /// <summary>

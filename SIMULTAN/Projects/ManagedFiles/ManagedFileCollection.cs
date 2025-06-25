@@ -426,6 +426,7 @@ namespace SIMULTAN.Projects.ManagedFiles
 
                 // pre 3. unload the links for linked resources (happens in 3 anyway...)
                 Project.AllProjectDataManagers.AssetManager.ResetLinks();
+                Project.AllProjectDataManagers.GeometryModels.Clear();
 
                 // 3. unload the components and networks
                 Project.AllProjectDataManagers.Components.Clear();
