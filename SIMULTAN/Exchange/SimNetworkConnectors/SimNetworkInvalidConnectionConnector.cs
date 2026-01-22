@@ -7,9 +7,9 @@ namespace SIMULTAN.Exchange.SimNetworkConnectors
 {
 
     /// <summary>
-    ///Represents a <see cref="Data.SimNetworks.SimNetworkConnector"/> as a <see cref="Polyline"/>
+    ///Represents a <see cref="Data.SimNetworks.SimNetworkConnection"/> as a <see cref="Polyline"/>
     /// </summary>
-    internal class SimNetworkInvalidConnectorConnector : BaseSimnetworkGeometryConnector
+    internal class SimNetworkInvalidConnectionConnector : BaseSimNetworkGeometryConnector
     {
 
         /// <summary>
@@ -20,10 +20,10 @@ namespace SIMULTAN.Exchange.SimNetworkConnectors
 
         internal SimNetworkGeometryModelConnector ModelConnector { get; }
 
-        internal List<SimNetworkConnector> SimNetworkConnectors { get; }
+        internal List<SimNetworkConnection> SimNetworkConnections { get; }
 
         /// <inheritdoc />
-        internal override IEnumerable<ISimNetworkElement> SimNetworkElement => SimNetworkConnectors;
+        internal override IEnumerable<ISimNetworkElement> SimNetworkElement => SimNetworkConnections;
 
         /// <inheritdoc />
 
@@ -34,27 +34,27 @@ namespace SIMULTAN.Exchange.SimNetworkConnectors
         /// Initializes a new instance of the SimNetworkConnectorConnector class
         /// </summary>
         /// <param name="geometry">The polyline representing the connection between two ports</param>
-        /// <param name="connectors">SimNetworkConnectors representing the connection </param>
+        /// <param name="connections"><see cref="SimNetworkConnection"/>s representing the connection </param>
         /// <param name="modelConnector">The main connector class for a SimNetwork which handles all the connections between network and geometry</param>
-        internal SimNetworkInvalidConnectorConnector(Polyline geometry, List<SimNetworkConnector> connectors, SimNetworkGeometryModelConnector modelConnector)
+        internal SimNetworkInvalidConnectionConnector(Polyline geometry, List<SimNetworkConnection> connections, SimNetworkGeometryModelConnector modelConnector)
         {
             if (geometry == null)
                 throw new ArgumentNullException(nameof(geometry));
-            if (connectors == null)
-                throw new ArgumentNullException(nameof(connectors));
+            if (connections == null)
+                throw new ArgumentNullException(nameof(connections));
             if (modelConnector == null)
                 throw new ArgumentNullException(nameof(modelConnector));
 
             this.Polyline = geometry;
-            this.SimNetworkConnectors = connectors;
+            this.SimNetworkConnections = connections;
             //this.SimNetworkConnector.PropertyChanged += this.Connector_PropertyChanged;
 
 
             this.ModelConnector = modelConnector;
 
-            foreach (var connector in connectors)
+            foreach (var connection in connections)
             {
-                connector.RepresentationReference = new Data.GeometricReference(Polyline.ModelGeometry.Model.File.Key, Polyline.Id);
+                connection.RepresentationReference = new Data.GeometricReference(Polyline.ModelGeometry.Model.File.Key, Polyline.Id);
             }
             this.ModelConnector = modelConnector;
             UpdateColor();
@@ -80,9 +80,10 @@ namespace SIMULTAN.Exchange.SimNetworkConnectors
         {
         }
         /// <inheritdoc />
-        public override void Dispose()
+        protected override void Dispose(bool disposing)
         {
             // this.SimNetworkConnector.PropertyChanged -= Connector_PropertyChanged;
+            base.Dispose(disposing);
         }
 
         #endregion

@@ -1,10 +1,12 @@
-﻿using SIMULTAN.Data.Assets;
+﻿using SIMULTAN.Data;
+using SIMULTAN.Data.Assets;
 using SIMULTAN.Data.Components;
 using SIMULTAN.Data.Users;
 using SIMULTAN.Exceptions;
 using SIMULTAN.Projects;
 using SIMULTAN.Projects.ManagedFiles;
 using SIMULTAN.Serializer.DXF;
+using SIMULTAN.Serializer.GRDXF;
 using SIMULTAN.Serializer.PPATH;
 using SIMULTAN.Utils;
 using SIMULTAN.Utils.Files;
@@ -477,7 +479,7 @@ namespace SIMULTAN.Serializer.Projects
             DirectoryOperations.DirectoryCopy(unpack_dir_orig.FullName, unpack_dir_copy.FullName, true);
 
             // 4. modify the metadata
-            Guid location_new = Guid.Empty;
+            Guid newId = Guid.Empty;
             var files_copy = unpack_dir_copy.GetFiles();
             FileInfo md_file_copy = files_copy.FirstOrDefault(x => string.Equals(x.Extension, ParamStructFileExtensions.FILE_EXT_META, StringComparison.InvariantCultureIgnoreCase));
             if (md_file_copy != null)
@@ -485,12 +487,39 @@ namespace SIMULTAN.Serializer.Projects
                 HierarchicProjectMetaData md = ProjectIO.OpenMetaDataFile(md_file_copy);
                 HierarchicProjectMetaData md_copy = new HierarchicProjectMetaData(md); //Creates a new Id
                 ProjectIO.SaveMetaDataFile(md_file_copy, md_copy);
-                location_new = md_copy.ProjectId;
+                newId = md_copy.ProjectId;
             }
 
             // ~5a. unpack the values file in order to change the locations of the values
-            FileInfo value_file_copy = files_copy.FirstOrDefault(x => string.Equals(x.Extension, ParamStructFileExtensions.FILE_EXT_MULTIVALUES, StringComparison.InvariantCultureIgnoreCase));
-            FileInfo comp_file_copy = files_copy.FirstOrDefault(x => string.Equals(x.Extension, ParamStructFileExtensions.FILE_EXT_COMPONENTS, StringComparison.InvariantCultureIgnoreCase));
+            //FileInfo value_file_copy = files_copy.FirstOrDefault(x => string.Equals(x.Extension, ParamStructFileExtensions.FILE_EXT_MULTIVALUES, StringComparison.InvariantCultureIgnoreCase));
+            //FileInfo comp_file_copy = files_copy.FirstOrDefault(x => string.Equals(x.Extension, ParamStructFileExtensions.FILE_EXT_COMPONENTS, StringComparison.InvariantCultureIgnoreCase));
+            FileInfo geometryRelationsFileCopy = files_copy.FirstOrDefault(x => string.Equals(x.Extension, ParamStructFileExtensions.FILE_EXT_GEOMETRY_RELATIONS, StringComparison.InvariantCultureIgnoreCase));
+
+            // migrate geometry relations global ids to the new id
+            if (geometryRelationsFileCopy != null)
+            {
+                // load the relations
+                var projectData = new ExtendedProjectData();
+                projectData.Project = cproject;
+                var pid = _project.GlobalID;
+                var parser = new DXFParserInfo(pid, projectData);
+                SimGeometryRelationsDxfIO.Read(geometryRelationsFileCopy, parser);
+                // change the global ids, no need to change the id of the relation directly as writer saves GUID.Empty anyway (cause same as project id)    
+                for (int i = 0; i < projectData.GeometryRelations.Count; i++)
+                {
+                    var rel = projectData.GeometryRelations[i];
+                    if (rel.Source.ProjectId == pid)
+                    {
+                        rel.Source = new Data.Geometry.SimBaseGeometryReference(newId, rel.Source.FileId, rel.Source.BaseGeometryId);
+                    }
+                    if (rel.Target.ProjectId == pid)
+                    {
+                        rel.Target = new Data.Geometry.SimBaseGeometryReference(newId, rel.Target.FileId, rel.Target.BaseGeometryId);
+                    }
+                }
+                // save the file again
+                SimGeometryRelationsDxfIO.Write(geometryRelationsFileCopy, projectData.GeometryRelations);
+            }
 
             // ~5b. unpack the component file in order to change the paths for the contained resources and the locations of the components
             /*if (comp_file_copy != null && value_file_copy != null)

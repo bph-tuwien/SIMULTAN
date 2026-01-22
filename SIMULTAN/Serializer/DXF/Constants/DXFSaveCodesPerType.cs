@@ -41,7 +41,7 @@ namespace SIMULTAN.Serializer.DXF
         SUBNETWORKS = 9509,
         SOURCE_PORT = 9511,
         TARGET_PORT = 9512,
-        CONNECTORS = 9513,
+        CONNECTIONS = 9513,
         GEOM_REP_FILE_KEY = 9514,
         GEOM_REP_GEOM_ID = 9515,
         GEOM_REP_INDEX = 9516,

@@ -102,6 +102,72 @@ namespace SIMULTAN.Data.Geometry
 
             return (positions, normals, indices);
         }
+        /// <summary>
+        /// Segments a PFace into triangles. Orientation is derived from the PFace.Orientation property.
+        /// </summary>
+        /// <param name="face">The face to triangulate</param>
+        /// <param name="orientation">Orientation of the face</param>
+        /// <returns>A tuple containing positions, normals and indices for the triangulation.</returns>
+        public static (List<SimPoint3D> positions, List<SimVector3D> normals, List<int> indices) 
+            TriangulateWithHoleSelection(Face face, GeometricOrientation orientation = GeometricOrientation.Forward)
+        {
+            List<SimPoint3D> positions;
+            List<SimVector3D> normals;
+            List<int> indices;
+
+            try
+            {
+                var (success, matrix) = FaceToXZMapping(face, orientation);
+                if (!success)
+                    return (new List<SimPoint3D>(), new List<SimVector3D>(), new List<int>());
+
+                (var poly, var holes, var additionalFaces) = BoundaryAndHoles(face, matrix);
+
+                if (poly.Count == 0)
+                    return (new List<SimPoint3D>(), new List<SimVector3D>(), new List<int>());
+
+                CleanupPolygon(poly, GeometrySettings.Instance.Tolerance);
+                holes.ForEach(x => CleanupPolygon(x, GeometrySettings.Instance.Tolerance));
+                holes.RemoveWhere(x => x.Count == 0);
+                additionalFaces.ForEach(x => CleanupPolygon(x, GeometrySettings.Instance.Tolerance));
+                additionalFaces.RemoveWhere(x => x.Count == 0);
+
+                Triangulation.PolygonComplexFill(poly, holes,
+                    out positions, out indices, orientation == GeometricOrientation.Backward);
+
+                // if we have additional faces, triangulate and combine them with the other mesh
+                if (additionalFaces.Any())
+                {
+                    var toCombine = new List<(List<SimPoint3D> positions, List<int> indices)>() { (positions, indices) };
+                    foreach (var aface in additionalFaces)
+                    {
+                        Triangulation.PolygonComplexFill(aface, null,
+                            out var aPos, out var aIndices, orientation == GeometricOrientation.Backward);
+                        toCombine.Add((aPos, aIndices));
+                    }
+
+                    (positions, indices) = Triangulation.CombineMeshes(toCombine);
+                }
+
+                if (positions == null || indices == null)
+                    return (new List<SimPoint3D>(), new List<SimVector3D>(), new List<int>());
+
+                matrix.Invert();
+                for (int i = 0; i < positions.Count; ++i)
+                {
+                    positions[i] = matrix.Transform(positions[i]);
+                }
+                normals = Enumerable.Repeat(face.Normal, positions.Count).ToList();
+            }
+            catch (Exception)
+            {
+                positions = new List<SimPoint3D>();
+                normals = new List<SimVector3D>();
+                indices = new List<int>();
+            }
+
+            return (positions, normals, indices);
+        }
 
         /// <summary>
         /// Triangulates a list of boundary vertices and holes
@@ -739,7 +805,8 @@ namespace SIMULTAN.Data.Geometry
             return GeometricOrientation.Undefined;
         }
 
-        private static (List<SimPoint3D> boundaries, List<List<SimPoint3D>> holes, List<List<SimPoint3D>> additionalFaces) BoundaryAndHoles(Face face, SimMatrix3D matrix)
+        private static (List<SimPoint3D> boundaries, List<List<SimPoint3D>> holes, List<List<SimPoint3D>> additionalFaces)
+            BoundaryAndHoles(Face face, SimMatrix3D matrix, HashSet<EdgeLoop> holeSelection = null)
         {
             var mergedHoles = new List<HashSet<Edge>>();
             var additionalFaces = new List<HashSet<Edge>>();
@@ -758,11 +825,12 @@ namespace SIMULTAN.Data.Geometry
             //                 Additionally check remaining edges if they also form a loop and add them as additional faces
 
 
-            var edgeHoleLookup = face.Holes.SelectMany(hole => hole.Edges.Select(edge => (edge.Edge, hole)))
+            var selectedHoles = face.Holes.Where(x => holeSelection == null || holeSelection.Contains(x)).ToList();
+            var edgeHoleLookup = selectedHoles.SelectMany(hole => hole.Edges.Select(edge => (edge.Edge, hole)))
                 .GroupBy(x => x.Edge)
                 .ToDictionary(k => k.Key, k => k.Select(x => x.hole).ToHashSet());
 
-            var connected = DetectionAlgorithms.FindConnectedEdgeLoopGroups(face.Holes);
+            var connected = DetectionAlgorithms.FindConnectedEdgeLoopGroups(selectedHoles);
             foreach (var cluster in connected)
             {
                 // boundary are all edges that are only in a single loop
@@ -860,7 +928,7 @@ namespace SIMULTAN.Data.Geometry
             {
                 //Fallback for faces that result in multiple disconnected parts
                 var poly = face.Boundary.Edges.Select(x => matrix.Transform(x.StartVertex.Position)).ToList();
-                List<List<SimPoint3D>> fbholes = face.Holes.Select(h => h.Edges.Select(
+                List<List<SimPoint3D>> fbholes = selectedHoles.Select(h => h.Edges.Select(
                     e => matrix.Transform(e.StartVertex.Position)
                     ).ToList()).ToList();
 

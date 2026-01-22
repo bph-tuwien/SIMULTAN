@@ -732,7 +732,7 @@ namespace SIMULTAN.Data.Components
             }
         }
         private void ExecuteOnComponent(Dictionary<SimDoubleParameter, SimDoubleParameter> parameterReplacements)
-        { 
+        {
             double result = double.NaN;
 
             if (State == SimCalculationValidity.Valid)

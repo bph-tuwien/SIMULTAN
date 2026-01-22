@@ -11,7 +11,7 @@ namespace SIMULTAN.Exchange.SimNetworkConnectors
     /// Proxy geometry for the line between a Block and its´ contained Port
     /// Connector between a <see cref="SimNetworkBlock"/> and a <see cref="SimNetworkPort"/> as a <see cref="Polyline"/>
     /// </summary>
-    internal class SimNetworkBlockPortConnectorProxy : BaseSimnetworkGeometryConnector
+    internal class SimNetworkBlockPortConnectorProxy : BaseSimNetworkGeometryConnector
     {
         /// <summary>
         /// The polyline
@@ -31,13 +31,33 @@ namespace SIMULTAN.Exchange.SimNetworkConnectors
         /// <inheritdoc />
         internal override IEnumerable<ISimNetworkElement> SimNetworkElement => new List<SimNetworkPort> { Port };
 
-        /// <summary>
-        /// The connector. If not null, the port is connected to an other. 
-        /// </summary>
-        internal SimNetworkConnector Connector { get; private set; }
-
         /// <inheritdoc />
         internal override BaseGeometry Geometry => ConnectorGeometry;
+
+        public SimNetworkConnection Connection
+        {
+            get => connection;
+            set
+            {
+                if (connection != value)
+                {
+                    connection = value;
+                    ChangeBaseGeometry(Geometry);
+                }
+            }
+        }
+        private SimNetworkConnection connection;
+
+        public bool IsValid
+        {
+            get => isValid;
+            set
+            {
+                isValid = value;
+                UpdateColor();
+            }
+        }
+        private bool isValid;
 
 
         /// <summary>
@@ -46,10 +66,11 @@ namespace SIMULTAN.Exchange.SimNetworkConnectors
         /// <param name="geometry">The polyline which represents the proxy connection between a port and it's parent block or SimNetwork</param>
         /// <param name="parentElement">The parent element (Block or a SimNetwork)</param>
         /// <param name="port">The SimNetworkPort </param>
-        /// <param name="connector">The Connector. Whenever the port is connected to an other, 
+        /// <param name="isValid">If the static constraints are valid</param>
+        /// <param name="connection">Connection of the proxy if it is a proxy for a connection between two ports.
         /// the position of the polyline representing this proxy geometry is calculated based on the connector (which represents the connection as a vertex) 
-        /// <see cref="SimNetworkConnector"/> </param>
-        internal SimNetworkBlockPortConnectorProxy(Polyline geometry, BaseSimNetworkElement parentElement, SimNetworkPort port, SimNetworkConnector connector = null)
+        /// <see cref="SimNetworkConnection"/> </param>
+        internal SimNetworkBlockPortConnectorProxy(Polyline geometry, BaseSimNetworkElement parentElement, SimNetworkPort port, bool isValid, SimNetworkConnection connection = null)
         {
             if (geometry == null)
                 throw new ArgumentNullException(nameof(geometry));
@@ -63,18 +84,11 @@ namespace SIMULTAN.Exchange.SimNetworkConnectors
             this.Port = port;
             this.ParentElement.PropertyChanged += this.Edge_PropertyChanged;
             this.Port.PropertyChanged += this.Edge_PropertyChanged;
-            this.Connector = connector;
+            this.isValid = isValid;
+            this.connection = connection;
 
             UpdateColor();
         }
-
-
-        internal void SetConnector(SimNetworkConnector connector)
-        {
-            this.Connector = connector;
-            ChangeBaseGeometry(this.Geometry);
-        }
-
 
         #region BaseNetworkConnector
 
@@ -89,35 +103,40 @@ namespace SIMULTAN.Exchange.SimNetworkConnectors
         {
             ConnectorGeometry = geometry as Polyline;
         }
+
         /// <inheritdoc />
         internal override void OnTopologyChanged() { }
         /// <inheritdoc />
-        public override void Dispose()
+        protected override void Dispose(bool disposing)
         {
-            this.Port.PropertyChanged -= Edge_PropertyChanged;
-            this.ParentElement.PropertyChanged -= Edge_PropertyChanged;
+            if (disposing)
+            {
+                this.Port.PropertyChanged -= Edge_PropertyChanged;
+                this.ParentElement.PropertyChanged -= Edge_PropertyChanged;
+            }
+            base.Dispose(disposing);
         }
 
         #endregion
 
         private void Edge_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
-            if (e.PropertyName == nameof(SimNetworkConnector.Name))
+            if (e.PropertyName == nameof(SimNetworkConnection.Name))
                 ConnectorGeometry.Name = ParentElement.Name + "to" + Port.Name;
         }
 
-
         private void UpdateColor()
         {
-            bool fromParent = true;
-            UpdateColor(ConnectorGeometry, this.Geometry.Color.Color, fromParent);
+            var color = isValid ? Geometry.Color.Color : SimColors.Red;
+            bool fromParent = isValid;
+            UpdateColor(ConnectorGeometry, color, fromParent);
 
             for (int i = 0; i < ConnectorGeometry.Edges.Count; i++)
             {
-                UpdateColor(ConnectorGeometry.Edges[i].Edge, this.Geometry.Color.Color, fromParent);
+                UpdateColor(ConnectorGeometry.Edges[i].Edge, color, fromParent);
 
                 if (i != 0)
-                    UpdateColor(ConnectorGeometry.Edges[i].StartVertex, this.Geometry.Color.Color, fromParent);
+                    UpdateColor(ConnectorGeometry.Edges[i].StartVertex, color, fromParent);
             }
         }
         private void UpdateColor(BaseGeometry geo, SimColor color, bool fromParent)

@@ -115,7 +115,16 @@ namespace SIMULTAN.Data.Components
         protected SimBaseParameter(SimBaseParameter<T> original, bool copyValue = true) : base(original)
         {
             if (copyValue)
-                this.Value = original.Value;
+            {
+                if (original.Value is ICloneable cloneable)
+                {
+                    this.Value = (T)cloneable.Clone();
+                }
+                else
+                {
+                    this.Value = original.Value;
+                }
+            }
         }
         /// <summary>
         /// Initializes a new instance of the <see cref="SimBaseParameter{T}"/> class
@@ -528,7 +537,7 @@ namespace SIMULTAN.Data.Components
         #endregion
 
         #region EVENTS
-        
+
         /// <summary>
         /// Handler for the IsBeingDelted event.
         /// </summary>
@@ -557,11 +566,11 @@ namespace SIMULTAN.Data.Components
                 this.Component.Parameters.OnParameterPropertyChanged(this, property);
             }
         }
-        
+
         /// <summary>
         /// Source of the parameter value change
         /// </summary>
-        public enum ValueChangedSource 
+        public enum ValueChangedSource
         {
             /// <summary>
             /// The value of the parameter itself has changed
@@ -570,7 +579,7 @@ namespace SIMULTAN.Data.Components
             /// <summary>
             /// The instance value of the parameter has changed
             /// </summary>
-            Instance 
+            Instance
         }
         /// <summary>
         /// EventArgs for the <see cref="ValueChanged"/> event
@@ -624,7 +633,7 @@ namespace SIMULTAN.Data.Components
         /// <summary>
         /// Invokes the <see cref="ValueChanged"/> event for the change of the parameter value
         /// </summary>
-        protected void NotifyValueChanged()
+        internal void NotifyValueChanged()
         {
             this.ValueChanged?.Invoke(this, new ValueChangedEventArgs(ValueChangedSource.Parameter, null));
         }

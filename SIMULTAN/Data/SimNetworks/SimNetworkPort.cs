@@ -1,8 +1,8 @@
 ﻿using SIMULTAN.Data.Components;
+using SIMULTAN.Data.SimMath;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using SIMULTAN.Data.SimMath;
 
 namespace SIMULTAN.Data.SimNetworks
 {
@@ -22,7 +22,7 @@ namespace SIMULTAN.Data.SimNetworks
     }
 
     /// <summary>
-    /// Represents a port in a SimNetworkBlock. SimNetworkPorts can be connected with SimNetworkConnector <see cref="SimNetworkConnector"/>
+    /// Represents a port in a SimNetworkBlock. SimNetworkPorts can be connected with SimNetworkConnector <see cref="SimNetworkConnection"/>
     /// </summary>
     public partial class SimNetworkPort : SimNamedObject<ISimManagedCollection>, IElementWithComponent, ISimNetworkElement, IDisposable
     {
@@ -92,30 +92,32 @@ namespace SIMULTAN.Data.SimNetworks
         }
         #endregion
         /// <summary>
-        /// List of connectors where the port is present
+        /// List of connections where the port is present.
+        /// Ports of blocks can only have one connection.
+        /// Ports of sub networks can have two connections (from outside and inside).
         /// </summary>
-        public List<SimNetworkConnector> Connectors
+        public List<SimNetworkConnection> Connections
         {
             get
             {
-                var connectors = new List<SimNetworkConnector>();
+                var connections = new List<SimNetworkConnection>();
                 if (this.ParentNetworkElement is SimNetwork nw)
                 {
-                    connectors.AddRange(nw.ContainedConnectors.Where(c => c.Source == this || c.Target == this));
+                    connections.AddRange(nw.ContainedConnections.Where(c => c.Source == this || c.Target == this));
                 }
-                connectors.AddRange(this.ParentNetworkElement.ParentNetwork.ContainedConnectors.Where(c => c.Source == this || c.Target == this));
-                return connectors;
+                connections.AddRange(this.ParentNetworkElement.ParentNetwork.ContainedConnections.Where(c => c.Source == this || c.Target == this));
+                return connections;
             }
         }
         /// <summary>
-        /// List of ports to which the port is connected via <see cref="SimNetworkConnector"/>
+        /// List of ports to which the port is connected via <see cref="SimNetworkConnection"/>
         /// </summary>
         public List<SimNetworkPort> ConnectedPorts
         {
             get
             {
                 var connectedPorts = new List<SimNetworkPort>();
-                foreach (var con in this.Connectors)
+                foreach (var con in this.Connections)
                 {
                     if (con.Source == this)
                     {
@@ -142,7 +144,7 @@ namespace SIMULTAN.Data.SimNetworks
                     return false;
                 }
 
-                return (this.ParentNetworkElement.ParentNetwork.ContainedConnectors.Where(c => c.Source == this || c.Target == this).ToList().Count > 0);
+                return (this.ParentNetworkElement.ParentNetwork.ContainedConnections.Where(c => c.Source == this || c.Target == this).ToList().Count > 0);
             }
         }
         /// <summary>
@@ -158,12 +160,12 @@ namespace SIMULTAN.Data.SimNetworks
             }
         }
         private SimComponentInstance componentInstance;
-        
+
         /// <summary>
         /// The network to which this port belongs
         /// </summary>
         public SimNetwork ParentNetwork { get { return this.ParentNetworkElement.ParentNetwork; } }
-        
+
         #endregion
 
         #region .CTOR
@@ -231,21 +233,21 @@ namespace SIMULTAN.Data.SimNetworks
             //Case 1.: Whenever the source and the target is in the same network:
             if (port.PortType != this.PortType && this.ParentNetworkElement != port.ParentNetworkElement
                 && (port.ParentNetworkElement != this.ParentNetworkElement.ParentNetwork && this.ParentNetworkElement != port.ParentNetworkElement.ParentNetwork)
-                && !this.ParentNetworkElement.ParentNetwork.ContainedConnectors.Any(c => c.Source == this || c.Target == this || c.Source == port || c.Target == port))
+                && !this.ParentNetworkElement.ParentNetwork.ContainedConnections.Any(c => c.Source == this || c.Target == this || c.Source == port || c.Target == port))
             {
                 if (this.PortType == PortType.Output)
                 {
-                    var neConnector = new SimNetworkConnector(this, port);
-                    neConnector.Color = this.Color;
+                    var neConnection = new SimNetworkConnection(this, port);
+                    neConnection.Color = this.Color;
                     port.Color = this.Color;
-                    this.ParentNetworkElement.ParentNetwork.ContainedConnectors.Add(neConnector);
+                    this.ParentNetworkElement.ParentNetwork.ContainedConnections.Add(neConnection);
                 }
                 else
                 {
-                    var neConnector = new SimNetworkConnector(port, this);
-                    neConnector.Color = this.Color;
+                    var neConnection = new SimNetworkConnection(port, this);
+                    neConnection.Color = this.Color;
                     port.Color = this.Color;
-                    this.ParentNetworkElement.ParentNetwork.ContainedConnectors.Add(neConnector);
+                    this.ParentNetworkElement.ParentNetwork.ContainedConnections.Add(neConnection);
                 }
             }
 
@@ -253,40 +255,40 @@ namespace SIMULTAN.Data.SimNetworks
             //in this case both the soruce and the target has the same PortType (input & input or output & output) --> whenever it is an input connection, the source will be the subnetwor´s port,
             //and in the case of a output connection it is the other way around
             else if (this.ParentNetworkElement is SimNetwork nw && port.ParentNetworkElement.ParentNetwork == this.ParentNetworkElement && this.PortType == port.PortType
-                && !nw.ContainedConnectors.Any(c => c.Source == this || c.Target == this || c.Source == port || c.Target == port))
+                && !nw.ContainedConnections.Any(c => c.Source == this || c.Target == this || c.Source == port || c.Target == port))
             {
                 if (this.PortType == PortType.Input)
                 {
-                    var neConnector = new SimNetworkConnector(this, port);
-                    neConnector.Color = this.Color;
+                    var neConnecton = new SimNetworkConnection(this, port);
+                    neConnecton.Color = this.Color;
                     port.Color = this.Color;
-                    nw.ContainedConnectors.Add(neConnector);
+                    nw.ContainedConnections.Add(neConnecton);
                 }
                 else
                 {
-                    var neConnector = new SimNetworkConnector(port, this);
-                    neConnector.Color = this.Color;
+                    var neConnection = new SimNetworkConnection(port, this);
+                    neConnection.Color = this.Color;
                     port.Color = this.Color;
-                    nw.ContainedConnectors.Add(neConnector);
+                    nw.ContainedConnections.Add(neConnection);
                 }
 
             }
             else if (port.ParentNetworkElement is SimNetwork sNw && this.ParentNetworkElement.ParentNetwork == port.ParentNetworkElement && this.PortType == port.PortType
-                && !sNw.ContainedConnectors.Any(c => c.Source == this || c.Target == this || c.Source == port || c.Target == port))
+                && !sNw.ContainedConnections.Any(c => c.Source == this || c.Target == this || c.Source == port || c.Target == port))
             {
                 if (port.PortType == PortType.Input)
                 {
-                    var neConnector = new SimNetworkConnector(port, this);
-                    neConnector.Color = this.Color;
+                    var neConnection = new SimNetworkConnection(port, this);
+                    neConnection.Color = this.Color;
                     port.Color = this.Color;
-                    sNw.ContainedConnectors.Add(neConnector);
+                    sNw.ContainedConnections.Add(neConnection);
                 }
                 else
                 {
-                    var neConnector = new SimNetworkConnector(this, port);
-                    neConnector.Color = this.Color;
+                    var neConnection = new SimNetworkConnection(this, port);
+                    neConnection.Color = this.Color;
                     port.Color = this.Color;
-                    sNw.ContainedConnectors.Add(neConnector);
+                    sNw.ContainedConnections.Add(neConnection);
                 }
             }
         }
@@ -309,17 +311,10 @@ namespace SIMULTAN.Data.SimNetworks
         /// </summary>
         public void RemoveConnections()
         {
-            if (this.ParentNetworkElement is SimNetwork subNw)
+            foreach (var con in Connections)
             {
-                var nestedConnectors = subNw.ContainedConnectors.Where(t => t.Source == this || t.Target == this);
-
-                foreach (var c in nestedConnectors.ToList())
-                {
-                    subNw.ContainedConnectors.Remove(c);
-                }
+                con.ParentNetwork.ContainedConnections.Remove(con);
             }
-            var connector = this.ParentNetworkElement.ParentNetwork.ContainedConnectors.Where(t => t.Source == this || t.Target == this).FirstOrDefault();
-            this.ParentNetworkElement.ParentNetwork.ContainedConnectors.Remove(connector);
         }
 
 

@@ -230,6 +230,22 @@ namespace SIMULTAN.Data.Geometry
             Select(new BaseGeometry[] { geometry }, clearSelection);
         }
 
+        private void MakeLayerVisible(Layer layer)
+        {
+            if (layer == null)
+                return;
+            if (!layer.IsVisible)
+                layer.IsVisible = true;
+            if (layer.Parent == null && layer.Model != null && !layer.Model.IsVisible)
+            {
+                layer.Model.IsVisible = true;
+            }
+            else
+            {
+                MakeLayerVisible(layer.Parent);
+            }
+        }
+
         /// <summary>
         /// Selects a number of geometries
         /// </summary>
@@ -251,10 +267,20 @@ namespace SIMULTAN.Data.Geometry
                     selectedGeometry.Clear();
                 }
 
-                ActiveGeometry = newSelectedGeometry.First();
+                ActiveGeometry = newSelectedGeometry[0];
+                HashSet<Layer> layers = new();
                 foreach (var g in newSelectedGeometry)
+                {
                     if (!selectedGeometry.Contains(g))
+                    {
+                        if (!g.IsVisible)
+                            g.IsVisible = true;
+                        layers.Add(g.Layer);
                         selectedGeometry.Add(g);
+                    }
+                }
+                foreach (var layer in layers)
+                    MakeLayerVisible(layer);
             }
             else
             {

@@ -15,7 +15,7 @@ namespace SIMULTAN.Serializer.DXF
         public const string SIMNETWORK = "SIMNETWORK";
         public const string SIMNETWORK_BLOCK = "SIMNETWORK_BLOCK";
         public const string SIMNETWORK_PORT = "SIMNETWORK_PORT";
-        public const string SIMNETWORK_CONNECTOR = "SIMNETWORK_CONNECTOR";
+        public const string SIMNETWORK_CONNECTION = "SIMNETWORK_CONNECTOR";
 
         public const string FLOWNETWORK = "FLOWNETWORK";        // custom
         public const string FLOWNETWORK_NODE = "FLOWNETWORK_NODE";// custom

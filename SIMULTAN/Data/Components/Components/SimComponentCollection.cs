@@ -94,6 +94,7 @@ namespace SIMULTAN.Data.Components
             this.NotifyChanged();
 
             ProjectData.ComponentGeometryExchange.OnComponentAdded(item);
+            ProjectData.AssetManager.RestoreAssets(item);
         }
         /// <inheritdoc />
         protected override void RemoveItem(int index)
@@ -109,6 +110,7 @@ namespace SIMULTAN.Data.Components
             oldItem.RecordWriteAccess();
 
             ProjectData.ComponentGeometryExchange.OnComponentRemoved(oldItem);
+            ProjectData.AssetManager.RemoveAssets(oldItem);
             ProjectData.DataMappingTools.OnComponentRemoved(oldItem);
 
             UnsetValues(oldItem, true);
@@ -139,6 +141,7 @@ namespace SIMULTAN.Data.Components
                 item.RecordWriteAccess();
 
                 ProjectData.ComponentGeometryExchange.OnComponentRemoved(item);
+                ProjectData.AssetManager.RemoveAssets(item);
                 ProjectData.DataMappingTools.OnComponentRemoved(item);
 
                 UnsetValues(item, true);
@@ -167,7 +170,10 @@ namespace SIMULTAN.Data.Components
 
             oldItem.RecordWriteAccess();
             ProjectData.ComponentGeometryExchange.OnComponentRemoved(oldItem);
+            ProjectData.AssetManager.RemoveAssets(oldItem);
             ProjectData.DataMappingTools.OnComponentRemoved(oldItem);
+            
+
             UnsetValues(oldItem, true);
 
             if (cu != null)
@@ -178,6 +184,7 @@ namespace SIMULTAN.Data.Components
             this.NotifyChanged();
 
             ProjectData.ComponentGeometryExchange.OnComponentAdded(item);
+            ProjectData.AssetManager.RestoreAssets(item);
         }
 
         private void SetValues(SimComponent item)

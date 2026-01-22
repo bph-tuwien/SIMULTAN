@@ -195,12 +195,12 @@ namespace SIMULTAN.Projects
         /// </summary>
         protected ManagedFileCollection managed_files;
 
-        public IReadOnlyList<FileInfo> NonManagedFiles { get { return nonManagedFiles; } }
         /// <summary>
         /// Holds all files that are saved in the project, but w/o special status - e.g. pdf, word, etc.
         /// They correspond to resource files of type <see cref="ContainedResourceFileEntry"/>. 
         /// </summary>
         /// <remarks>NO OVERLAP with ManagedFiles, NO OVERLAP with associatedFiles</remarks>
+        public IReadOnlyList<FileInfo> NonManagedFiles { get { return nonManagedFiles; } }
         private List<FileInfo> nonManagedFiles;
 
         /// <summary>
@@ -922,6 +922,11 @@ namespace SIMULTAN.Projects
 
         #region RESOURCE METHODS: new
 
+        /// <summary>
+        /// Creates an empty file in the project and registers it as a resource
+        /// </summary>
+        /// <param name="file">The target file</param>
+        /// <returns>The created resource file</returns>
         public ResourceFileEntry AddEmptyResource(FileInfo file)
         {
             if (file == null)

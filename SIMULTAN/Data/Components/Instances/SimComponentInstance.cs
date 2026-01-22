@@ -8,6 +8,7 @@ using SIMULTAN.Utils;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.Linq;
 using System.Windows;
 
@@ -477,31 +478,35 @@ namespace SIMULTAN.Data.Components
 
         #region METHODS: Instance Definition / Update
 
-        internal void ChangeParameterValue(SimBaseParameter parameter)
+        internal void ChangeParameterValue(SimBaseParameter parameter, NotifyCollectionChangedEventArgs collectionChangedArgs)
         {
             if (parameter == null)
                 throw new ArgumentNullException(nameof(parameter));
+            if (!this.InstanceParameterValuesPersistent.Contains(parameter))
+                return;
+
+            if (parameter is SimDoubleListParameter dlp && collectionChangedArgs != null)
+            {
+                this.InstanceParameterValuesPersistent.ParameterValueCollectionChanged(dlp, collectionChangedArgs);
+            }
 
             if (parameter.InstancePropagationMode == SimParameterInstancePropagation.PropagateAlways ||
                 (parameter.InstancePropagationMode == SimParameterInstancePropagation.PropagateIfInstance && this.PropagateParameterChanges))
             {
                 // update value
-                if (this.InstanceParameterValuesPersistent.Contains(parameter))
+                if (parameter is SimEnumParameter enumParam)
                 {
-                    if (parameter is SimEnumParameter enumParam)
+                    SimTaxonomyEntryReference newValue = null;
+                    if (enumParam.Value != null)
                     {
-                        SimTaxonomyEntryReference newValue = null;
-                        if (enumParam.Value != null)
-                        {
-                            newValue = new SimTaxonomyEntryReference(enumParam.Value.Target);
-                        }
-                        this.InstanceParameterValuesPersistent[enumParam] = newValue;
+                        newValue = new SimTaxonomyEntryReference(enumParam.Value.Target);
                     }
-                    else
-                    {
-                        //Set with special function to prevent updating the geometry twice
-                        this.InstanceParameterValuesPersistent.SetWithoutNotify(parameter, parameter.Value);
-                    }
+                    this.InstanceParameterValuesPersistent[enumParam] = newValue;
+                }
+                else
+                {
+                    //Set with special function to prevent updating the geometry twice
+                    this.InstanceParameterValuesPersistent.SetWithoutNotify(parameter, parameter.Value);
                 }
             }
         }

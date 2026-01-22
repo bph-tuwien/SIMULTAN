@@ -1,6 +1,7 @@
 ﻿using SIMULTAN.Exceptions;
 using System;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 
 namespace SIMULTAN.Data.Components
 {
@@ -189,7 +190,13 @@ namespace SIMULTAN.Data.Components
                     throw new ArgumentNullException(nameof(parameter));
 
                 foreach (var instance in owner.Instances)
-                    instance.ChangeParameterValue(parameter);
+                    instance.ChangeParameterValue(parameter, null);
+            }
+
+            internal void OnListParameterCollectionChanged(SimBaseParameter parameter, NotifyCollectionChangedEventArgs e)
+            {
+                foreach (var instance in owner.Instances)
+                    instance.ChangeParameterValue(parameter, e);
             }
 
             #endregion

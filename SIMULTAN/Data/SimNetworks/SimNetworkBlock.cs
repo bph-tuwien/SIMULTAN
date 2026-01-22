@@ -134,25 +134,24 @@ namespace SIMULTAN.Data.SimNetworks
         /// Clones this SimNetworkBlock
         /// </summary>
         /// <param name="parent">The parent network</param>
+        /// <param name="clonedPortsLookup">Dictionary of old to new port Ids</param>
         /// <returns>Returns the cloned SimNetworkBLock, and a Dictionary with the original and cloned port LocalId pairs</returns>
-        public (SimNetworkBlock Cloned, Dictionary<SimId, SimId> PortPairs) Clone(SimNetwork parent)
+        public SimNetworkBlock Clone(SimNetwork parent, Dictionary<SimNetworkPort, SimNetworkPort> clonedPortsLookup)
         {
             var cloned = new SimNetworkBlock(this);
-            parent.ContainedElements.Add(cloned);
-            var portIdPairs = new Dictionary<SimId, SimId>();
             foreach (var port in this.Ports)
             {
                 var newPort = new SimNetworkPort(port);
+                clonedPortsLookup.Add(port, newPort);
                 cloned.Ports.Add(newPort);
-                portIdPairs.Add(port.Id, newPort.Id);
             }
             if (this.componentInstance != null)
             {
                 cloned.AssignComponent(this.componentInstance.Component, true);
             }
+            parent.ContainedElements.Add(cloned);
 
-
-            return (cloned, portIdPairs);
+            return cloned;
         }
 
         private void SimNetworkBlock_IsBeingDeleted(object sender)
@@ -260,7 +259,7 @@ namespace SIMULTAN.Data.SimNetworks
                 {
                     port.ComponentInstance.Component.IsBeingDeleted += this.Component_IsBeingDeleted;
                 }
-            };
+            }
         }
 
         /// <summary>
@@ -370,10 +369,7 @@ namespace SIMULTAN.Data.SimNetworks
                 {
                     if (prt.ComponentInstance == null)
                     {
-                        if (prt.ComponentInstance == null)
-                        {
-                            OnPortAdded(prt);
-                        }
+                        OnPortAdded(prt);
                     }
                 }
             }
@@ -439,7 +435,8 @@ namespace SIMULTAN.Data.SimNetworks
                             }
 
                         }
-                    };
+                    }
+                    ;
                     break;
                 case System.Collections.Specialized.NotifyCollectionChangedAction.Remove:
                     foreach (var item in e.OldItems)
@@ -456,7 +453,7 @@ namespace SIMULTAN.Data.SimNetworks
                                 child.PropertyChanged -= this.Child_PropertyChanged;
                             }
                         }
-                    };
+                    }
                     break;
             }
         }
@@ -513,10 +510,9 @@ namespace SIMULTAN.Data.SimNetworks
                 if (deletedComp != this.ComponentInstance.Component && this.Ports != null)
                 {
                     var portsToDelete = this.Ports.Where(p => deletedComp.Instances.Any(i => i == p.ComponentInstance)).ToList();
-
-                    for (int i = portsToDelete.Count() - 1; i >= 0; i--)
+                    foreach (var port in portsToDelete)
                     {
-                        this.Ports.Remove(portsToDelete[i]);
+                        this.Ports.Remove(port);
                     }
                 }
 
@@ -559,7 +555,7 @@ namespace SIMULTAN.Data.SimNetworks
             {
                 type = PortType.Output;
             }
-            var inPort = new SimNetworkPort(type);
+            var inPort = new SimNetworkPort(type, comp.Name ?? "");
             return inPort;
         }
 
@@ -602,8 +598,8 @@ namespace SIMULTAN.Data.SimNetworks
                     {
                         AddRelativPositionToPortComp(newPort.ComponentInstance.Component, newPort);
                     }
-                };
-            };
+                }
+            }
         }
 
 

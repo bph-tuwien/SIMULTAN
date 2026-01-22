@@ -22,9 +22,7 @@
     <WCFMetadata Include="Connected Services\" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="AssimpNet" Version="5.0.0-custom1" />
-  </ItemGroup>
-  <ItemGroup>
+    <PackageReference Include="AssimpNetter" Version="6.0.2.1-double" />
     <PackageReference Include="MathNet.Numerics" Version="5.0.0" />
     <PackageReference Include="Sprache.Calc" Version="1.1.0" />
 	<PackageReference Include="System.Data.OleDb" Version="7.0.0" />

@@ -478,6 +478,7 @@ namespace SIMULTAN.Tests.Geometry.Algorithms
             LoadProject(testProject);
             var exchange = projectData.ComponentGeometryExchange;
             AABBGrid edgeGrid = null;
+            AABBGrid vertexGrid = null;
             (var gm, var resource) = ProjectUtils.LoadGeometry("edge_edge_split.simgeo", projectData, sp);
 
             var geo = gm.Geometry;
@@ -497,8 +498,7 @@ namespace SIMULTAN.Tests.Geometry.Algorithms
 
             var replacementTracker = new ModelCleanupAlgorithms.ReplacementTracker<Edge>();
 
-
-            var splitCount = ModelCleanupAlgorithms.SplitEdgeEdgeIntersections(geoCopy, 0.1, ref edgeGrid, replacementTracker);
+            var splitCount = ModelCleanupAlgorithms.SplitEdgeEdgeIntersections(geoCopy, 0.1, ref vertexGrid, ref edgeGrid, replacementTracker);
 
             var replaced = replacementTracker.GetReplacements();
             Assert.AreEqual(1, splitCount);
@@ -646,7 +646,7 @@ namespace SIMULTAN.Tests.Geometry.Algorithms
 
             while (changed)
             {
-                count += ModelCleanupAlgorithms.SplitEdgeEdgeIntersections(geoCopy, 0.1, ref edgeGrid, edgeTracker);
+                count += ModelCleanupAlgorithms.SplitEdgeEdgeIntersections(geoCopy, 0.1, ref vertexGrid, ref edgeGrid, edgeTracker);
                 count += ModelCleanupAlgorithms.RemoveDuplicateFaces(geoCopy, ref faceGrid);
 
                 changed = count > 0;
@@ -817,7 +817,7 @@ namespace SIMULTAN.Tests.Geometry.Algorithms
             AABBGrid edgeGrid = null;
             (var gm, var resource) = ProjectUtils.LoadGeometry("Empty 2.simgeo", projectData, sp);
 
-            ModelCleanupAlgorithms.SplitEdgeEdgeIntersections(gm.Geometry, 0.01, ref edgeGrid);
+            ModelCleanupAlgorithms.SplitEdgeEdgeIntersections(gm.Geometry, 0.01, ref vertexGrid, ref edgeGrid);
             ModelCleanupAlgorithms.SplitEdgeVertexIntersections(gm.Geometry, 0.01,
                             ref vertexGrid, ref edgeGrid);
         }

@@ -6,7 +6,9 @@ using SIMULTAN.Data.SimNetworks;
 using SIMULTAN.Data.Taxonomy;
 using SIMULTAN.Tests.TestUtils;
 using System;
+using System.Diagnostics;
 using System.IO;
+using System.IO.IsolatedStorage;
 using System.Linq;
 using System.Threading;
 
@@ -214,10 +216,10 @@ namespace SIMULTAN.Tests.SimNetworks
         [DoNotParallelize]
         public void ConvertSimNetworkToGeometryTest()
         {
-
             this.LoadProject(simNetworkProject);
 
             var loadedNW = this.projectData.SimNetworks.FirstOrDefault(t => t.Name == this._test_network);
+            Assert.AreEqual(-1, loadedNW.IndexOfGeometricRepFile);
 
             //Query the blocks form the SimNetwork (for later comparison)
             var block1 = loadedNW.ContainedElements.FirstOrDefault(t => t.Name == _block1);
@@ -229,16 +231,11 @@ namespace SIMULTAN.Tests.SimNetworks
             var staticBlock = loadedNW.ContainedElements.FirstOrDefault(t => t.Name == _static_block);
             Assert.IsNotNull(staticBlock);
             var networkFileName = Guid.NewGuid() + ".simgeo";
-            var networkFile = new FileInfo(@"./" + networkFileName);
+            var networkFile = new FileInfo(Path.Combine(project.ProjectUnpackFolder.FullName, networkFileName));
 
-
-            //Create new geometry file
-            if (File.Exists(@".\" + networkFileName))
-            {
-                File.Delete(@".\" + networkFileName);
-            }
             var geometryModel = this.projectData.ComponentGeometryExchange.ConvertSimNetwork(loadedNW, networkFile, projectData.DispatcherTimerFactory);
 
+            Assert.AreEqual(geometryModel.File.Key, loadedNW.IndexOfGeometricRepFile);
 
             //Check if all the blocks got geometry assigned
             var gBlock1 = geometryModel.Geometry.Vertices.First(c => c.Name == _block1);
@@ -251,11 +248,13 @@ namespace SIMULTAN.Tests.SimNetworks
             Assert.IsNotNull(gStaticBlock);
 
             //Delete file
-            networkFile.Delete();
+            projectData.GeometryModels.RemoveGeometryModel(geometryModel);
             var resource = this.projectData.AssetManager.Resources.FirstOrDefault(t => t.Name == networkFile.Name);
-            this.project.DeleteResource(resource);
-            Assert.IsTrue(loadedNW.IndexOfGeometricRepFile == -1);
-
+            var (found, deleted) = this.project.DeleteResource(resource);
+            Assert.IsTrue(found);
+            Assert.IsTrue(deleted);
+            Assert.AreEqual(-1, loadedNW.IndexOfGeometricRepFile);
+            Assert.IsFalse(File.Exists(networkFile.FullName));
         }
 
         [TestMethod]
@@ -275,27 +274,27 @@ namespace SIMULTAN.Tests.SimNetworks
             Assert.IsNotNull(block3);
             var staticBlock = loadedNW.ContainedElements.FirstOrDefault(t => t.Name == _static_block);
             Assert.IsNotNull(staticBlock);
+            Assert.AreEqual(-1, loadedNW.IndexOfGeometricRepFile);
 
             var networkFileName = Guid.NewGuid() + ".simgeo";
             var networkFile = new FileInfo(@"./" + networkFileName);
 
-
             //Create new geometry file
             if (File.Exists(@".\" + networkFileName))
             {
-                File.Delete(@".\" + networkFileName);
+                FileUtils.DeleteRetry(@".\" + networkFileName);
             }
             var geometryModel = this.projectData.ComponentGeometryExchange.ConvertSimNetwork(loadedNW, networkFile, projectData.DispatcherTimerFactory);
 
+            Assert.AreEqual(geometryModel.File.Key, loadedNW.IndexOfGeometricRepFile);
 
             //Delete file
             var resource = this.projectData.AssetManager.Resources.FirstOrDefault(t => t.Name == networkFile.Name);
             this.project.DeleteResource(resource);
-            Assert.IsTrue(loadedNW.IndexOfGeometricRepFile == -1);
+            Assert.AreEqual(-1, loadedNW.IndexOfGeometricRepFile);
 
             //Delete file
-            networkFile.Delete();
-
+            networkFile.DeleteRetry();
         }
 
 
@@ -336,22 +335,20 @@ namespace SIMULTAN.Tests.SimNetworks
             //Create new geometry file
             if (File.Exists(@".\" + networkFileName))
             {
-                File.Delete(@".\" + networkFileName);
+                FileUtils.DeleteRetry(@".\" + networkFileName);
             }
             var geometryModel = this.projectData.ComponentGeometryExchange.ConvertSimNetwork(loadedNW, networkFile, projectData.DispatcherTimerFactory);
-
 
             var gStaticBlock = geometryModel.Geometry.Vertices.First(c => c.Name == _static_block);
             Assert.IsNotNull(gStaticBlock);
 
             //TODO: CHeck the position
 
-
             //Delete file
             var resource = this.projectData.AssetManager.Resources.FirstOrDefault(t => t.Name == networkFile.Name);
             this.project.DeleteResource(resource);
             Assert.IsTrue(loadedNW.IndexOfGeometricRepFile == -1);
-            networkFile.Delete();
+            networkFile.DeleteRetry();
 
         }
 
@@ -379,21 +376,21 @@ namespace SIMULTAN.Tests.SimNetworks
             var block3 = loadedNW.ContainedElements.FirstOrDefault(t => t.Name == _block3);
             Assert.IsNotNull(block3);
 
-            var block1PortToBlock2 = block1.Ports.Where(t => t.PortType == PortType.Output && t.Connectors.Any(c => block2.Ports.Contains(c.Target))).FirstOrDefault();
+            var block1PortToBlock2 = block1.Ports.Where(t => t.PortType == PortType.Output && t.Connections.Any(c => block2.Ports.Contains(c.Target))).FirstOrDefault();
             Assert.IsNotNull(block1PortToBlock2);
-            var block1PortToBlock2Connector = block1PortToBlock2.Connectors.FirstOrDefault();
+            var block1PortToBlock2Connector = block1PortToBlock2.Connections.FirstOrDefault();
 
             var networkFile = new FileInfo(@"./SimNetworkGeo.simgeo");
             //Create new geometry file
             if (File.Exists(@".\SimNetworkGeo.simgeo"))
             {
-                File.Delete(@".\SimNetworkGeo.simgeo");
+                FileUtils.DeleteRetry(@".\SimNetworkGeo.simgeo");
             }
 
             var geometryModel = this.projectData.ComponentGeometryExchange.ConvertSimNetwork(loadedNW, networkFile, projectData.DispatcherTimerFactory);
             var geometryConnector = this.projectData.ComponentGeometryExchange.SimNetworkModelConnectors.FirstOrDefault(t => t.Value.Network == loadedNW);
             Assert.IsNotNull(geometryConnector);
-            networkFile.Delete();
+            networkFile.DeleteRetry();
         }
 
 
@@ -414,12 +411,12 @@ namespace SIMULTAN.Tests.SimNetworks
             //Create new geometry file
             if (File.Exists(@".\" + networkFileName))
             {
-                File.Delete(@".\" + networkFileName);
+                FileUtils.DeleteRetry(@".\" + networkFileName);
             }
 
             var geometryModel = this.projectData.ComponentGeometryExchange.ConvertSimNetwork(network, networkFile, projectData.DispatcherTimerFactory);
             var dynamicBlock = network.ContainedElements.FirstOrDefault(t => t.Name == this.auto_network_block3);
-            var dynamicToStaticConnector = network.ContainedConnectors.FirstOrDefault(c => ((SimNetworkBlock)c.Target.ParentNetworkElement).IsStatic && !((SimNetworkBlock)c.Source.ParentNetworkElement).IsStatic);
+            var dynamicToStaticConnector = network.ContainedConnections.FirstOrDefault(c => ((SimNetworkBlock)c.Target.ParentNetworkElement).IsStatic && !((SimNetworkBlock)c.Source.ParentNetworkElement).IsStatic);
             var staticPort = dynamicToStaticConnector.Target;
 
             var connectorGeom = geometryModel.Geometry.GeometryFromId(dynamicToStaticConnector.RepresentationReference.GeometryId) as Vertex;
@@ -429,7 +426,7 @@ namespace SIMULTAN.Tests.SimNetworks
 
 
             Assert.AreEqual(connectorGeom.Position, staticPortGeom.Position);
-            networkFile.Delete();
+            networkFile.DeleteRetry();
         }
 
 
@@ -448,12 +445,12 @@ namespace SIMULTAN.Tests.SimNetworks
             //Create new geometry file
             if (File.Exists(@".\" + networkFileName))
             {
-                File.Delete(@".\" + networkFileName);
+                FileUtils.DeleteRetry(@".\" + networkFileName);
             }
             var geometryModel = this.projectData.ComponentGeometryExchange.ConvertSimNetwork(network, networkFile, projectData.DispatcherTimerFactory);
             var geometryConnector = this.projectData.ComponentGeometryExchange.SimNetworkModelConnectors.FirstOrDefault(t => t.Value.Network == network);
 
-            var staticConnector = network.ContainedConnectors.FirstOrDefault(t => ((SimNetworkBlock)t.Target.ParentNetworkElement).IsStatic && ((SimNetworkBlock)t.Source.ParentNetworkElement).IsStatic);
+            var staticConnector = network.ContainedConnections.FirstOrDefault(t => ((SimNetworkBlock)t.Target.ParentNetworkElement).IsStatic && ((SimNetworkBlock)t.Source.ParentNetworkElement).IsStatic);
 
 
 
@@ -472,7 +469,7 @@ namespace SIMULTAN.Tests.SimNetworks
 
 
             Assert.IsNotNull(geometryConnector);
-            networkFile.Delete();
+            networkFile.DeleteRetry();
         }
 
 
@@ -490,7 +487,7 @@ namespace SIMULTAN.Tests.SimNetworks
             //Create new geometry file
             if (File.Exists(@".\" + networkFileName))
             {
-                File.Delete(@".\" + networkFileName);
+                FileUtils.DeleteRetry(@".\" + networkFileName);
             }
             var geometryModel = this.projectData.ComponentGeometryExchange.ConvertSimNetwork(network, networkFile, projectData.DispatcherTimerFactory);
             var geometryConnector = this.projectData.ComponentGeometryExchange.SimNetworkModelConnectors.FirstOrDefault(t => t.Value.Network == network);
@@ -507,7 +504,7 @@ namespace SIMULTAN.Tests.SimNetworks
                 var portGeo = geometryModel.Geometry.GeometryFromId(item.RepresentationReference.GeometryId);
                 Assert.IsNull(portGeo);
             }
-            networkFile.Delete();
+            networkFile.DeleteRetry();
         }
 
 
@@ -525,7 +522,7 @@ namespace SIMULTAN.Tests.SimNetworks
             //Create new geometry file
             if (File.Exists(@".\" + networkFileName))
             {
-                File.Delete(@".\" + networkFileName);
+                FileUtils.DeleteRetry(@".\" + networkFileName);
             }
             var geometryModel = this.projectData.ComponentGeometryExchange.ConvertSimNetwork(network, networkFile, projectData.DispatcherTimerFactory);
             var geometryConnector = this.projectData.ComponentGeometryExchange.SimNetworkModelConnectors.FirstOrDefault(t => t.Value.Network == network);
@@ -544,7 +541,7 @@ namespace SIMULTAN.Tests.SimNetworks
             Assert.AreEqual(relPosition.Z, oZ);
 
             Cleanup();
-            networkFile.Delete();
+            networkFile.DeleteRetry();
         }
 
 
@@ -562,7 +559,7 @@ namespace SIMULTAN.Tests.SimNetworks
             //Create new geometry file
             if (File.Exists(@".\" + networkFileName))
             {
-                File.Delete(@".\" + networkFileName);
+                FileUtils.DeleteRetry(@".\" + networkFileName);
             }
             var geometryModel = this.projectData.ComponentGeometryExchange.ConvertSimNetwork(network, networkFile, projectData.DispatcherTimerFactory);
             var geometryConnector = this.projectData.ComponentGeometryExchange.SimNetworkModelConnectors.FirstOrDefault(t => t.Value.Network == network);
@@ -594,7 +591,7 @@ namespace SIMULTAN.Tests.SimNetworks
             {
                 try
                 {
-                    networkFile.Delete();
+                    networkFile.DeleteRetry();
                     break;
                 }
                 catch (IOException ex) //Happens when defender scans the file while trying to delete
@@ -624,7 +621,7 @@ namespace SIMULTAN.Tests.SimNetworks
             //Create new geometry file
             if (File.Exists(@".\" + networkFileName))
             {
-                File.Delete(@".\" + networkFileName);
+                FileUtils.DeleteRetry(@".\" + networkFileName);
             }
             var geometryModel = this.projectData.ComponentGeometryExchange.ConvertSimNetwork(network, networkFile, projectData.DispatcherTimerFactory);
             var geometryConnector = this.projectData.ComponentGeometryExchange.SimNetworkModelConnectors.FirstOrDefault(t => t.Value.Network == network);
@@ -637,7 +634,7 @@ namespace SIMULTAN.Tests.SimNetworks
 
             Cleanup();
 
-            networkFile.Delete();
+            networkFile.DeleteRetry();
         }
 
 
@@ -657,7 +654,7 @@ namespace SIMULTAN.Tests.SimNetworks
             //Create new geometry file
             if (File.Exists(@".\" + networkFileName))
             {
-                File.Delete(@".\" + networkFileName);
+                FileUtils.DeleteRetry(@".\" + networkFileName);
             }
             var geometryModel = this.projectData.ComponentGeometryExchange.ConvertSimNetwork(network, networkFile, projectData.DispatcherTimerFactory);
             var geometryConnector = this.projectData.ComponentGeometryExchange.SimNetworkModelConnectors.FirstOrDefault(t => t.Value.Network == network);
@@ -665,7 +662,7 @@ namespace SIMULTAN.Tests.SimNetworks
             var blockToUpdate = network.ContainedElements.FirstOrDefault(t => t.Name == this.auto_network_block1);
             var portToUpdate = blockToUpdate.Ports.FirstOrDefault();
 
-            var connector = portToUpdate.Connectors.FirstOrDefault();
+            var connector = portToUpdate.Connections.FirstOrDefault();
             var connectorGe = geometryModel.Geometry.GeometryFromId(connector.RepresentationReference.GeometryId);
             //  Assert.IsNotNull(connectorGe);
             // Assert.IsTrue(connectorGe is Vertex);
@@ -688,7 +685,7 @@ namespace SIMULTAN.Tests.SimNetworks
             Assert.IsNotNull(updateGeo);
             Assert.IsTrue(updateGeo is Polyline);
 
-            networkFile.Delete();
+            networkFile.DeleteRetry();
         }
 
 
@@ -709,7 +706,7 @@ namespace SIMULTAN.Tests.SimNetworks
             //Create new geometry file
             if (File.Exists(@".\" + networkFileName))
             {
-                File.Delete(@".\" + networkFileName);
+                FileUtils.DeleteRetry(@".\" + networkFileName);
             }
             var geometryModel = this.projectData.ComponentGeometryExchange.ConvertSimNetwork(network, networkFile, projectData.DispatcherTimerFactory);
             var geometryConnector = this.projectData.ComponentGeometryExchange.SimNetworkModelConnectors.FirstOrDefault(t => t.Value.Network == network);
@@ -719,8 +716,8 @@ namespace SIMULTAN.Tests.SimNetworks
             var portOut = network.ContainedElements.FirstOrDefault(t => t.Name == this.empty_block1).Ports.FirstOrDefault(t => t.PortType == PortType.Output);
             var portIn = network.ContainedElements.FirstOrDefault(t => t.Name == this.empty_block2).Ports.FirstOrDefault(t => t.PortType == PortType.Input);
 
-            Assert.AreEqual(portOut.Connectors.Count, 0);
-            Assert.AreEqual(portIn.Connectors.Count, 0);
+            Assert.AreEqual(portOut.Connections.Count, 0);
+            Assert.AreEqual(portIn.Connections.Count, 0);
 
             var oldPort1Geo = geometryModel.Geometry.GeometryFromId(portOut.RepresentationReference.GeometryId);
             var oldPort2Geo = geometryModel.Geometry.GeometryFromId(portIn.RepresentationReference.GeometryId);
@@ -745,7 +742,7 @@ namespace SIMULTAN.Tests.SimNetworks
             Assert.IsTrue(!geometryModel.Geometry.ContainsGeometry(oldPort1Geo));
             Assert.IsTrue(!geometryModel.Geometry.ContainsGeometry(oldPort2Geo));
 
-            networkFile.Delete();
+            networkFile.DeleteRetry();
         }
 
     }

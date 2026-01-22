@@ -36,8 +36,8 @@ namespace SIMULTAN.Tests.IO
             Assert.AreEqual(2, network.ContainedElements.Count(x => x is SimNetworkBlock));
             Assert.AreEqual(1, network.ContainedElements.Count(x => x is SimNetwork));
 
-            Assert.AreEqual(1, network.ContainedConnectors.Count);
-            var con1 = network.ContainedConnectors[0];
+            Assert.AreEqual(1, network.ContainedConnections.Count);
+            var con1 = network.ContainedConnections[0];
             Assert.AreEqual(65007, con1.Id.LocalId);
         }
 
@@ -135,7 +135,7 @@ namespace SIMULTAN.Tests.IO
             Assert.AreEqual(1, projectData.SimNetworks.Count);
             Assert.AreEqual(SimColors.Black, projectData.SimNetworks[0].Color);
             Assert.AreEqual(1, projectData.SimNetworks[0].Ports.Count);
-            Assert.AreEqual(1, projectData.SimNetworks[0].ContainedConnectors.Count);
+            Assert.AreEqual(1, projectData.SimNetworks[0].ContainedConnections.Count);
             Assert.AreEqual(3, projectData.SimNetworks[0].ContainedElements.Count);
 
         }
@@ -162,7 +162,7 @@ namespace SIMULTAN.Tests.IO
             Assert.AreEqual(1, projectData.SimNetworks.Count);
             Assert.AreEqual(SimColors.Black, projectData.SimNetworks[0].Color);
             Assert.AreEqual(1, projectData.SimNetworks[0].Ports.Count);
-            Assert.AreEqual(1, projectData.SimNetworks[0].ContainedConnectors.Count);
+            Assert.AreEqual(1, projectData.SimNetworks[0].ContainedConnections.Count);
             Assert.AreEqual(3, projectData.SimNetworks[0].ContainedElements.Count);
 
 
@@ -239,8 +239,8 @@ namespace SIMULTAN.Tests.IO
             Assert.AreEqual(2, network.ContainedElements.Count(x => x is SimNetworkBlock));
             Assert.AreEqual(1, network.ContainedElements.Count(x => x is SimNetwork));
 
-            Assert.AreEqual(1, network.ContainedConnectors.Count);
-            var con1 = network.ContainedConnectors[0];
+            Assert.AreEqual(1, network.ContainedConnections.Count);
+            var con1 = network.ContainedConnections[0];
             Assert.AreEqual(65007, con1.Id.LocalId);
         }
 
@@ -281,8 +281,8 @@ namespace SIMULTAN.Tests.IO
             Assert.AreEqual(2, network.ContainedElements.Count(x => x is SimNetworkBlock));
             Assert.AreEqual(1, network.ContainedElements.Count(x => x is SimNetwork));
 
-            Assert.AreEqual(1, network.ContainedConnectors.Count);
-            var con1 = network.ContainedConnectors[0];
+            Assert.AreEqual(1, network.ContainedConnections.Count);
+            var con1 = network.ContainedConnections[0];
             Assert.AreEqual(65007, con1.Id.LocalId);
         }
 
@@ -327,8 +327,8 @@ namespace SIMULTAN.Tests.IO
             Assert.AreEqual(2, network.ContainedElements.Count(x => x is SimNetworkBlock));
             Assert.AreEqual(1, network.ContainedElements.Count(x => x is SimNetwork));
 
-            Assert.AreEqual(1, network.ContainedConnectors.Count);
-            var con1 = network.ContainedConnectors[0];
+            Assert.AreEqual(1, network.ContainedConnections.Count);
+            var con1 = network.ContainedConnections[0];
             Assert.AreEqual(65007, con1.Id.LocalId);
         }
 
@@ -370,8 +370,8 @@ namespace SIMULTAN.Tests.IO
             Assert.AreEqual(2, network.ContainedElements.Count(x => x is SimNetworkBlock));
             Assert.AreEqual(1, network.ContainedElements.Count(x => x is SimNetwork));
 
-            Assert.AreEqual(1, network.ContainedConnectors.Count);
-            var con1 = network.ContainedConnectors[0];
+            Assert.AreEqual(1, network.ContainedConnections.Count);
+            var con1 = network.ContainedConnections[0];
             Assert.AreEqual(65007, con1.Id.LocalId);
         }
         #endregion
@@ -388,14 +388,14 @@ namespace SIMULTAN.Tests.IO
             projectData.SetCallingLocation(new DummyReferenceLocation(guid));
 
             CreateSimNetworkTestData(projectData, guid);
-            var con = projectData.SimNetworks[0].ContainedConnectors.First();
+            var con = projectData.SimNetworks[0].ContainedConnections.First();
 
             string exportedString = null;
             using (MemoryStream stream = new MemoryStream())
             {
                 using (DXFStreamWriter writer = new DXFStreamWriter(stream, true))
                 {
-                    ComponentDxfIOSimNetworks.WriteConnector(con, writer);
+                    ComponentDxfIOSimNetworks.WriteConnection(con, writer);
                 }
 
                 stream.Flush();
@@ -417,7 +417,7 @@ namespace SIMULTAN.Tests.IO
             ExtendedProjectData projectData = new ExtendedProjectData();
             projectData.SetCallingLocation(new DummyReferenceLocation(guid));
 
-            SimNetworkConnector connector = null;
+            SimNetworkConnection connector = null;
 
             using (DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_CODXF_ReadConnectorV12)))
             {
@@ -425,18 +425,18 @@ namespace SIMULTAN.Tests.IO
                 info.FileVersion = 12;
 
                 reader.Read();
-                connector = ComponentDxfIOSimNetworks.ConnectorEntityElement.Parse(reader, info);
+                connector = ComponentDxfIOSimNetworks.ConnectionEntityElement.Parse(reader, info);
             }
 
             Assert.IsNotNull(connector);
             Assert.AreEqual(65007, connector.Id.LocalId);
             Assert.AreEqual("My Connector", connector.Name);
 
-            var prop = typeof(SimNetworkConnector).GetField("loadingSourceId",
+            var prop = typeof(SimNetworkConnection).GetField("loadingSourceId",
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             Assert.AreEqual(65004, ((SimId)prop.GetValue(connector)).LocalId);
 
-            prop = typeof(SimNetworkConnector).GetField("loadingTargetId",
+            prop = typeof(SimNetworkConnection).GetField("loadingTargetId",
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             Assert.AreEqual(65006, ((SimId)prop.GetValue(connector)).LocalId);
         }
@@ -450,7 +450,7 @@ namespace SIMULTAN.Tests.IO
             ExtendedProjectData projectData = new ExtendedProjectData();
             projectData.SetCallingLocation(new DummyReferenceLocation(guid));
 
-            SimNetworkConnector connector = null;
+            SimNetworkConnection connector = null;
 
             using (DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_CODXF_ReadConnectorV14)))
             {
@@ -458,7 +458,7 @@ namespace SIMULTAN.Tests.IO
                 info.FileVersion = 14;
 
                 reader.Read();
-                connector = ComponentDxfIOSimNetworks.ConnectorEntityElement.Parse(reader, info);
+                connector = ComponentDxfIOSimNetworks.ConnectionEntityElement.Parse(reader, info);
             }
 
             Assert.IsNotNull(connector);
@@ -466,11 +466,11 @@ namespace SIMULTAN.Tests.IO
             Assert.AreEqual("My Connector", connector.Name);
             Assert.AreEqual(SimColors.Purple, connector.Color);
 
-            var prop = typeof(SimNetworkConnector).GetField("loadingSourceId",
+            var prop = typeof(SimNetworkConnection).GetField("loadingSourceId",
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             Assert.AreEqual(65004, ((SimId)prop.GetValue(connector)).LocalId);
 
-            prop = typeof(SimNetworkConnector).GetField("loadingTargetId",
+            prop = typeof(SimNetworkConnection).GetField("loadingTargetId",
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             Assert.AreEqual(65006, ((SimId)prop.GetValue(connector)).LocalId);
 
@@ -486,7 +486,7 @@ namespace SIMULTAN.Tests.IO
             ExtendedProjectData projectData = new ExtendedProjectData();
             projectData.SetCallingLocation(new DummyReferenceLocation(guid));
 
-            SimNetworkConnector connector = null;
+            SimNetworkConnection connector = null;
 
             using (DXFStreamReader reader = new DXFStreamReader(StringStream.Create(Resources.DXFSerializer_CODXF_ReadConnectorV26)))
             {
@@ -495,18 +495,18 @@ namespace SIMULTAN.Tests.IO
 
                 reader.Read();
 
-                connector = ComponentDxfIOSimNetworks.ConnectorEntityElement.Parse(reader, info);
+                connector = ComponentDxfIOSimNetworks.ConnectionEntityElement.Parse(reader, info);
             }
 
             Assert.IsNotNull(connector);
             Assert.AreEqual(65007, connector.Id.LocalId);
             Assert.AreEqual("My Connector", connector.Name);
 
-            var prop = typeof(SimNetworkConnector).GetField("loadingSourceId",
+            var prop = typeof(SimNetworkConnection).GetField("loadingSourceId",
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             Assert.AreEqual(65004, ((SimId)prop.GetValue(connector)).LocalId);
 
-            prop = typeof(SimNetworkConnector).GetField("loadingTargetId",
+            prop = typeof(SimNetworkConnection).GetField("loadingTargetId",
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             Assert.AreEqual(65006, ((SimId)prop.GetValue(connector)).LocalId);
 

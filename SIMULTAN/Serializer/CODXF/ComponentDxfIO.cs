@@ -79,7 +79,7 @@ namespace SIMULTAN.Serializer.CODXF
                 GetPublicResources(res, false, publicResources);
             GetPublicAssets(projectData.AssetManager, publicAssets, publicResources);
 
-            ComponentDxfIOResources.WriteAssetsSection(projectData.AssetManager.Resources,
+            ComponentDxfIOResources.WriteAssetsSection(projectData.AssetManager.Resources, projectData,
                 publicAssets,
                 x => publicResources.Contains(x),
                 writer);
@@ -165,7 +165,7 @@ namespace SIMULTAN.Serializer.CODXF
             writer.WriteVersionSection();
 
             //Data
-            ComponentDxfIOResources.WriteAssetsSection(projectData.AssetManager.Resources,
+            ComponentDxfIOResources.WriteAssetsSection(projectData.AssetManager.Resources, projectData,
                 projectData.AssetManager.Assets.Values.SelectMany(x => x),
                 x => true,
                 writer);

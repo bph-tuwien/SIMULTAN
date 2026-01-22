@@ -249,6 +249,7 @@ namespace SIMULTAN.Data.Components
             if (deleteComponent)
             {
                 factory.ProjectData.ComponentGeometryExchange.OnComponentRemoved(component);
+                factory.ProjectData.AssetManager.RemoveAssets(component);
                 factory.ProjectData.DataMappingTools.OnComponentRemoved(component);
                 factory.ProjectData.IdGenerator.Remove(component);
                 component.OnIsBeingDeleted();
@@ -284,6 +285,7 @@ namespace SIMULTAN.Data.Components
 
                 component.Factory = factory;
                 factory.ProjectData.ComponentGeometryExchange.OnComponentAdded(component);
+                factory.ProjectData.AssetManager.RestoreAssets(component);
             }
             else //This component is moved from somewhere else
             {

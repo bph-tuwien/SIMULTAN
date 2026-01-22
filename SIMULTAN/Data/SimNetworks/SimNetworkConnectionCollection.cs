@@ -6,23 +6,23 @@ namespace SIMULTAN.Data.SimNetworks
     /// <summary>
     /// Represents a connection between two SimNetworkPorts
     /// </summary>
-    public partial class SimNetworkConnector
+    public partial class SimNetworkConnection
     {
         /// <summary>
-        /// Collection storing the connectors occurring in a network
+        /// Collection storing the connections occurring in a network
         /// </summary>
-        public class SimNetworkConnectorCollection : ObservableCollection<SimNetworkConnector>
+        public class SimNetworkConnectionCollection : ObservableCollection<SimNetworkConnection>
         {
             /// <summary>
-            /// The parent network where the connectors occurs
+            /// The parent network where the connections occurs
             /// </summary>
             private SimNetwork parentNetwork;
 
             /// <summary>
-            /// Initializes a new SimNetworkConnectorCollection
+            /// Initializes a new SimNetworkConnectionCollection
             /// </summary>
             /// <param name="parentNetwork">The parent network</param>
-            public SimNetworkConnectorCollection(SimNetwork parentNetwork)
+            public SimNetworkConnectionCollection(SimNetwork parentNetwork)
             {
                 if (parentNetwork == null)
                     throw new ArgumentNullException(nameof(parentNetwork));
@@ -34,13 +34,13 @@ namespace SIMULTAN.Data.SimNetworks
             /// </summary>
             /// <param name="index">The index</param>
             /// <param name="item">The new item</param>
-            protected override void InsertItem(int index, SimNetworkConnector item)
+            protected override void InsertItem(int index, SimNetworkConnection item)
             {
                 if (item == null)
                     throw new ArgumentNullException(nameof(item));
                 if (this.Contains(item))
                 {
-                    throw new Exception("Connector is already contained in this collection");
+                    throw new Exception("Connection is already contained in this collection");
                 }
                 base.InsertItem(index, item);
                 this.SetValues(item);
@@ -57,7 +57,7 @@ namespace SIMULTAN.Data.SimNetworks
             }
 
             /// <inheritdoc />
-            protected override void SetItem(int index, SimNetworkConnector item)
+            protected override void SetItem(int index, SimNetworkConnection item)
             {
                 if (item == null)
                     throw new ArgumentNullException(nameof(item));
@@ -80,7 +80,7 @@ namespace SIMULTAN.Data.SimNetworks
             }
 
 
-            private void SetValues(SimNetworkConnector item)
+            private void SetValues(SimNetworkConnection item)
             {
                 if (item.Factory != null)
                     throw new ArgumentException("item already belongs to a factory");
@@ -117,7 +117,7 @@ namespace SIMULTAN.Data.SimNetworks
 
             }
 
-            private void UnsetValues(SimNetworkConnector item)
+            private void UnsetValues(SimNetworkConnection item)
             {
                 item.ParentNetwork = null;
 

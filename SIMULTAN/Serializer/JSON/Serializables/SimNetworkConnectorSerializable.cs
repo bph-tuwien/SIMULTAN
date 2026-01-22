@@ -6,7 +6,7 @@ using System;
 namespace SIMULTAN.Serializer.JSON
 {
     /// <summary>
-    /// Serializable class for the <see cref="SimNetworkConnector"/>
+    /// Serializable class for the <see cref="SimNetworkConnection"/>
     /// </summary>
     public class SimNetworkConnectorSerializable
     {
@@ -26,7 +26,7 @@ namespace SIMULTAN.Serializer.JSON
         /// Creates a new instance of the SimNetworkConnectorSerializable
         /// </summary>
         /// <param name="connector">The connector in the network which is serialized</param>
-        public SimNetworkConnectorSerializable(SimNetworkConnector connector)
+        public SimNetworkConnectorSerializable(SimNetworkConnection connector)
         {
             this.Source = connector.Source.LocalID;
             this.Target = connector.Target.LocalID;

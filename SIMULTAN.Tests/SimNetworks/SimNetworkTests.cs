@@ -47,7 +47,7 @@ namespace SIMULTAN.Tests.SimNetworks
             Assert.IsNotNull(network.Factory);
             Assert.AreEqual(network.Factory, factory);
 
-            Assert.IsNotNull(network.ContainedConnectors);
+            Assert.IsNotNull(network.ContainedConnections);
             Assert.IsNotNull(network.ContainedElements);
             Assert.IsNotNull(network.Ports);
 
@@ -147,11 +147,11 @@ namespace SIMULTAN.Tests.SimNetworks
             //Test execptions
             Assert.ThrowsException<ArgumentNullException>(() => new SimNetwork(null));
             Assert.ThrowsException<ArgumentNullException>(() => new SimNetwork(new SimId(), null, new SimPoint(0, 0),
-                Enumerable.Empty<SimNetworkPort>(), Enumerable.Empty<BaseSimNetworkElement>(), Enumerable.Empty<SimNetworkConnector>(), SimColors.DarkGray));
+                Enumerable.Empty<SimNetworkPort>(), Enumerable.Empty<BaseSimNetworkElement>(), Enumerable.Empty<SimNetworkConnection>(), SimColors.DarkGray));
             Assert.ThrowsException<ArgumentNullException>(() => new SimNetwork(new SimId(), "", new SimPoint(0, 0),
-                null, Enumerable.Empty<BaseSimNetworkElement>(), Enumerable.Empty<SimNetworkConnector>(), SimColors.DarkGray));
+                null, Enumerable.Empty<BaseSimNetworkElement>(), Enumerable.Empty<SimNetworkConnection>(), SimColors.DarkGray));
             Assert.ThrowsException<ArgumentNullException>(() => new SimNetwork(new SimId(), "", new SimPoint(0, 0),
-                Enumerable.Empty<SimNetworkPort>(), null, Enumerable.Empty<SimNetworkConnector>(), SimColors.DarkGray));
+                Enumerable.Empty<SimNetworkPort>(), null, Enumerable.Empty<SimNetworkConnection>(), SimColors.DarkGray));
             Assert.ThrowsException<ArgumentNullException>(() => new SimNetwork(new SimId(), "", new SimPoint(0, 0),
                 Enumerable.Empty<SimNetworkPort>(), Enumerable.Empty<BaseSimNetworkElement>(), null, (SimColors.DarkGray)));
             Assert.ThrowsException<ArgumentNullException>(() => new SimNetwork(null, new SimPoint(0, 0)));
@@ -404,7 +404,7 @@ namespace SIMULTAN.Tests.SimNetworks
         }
 
 
-        private SimNetworkConnector AddConnector(SimNetwork loadedNW)
+        private SimNetworkConnection AddConnector(SimNetwork loadedNW)
         {
             var loadedBlock1 = loadedNW.ContainedElements.FirstOrDefault(e => e.Name == this._bName1) as SimNetworkBlock;
             var loadedBlock2 = loadedNW.ContainedElements.FirstOrDefault(e => e.Name == this._bName2) as SimNetworkBlock;
@@ -412,17 +412,17 @@ namespace SIMULTAN.Tests.SimNetworks
             Assert.IsNotNull(loadedBlock1);
             Assert.IsNotNull(loadedBlock2);
 
-            var sourcePort = loadedBlock1.Ports.FirstOrDefault(p => p.PortType == PortType.Output && p.Connectors.Count == 0);
-            var targetPort = loadedBlock2.Ports.FirstOrDefault(p => p.PortType == PortType.Input && p.Connectors.Count == 0);
+            var sourcePort = loadedBlock1.Ports.FirstOrDefault(p => p.PortType == PortType.Output && p.Connections.Count == 0);
+            var targetPort = loadedBlock2.Ports.FirstOrDefault(p => p.PortType == PortType.Input && p.Connections.Count == 0);
 
             Assert.IsNotNull(sourcePort);
             Assert.IsNotNull(targetPort);
 
             sourcePort.ConnectTo(targetPort);
 
-            Assert.AreEqual(sourcePort.Connectors.Count, 1);
+            Assert.AreEqual(sourcePort.Connections.Count, 1);
 
-            return sourcePort.Connectors.FirstOrDefault();
+            return sourcePort.Connections.FirstOrDefault();
         }
 
         private WeakReference MemoryLeakTestPortDelete_Action()
@@ -474,7 +474,7 @@ namespace SIMULTAN.Tests.SimNetworks
 
             var connector = this.AddConnector(loadedNW);
 
-            var firstPort = loadedBlock.Ports.FirstOrDefault(t => t.Connectors.Count > 0);
+            var firstPort = loadedBlock.Ports.FirstOrDefault(t => t.Connections.Count > 0);
 
             var deletedId = firstPort.Id;
             loadedBlock.Ports.Remove(firstPort);
@@ -489,7 +489,7 @@ namespace SIMULTAN.Tests.SimNetworks
             //Check if the connector is also not included in the project anymore
             var lConnector = this.projectData.IdGenerator.GetById<SimObjectNew>(connector.Id);
             Assert.IsNull(lConnector);
-            Assert.AreEqual(loadedNW.ContainedConnectors.Count, 0);
+            Assert.AreEqual(loadedNW.ContainedConnections.Count, 0);
 
         }
 
@@ -509,16 +509,16 @@ namespace SIMULTAN.Tests.SimNetworks
             Assert.IsNotNull(loadedBlock1);
             Assert.IsNotNull(loadedBlock2);
 
-            var sourcePort = loadedBlock1.Ports.FirstOrDefault(p => p.PortType == PortType.Output && p.Connectors.Count == 0);
-            var targetPort = loadedBlock2.Ports.FirstOrDefault(p => p.PortType == PortType.Input && p.Connectors.Count == 0);
+            var sourcePort = loadedBlock1.Ports.FirstOrDefault(p => p.PortType == PortType.Output && p.Connections.Count == 0);
+            var targetPort = loadedBlock2.Ports.FirstOrDefault(p => p.PortType == PortType.Input && p.Connections.Count == 0);
 
             Assert.IsNotNull(sourcePort);
             Assert.IsNotNull(targetPort);
 
             sourcePort.ConnectTo(targetPort);
 
-            Assert.AreEqual(sourcePort.Connectors.FirstOrDefault().Target, targetPort);
-            Assert.AreEqual(sourcePort.Connectors.FirstOrDefault().Source, sourcePort);
+            Assert.AreEqual(sourcePort.Connections.FirstOrDefault().Target, targetPort);
+            Assert.AreEqual(sourcePort.Connections.FirstOrDefault().Source, sourcePort);
 
         }
 
@@ -536,8 +536,8 @@ namespace SIMULTAN.Tests.SimNetworks
             Assert.IsNotNull(loadedBlock1);
             Assert.IsNotNull(loadedBlock2);
 
-            var sourcePort = loadedBlock1.Ports.FirstOrDefault(p => p.PortType == PortType.Output && p.Connectors.Count == 0);
-            var targetPort = loadedBlock2.Ports.FirstOrDefault(p => p.PortType == PortType.Input && p.Connectors.Count == 0);
+            var sourcePort = loadedBlock1.Ports.FirstOrDefault(p => p.PortType == PortType.Output && p.Connections.Count == 0);
+            var targetPort = loadedBlock2.Ports.FirstOrDefault(p => p.PortType == PortType.Input && p.Connections.Count == 0);
 
             Assert.IsNotNull(sourcePort);
             Assert.IsNotNull(targetPort);
@@ -548,11 +548,11 @@ namespace SIMULTAN.Tests.SimNetworks
 
             sourcePort.ConnectTo(targetPort);
 
-            Assert.AreEqual(sourcePort.Connectors.FirstOrDefault().Target, targetPort);
-            Assert.AreEqual(sourcePort.Connectors.FirstOrDefault().Source, sourcePort);
+            Assert.AreEqual(sourcePort.Connections.FirstOrDefault().Target, targetPort);
+            Assert.AreEqual(sourcePort.Connections.FirstOrDefault().Source, sourcePort);
 
             sourcePort.RemoveConnections();
-            Assert.IsFalse(loadedNW.ContainedConnectors.Contains(sourcePort.Connectors.FirstOrDefault()));
+            Assert.IsFalse(loadedNW.ContainedConnections.Contains(sourcePort.Connections.FirstOrDefault()));
 
 
         }
@@ -569,8 +569,8 @@ namespace SIMULTAN.Tests.SimNetworks
             Assert.IsNotNull(loadedBlock1);
             Assert.IsNotNull(loadedBlock2);
 
-            var sourcePort = loadedBlock1.Ports.FirstOrDefault(p => p.PortType == PortType.Output && p.Connectors.Count == 0);
-            var targetPort = loadedBlock2.Ports.FirstOrDefault(p => p.PortType == PortType.Input && p.Connectors.Count == 0);
+            var sourcePort = loadedBlock1.Ports.FirstOrDefault(p => p.PortType == PortType.Output && p.Connections.Count == 0);
+            var targetPort = loadedBlock2.Ports.FirstOrDefault(p => p.PortType == PortType.Input && p.Connections.Count == 0);
 
             Assert.IsNotNull(sourcePort);
             Assert.IsNotNull(targetPort);
@@ -578,10 +578,10 @@ namespace SIMULTAN.Tests.SimNetworks
             sourcePort.ConnectTo(targetPort);
 
 
-            WeakReference nwRef = new WeakReference(loadedNW.ContainedConnectors.FirstOrDefault());
+            WeakReference nwRef = new WeakReference(loadedNW.ContainedConnections.FirstOrDefault());
             Assert.IsTrue(nwRef.IsAlive);
 
-            loadedNW.ContainedConnectors.Remove(loadedNW.ContainedConnectors.FirstOrDefault());
+            loadedNW.ContainedConnections.Remove(loadedNW.ContainedConnections.FirstOrDefault());
 
             return nwRef;
         }
@@ -665,7 +665,7 @@ namespace SIMULTAN.Tests.SimNetworks
             CheckNetworkProperties(lNw1, "SimNetwork1", new SimPoint(0, 0), null, this.projectData.SimNetworks, 200, 100);
 
             var network2 = new SimNetwork(SimId.Empty, "SimNetwork2", new SimPoint(0, 0),
-                Enumerable.Empty<SimNetworkPort>(), Enumerable.Empty<BaseSimNetworkElement>(), Enumerable.Empty<SimNetworkConnector>(), (SimColors.DarkGray));
+                Enumerable.Empty<SimNetworkPort>(), Enumerable.Empty<BaseSimNetworkElement>(), Enumerable.Empty<SimNetworkConnection>(), (SimColors.DarkGray));
             this.projectData.SimNetworks.Add(network2);
             var lNw2 = this.projectData.SimNetworks.FirstOrDefault(t => t.Name == "SimNetwork2");
             Assert.IsNotNull(lNw2);

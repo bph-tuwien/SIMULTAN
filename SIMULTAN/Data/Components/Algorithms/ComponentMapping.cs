@@ -141,7 +141,7 @@ namespace SIMULTAN.Data.Components
         /// Removes the asset in the file found at the coded location and with the given id from the component.
         /// </summary>
         /// <param name="_comp">the calling component</param>
-        /// <param name="_path_code">the integer code that corresponds to a file nam in the asset manager</param>
+        /// <param name="_path_code">the integer code that corresponds to a file name in the asset manager</param>
         /// <param name="_content_id">the id of the asset in the file found at the coded location</param>
         /// <returns></returns>
         public static Asset RemoveAsset(this SimComponent _comp, int _path_code, string _content_id)
