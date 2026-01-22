@@ -7,7 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SIMULTAN.Tests.ResourceEntríes
+namespace SIMULTAN.Tests.ResourceEntries
 {
     [TestClass]
     public class DefaultMachineHashGeneratorTests

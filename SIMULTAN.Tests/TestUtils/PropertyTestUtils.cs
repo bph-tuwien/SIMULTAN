@@ -17,7 +17,6 @@ namespace SIMULTAN.Tests.TestUtils
         public static void CheckProperty<T>(INotifyPropertyChanged obj, string prop, T value)
         {
             CheckProperty(obj, prop, value, new List<string> { prop });
-
         }
 
         public static void CheckCollectionProperty<T>(INotifyPropertyChanged obj, string prop, Collection<T> values)

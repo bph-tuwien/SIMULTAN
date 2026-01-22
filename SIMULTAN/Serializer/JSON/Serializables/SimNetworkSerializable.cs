@@ -73,9 +73,9 @@ namespace SIMULTAN.Serializer.JSON
                     this.Blocks.Add(new SimNetworkBlockSerializable(block));
                 }
             }
-            for (int i = 0; i < network.ContainedConnectors.Count; i++)
+            for (int i = 0; i < network.ContainedConnections.Count; i++)
             {
-                this.Connectors.Add(new SimNetworkConnectorSerializable(network.ContainedConnectors[i]));
+                this.Connectors.Add(new SimNetworkConnectorSerializable(network.ContainedConnections[i]));
             }
         }
 

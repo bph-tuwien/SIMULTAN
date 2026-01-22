@@ -1,5 +1,6 @@
 ﻿using SIMULTAN.Data.Geometry;
 using SIMULTAN.Data.SimNetworks;
+using System;
 using System.Collections.Generic;
 
 namespace SIMULTAN.Exchange.SimNetworkConnectors
@@ -7,8 +8,10 @@ namespace SIMULTAN.Exchange.SimNetworkConnectors
     /// <summary>
     /// Abstract class for the geometry connectors of a SimNetwork
     /// </summary>
-    public abstract class BaseSimnetworkGeometryConnector
+    public abstract class BaseSimNetworkGeometryConnector : IDisposable
     {
+        private bool isDisposed;
+
         /// <summary>
         /// The represented SimNetwork Element
         /// </summary>
@@ -36,9 +39,22 @@ namespace SIMULTAN.Exchange.SimNetworkConnectors
         /// <param name="geometry"></param>
         internal abstract void ChangeBaseGeometry(BaseGeometry geometry);
 
+        /// <inheritdoc />
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!isDisposed)
+            {
+                isDisposed = true;
+            }
+        }
+
         /// <summary>
-        /// Called when the connector should be deleted. Has to free all ressources and disconnect all events
+        /// Called when the connector should be deleted. Has to free all resources and disconnect all events
         /// </summary>
-        public virtual void Dispose() { }
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: true);
+        }
     }
 }

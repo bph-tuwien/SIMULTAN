@@ -13,7 +13,10 @@ using System.Threading.Tasks;
 
 namespace SIMULTAN.Serializer.JSON
 {
-    public class JSONImporter
+    /// <summary>
+    /// Provides methods for loading taxonomies from JSON files 
+    /// </summary>
+    public static class JSONImporter
     {
         /// <summary>
         /// Imports a taxonomy JSON file into the project
@@ -229,7 +232,5 @@ namespace SIMULTAN.Serializer.JSON
 
             return ImportAndMergeTaxonomy(targetTaxonomy, json, deleteMissing);
         }
-
-
     }
 }

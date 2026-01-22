@@ -5,11 +5,10 @@ using System.Collections.ObjectModel;
 namespace SIMULTAN.Exchange.SimNetworkConnectors
 {
     /// <summary>
-    /// Base class for the connector of a SimNetworkBlock and a SimNetwork <see cref="SimNetworkBlock"/> <see cref="SimNetwork"/>
+    /// Base class for the connector of a <see cref="SimNetworkBlock"/> and a <see cref="SimNetwork"/>
     /// </summary>
-    internal abstract class SimNetworkBaseNetworkElementConnector : BaseSimnetworkGeometryConnector
+    internal abstract class SimNetworkBaseNetworkElementConnector : BaseSimNetworkGeometryConnector
     {
-
         /// <summary>
         /// The vertex
         /// </summary>
@@ -17,14 +16,10 @@ namespace SIMULTAN.Exchange.SimNetworkConnectors
         internal override BaseGeometry Geometry => Vertex;
 
         /// <summary>
-        /// The network element represented by this connector (it is either a SimNetworkBlock or a SimNetwork)
+        /// The network element represented by this connector (it is either a <see cref="SimNetworkBlock"/> and a <see cref="SimNetwork"/>)
         /// </summary>
         internal abstract BaseSimNetworkElement NetworkElement { get; }
 
-        /// <summary>
-        /// Port connectors
-        /// </summary>
-        internal ObservableCollection<SimNetworkPortConnector> PortConnectors = new ObservableCollection<SimNetworkPortConnector>();
         /// <inheritdoc />
 
         internal override void ChangeBaseGeometry(BaseGeometry geometry)
@@ -38,6 +33,5 @@ namespace SIMULTAN.Exchange.SimNetworkConnectors
         internal override void OnTopologyChanged()
         {
         }
-
     }
 }

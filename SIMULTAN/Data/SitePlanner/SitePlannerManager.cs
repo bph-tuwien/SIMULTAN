@@ -88,7 +88,7 @@ namespace SIMULTAN.Data.SitePlanner
         public GeoMap GetGeoMapByFile(FileInfo file)
         {
             if (file == null) return null;
-            return GeoMaps.Where(x => x.GeoMapFile.Name.Equals(file.Name)).FirstOrDefault();
+            return GeoMaps.FirstOrDefault(x => x.GeoMapFile.CurrentFullPath.Equals(file.FullName));
         }
 
         /// <summary>
@@ -99,7 +99,7 @@ namespace SIMULTAN.Data.SitePlanner
         public SitePlannerProject GetSitePlannerProjectByFile(FileInfo file)
         {
             if (file == null) return null;
-            return SitePlannerProjects.Where(x => x.SitePlannerFile.Name.Equals(file.Name)).FirstOrDefault();
+            return SitePlannerProjects.FirstOrDefault(x => x.SitePlannerFile.CurrentFullPath.Equals(file.FullName));
         }
 
         /// <summary>

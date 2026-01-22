@@ -2373,6 +2373,8 @@ namespace SIMULTAN.Data.Assets
             if (this.Assets.ContainsKey(_a.ResourceKey))
             {
                 this.Assets[_a.ResourceKey].Remove(_a);
+                if (!this.Assets[_a.ResourceKey].Any())
+                    this.Assets.Remove(_a.ResourceKey);
             }
         }
 
@@ -2392,6 +2394,54 @@ namespace SIMULTAN.Data.Assets
                     comp.RemoveAsset(_a);
                 }
             }
+        }
+
+        /// <summary>
+        /// Removes all assets that are referenced by the component. Does not remove the reference from the component
+        /// </summary>
+        /// <param name="component">The component for which the assets should be removed</param>
+        public void RemoveAssets(SimComponent component)
+        {
+            foreach (var asset in component.ReferencedAssets)
+            {
+                asset.RemoveReferencing(component.Id.LocalId);
+                if (!asset.ReferencingComponentIds.Any())
+                {
+                    this.Assets[asset.ResourceKey].Remove(asset);
+                    if (!this.Assets[asset.ResourceKey].Any())
+                        this.Assets.Remove(asset.ResourceKey);
+                }
+            }
+
+            //foreach (var child in component.Components.Where(x => x.Component != null))
+            //    RemoveAssets(child.Component);
+        }
+
+        /// <summary>
+        /// Restores all assets that are referenced by the component.
+        /// </summary>
+        /// <param name="component">The component for which the assets should be restored</param>
+        public void RestoreAssets(SimComponent component)
+        {
+            foreach (var asset in component.ReferencedAssets)
+            {
+                if (!this.resource_look_up.ContainsKey(asset.ResourceKey))
+                    throw new Exception("Resource doesn't exist");
+
+                asset.AddReferencing(component.Id.LocalId);
+
+                if (!this.Assets.TryGetValue(asset.ResourceKey, out var assetDict))
+                {
+                    assetDict = new ElectivelyObservableCollection<Asset>();
+                    this.Assets.Add(asset.ResourceKey, assetDict);
+                }
+
+                if (!assetDict.Contains(asset))
+                    this.Assets[asset.ResourceKey].Add(asset);
+            }
+
+            foreach (var child in component.Components.Where(x => x.Component != null))
+                RestoreAssets(child.Component);
         }
 
         #endregion

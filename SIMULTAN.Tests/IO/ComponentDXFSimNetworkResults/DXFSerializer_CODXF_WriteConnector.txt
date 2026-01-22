@@ -1,7 +1,7 @@
 ﻿0
 SIMNETWORK_CONNECTOR
 100
-SIMULTAN.Data.SimNetworks.SimNetworkConnector
+SIMULTAN.Data.SimNetworks.SimNetworkConnection
 900
 65007
 2

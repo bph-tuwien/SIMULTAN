@@ -1,7 +1,12 @@
-﻿using SIMULTAN.Serializer.DXF;
+﻿using SIMULTAN.Data.Taxonomy;
+using SIMULTAN.Serializer.DXF;
+using SIMULTAN.Utils;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Collections.Specialized;
+using System.Linq;
 using System.Windows.Input;
 
 namespace SIMULTAN.Data.Components
@@ -39,7 +44,35 @@ namespace SIMULTAN.Data.Components
                 throw new ArgumentNullException(nameof(parameter));
 
             if (!data.ContainsKey(parameter))
-                this.data.Add(parameter, value);
+            {
+                this.data.Add(parameter, CopyValue(value));
+            }
+        }
+
+        private object CopyValue(object value)
+        {
+            if (value == null)
+                return null;
+            if (value.GetType().IsValueType)
+            {
+                return value;
+            }
+            else if (value is ISimParameterValueCollection col)
+            {
+                return col.CloneWith(Owner);
+            }
+            else if (value is SimTaxonomyEntryReference reference)
+            {
+                return reference;
+            }
+            else if (value is string str)
+            {
+                return str;
+            }
+            else
+            {
+                throw new NotSupportedException("Parameter type not supported");
+            }
         }
 
 
@@ -98,12 +131,74 @@ namespace SIMULTAN.Data.Components
                 // while the old value is
                 if ((currentValue == null && value != null) || (currentValue != null && !currentValue.Equals(value)))
                 {
-                    data[key] = value;
+                    if (value is IList valueList &&
+                        ((IList)key.Value).Count != valueList.Count)
+                    {
+                        throw new InvalidOperationException("Instance parameters list item count does not match the parameter's");
+                    }
+                    data[key] = CopyValue(value);
 
                     key.NotifyValueChanged(this.Owner);
                     NotifyGeometryExchange(key);
                 }
             }
+        }
+
+        internal void ParameterValueCollectionChanged<T>(SimBaseListParameter<T> parameter, NotifyCollectionChangedEventArgs e)
+        {
+            this.NotifyWriteAccess();
+            if (!data.ContainsKey(parameter))
+                throw new KeyNotFoundException("operator may not be used to add additional entries");
+
+            var value = (SimParameterValueCollection<T>)data[parameter];
+            value.HandleInstanceCollectionChanged = false;
+            switch (e.Action)
+            {
+                case NotifyCollectionChangedAction.Add:
+                    for (int i = 0; i < e.NewItems.Count; i++)
+                    {
+                        value.Insert(i + e.NewStartingIndex, (T)e.NewItems[i]);
+                    }
+                    break;
+                case NotifyCollectionChangedAction.Remove:
+                    for (int i = 0; i < e.OldItems.Count; i++)
+                    {
+                        value.RemoveAt(e.OldStartingIndex);
+                    }
+                    break;
+                case NotifyCollectionChangedAction.Reset:
+                    value.Clear();
+                    break;
+                case NotifyCollectionChangedAction.Replace:
+                    for (int i = 0; i < e.OldItems.Count; i++)
+                    {
+                        value[i + e.OldStartingIndex] = (T)e.NewItems[i];
+                    }
+                    break;
+                default:
+                    throw new NotSupportedException($"Collection operation {e.Action.ToString()} is not supported by list parameters");
+            }
+
+            // if they got out of sync, repair them
+            if (value.Count > parameter.Value.Count)
+            {
+                while (value.Count > parameter.Value.Count)
+                {
+                    value.RemoveAt(value.Count - 1);
+                }
+            }
+            else if (value.Count < parameter.Value.Count)
+            {
+                while (value.Count < parameter.Value.Count)
+                {
+                    value.Add(default);
+                }
+            }
+
+            value.HandleInstanceCollectionChanged = true;
+
+            parameter.NotifyValueChanged(this.Owner);
+            NotifyGeometryExchange(parameter);
         }
 
         //Doesn't notify the ComponentGeometryExchange. Prevents updating twice when the parameter value itself is changed
@@ -113,7 +208,12 @@ namespace SIMULTAN.Data.Components
 
             if (!data.ContainsKey(parameter))
                 throw new KeyNotFoundException("operator may not be used to add additional entries");
-            data[parameter] = value;
+            if (value is IList valueList &&
+                ((IList)parameter.Value).Count != valueList.Count)
+            {
+                throw new InvalidOperationException("Instance parameters list item count does not match the parameter's");
+            }
+            data[parameter] = CopyValue(value);
 
             parameter.NotifyValueChanged(this.Owner);
         }

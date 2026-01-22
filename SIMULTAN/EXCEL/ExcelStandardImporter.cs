@@ -14,9 +14,12 @@ namespace SIMULTAN.Excel
 {
     //Needs to be completely refactored.
 
+    /// <summary>
+    /// Imports <see cref="SimMultiValueBigTable"/> from Excel worksheets
+    /// </summary>
     public class ExcelStandardImporter
     {
-        #region STATC
+        #region STATIC
 
         public const int MAX_NR_TABLE_ENTRIES = 100000; //10000; //8763;
         public const int COL_OFFSET = 5;
@@ -46,14 +49,14 @@ namespace SIMULTAN.Excel
             if (factory == null)
                 throw new ArgumentNullException(nameof(factory));
 
-            int nr_rows_to_read = (maxRowCount <= 0) ? ExcelStandardImporter.MAX_NR_TABLE_ENTRIES : maxRowCount + ExcelStandardImporter.ROW_OFFSET;
+            int nr_rows_to_read = (maxRowCount <= 0) ? MAX_NR_TABLE_ENTRIES : maxRowCount + ROW_OFFSET;
 
-            ExcelStandardImporter.CheckFileLocked(file); //After this, the file can be opened and is valid
+            CheckFileLocked(file); //After this, the file can be opened and is valid
 
-            List<List<string>> raw_record = this.ImportFromFile(file, ExcelStandardImporter.TABLE_NAME, nr_rows_to_read);
+            List<List<string>> raw_record = this.ImportFromFile(file, TABLE_NAME, nr_rows_to_read);
             List<string> names, units;
             List<List<object>> values;
-            ExcelStandardImporter.ParseData(raw_record, ExcelStandardImporter.MAX_NR_TABLE_ENTRIES,
+            ParseData(raw_record, MAX_NR_TABLE_ENTRIES,
                 out names, out units, out values);
 
             // get the table name
@@ -439,8 +442,6 @@ namespace SIMULTAN.Excel
             else
                 return figures.Select(x => LetterFromNr(x)).Aggregate((x, y) => x + y);
         }
-
-
 
         private static string LetterFromNr(int _nr)
         {

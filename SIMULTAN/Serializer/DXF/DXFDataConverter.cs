@@ -2,6 +2,7 @@
 using SIMULTAN.Data.FlowNetworks;
 using SIMULTAN.Data.Geometry;
 using SIMULTAN.Data.MultiValues;
+using SIMULTAN.Data.SimMath;
 using SIMULTAN.Data.SimNetworks;
 using SIMULTAN.Data.Taxonomy;
 using SIMULTAN.Data.Users;
@@ -10,9 +11,9 @@ using SIMULTAN.DataMapping;
 using SIMULTAN.Projects;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Linq;
-using SIMULTAN.Data.SimMath;
 using static SIMULTAN.Data.Components.CalculationParameterMetaData;
 using static SIMULTAN.Serializer.CODXF.ComponentDxfIOComponents;
 
@@ -70,6 +71,7 @@ namespace SIMULTAN.Serializer.DXF
         IDXFDataConverter<Guid>, IDXFDataConverter<bool>,
         IDXFDataConverter<long>, IDXFDataConverter<ulong>, IDXFDataConverter<int>, IDXFDataConverter<uint>,
         IDXFDataConverter<byte>, IDXFDataConverter<double>,
+        IDXFDataConverter<SimParameterValueCollection<double>>,
         IDXFDataConverter<SimMultiValueType>, IDXFDataConverter<SimCategory>, IDXFDataConverter<SimInfoFlow>,
         IDXFDataConverter<SimParameterInstancePropagation>, IDXFDataConverter<SimParameterOperations>,
         IDXFDataConverter<ResourceReference>,
@@ -246,6 +248,20 @@ namespace SIMULTAN.Serializer.DXF
                     double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out double f);
                     return f;
             }
+        }
+
+        public string ToDXFString(SimParameterValueCollection<double> value)
+        {
+            return String.Join(";", value.Select(x => ToDXFString(x)));
+        }
+
+        SimParameterValueCollection<double> IDXFDataConverter<SimParameterValueCollection<double>>.FromDXFString(string value, DXFParserInfo info)
+        {
+            var split = value.Split(';');
+            return new(split.Select(x =>
+            {
+                return DXFDataConverter<double>.P.FromDXFString(x, info);
+            }));
         }
 
 

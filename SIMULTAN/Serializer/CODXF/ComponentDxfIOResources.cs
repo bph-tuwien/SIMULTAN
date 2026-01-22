@@ -3,6 +3,7 @@ using SIMULTAN.Data.Assets;
 using SIMULTAN.Data.Components;
 using SIMULTAN.Data.Taxonomy;
 using SIMULTAN.Data.Users;
+using SIMULTAN.Projects;
 using SIMULTAN.Serializer.DXF;
 using SIMULTAN.Utils;
 using SIMULTAN.Utils.Files;
@@ -178,15 +179,36 @@ namespace SIMULTAN.Serializer.CODXF
         /// Writes a asset section to the DXF stream
         /// </summary>
         /// <param name="resources">The resources to serialize</param>
+        /// <param name="projectData">The project data from which assets should be exported</param>
         /// <param name="assets">The assets to serialize</param>
         /// <param name="resourceFilter">Filter to decide which resources should be serialized. Call for root elements as well as for sub resources</param>
         /// <param name="writer">The writer into which the data should be written</param>
-        internal static void WriteAssetsSection(IEnumerable<ResourceEntry> resources,
+        internal static void WriteAssetsSection(IEnumerable<ResourceEntry> resources, ProjectData projectData,
             IEnumerable<Asset> assets, Predicate<ResourceEntry> resourceFilter, DXFStreamWriter writer)
         {
+            //This is a bugfix for a long standing bug where Assets were not deleted when the corresponding component was removed
+            List<Asset> cleanAssets = new List<Asset>();
+            foreach (var ass in assets)
+            {
+                for (int i = ass.ReferencingComponentIds.Count - 1; i >= 0; i--)
+                {
+                    var rcId = ass.ReferencingComponentIds[i];
+                    var comp = projectData.IdGenerator.GetById<SimComponent>(new SimId(projectData.Owner.GlobalID, rcId));
+                    if (comp == null)
+                    {
+                        ass.ReferencingComponentIds.RemoveAt(i);
+                    }
+                }
+
+                if (ass.ReferencingComponentIds.Any())
+                    cleanAssets.Add(ass);
+            }
+            //End Fix
+
+
             writer.StartSection(ParamStructTypes.ASSET_SECTION, resources.Count());
 
-            WriteAssetManager(resources, resourceFilter, assets, writer);
+            WriteAssetManager(resources, resourceFilter, cleanAssets, writer);
 
             writer.EndSection();
         }
@@ -460,6 +482,8 @@ namespace SIMULTAN.Serializer.CODXF
         /// <param name="writer">The writer into which the data should be written</param>
         internal static void WriteAsset(Asset asset, DXFStreamWriter writer)
         {
+            
+
             if (asset is DocumentAsset da)
                 WriteDocumentAsset(da, writer);
             else if (asset is GeometricAsset ga)

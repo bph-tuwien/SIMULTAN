@@ -10,7 +10,7 @@ using System.Linq;
 namespace SIMULTAN.Exchange.SimNetworkConnectors
 {
     /// <summary>
-    /// Represents a <see cref="SimNetworkConnector"/> as a <see cref="Vertex"/>
+    /// Represents a <see cref="SimNetworkConnection"/> as a <see cref="Vertex"/>
     /// </summary>
     internal class SimNetworkNetworkConnector : SimNetworkBaseNetworkElementConnector
     {
@@ -86,12 +86,13 @@ namespace SIMULTAN.Exchange.SimNetworkConnectors
         internal override void ChangeBaseGeometry(BaseGeometry geometry)
         {
             this.Vertex = geometry as Vertex;
+            NetworkElement.RepresentationReference = new Data.GeometricReference(geometry.ModelGeometry.Model.File.Key, geometry.Id);
         }
 
         /// <inheritdoc />
-        public override void Dispose()
+        protected override void Dispose(bool disposing)
         {
-            base.Dispose();
+            base.Dispose(disposing);
         }
         #endregion
 

@@ -37,7 +37,7 @@ namespace SIMULTAN.Tests.IO
             {
                 using (DXFStreamWriter writer = new DXFStreamWriter(stream, true))
                 {
-                    ComponentDxfIOResources.WriteAssetsSection(projectData.AssetManager.Resources,
+                    ComponentDxfIOResources.WriteAssetsSection(projectData.AssetManager.Resources, projectData,
                         projectData.AssetManager.Assets.Values.SelectMany(x => x), x => true,
                         writer);
                 }

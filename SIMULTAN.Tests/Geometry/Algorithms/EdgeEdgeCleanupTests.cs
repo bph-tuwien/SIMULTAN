@@ -26,8 +26,9 @@ namespace SIMULTAN.Tests.Geometry.Algorithms
             var originalVertices = gm.Geometry.Vertices.ToList();
             var originalEdges = gm.Geometry.Edges.ToList();
 
-            AABBGrid edgeGrid= null;
-            ModelCleanupAlgorithms.SplitEdgeEdgeIntersections(gm.Geometry, 0.01, ref edgeGrid);
+            AABBGrid edgeGrid = null;
+            AABBGrid vertexGrid = null;
+            ModelCleanupAlgorithms.SplitEdgeEdgeIntersections(gm.Geometry, 0.01, ref vertexGrid, ref edgeGrid);
 
             Assert.AreEqual(5, gm.Geometry.Vertices.Count);
             Assert.AreEqual(4, gm.Geometry.Edges.Count);

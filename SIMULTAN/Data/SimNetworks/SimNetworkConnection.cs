@@ -8,13 +8,13 @@ using System.Collections.ObjectModel;
 namespace SIMULTAN.Data.SimNetworks
 {
     /// <summary>
-    /// Class for representing a connector between two ports in a SimNetwork
+    /// Class for representing a connection between two ports in a SimNetwork
     /// </summary>
-    public partial class SimNetworkConnector : SimNamedObject<ISimManagedCollection>, ISimNetworkElement
+    public partial class SimNetworkConnection : SimNamedObject<ISimManagedCollection>, ISimNetworkElement
     {
 
         /// <summary>
-        /// Color of the Connector
+        /// Color of the Connection
         /// </summary>
         public SimColor Color
         {
@@ -34,9 +34,8 @@ namespace SIMULTAN.Data.SimNetworks
 
         private GeometricReference geom_representation_ref;
         /// <summary>
-        /// Saves the reference to the *representing* geometry. It either can be a
-        ///  <see cref="SimNetworkConnectorConnector"/> or a <see cref="SimNetworkInvalidConnectorConnector"/>
-        ///  Whenever the connection between the two ports in the geometry is valid, the connection is represented by a Vertex, in other cases it is represented by a Polyline
+        /// Saves the reference to the *representing* geometry. It either can be a <see cref="SimNetworkConnectionConnector"/>.
+        /// Whenever the connection between the two ports in the geometry is valid, the connection is represented by a Vertex, in other cases it is represented by a Polyline
         /// </summary>
         public GeometricReference RepresentationReference
         {
@@ -76,19 +75,68 @@ namespace SIMULTAN.Data.SimNetworks
 
         #region .CTOR
         /// <summary>
-        /// Initializes a new SimNetworkConnector
+        /// Initializes a new <see cref="SimNetworkConnection"/>
+        /// Sets the source and target ports based on the provided ports.
         /// </summary>
-        /// <param name="port1">The source port</param>
-        /// <param name="port2">The target port</param>
-        public SimNetworkConnector(SimNetworkPort port1, SimNetworkPort port2)
+        /// <param name="port1">The first port</param>
+        /// <param name="port2">The second port</param>
+        public SimNetworkConnection(SimNetworkPort port1, SimNetworkPort port2)
         {
             if (port1 == null)
                 throw new ArgumentNullException(nameof(port1));
             if (port2 == null)
                 throw new ArgumentNullException(nameof(port2));
+            this.DetermineSourceTarget(port1, port2);
+
+            this.Points = new ObservableCollection<SimPoint>();
+            this.Color = SimColors.DarkGray;
+            this.Name = this.Name = string.Format("{0}to{1}", this.Source.LocalID.ToString(), this.Target.LocalID.ToString());
+            this.geom_representation_ref = GeometricReference.Empty;
+        }
+
+        private void DetermineSourceTarget(SimNetworkPort port1, SimNetworkPort port2)
+        {
+            // maybe same port type if one is connected to a subnetwork
             if (port1.PortType == port2.PortType)
             {
-                if (port1.ParentNetworkElement is SimNetwork nw1)
+                // subnet connected to contained subnet or parent subnet
+                if (port1.ParentNetworkElement is SimNetwork nw1 && port2.ParentNetworkElement is SimNetwork nw2)
+                {
+                    // nw2 is child network
+                    if (nw2.ParentNetwork != null && nw2.ParentNetwork == nw1)
+                    {
+                        if (port1.PortType == PortType.Input)
+                        {
+                            this.Source = port1;
+                            this.Target = port2;
+                        }
+                        if (port1.PortType == PortType.Output)
+                        {
+                            this.Source = port2;
+                            this.Target = port1;
+                        }
+                    }
+                    // nw1 is child network
+                    else if (nw1.ParentNetwork != null && nw1.ParentNetwork == nw2)
+                    {
+                        if (port1.PortType == PortType.Input)
+                        {
+                            this.Source = port2;
+                            this.Target = port1;
+                        }
+                        if (port1.PortType == PortType.Output)
+                        {
+                            this.Source = port1;
+                            this.Target = port2;
+                        }
+                    }
+                    else
+                    {
+                        throw new ArgumentException("Cannot connect two adjacent subnets with ports of same type");
+                    }
+                }
+                // Port 1 is connected to subnet
+                else if (port1.ParentNetworkElement is SimNetwork)
                 {
                     if (port1.PortType == PortType.Input)
                     {
@@ -101,7 +149,8 @@ namespace SIMULTAN.Data.SimNetworks
                         this.Target = port1;
                     }
                 }
-                if (port2.ParentNetworkElement is SimNetwork nw2)
+                // Port 2 is connected to subnet
+                else if (port2.ParentNetworkElement is SimNetwork)
                 {
                     if (port2.PortType == PortType.Input)
                     {
@@ -115,7 +164,7 @@ namespace SIMULTAN.Data.SimNetworks
                     }
                 }
             }
-            else
+            else // Output --> Input == Source --> Target
             {
                 this.Source = port1.PortType == PortType.Output ? port1 : port2;
                 this.Target = port2.PortType == PortType.Input ? port2 : port1;
@@ -125,24 +174,19 @@ namespace SIMULTAN.Data.SimNetworks
                 throw new ArgumentNullException("No source is provided");
             if (this.Target == null)
                 throw new ArgumentNullException("No target is provided");
-
-            this.Points = new ObservableCollection<SimPoint>();
-            this.Color = SimColors.DarkGray;
-            this.Name = this.Name = string.Format("{0}to{1}", this.Source.LocalID.ToString(), this.Target.LocalID.ToString());
-            this.geom_representation_ref = GeometricReference.Empty;
         }
 
 
         /// <summary>
         /// For Parsing
         /// </summary>
-        /// <param name="id">The loaded id of the SimNetworkConnector</param>
-        internal SimNetworkConnector(SimId id)
+        /// <param name="id">The loaded id of the SimNetworkConnection</param>
+        internal SimNetworkConnection(SimId id)
         {
             this.Id = id;
         }
 
-        internal SimNetworkConnector(string name, SimId id, SimId loadingSourceId, SimId loadingTargetId, SimColor color, List<SimPoint> controlPoints)
+        internal SimNetworkConnection(string name, SimId id, SimId loadingSourceId, SimId loadingTargetId, SimColor color, List<SimPoint> controlPoints)
         {
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
@@ -162,10 +206,15 @@ namespace SIMULTAN.Data.SimNetworks
         {
             if (this.Factory != null)
             {
+                var s = Source;
+                var t = Target;
                 if (this.loadingSourceId != SimId.Empty)
-                    this.Source = Factory.ProjectData.IdGenerator.GetById<SimNetworkPort>(loadingSourceId);
+                    s = Factory.ProjectData.IdGenerator.GetById<SimNetworkPort>(loadingSourceId);
                 if (this.loadingTargetId != SimId.Empty)
-                    this.Target = Factory.ProjectData.IdGenerator.GetById<SimNetworkPort>(loadingTargetId);
+                    t = Factory.ProjectData.IdGenerator.GetById<SimNetworkPort>(loadingTargetId);
+
+                // needed to fix previous wrong connections
+                DetermineSourceTarget(s, t);
 
                 this.loadingSourceId = SimId.Empty;
                 this.loadingTargetId = SimId.Empty;

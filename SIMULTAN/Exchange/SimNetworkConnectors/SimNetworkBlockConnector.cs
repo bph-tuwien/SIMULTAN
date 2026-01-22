@@ -76,8 +76,6 @@ namespace SIMULTAN.Exchange.SimNetworkConnectors
             this.rotation = rotation;
             this.NetworkElement.RepresentationReference = new Data.GeometricReference(vertex.ModelGeometry.Model.File.Key, vertex.Id);
             blockContent = Block.ComponentInstance;
-            this.PortConnectors.CollectionChanged += this.PortConnectors_CollectionChanged;
-
 
             if (blockContent != null)
             {
@@ -88,60 +86,6 @@ namespace SIMULTAN.Exchange.SimNetworkConnectors
             UpdateProxyGeometry();
             UpdateProxyTransformation(rotation);
             UpdateColor();
-        }
-
-        private void PortConnectors_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
-        {
-            switch (e.Action)
-            {
-                case NotifyCollectionChangedAction.Add:
-                    foreach (var item in e.NewItems)
-                    {
-                        if (item is SimNetworkPortConnector portConnector)
-                        {
-                            portConnector.Geometry.GeometryChanged += this.Geometry_GeometryChanged;
-                        }
-                    }
-                    break;
-                case NotifyCollectionChangedAction.Remove:
-                    foreach (var item in e.OldItems)
-                    {
-                        if (item is SimNetworkPortConnector portConnector)
-                        {
-                            portConnector.Geometry.GeometryChanged -= this.Geometry_GeometryChanged;
-                        }
-                    }
-                    break;
-                default:
-                    throw new NotImplementedException();
-            }
-        }
-
-        private void Geometry_GeometryChanged(object sender)
-        {
-            if (!transformInProgress)
-            {
-                this.transformInProgress = true;
-                if (sender is BaseGeometry geometry)
-                {
-                    var portConnector = this.PortConnectors.FirstOrDefault(t => t.Geometry.Id == geometry.Id);
-                    if (portConnector != null && portConnector.Port.ComponentInstance != null && portConnector.Port.ComponentInstance.Component != null)
-                    {
-                        //Check if the port component´s has the X,Y, Z parameters
-                        var X = portConnector.Port.ComponentInstance.Component.Parameters.OfType<SimDoubleParameter>().FirstOrDefault(p => p.HasReservedTaxonomyEntry(ReservedParameterKeys.SIMNW_STATIC_PORT_POSITION_X));
-                        var Y = portConnector.Port.ComponentInstance.Component.Parameters.OfType<SimDoubleParameter>().FirstOrDefault(p => p.HasReservedTaxonomyEntry(ReservedParameterKeys.SIMNW_STATIC_PORT_POSITION_Y));
-                        var Z = portConnector.Port.ComponentInstance.Component.Parameters.OfType<SimDoubleParameter>().FirstOrDefault(p => p.HasReservedTaxonomyEntry(ReservedParameterKeys.SIMNW_STATIC_PORT_POSITION_Z));
-                        if (X != null && Y != null && Z != null && !portConnector.transformInProgress)
-                        {
-                            this.Vertex.Position = new SimPoint3D(
-                                  portConnector.Vertex.Position.X - X.Value,
-                                  portConnector.Vertex.Position.Y - Y.Value,
-                                  portConnector.Vertex.Position.Z - Z.Value);
-                        }
-                    }
-                }
-                this.transformInProgress = false;
-            }
         }
 
         #region BaseSimnetworkGeometryConnector
@@ -159,22 +103,25 @@ namespace SIMULTAN.Exchange.SimNetworkConnectors
         internal override void ChangeBaseGeometry(BaseGeometry geometry)
         {
             this.Vertex = geometry as Vertex;
+            NetworkElement.RepresentationReference = new Data.GeometricReference(geometry.ModelGeometry.Model.File.Key, geometry.Id);
         }
 
         /// <inheritdoc />
-        public override void Dispose()
+        protected override void Dispose(bool disposing)
         {
-            base.Dispose();
-
-            Block.PropertyChanged -= Block_PropertyChanged;
-            if (blockContent != null)
+            if (disposing)
             {
-                if (blockContent.Component != null)
+                Block.PropertyChanged -= Block_PropertyChanged;
+                if (blockContent != null)
                 {
-                    ((INotifyCollectionChanged)blockContent.Component.ReferencedAssets).CollectionChanged -= this.Assets_CollectionChanged;
+                    if (blockContent.Component != null)
+                    {
+                        ((INotifyCollectionChanged)blockContent.Component.ReferencedAssets).CollectionChanged -= this.Assets_CollectionChanged;
+                    }
+                    blockContent.PropertyChanged -= BlockContent_PropertyChanged;
                 }
-                blockContent.PropertyChanged -= BlockContent_PropertyChanged;
             }
+            base.Dispose(disposing);
         }
         #endregion
 
@@ -209,13 +156,16 @@ namespace SIMULTAN.Exchange.SimNetworkConnectors
 
         private void BlockContent_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
-            if (e.PropertyName == nameof(SimComponentInstance.InstanceSize))
+            if (!transformInProgress)
             {
-                UpdateProxyTransformation(rotation);
-            }
-            else if (e.PropertyName == nameof(SimComponentInstance.InstanceRotation))
-            {
-                UpdateProxyTransformation(rotation);
+                if (e.PropertyName == nameof(SimComponentInstance.InstanceSize))
+                {
+                    UpdateProxyTransformation(rotation);
+                }
+                else if (e.PropertyName == nameof(SimComponentInstance.InstanceRotation))
+                {
+                    UpdateProxyTransformation(rotation);
+                }
             }
         }
 

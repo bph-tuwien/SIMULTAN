@@ -284,6 +284,15 @@ namespace SIMULTAN.Data.Components
                 nameof(SimBaseParameter.InstancePropagationMode)
             };
 
+            internal void OnListParameterCollectionChanged(SimBaseParameter sender, NotifyCollectionChangedEventArgs e)
+            {
+                bool propagationEnabled = owner.Factory == null || owner.Factory.EnableReferencePropagation;
+                if (propagationEnabled)
+                {
+                    owner.OnListParameterCollectionChanged(sender, e);
+                }
+            }
+
             internal void OnParameterPropertyChanged(object sender, string property)
             {
                 var parameter = (SimBaseParameter)sender;

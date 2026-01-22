@@ -585,13 +585,13 @@ namespace SIMULTAN.Tests.IO
             };
             b2.Ports.Add(p2);
             p2.Position = new SimPoint(100, 0);
-            var con = new SimNetworkConnector(p1, p2)
+            var con = new SimNetworkConnection(p1, p2)
             {
                 Name = "My Connector",
                 Id = new SimId(guid, 65007),
                 Color = SimColors.Purple
             };
-            network.ContainedConnectors.Add(con);
+            network.ContainedConnections.Add(con);
             con.Points.Add(new SimPoint(100, 0));
             con.Points.Add(new SimPoint(2, 2));
 

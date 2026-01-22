@@ -317,7 +317,7 @@ namespace SIMULTAN.Tests.Serializer
             var port1 = new SimNetworkPort(PortType.Output, "PORT") { Color = SimColors.Red };
             var port2 = new SimNetworkPort(PortType.Input, "PORT") { Color = SimColors.Red };
 
-            var connector = new SimNetworkConnector(port1, port2);
+            var connector = new SimNetworkConnection(port1, port2);
             var serConnector = new SimNetworkConnectorSerializable(connector);
 
             Assert.AreEqual(port1.LocalID, serConnector.Source);
@@ -345,8 +345,8 @@ namespace SIMULTAN.Tests.Serializer
             network.ContainedElements.Add(block2);
 
 
-            var connector = new SimNetworkConnector(port1, port2);
-            network.ContainedConnectors.Add(connector);
+            var connector = new SimNetworkConnection(port1, port2);
+            network.ContainedConnections.Add(connector);
 
             var serNetwork = new SimNetworkSerializable(network);
 

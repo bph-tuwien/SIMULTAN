@@ -42,21 +42,22 @@ namespace SIMULTAN.Data.Geometry
         /// To prevent memory issues in large models, the number of cells is fixed between [0, maxCellSize], which may lead to larger 
         /// cell sizes than expected
         /// </param>
-        /// <param name="maxCellSize">The maximum number of cells along each axis. Prevents memory issues with very large models.</param>
-		public AABBGrid(SimPoint3D min, SimPoint3D max, SimVector3D desiredCellSize, int maxCellSize = 1000)
+        /// <param name="minCellSize">The minimum length of each cell along each axis. Prevents numerical issues when the model is almost a plane</param>
+        /// <param name="maxCellCount">The maximum number of cells along each axis. Prevents memory issues with very large models.</param>
+		public AABBGrid(SimPoint3D min, SimPoint3D max, SimVector3D desiredCellSize, double minCellSize = 0.01, int maxCellCount = 1000)
         {
             //Calculate size of grid
             Min = min;
             Max = max;
 
-            int numCellsX = Math.Min(maxCellSize, Math.Max(1, (int)Math.Ceiling((Max.X - Min.X) / desiredCellSize.X)));
-            int numCellsY = Math.Min(maxCellSize, Math.Max(1, (int)Math.Ceiling((Max.Y - Min.Y) / desiredCellSize.Y)));
-            int numCellsZ = Math.Min(maxCellSize, Math.Max(1, (int)Math.Ceiling((Max.Z - Min.Z) / desiredCellSize.Z)));
+            int numCellsX = Math.Min(maxCellCount, Math.Max(1, (int)Math.Ceiling((Max.X - Min.X) / desiredCellSize.X)));
+            int numCellsY = Math.Min(maxCellCount, Math.Max(1, (int)Math.Ceiling((Max.Y - Min.Y) / desiredCellSize.Y)));
+            int numCellsZ = Math.Min(maxCellCount, Math.Max(1, (int)Math.Ceiling((Max.Z - Min.Z) / desiredCellSize.Z)));
 
             this.ActualCellSize = new SimVector3D(
-                Math.Max((Max.X - Min.X) / numCellsX, 1),
-                Math.Max((Max.Y - Min.Y) / numCellsY, 1),
-                Math.Max((Max.Z - Min.Z) / numCellsZ, 1)
+                Math.Max((Max.X - Min.X) / numCellsX, minCellSize),
+                Math.Max((Max.Y - Min.Y) / numCellsY, minCellSize),
+                Math.Max((Max.Z - Min.Z) / numCellsZ, minCellSize)
                 );
 
             this.Cells = new List<AABB>[numCellsX, numCellsY, numCellsZ];

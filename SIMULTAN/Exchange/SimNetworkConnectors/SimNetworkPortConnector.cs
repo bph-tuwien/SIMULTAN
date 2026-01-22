@@ -13,7 +13,7 @@ namespace SIMULTAN.Exchange.SimNetworkConnectors
     /// <summary>
     /// Represents a <see cref="SimNetworkPort"/> as a <see cref="Vertex"/> in the geometry
     /// </summary>
-    internal class SimNetworkPortConnector : BaseSimnetworkGeometryConnector
+    internal class SimNetworkPortConnector : BaseSimNetworkGeometryConnector
     {
 
         //used to prevent the size/rotation transfer between proxy and instance from endless looping
@@ -131,15 +131,18 @@ namespace SIMULTAN.Exchange.SimNetworkConnectors
         }
 
         /// <inheritdoc />
-        public override void Dispose()
+        protected override void Dispose(bool disposing)
         {
-            base.Dispose();
-
-            Port.PropertyChanged -= Port_PropertyChanged;
-            if (portContent != null)
+            if (disposing)
             {
-                portContent.PropertyChanged -= PortContent_PropertyChanged;
+                Port.PropertyChanged -= Port_PropertyChanged;
+                if (portContent != null)
+                {
+                    portContent.PropertyChanged -= PortContent_PropertyChanged;
+                }
             }
+
+            base.Dispose(disposing);
         }
         #endregion
 

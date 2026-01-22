@@ -1,13 +1,13 @@
 ﻿using SIMULTAN.Data;
+using SIMULTAN.Data.SimMath;
 using SIMULTAN.Data.SimNetworks;
 using SIMULTAN.Serializer.DXF;
 using SIMULTAN.Utils;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Windows;
-using SIMULTAN.Data.SimMath;
-using System.Diagnostics;
 
 namespace SIMULTAN.Serializer.CODXF
 {
@@ -16,13 +16,13 @@ namespace SIMULTAN.Serializer.CODXF
     /// </summary>
     public static class ComponentDxfIOSimNetworks
     {
-        #region Syntax Connector
+        #region Syntax Connection
 
         /// <summary>
-        /// Syntax for a connector
+        /// Syntax for a connection
         /// </summary>
-        internal static DXFEntityParserElementBase<SimNetworkConnector> ConnectorEntityElement =
-            new DXFEntityParserElement<SimNetworkConnector>(ParamStructTypes.SIMNETWORK_CONNECTOR, ParseConnector,
+        internal static DXFEntityParserElementBase<SimNetworkConnection> ConnectionEntityElement =
+            new DXFEntityParserElement<SimNetworkConnection>(ParamStructTypes.SIMNETWORK_CONNECTION, ParseConnection,
                 new DXFEntryParserElement[]
                 {
                     new DXFSingleEntryParserElement<long>(ParamStructCommonSaveCode.ENTITY_LOCAL_ID),
@@ -34,7 +34,7 @@ namespace SIMULTAN.Serializer.CODXF
                     new DXFSingleEntryParserElement<ulong>(SimNetworkSaveCode.GEOM_REP_GEOM_ID),
 
 
-                    new DXFStructArrayEntryParserElement<(double, double)>((int)SimNetworkSaveCode.CONTROL_POINTS, ParseConnectorControlPoints,
+                    new DXFStructArrayEntryParserElement<(double, double)>((int)SimNetworkSaveCode.CONTROL_POINTS, ParseConnectionControlPoints,
                         new DXFEntryParserElement[]
                         {
                             new DXFSingleEntryParserElement<double>(SimNetworkSaveCode.POSITION_X) ,
@@ -130,10 +130,10 @@ namespace SIMULTAN.Serializer.CODXF
                         {
                             new DXFRecursiveEntityParserElement<SimNetwork>(ParamStructTypes.SIMNETWORK, "SimNetworkElement")
                         }),
-                    new DXFEntitySequenceEntryParserElement<SimNetworkConnector>(SimNetworkSaveCode.CONNECTORS,
-                        new DXFEntityParserElementBase<SimNetworkConnector>[]
+                    new DXFEntitySequenceEntryParserElement<SimNetworkConnection>(SimNetworkSaveCode.CONNECTIONS,
+                        new DXFEntityParserElementBase<SimNetworkConnection>[]
                         {
-                            ConnectorEntityElement
+                            ConnectionEntityElement
                         }),
                 }))
             {
@@ -247,7 +247,7 @@ namespace SIMULTAN.Serializer.CODXF
             writer.WriteEntitySequence(SimNetworkSaveCode.PORTS, network.Ports, WritePort);
             writer.WriteEntitySequence(SimNetworkSaveCode.BLOCKS, network.ContainedElements.OfType<SimNetworkBlock>(), WriteBlock);
             writer.WriteEntitySequence(SimNetworkSaveCode.SUBNETWORKS, network.ContainedElements.OfType<SimNetwork>(), WriteNetwork);
-            writer.WriteEntitySequence(SimNetworkSaveCode.CONNECTORS, network.ContainedConnectors, WriteConnector);
+            writer.WriteEntitySequence(SimNetworkSaveCode.CONNECTIONS, network.ContainedConnections, WriteConnection);
 
 
 
@@ -274,7 +274,7 @@ namespace SIMULTAN.Serializer.CODXF
             var ports = data.Get<SimNetworkPort[]>(SimNetworkSaveCode.PORTS, new SimNetworkPort[0]);
             var blocks = data.Get<SimNetworkBlock[]>(SimNetworkSaveCode.BLOCKS, new SimNetworkBlock[0]);
             var subNetworks = data.Get<SimNetwork[]>(SimNetworkSaveCode.SUBNETWORKS, new SimNetwork[0]);
-            var connectors = data.Get<SimNetworkConnector[]>(SimNetworkSaveCode.CONNECTORS, new SimNetworkConnector[0]);
+            var connections = data.Get<SimNetworkConnection[]>(SimNetworkSaveCode.CONNECTIONS, new SimNetworkConnection[0]);
 
             var color = data.Get<SimColor>(SimNetworkSaveCode.COLOR, SimColors.Purple);
 
@@ -285,7 +285,7 @@ namespace SIMULTAN.Serializer.CODXF
                     name, new SimPoint(posX, posY),
                     ports.Where(x => x != null),
                     Enumerable.Concat<BaseSimNetworkElement>(subNetworks, blocks).Where(x => x != null),
-                    connectors.Where(x => x != null), color)
+                    connections.Where(x => x != null), color)
                 {
                     RepresentationReference = new Data.GeometricReference(geomFile, geomId),
                     IndexOfGeometricRepFile = geomRepFileIndex,
@@ -363,24 +363,24 @@ namespace SIMULTAN.Serializer.CODXF
 
         #endregion
 
-        #region Connector
+        #region Connection
 
-        internal static void WriteConnector(SimNetworkConnector connector, DXFStreamWriter writer)
+        internal static void WriteConnection(SimNetworkConnection connection, DXFStreamWriter writer)
         {
-            writer.Write(ParamStructCommonSaveCode.ENTITY_START, ParamStructTypes.SIMNETWORK_CONNECTOR);
-            writer.Write(ParamStructCommonSaveCode.CLASS_NAME, typeof(SimNetworkConnector));
-            writer.Write(ParamStructCommonSaveCode.ENTITY_LOCAL_ID, connector.Id.LocalId);
-            writer.Write(ParamStructCommonSaveCode.ENTITY_NAME, connector.Name);
-            writer.Write(SimNetworkSaveCode.SOURCE_PORT, connector.Source.Id.LocalId);
-            writer.Write(SimNetworkSaveCode.TARGET_PORT, connector.Target.Id.LocalId);
-            writer.Write(SimNetworkSaveCode.COLOR, connector.Color);
+            writer.Write(ParamStructCommonSaveCode.ENTITY_START, ParamStructTypes.SIMNETWORK_CONNECTION);
+            writer.Write(ParamStructCommonSaveCode.CLASS_NAME, typeof(SimNetworkConnection));
+            writer.Write(ParamStructCommonSaveCode.ENTITY_LOCAL_ID, connection.Id.LocalId);
+            writer.Write(ParamStructCommonSaveCode.ENTITY_NAME, connection.Name);
+            writer.Write(SimNetworkSaveCode.SOURCE_PORT, connection.Source.Id.LocalId);
+            writer.Write(SimNetworkSaveCode.TARGET_PORT, connection.Target.Id.LocalId);
+            writer.Write(SimNetworkSaveCode.COLOR, connection.Color);
 
             //Geometry
-            writer.Write(SimNetworkSaveCode.GEOM_REP_FILE_KEY, connector.RepresentationReference.FileId);
-            writer.Write(SimNetworkSaveCode.GEOM_REP_GEOM_ID, connector.RepresentationReference.GeometryId);
+            writer.Write(SimNetworkSaveCode.GEOM_REP_FILE_KEY, connection.RepresentationReference.FileId);
+            writer.Write(SimNetworkSaveCode.GEOM_REP_GEOM_ID, connection.RepresentationReference.GeometryId);
 
             //Control points
-            writer.WriteArray(SimNetworkSaveCode.CONTROL_POINTS, connector.Points,
+            writer.WriteArray(SimNetworkSaveCode.CONTROL_POINTS, connection.Points,
                  (entry, iwriter) =>
                  {
                      iwriter.Write(SimNetworkSaveCode.POSITION_X, entry.X);
@@ -389,7 +389,7 @@ namespace SIMULTAN.Serializer.CODXF
 
         }
 
-        private static SimNetworkConnector ParseConnector(DXFParserResultSet data, DXFParserInfo info)
+        private static SimNetworkConnection ParseConnection(DXFParserResultSet data, DXFParserInfo info)
         {
             long id = data.Get<long>(ParamStructCommonSaveCode.ENTITY_LOCAL_ID, 0);
             string name = data.Get<string>(ParamStructCommonSaveCode.ENTITY_NAME, string.Empty);
@@ -405,7 +405,7 @@ namespace SIMULTAN.Serializer.CODXF
             controlPoints.ForEach(p => listPoints.Add(new SimPoint(p.Item1, p.Item2)));
             try
             {
-                return new SimNetworkConnector(name, new SimId(info.GlobalId, id),
+                return new SimNetworkConnection(name, new SimId(info.GlobalId, id),
                     new SimId(info.GlobalId, sourcePort),
                     new SimId(info.GlobalId, targetPart), color, listPoints)
                 {
@@ -414,14 +414,14 @@ namespace SIMULTAN.Serializer.CODXF
             }
             catch (Exception e)
             {
-                info.Log(string.Format("Failed to load SimNetworkConnector with Id={0}, Name=\"{1}\"\nException: {2}\nStackTrace:\n{3}",
+                info.Log(string.Format("Failed to load SimNetworkConnection with Id={0}, Name=\"{1}\"\nException: {2}\nStackTrace:\n{3}",
                     id, name, e.Message, e.StackTrace
                     ));
                 return null;
             }
         }
 
-        private static (double x, double y) ParseConnectorControlPoints(
+        private static (double x, double y) ParseConnectionControlPoints(
                 DXFParserResultSet data, DXFParserInfo info)
         {
 

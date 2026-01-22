@@ -1,5 +1,4 @@
-﻿using Microsoft.SqlServer.Server;
-using SIMULTAN.Data.Components;
+﻿using SIMULTAN.Data.Components;
 using SIMULTAN.Data.SimMath;
 using SIMULTAN.Data.Taxonomy;
 using SIMULTAN.Exchange;
@@ -12,9 +11,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Threading;
-using System.Windows;
 
 namespace SIMULTAN.Data.Geometry
 {
@@ -454,6 +450,32 @@ namespace SIMULTAN.Data.Geometry
         #endregion
 
         #region Methods
+
+        /// <summary>
+        /// Creates a grid that devides the AABBs int the desired number of cells per dimension.
+        /// Size of the cells is clamped to the given min and max size.
+        /// </summary>
+        /// <param name="aabbs">The AABBs</param>
+        /// <param name="minSize">The minimum cell size</param>
+        /// <param name="maxSize">The maximum cell size</param>
+        /// <param name="desiredCount">The desired count per dimension</param>
+        /// <returns>The AABBGrid</returns>
+        public static AABBGrid GetDynamicGrid(IEnumerable<AABB> aabbs, float minSize = 0.001f, float maxSize = 5.0f, int desiredCount = 5)
+        {
+            var range = AABB.Merge(aabbs);
+            var size = range.max - range.min;
+            var cellSize = size / (float)desiredCount;
+            cellSize.X = Math.Max(cellSize.X, minSize);
+            cellSize.X = Math.Min(cellSize.X, maxSize);
+            cellSize.Y = Math.Max(cellSize.Y, minSize);
+            cellSize.Y = Math.Min(cellSize.Y, maxSize);
+            cellSize.Z = Math.Max(cellSize.Z, minSize);
+            cellSize.Z = Math.Min(cellSize.Z, maxSize);
+
+            var grid = new AABBGrid(range.min, range.max, cellSize);
+            grid.AddRange(aabbs);
+            return grid;
+        }
 
         /// <summary>
         /// Removes duplicate vertices by merging vertices which are closer than a given tolerance.
@@ -900,6 +922,17 @@ namespace SIMULTAN.Data.Geometry
         /// <param name="backgroundInfo">The background algorithm info for this task</param>
         public static void RemoveDuplicateHoles(GeometryModelData model, IBackgroundAlgorithmInfo backgroundInfo = null)
         {
+            RemoveDuplicateHoles(model, model.Faces, backgroundInfo);
+        }
+
+        /// <summary>
+        /// Removes duplicate holes
+        /// </summary>
+        /// <param name="model">The GeometryModel</param>
+        /// <param name="faces">The faces to cleanup</param>
+        /// <param name="backgroundInfo">The background algorithm info for this task</param>
+        public static void RemoveDuplicateHoles(GeometryModelData model, IEnumerable<Face> faces, IBackgroundAlgorithmInfo backgroundInfo = null)
+        {
             if (backgroundInfo == null)
                 backgroundInfo = new EmptyBackgroundAlgorithmInfo();
             backgroundInfo.ReportProgress(0);
@@ -908,7 +941,7 @@ namespace SIMULTAN.Data.Geometry
 
             int progressCounter = 0;
 
-            foreach (var face in model.Faces)
+            foreach (var face in faces)
             {
                 for (int i = 0; i < face.Holes.Count - 1; ++i)
                 {
@@ -950,17 +983,32 @@ namespace SIMULTAN.Data.Geometry
         /// <param name="backgroundInfo">The background algorithm info for this task</param>
         public static int RemoveDuplicateHoleLoops(GeometryModelData model, IBackgroundAlgorithmInfo backgroundInfo = null)
         {
+            return RemoveDuplicateHoleLoops(model, model.Faces, backgroundInfo);
+        }
+
+        /// <summary>
+        /// Removes hole loops which have a similar loop in a face boundary (happens when copying hole faces into existing holes)
+        /// </summary>
+        /// <param name="model">The GeometryModel</param>
+        /// <param name="faces">The faces to check</param>
+        /// <param name="backgroundInfo">The background algorithm info for this task</param>
+        public static int RemoveDuplicateHoleLoops(GeometryModelData model, IEnumerable<Face> faces, IBackgroundAlgorithmInfo backgroundInfo = null)
+        {
             if (backgroundInfo == null)
                 backgroundInfo = new EmptyBackgroundAlgorithmInfo();
             backgroundInfo.ReportProgress(0);
+
+            int totalCount = faces.Count();
 
             model.StartBatchOperation();
 
             int progressCounter = 0;
             int removeCount = 0;
 
-            foreach (var face in model.Faces)
+            foreach (var face in faces)
             {
+                totalCount++;
+
                 //Check all holes if there is a similar edgeloop which is the boundary of some other face
                 for (int i = 0; i < face.Holes.Count; ++i)
                 {
@@ -1001,7 +1049,7 @@ namespace SIMULTAN.Data.Geometry
                     backgroundInfo.Cancel = true;
                     return 0;
                 }
-                backgroundInfo.ReportProgress((int)((double)progressCounter / (double)model.Faces.Count * 100.0));
+                backgroundInfo.ReportProgress((int)((double)progressCounter / (double)totalCount * 100.0));
                 progressCounter++;
             }
 
@@ -1098,9 +1146,10 @@ namespace SIMULTAN.Data.Geometry
         /// <param name="model">The model</param>
         /// <param name="areaTolerance">The area tolerance.</param>
         /// <param name="faceGrid">The face grid</param>
+        /// <param name="edgeGrid">The edge grid</param>
         /// <param name="backgroundInfo">The background info</param>
         /// <returns>The number of removed triangles</returns>
-        public static int RemoveZeroAreaTriangles(GeometryModelData model, double areaTolerance, ref AABBGrid faceGrid,
+        public static int RemoveZeroAreaTriangles(GeometryModelData model, double areaTolerance, ref AABBGrid faceGrid, ref AABBGrid edgeGrid,
             IBackgroundAlgorithmInfo backgroundInfo = null)
         {
             if (backgroundInfo == null)
@@ -1115,6 +1164,14 @@ namespace SIMULTAN.Data.Geometry
                 faceGrid.AddRange(aabbs);
             }
 
+            if (edgeGrid == null)
+            {
+                var aabbs = model.Edges.Select(x => new AABB(x)).ToList();
+                var range = AABB.Merge(aabbs);
+                edgeGrid = new AABBGrid(range.min, range.max, new SimVector3D(5, 5, 5));
+                edgeGrid.AddRange(aabbs);
+            }
+
             model.StartBatchOperation();
 
             var triangles = model.Faces.Where(x =>
@@ -1122,9 +1179,7 @@ namespace SIMULTAN.Data.Geometry
                 if (x.Boundary.Edges.Count != 3)
                     return false;
                 var area = EdgeLoopAlgorithms.Area(x.Boundary);
-                if (double.IsNaN(area) || area < areaTolerance)
-                    return true;
-                return false;
+                return double.IsNaN(area) || area < areaTolerance;
             }).ToHashSet();
 
             if (backgroundInfo.CancellationPending)
@@ -1178,17 +1233,25 @@ namespace SIMULTAN.Data.Geometry
                 all.RemoveAt(current);
                 backgroundInfo.ReportProgress((int)(100.0 * (1.0 - (double)all.Count / allCount)));
 
-                var otherFaces = longest.Edge.PEdges.Where(x => x != longest).Select(x => x.Parent);
+                // replace longest edge with other two edges in parent containers that contain the longest edge
+                var otherContainers = longest.Edge.PEdges.Where(x => x != longest).Select(x => x.Parent);
                 var otherEdges = faceToRemove.Boundary.Edges.Where(x => x.Edge != longest.Edge);
-                foreach (var face in otherFaces)
+                foreach (var container in otherContainers)
                 {
-                    face.Edges.RemoveWhere(x => x.Edge == longest.Edge);
-                    face.Edges.AddRange(otherEdges.Select(x => new PEdge(x.Edge, GeometricOrientation.Undefined, face)));
+                    container.Edges.RemoveWhere(x => x.Edge == longest.Edge);
+                    var newPedges = otherEdges.Select(x => new PEdge(x.Edge, GeometricOrientation.Undefined, container));
+                    newPedges.ForEach(x => x.Edge.PEdges.Add(x));
+                    container.Edges.AddRange(newPedges);
                 }
+                // remove the face and longest edge
                 RemoveDegeneratedFace(model, faceToRemove, faceGrid);
                 longest.Edge.RemoveFromModel();
-                longest.Edge.Vertices.ForEach(x => x.Edges.Remove(longest.Edge));
-                longest.Edge.PEdges.ForEach(x => x.Parent.Edges.RemoveWhere(pe => pe.Edge == x.Edge));
+
+                AABB eBox = null;
+                var grid = edgeGrid;
+                edgeGrid.ForCell(longest.Edge.Vertices[0].Position, x => eBox = grid.Cells[x.X, x.Y, x.Z].FirstOrDefault(b => b.Content == longest.Edge));
+                if (eBox != null)
+                    edgeGrid.Remove(eBox);
 
                 removedCount++;
             }
@@ -1210,13 +1273,27 @@ namespace SIMULTAN.Data.Geometry
         public static int RemoveDegeneratedFaces(GeometryModelData model, double areaTolerance, ref AABBGrid faceGrid,
             IBackgroundAlgorithmInfo backgroundInfo = null)
         {
+            return RemoveDegeneratedFaces(model, model.Faces, areaTolerance, ref faceGrid, backgroundInfo).Count;
+        }
+
+        /// <summary>
+        /// Removes faces with 0 size
+        /// </summary>
+        /// <param name="model">The model in which the faces should be removed</param>
+        /// <param name="faces">The faces that should be checked</param>
+        /// <param name="areaTolerance">Minimum area below which faces are considered degenerated</param>
+        /// <param name="faceGrid">Speedup structure containing all faces</param>
+        /// <param name="backgroundInfo">The background algorithm info for this task</param>
+        public static List<Face> RemoveDegeneratedFaces(GeometryModelData model, IEnumerable<Face> faces, double areaTolerance, ref AABBGrid faceGrid,
+            IBackgroundAlgorithmInfo backgroundInfo = null)
+        {
             if (backgroundInfo == null)
                 backgroundInfo = new EmptyBackgroundAlgorithmInfo();
             backgroundInfo.ReportProgress(0);
 
             if (faceGrid == null)
             {
-                var aabbs = model.Faces.Select(x => new AABB(x));
+                var aabbs = faces.Select(x => new AABB(x));
                 var range = AABB.Merge(aabbs);
                 faceGrid = new AABBGrid(range.min, range.max, new SimVector3D(5, 5, 5));
                 faceGrid.AddRange(aabbs);
@@ -1225,7 +1302,7 @@ namespace SIMULTAN.Data.Geometry
             model.StartBatchOperation();
 
             //Search all degenerated faces
-            List<Face> degenFaces = new List<Face>(model.Faces.Where(x =>
+            List<Face> degenFaces = new List<Face>(faces.Where(x =>
             {
                 if (x.Boundary.Edges.Count < 3)
                     return true;
@@ -1249,7 +1326,7 @@ namespace SIMULTAN.Data.Geometry
 
             backgroundInfo.ReportProgress(100);
 
-            return degenFaces.Count;
+            return degenFaces;
         }
 
         private static void RemoveDegeneratedFace(GeometryModelData model, Face face, AABBGrid faceGrid)
@@ -1279,10 +1356,11 @@ namespace SIMULTAN.Data.Geometry
         /// </summary>
         /// <param name="model">The model</param>
         /// <param name="tolerance">Tolerance for the calculation</param>
+        /// <param name="vertexGrid">Speedup structure containing all vertices</param>
         /// <param name="edgeGrid">Speedup structure containing all edges</param>
         /// <param name="replacementTracker">Tracks changes of component assignments. May be null when no tracking is needed</param>
         /// <param name="backgroundInfo">The background algorithm info for this task</param>
-        public static int SplitEdgeEdgeIntersections(GeometryModelData model, double tolerance, ref AABBGrid edgeGrid,
+        public static int SplitEdgeEdgeIntersections(GeometryModelData model, double tolerance, ref AABBGrid vertexGrid, ref AABBGrid edgeGrid,
             ReplacementTracker<Edge> replacementTracker = null,
             IBackgroundAlgorithmInfo backgroundInfo = null)
         {
@@ -1296,6 +1374,13 @@ namespace SIMULTAN.Data.Geometry
                 var range = AABB.Merge(aabbs);
                 edgeGrid = new AABBGrid(range.min, range.max, new SimVector3D(5, 5, 5));
                 edgeGrid.AddRange(aabbs);
+            }
+            if (vertexGrid == null)
+            {
+                var aabbs = model.Vertices.Select(x => new AABB(x)).ToList();
+                var range = AABB.Merge(aabbs);
+                vertexGrid = new AABBGrid(range.min, range.max, new SimVector3D(5, 5, 5));
+                vertexGrid.AddRange(aabbs);
             }
 
             HashSet<(Edge, Edge)> testDone = new HashSet<(Edge, Edge)>();
@@ -1358,6 +1443,7 @@ namespace SIMULTAN.Data.Geometry
                                         edgeGrid.Add(new AABB(ei_part2));
                                         edgeGrid.Add(new AABB(ej_part1));
                                         edgeGrid.Add(new AABB(ej_part2));
+                                        vertexGrid.Add(new AABB(intersectionVertex));
 
                                         //Exclude subparts from tests
                                         testDone.Add((ei_part1, ei_part2));
@@ -1808,6 +1894,274 @@ namespace SIMULTAN.Data.Geometry
 
             return result;
         }
+
+        /// <summary>
+        /// Splits overlapping faces
+        /// </summary>
+        /// <param name="model">The model</param>
+        /// <param name="cleanupFaces">The faces that should be considered in the cleanup</param>
+        /// <param name="cleanupLoops">The EdgeLoops that should be considered in the cleanup</param>
+        /// <param name="cleanupVertices">The vertices that should be considered in the cleanup</param>
+        /// <param name="tolerance">The calculation tolerance</param>
+        /// <param name="vertexGrid">Speedup structure containing all vertices</param>
+        /// <param name="faceGrid">Speedup structure containing all faces</param>
+        /// <param name="splitNameFormat">
+        /// Format used in string.Format to generate names for split faces.
+        /// Supports two arguments: 0 is the name of the original face, 1 is a running number identifying the split face part
+        /// </param>
+        /// <param name="errorLayerName">The name of the layer used to store invalid geometry. The layer is (if needed) created unless it exists</param>
+        /// <param name="replacementTracker">Tracks changes of component assignments. May be null when no tracking is needed</param>
+        /// <param name="backgroundInfo">The background algorithm info for this task</param>
+        public static SplitFaceResult SplitFaces(GeometryModelData model,
+            IEnumerable<Face> cleanupFaces, IEnumerable<EdgeLoop> cleanupLoops,
+            IEnumerable<Vertex> cleanupVertices,
+            double tolerance, ref AABBGrid vertexGrid, ref AABBGrid faceGrid,
+            string errorLayerName, string splitNameFormat = "{0} ({1})", ReplacementTracker<Face> replacementTracker = null,
+            IBackgroundAlgorithmInfo backgroundInfo = null)
+        {
+            var result = new SplitFaceResult { success = true, exception = null, exceptionFace = null };
+            List<BaseGeometry> warningGeometry = new List<BaseGeometry>();
+
+            if (backgroundInfo == null)
+                backgroundInfo = new EmptyBackgroundAlgorithmInfo();
+            backgroundInfo.ReportProgress(0);
+
+            if (vertexGrid == null)
+            {
+                List<AABB> aabbs = cleanupVertices.Select(x => new AABB(x)).ToList();
+                var range = AABB.Merge(aabbs);
+                vertexGrid = new AABBGrid(range.min, range.max, new SimVector3D(5, 5, 5));
+                vertexGrid.AddRange(aabbs);
+            }
+
+            model.StartBatchOperation();
+            var tracker = replacementTracker == null ? null : new ReplacementTracker<Face>();
+
+            var resultFaces = cleanupFaces.ToHashSet();
+
+            try
+            {
+                //First handle openings that are not used as boundary of some face
+                var nonFaceOpenings = cleanupLoops.Where(x => x.Faces.All(f => f.Boundary != x)).ToList();
+                foreach (var op in nonFaceOpenings)
+                {
+                    var vertices = cleanupVertices.Where(v => op.Edges.Any(pe => pe.Edge.Vertices.Contains(v)) ||
+                        EdgeLoopAlgorithms.Contains(op, v.Position, 0, tolerance) == GeometricRelation.Contained).ToArray();
+
+                    var edges = vertices.SelectMany(v => v.Edges.Where(e => vertices.Contains(e.Vertices[0]) &&
+                        vertices.Contains(e.Vertices[1]))).Distinct().ToArray();
+
+                    //Remove disconnected parts. This mainly removes faces that are completely contained in fi (openings)
+                    (var cleanedVertices, var cleanedEdges, _) = CleanupCycle(vertices, edges, op.Edges.First().StartVertex,
+                        null, op.ModelGeometry, errorLayerName);
+
+                    //Find cycles
+                    var mapping = EdgeLoopAlgorithms.LoopToXYMapping(op);
+                    var cycles = FindCycles(cleanedEdges, cleanedVertices, mapping, op);
+
+                    if (cycles != null)
+                    {
+                        if (cycles.Count > 1)
+                        {
+                            List<EdgeLoop> replaceList = new List<EdgeLoop>();
+                            int replaceCounter = 1;
+
+                            foreach (var cycle in cycles)
+                            {
+                                EdgeLoop boundary = new EdgeLoop(op.Layer, string.Format(splitNameFormat, op.Name, replaceCounter), cycle)
+                                {
+                                    IsVisible = op.IsVisible,
+                                    Color = new DerivedColor(op.Color)
+                                };
+                                replaceList.Add(boundary);
+
+                                replaceCounter++;
+                            }
+
+                            //Replace
+                            ReplaceHole(op, replaceList);
+                            op.RemoveFromModel();
+                        }
+                    }
+                    else
+                    {
+                        warningGeometry.Add(op);
+                    }
+                }
+
+                //Sort faces such that openings are split first
+                var faces = cleanupFaces.ToList();
+                faces.Sort((x, y) =>
+                {
+                    if (x.Holes.Contains(y.Boundary))
+                        return -1;
+                    else if (y.Holes.Contains(x.Boundary))
+                        return 1;
+                    return 0;
+                });
+
+                for (int i = 0; i < faces.Count; ++i)
+                {
+                    try
+                    {
+                        var fi = faces[i];
+
+                        //Collect potential face data
+                        //v' = [vertices + all vertices inside polygon]
+                        //all edges connecting two vertices in v'
+                        HashSet<Vertex> vertices = new HashSet<Vertex>(fi.Boundary.Edges.Count);
+                        AABB faceAABB = new AABB(fi);
+
+                        var vGridCopy = vertexGrid;
+
+                        vertexGrid.ForEachCell(faceAABB, x =>
+                        {
+                            var cell = vGridCopy.Cells[x.X, x.Y, x.Z];
+                            if (cell != null)
+                            {
+                                foreach (var item in cell)
+                                {
+                                    var v = (Vertex)item.Content;
+                                    if (!vertices.Contains(v) &&
+                                        (
+                                        fi.Boundary.Edges.Any(pe => pe.Edge.Vertices.Contains(v)) ||
+                                        FaceAlgorithms.Contains(fi, v.Position, 0, tolerance) == GeometricRelation.Contained
+                                        ))
+                                    {
+                                        vertices.Add(v);
+                                    }
+                                }
+                            }
+                        });
+
+                        var edges = vertices.SelectMany(v => v.Edges.Where(e => vertices.Contains(e.Vertices[0]) && vertices.Contains(e.Vertices[1]))).Distinct().ToArray();
+
+                        //Remove disconnected parts. This mainly removes faces that are completely contained in fi (openings)
+                        (var cleanedVertices, var cleanedEdges, var destroyedHoles) = CleanupCycle(
+                            vertices, edges, fi.Boundary.Edges.First().StartVertex, fi, fi.ModelGeometry, errorLayerName);
+
+                        //Find cycles
+                        var mapping = FaceAlgorithms.FaceToXYMapping(fi);
+
+                        var cycles = FindCycles(cleanedEdges, cleanedVertices, mapping, fi.Boundary);
+                        if (cycles != null)
+                        {
+                            //remove cycles that were a hole before
+                            for (int ci = 0; ci < cycles.Count; ++ci)
+                            {
+                                var cycle = cycles[ci];
+
+                                var potentialLoops = destroyedHoles.Where(x => x.Edges.Count == cycle.Count).ToList();
+                                foreach (var loop in potentialLoops)
+                                {
+                                    if (cycle.All(e => loop.Edges.Any(pe => pe.Edge == e)))
+                                    {
+                                        cycles.RemoveAt(ci);
+                                        ci--;
+                                        break;
+                                    }
+                                }
+                            }
+
+                            if (cycles.Count > 1)
+                            {
+                                //Create face for each cycle
+                                List<Face> replaceFaces = new List<Face>();
+                                int replaceCounter = 1;
+                                foreach (var cycle in cycles)
+                                {
+                                    EdgeLoop boundary = new EdgeLoop(fi.Layer, String.Format(splitNameFormat, fi.Name, replaceCounter), cycle)
+                                    {
+                                        IsVisible = fi.IsVisible,
+                                        Color = new DerivedColor(fi.Color)
+                                    };
+
+                                    Face face = new Face(fi.Layer, string.Format(splitNameFormat, fi.Name, replaceCounter), boundary, fi.Orientation)
+                                    {
+                                        IsVisible = fi.IsVisible,
+                                        Color = new DerivedColor(fi.Color)
+                                    };
+
+                                    //Find all openings that belong into this cycle
+                                    foreach (var hole in fi.Holes.Where(x =>
+                                        !destroyedHoles.Contains(x) &&
+                                        x.Edges.All(e => FaceAlgorithms.Contains(face, e.StartVertex.Position, tolerance, tolerance) == GeometricRelation.Contained)))
+                                    {
+                                        face.Holes.Add(hole);
+                                        hole.Faces.Add(face);
+                                    }
+
+                                    replaceFaces.Add(face);
+                                    replaceCounter++;
+                                }
+
+                                //Replace
+                                tracker?.Track(fi, replaceFaces);
+                                ReplaceFace(fi, replaceFaces);
+
+                                //Remove old face
+                                fi.Boundary.Faces.Remove(fi);
+                                if (fi.Boundary.Faces.Count == 0)
+                                    fi.Boundary.RemoveFromModel();
+
+                                fi.Holes.ForEach(x => x.Faces.Remove(fi));
+                                fi.Holes.Where(x => x.Faces.Count == 0).ForEach(x => x.RemoveFromModel());
+
+                                model.Faces.Remove(fi);
+
+                                resultFaces.Remove(fi);
+                                resultFaces.AddRange(replaceFaces);
+                            }
+                        }
+                        else
+                        {
+                            warningGeometry.Add(fi);
+                        }
+
+                    }
+                    catch (Exception e) when (!Debugger.IsAttached)
+                    {
+                        result = new SplitFaceResult { success = false, exception = e, exceptionFace = faces[i] };
+                        break; //End method because something is already broken
+                    }
+
+
+                    if (backgroundInfo.CancellationPending)
+                    {
+                        model.EndBatchOperation();
+                        backgroundInfo.Cancel = true;
+                        return new SplitFaceResult { success = true, exception = null, exceptionFace = null };
+                    }
+                    backgroundInfo.ReportProgress((int)((double)i / (double)model.Faces.Count * 100.0));
+                }
+            }
+            catch (Exception e) when (!Debugger.IsAttached)
+            {
+                result = new SplitFaceResult { success = false, exception = e, exceptionFace = null };
+            }
+
+            model.EndBatchOperation();
+
+            //Regenerate face grid
+            if (faceGrid != null)
+                faceGrid = new AABBGrid(faceGrid.Min, faceGrid.Max, faceGrid.ActualCellSize);
+            else
+                faceGrid = new AABBGrid(vertexGrid.Min, vertexGrid.Max, vertexGrid.ActualCellSize);
+            faceGrid.AddRange(resultFaces.Select(x => new AABB(x)));
+
+            replacementTracker?.MergeWith(tracker);
+
+            result = new SplitFaceResult
+            {
+                success = result.success,
+                exception = result.exception,
+                exceptionFace = result.exceptionFace,
+                warningGeometry = warningGeometry.Any() ? warningGeometry : null,
+            };
+
+            return result;
+        }
+
 
         /// <summary>
         /// Adds faces that are completely contained in another faces as opening
@@ -2332,6 +2686,8 @@ namespace SIMULTAN.Data.Geometry
 
             var mergeCount = 0;
 
+            var facesLookup = faces.ToHashSet();
+
             // Merge coplanar faces
             var allFaces = faces.ToList();
             var allCount = (double)allFaces.Count;
@@ -2363,6 +2719,8 @@ namespace SIMULTAN.Data.Geometry
                         var otherPedge = pEdge.Edge.PEdges.First(x => x != pEdge);
                         var otherFace = otherPedge.Parent.Faces.Find(x => x.Boundary == otherPedge.Parent);
                         if (otherFace == null) // happens on holes
+                            continue;
+                        if (!facesLookup.Contains(otherFace))
                             continue;
                         if (mergeGroup.Contains(otherFace))
                             continue;
@@ -2579,18 +2937,25 @@ namespace SIMULTAN.Data.Geometry
                             backgroundInfo.Cancel = true;
                             return -1;
                         }
+                        // check if vertex only connects two edges (is a polyline)
                         if (vertex.Edges.Count != 2)
                             continue;
-                        var otherEdge = vertex.Edges.First(e => e != currentEdge);
-                        if (mergeGroup.Contains(otherEdge))
+                        var otherEdge = vertex.Edges.Find(e => e != currentEdge
+                            && allEdges.Contains(e)
+                            && !mergeGroup.Contains(e));
+                        if (otherEdge == null)
                             continue;
+
+                        // check if collinear
                         var curDir = vertex.Position - currentEdge.Vertices.First(x => x != vertex).Position;
                         curDir.Normalize();
                         var otherDir = otherEdge.Vertices.First(x => x != vertex).Position - vertex.Position;
                         otherDir.Normalize();
                         var dot = SimVector3D.DotProduct(curDir, otherDir);
+                        // discard if not collinear
                         if (dot < 1.0 - cleanupTolerance)
                             continue;
+
                         edgesToProcess.Enqueue(otherEdge);
                         mergeGroup.Add(otherEdge);
                         allEdges.Remove(otherEdge);
@@ -2614,7 +2979,8 @@ namespace SIMULTAN.Data.Geometry
                     // find all edgeloops where we need to remove which edges
                     var toRemove = mergeGroup.SelectMany(x => x.PEdges.Select(pe => pe.Parent)).Distinct()
                         .ToDictionary(x => x, x => x.Edges.Where(e => mergeGroup.Contains(e.Edge)).ToHashSet());
-                    if (toRemove.Any(x => x.Key is EdgeLoop && x.Key.Edges.Count - x.Value.Count < 3)) // check if we would destroy an EdgeLoop
+                    if (toRemove.Any(x => x.Key is EdgeLoop &&
+                        x.Key.Edges.Count - x.Value.Count < 3)) // check if we would destroy an EdgeLoop
                         continue;
 
                     var newEdge = new Edge(mergeGroup.First().Layer, "Merged Edge {0}", startEnd)
@@ -2623,9 +2989,12 @@ namespace SIMULTAN.Data.Geometry
                     };
                     startEnd.ForEach(x => x.Edges.Add(newEdge));
                     mergeGroup.ForEach(DeleteEdgeClean);
+                    mergeCount += mergeGroup.Count;
                     // update face boundaries
                     foreach (var (parentContainer, remEdges) in toRemove)
                     {
+                        if (remEdges.Count != mergeGroup.Count)
+                            throw new Exception("EdgeLoop must contain all merged collinear edges");
                         remEdges.ForEach(x => parentContainer.Edges.Remove(x));
                         parentContainer.Edges.Add(new PEdge(newEdge, GeometricOrientation.Undefined, parentContainer));
                     }

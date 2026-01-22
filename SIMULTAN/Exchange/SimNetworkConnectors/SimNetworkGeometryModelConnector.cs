@@ -1,4 +1,3 @@
-using MathNet.Numerics;
 using SIMULTAN.Data;
 using SIMULTAN.Data.Components;
 using SIMULTAN.Data.Geometry;
@@ -8,7 +7,10 @@ using SIMULTAN.Utils;
 using Sprache;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.Eventing.Reader;
 using System.Linq;
+using System.Text.Json.Serialization.Metadata;
 using static SIMULTAN.Data.SimNetworks.BaseSimNetworkElement;
 using static SIMULTAN.Data.SimNetworks.SimNetworkPort;
 
@@ -34,9 +36,12 @@ namespace SIMULTAN.Exchange.SimNetworkConnectors
     /// <summary>
     /// Handles connections between a <see cref="SimNetwork"/> and a <see cref="GeometryModel"/>
     /// </summary>
-    public partial class SimNetworkGeometryModelConnector
+    public partial class SimNetworkGeometryModelConnector : IDisposable
     {
+        private bool isDisposed = false;
         static double ReduceRatio = 20;
+        static double distanceTolearance = 0.001;
+        static double distanceTolearance2 = distanceTolearance * distanceTolearance;
 
         #region Properties
         /// <summary>
@@ -60,8 +65,11 @@ namespace SIMULTAN.Exchange.SimNetworkConnectors
         private Random rnd = new Random();
 
 
-        private Dictionary<ulong, BaseSimnetworkGeometryConnector> connectors = new Dictionary<ulong, BaseSimnetworkGeometryConnector>();
-        private Dictionary<SimNetworkBlock, List<SimNetworkBlock>> staticGroups = new Dictionary<SimNetworkBlock, List<SimNetworkBlock>>();
+        private Dictionary<ulong, BaseSimNetworkGeometryConnector> connectors = new();
+
+        private HashSet<BaseGeometry> geometryChangedGeometries = new();
+        private HashSet<BaseGeometry> topologyChangedGeometries = new();
+
         #endregion
 
         /// <summary>
@@ -86,16 +94,70 @@ namespace SIMULTAN.Exchange.SimNetworkConnectors
             this.Exchange = exchange;
 
             this.GeometryModel.Geometry.TopologyChanged += this.Geometry_TopologyChanged;
+            this.GeometryModel.Geometry.GeometryChanged += this.Geometry_GeometryChanged;
             this.GeometryModel.Replaced += this.GeometryModel_Replaced;
 
             //Add child connectors, make sure that all network elements are properly represented in the geometry model
-            UpdateNetwork(network);
+            UpdateNetwork(network, !model.Geometry.Vertices.Any());
+        }
+
+        /// <summary>
+        /// Synchronizes the changes of the network with the geometry model.
+        /// </summary>
+        public void SynchronizeChanges()
+        {
+            // Geometry Changed
+            foreach (var geom in geometryChangedGeometries.ToList())
+            {
+                if (connectors.TryGetValue(geom.Id, out var con))
+                {
+                    con.OnGeometryChanged();
+                    if (con is SimNetworkBlockPortConnectorProxy proxyCon
+                        && proxyCon.ParentElement is SimNetworkBlock block && block.IsStatic)
+                    {
+                        // if connection is not null, check the connection vertex, otherwise check the port vertex
+                        var geoRef = proxyCon.Connection != null ?
+                            proxyCon.Connection.RepresentationReference :
+                            proxyCon.Port.RepresentationReference;
+
+                        if (geoRef != GeometricReference.Empty)
+                        {
+                            var refVertex = this.GeometryModel.Geometry.GeometryFromId(geoRef.GeometryId) as Vertex;
+                            if (refVertex != null
+                                && !CheckStaticPortConstraints(proxyCon.Port, refVertex))
+                            {
+                                proxyCon.IsValid = false;
+                            }
+                            else
+                            {
+                                proxyCon.IsValid = true;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Topology changed
+            foreach (var geom in topologyChangedGeometries)
+            {
+                if (connectors.TryGetValue(geom.Id, out var con))
+                    con.OnTopologyChanged();
+            }
+
+            // otherwise update whole network
+            if (!geometryChangedGeometries.Any() && !topologyChangedGeometries.Any())
+            {
+                UpdateNetwork(Network, false);
+            }
+
+            geometryChangedGeometries.Clear();
+            topologyChangedGeometries.Clear();
         }
 
         /// <summary>
         /// Gets the network element by the geometry representation
         /// </summary>
-        /// <returns></returns>
+        /// <returns>The network elements or null if none found</returns>
         public IEnumerable<ISimNetworkElement> GetNetworkElements(BaseGeometry geometry)
         {
             if (connectors.TryGetValue(geometry.Id, out var connector))
@@ -105,13 +167,22 @@ namespace SIMULTAN.Exchange.SimNetworkConnectors
             return null;
         }
 
+        private void Geometry_GeometryChanged(object sender, IEnumerable<BaseGeometry> geometries)
+        {
+            foreach (var geom in geometries)
+                geometryChangedGeometries.Add(geom);
+
+            if (Exchange.EnableGeometryEvents)
+                SynchronizeChanges();
+        }
+
         private void Geometry_TopologyChanged(object sender, IEnumerable<BaseGeometry> geometries)
         {
             foreach (var geom in geometries)
-            {
-                if (connectors.TryGetValue(geom.Id, out var con))
-                    con.OnTopologyChanged();
-            }
+                topologyChangedGeometries.Add(geom);
+
+            if (Exchange.EnableGeometryEvents)
+                SynchronizeChanges();
         }
 
         private void GeometryModel_Replaced(object sender, GeometryModelReplacedEventArgs e)
@@ -119,15 +190,16 @@ namespace SIMULTAN.Exchange.SimNetworkConnectors
             if (e.OldGeometry != null)
             {
                 e.OldGeometry.TopologyChanged -= this.Geometry_TopologyChanged;
+                e.OldGeometry.GeometryChanged -= this.Geometry_GeometryChanged;
             }
 
             //Reconnect everything
-            UpdateNetwork(this.Network);
-
+            UpdateNetwork(this.Network, false);
 
             if (e.NewGeometry != null)
             {
-                e.OldGeometry.TopologyChanged += this.Geometry_TopologyChanged;
+                e.NewGeometry.TopologyChanged += this.Geometry_TopologyChanged;
+                e.NewGeometry.GeometryChanged += this.Geometry_GeometryChanged;
             }
         }
 
@@ -136,7 +208,8 @@ namespace SIMULTAN.Exchange.SimNetworkConnectors
         /// Updates the given network´s geometry
         /// </summary>
         /// <param name="network">The network we base the geometry on</param>
-        public void UpdateNetwork(SimNetwork network)
+        /// <param name="isInitialConversion">If this is the initial conversion. Will reposition vertices to not overlap subnetworks.</param>
+        public void UpdateNetwork(SimNetwork network, bool isInitialConversion)
         {
             GeometryModel.Geometry.StartBatchOperation();
 
@@ -144,10 +217,10 @@ namespace SIMULTAN.Exchange.SimNetworkConnectors
             {
                 GeometryModel.Geometry.Layers.Add(new Layer(GeometryModel.Geometry, "0"));
             }
-            Dictionary<ulong, BaseSimnetworkGeometryConnector> existingConnectors = new Dictionary<ulong, BaseSimnetworkGeometryConnector>(this.connectors);
-            connectors.Clear();
+            Dictionary<ulong, BaseSimNetworkGeometryConnector> existingConnectors = new(this.connectors);
+            connectors.Clear(); // don't dispose connectors here, cause they are still needed for the existingConnectors
 
-            AddNetwork(network, existingConnectors);
+            AddNetwork(network, existingConnectors, isInitialConversion);
 
             GeometryModel.Geometry.EndBatchOperation();
             CleanUnusedGeometry();
@@ -157,87 +230,112 @@ namespace SIMULTAN.Exchange.SimNetworkConnectors
         }
 
 
-        private void AddNetwork(SimNetwork subnetwork, Dictionary<ulong, BaseSimnetworkGeometryConnector> existingConnectors)
+        /// <summary>
+        /// Adds a Network
+        /// </summary>
+        /// <param name="subnetwork">The network or subnetwork</param>
+        /// <param name="existingConnectors">The existing connectors</param>
+        /// <param name="isInitialConversion">If this is the initial conversion run</param>
+        private void AddNetwork(SimNetwork subnetwork, Dictionary<ulong, BaseSimNetworkGeometryConnector> existingConnectors,
+            bool isInitialConversion)
         {
-
-            if (subnetwork.ContainedElements.Count == 0) //If there is not contained element, Add the SubnEtwork is a Vertex
+            PrintTrace($"AddNetwork: {subnetwork.Name}({subnetwork.Id.LocalId})");
+            if (subnetwork.ContainedElements.Count == 0) //If there is no contained element, Add the subnetwork as a Vertex
             {
                 AddDynamicBlock(subnetwork, existingConnectors);
             }
             else
             {
-                AddNestedElements(subnetwork, existingConnectors);
+                AddNestedElements(subnetwork, existingConnectors, isInitialConversion);
             }
             AttachNetworkEvents(subnetwork);
         }
 
-        private void AddNestedElements(SimNetwork network, Dictionary<ulong, BaseSimnetworkGeometryConnector> existingConnectors)
+        /// <summary>
+        /// Adds all the networks elements contained in a network
+        /// </summary>
+        /// <param name="network">The network</param>
+        /// <param name="existingGeoConnectors">The existing connectors</param>
+        /// <param name="isInitialConversion">If this is the initial conversion run</param>
+        private void AddNestedElements(SimNetwork network, Dictionary<ulong, BaseSimNetworkGeometryConnector> existingGeoConnectors,
+            bool isInitialConversion)
         {
+            PrintTrace($"AddNestedElements: {network.Name}({network.Id.LocalId})");
             //Make sure that all nodes of the flattened network exist in the geometry model
-            staticGroups.Clear();
-            GetStaticGroups();
-            UpdateStaticBlocks(network, staticGroups, existingConnectors);
-            UpdateBlocks(network, existingConnectors);
-            UpdatePorts(network, existingConnectors);
-            UpdateSubnetworks(network, existingConnectors);
-            UpdateNetworkConnectors(network, existingConnectors);
+            var staticGroups = FindStaticGroups();
+            UpdateStaticBlocks(staticGroups, existingGeoConnectors);
+            UpdateDynamicBlocks(network, existingGeoConnectors);
+            UpdateUnconnectedPorts(network, existingGeoConnectors);
+            UpdateSubnetworks(network, existingGeoConnectors, isInitialConversion);
+            UpdateNetworkConnections(network, existingGeoConnectors);
         }
 
 
-        private void UpdatePorts(SimNetwork network, Dictionary<ulong, BaseSimnetworkGeometryConnector> existingConnectors)
+        /// <summary>
+        /// Updates all ports without connections
+        /// </summary>
+        /// <param name="network">The network</param>
+        /// <param name="existingConnectors">Existing connectors</param>
+        private void UpdateUnconnectedPorts(SimNetwork network, Dictionary<ulong, BaseSimNetworkGeometryConnector> existingConnectors)
         {
-            foreach (var parentElement in network.ContainedElements.Where(t => t is BaseSimNetworkElement))
-                foreach (var port in parentElement.Ports.Where(p => p.Connectors.Count == 0 && ((p.ParentNetworkElement is SimNetworkBlock bl && !bl.IsStatic || p.ParentNetworkElement is SimNetwork))))
-                    AddPort(port, existingConnectors);
+            foreach (var parentElement in network.ContainedElements)
+                foreach (var port in parentElement.Ports.Where(p => p.Connections.Count == 0 && ((p.ParentNetworkElement is SimNetworkBlock bl && !bl.IsStatic) || p.ParentNetworkElement is SimNetwork)))
+                    AddUnconnectedPort(port, existingConnectors);
         }
 
 
 
-        private void AddPort(SimNetworkPort port, Dictionary<ulong, BaseSimnetworkGeometryConnector> existingConnectors)
+        /// <summary>
+        /// Adds a port vertex and polyline to the network element of a port without connections
+        /// </summary>
+        /// <param name="port">The unconnected port</param>
+        /// <param name="existingConnectors">The existing connecitons</param>
+        private void AddUnconnectedPort(SimNetworkPort port, Dictionary<ulong, BaseSimNetworkGeometryConnector> existingConnectors)
         {
-            Vertex geometry = null;
+            if (port.Connections.Count != 0)
+                throw new ArgumentException("Port has connections, cannot add unconnected port");
+            PrintTrace($"AddUnconnectedPort: {port.Name}({port.Id.LocalId}");
+
+            Vertex vertex = null;
+            // check if block has a connector
             if (!connectors.TryGetValue(port.ParentNetworkElement.RepresentationReference.GeometryId, out var parentElement))
             {
                 return;
             }
+            // try get vertex of port
             if (port.RepresentationReference != GeometricReference.Empty)
             {
-                var globalPosition = GetPortGlobalPosition(port);
-                geometry = this.GeometryModel.Geometry.GeometryFromId(port.RepresentationReference.GeometryId) as Vertex;
+                vertex = this.GeometryModel.Geometry.GeometryFromId(port.RepresentationReference.GeometryId) as Vertex;
             }
-            if (geometry == null)
+            // create vertex if not exists
+            if (vertex == null)
             {
                 var color = port.Color;
                 var position = GetPortGlobalPosition(port);
-                geometry = new Vertex(this.GeometryModel.Geometry.Layers.First(), port.Name, position)
+                vertex = new Vertex(this.GeometryModel.Geometry.Layers.First(), port.Name, position)
                 {
                     Color = new DerivedColor(color)
                 };
             }
-            if (connectors.TryGetValue(geometry.Id, out var con))
-            {
-                if (this.connectors.TryGetValue(port.RepresentationReference.GeometryId, out var portConnector))
-                {
-                    portConnector.ChangeBaseGeometry(geometry);
-                }
-                else
-                {
-                    con.ChangeBaseGeometry(geometry);
-                    connectors.Add(geometry.Id, con);
-                    existingConnectors.Remove(geometry.Id);
-                }
 
+            if (connectors.TryGetValue(vertex.Id, out var con))
+            {
+                con.ChangeBaseGeometry(vertex);
+            }
+            // check if the vertex already has a connector
+            else if (existingConnectors != null && existingConnectors.TryGetValue(vertex.Id, out var econ))
+            {
+                econ.ChangeBaseGeometry(vertex);
+                connectors.Add(vertex.Id, econ);
+                existingConnectors.Remove(vertex.Id);
             }
             else
             {
-                if (connectors.TryGetValue(port.ParentNetworkElement.RepresentationReference.GeometryId, out var parentConnector))
-                {
-                    var portConnector = new SimNetworkPortConnector(geometry, port, this);
-                    connectors.Add(geometry.Id, portConnector);
-                }
+                var portConnector = new SimNetworkPortConnector(vertex, port, this);
+                connectors.Add(vertex.Id, portConnector);
             }
 
-            AddBlockPortConnectorProxy(port.ParentNetworkElement, port, existingConnectors);
+            AddBlockToPortProxy(port.ParentNetworkElement, port, existingConnectors);
         }
 
 
@@ -249,437 +347,483 @@ namespace SIMULTAN.Exchange.SimNetworkConnectors
         {
             for (int i = 0; i < geoms.Count; i++)
             {
-                if (this.connectors.TryGetValue(geoms[i].Id, out var connector) && connector is SimNetworkBlockConnector blockCon)
+                if (this.connectors.TryGetValue(geoms[i].Id, out var connector)
+                    && connector is SimNetworkBlockConnector blockCon
+                    && blockCon.Block.IsStatic)
                 {
-                    if (blockCon.Block.IsStatic)
+                    foreach (var port in blockCon.Block.Ports)
                     {
-                        foreach (var port in blockCon.Block.Ports)
+                        if (!port.Connections.Any())
                         {
-                            AddStaticPort(port, null, false);
+                            AddStaticUnconnectedPort(port, null, false);
                         }
                     }
                 }
             }
-            this.UpdateNetworkConnectors(this.Network, null);
+            this.UpdateNetworkConnections(this.Network, null);
         }
-
-
-        private void UpdateBlocks(SimNetwork network, Dictionary<ulong, BaseSimnetworkGeometryConnector> existingConnectors)
-        {
-            foreach (var node in network.ContainedElements.Where(t => t is BaseSimNetworkElement && t is SimNetworkBlock block && !block.IsStatic))
-                AddDynamicBlock(node as SimNetworkBlock, existingConnectors);
-        }
-
-        private void UpdateSubnetworks(SimNetwork network, Dictionary<ulong, BaseSimnetworkGeometryConnector> existingConnectors)
-        {
-            foreach (var node in network.ContainedElements.Where(t => t is SimNetwork))
-            {
-                AddNetwork(node as SimNetwork, existingConnectors);
-                AdjustImportedElements(node as SimNetwork);
-            }
-        }
-
-        private void UpdateStaticBlocks(SimNetwork network, Dictionary<SimNetworkBlock, List<SimNetworkBlock>> staticGroups, Dictionary<ulong, BaseSimnetworkGeometryConnector> existingConnectors)
-        {
-            foreach (var staticGroup in staticGroups)
-            {
-                var handledBlocks = new List<(SimNetworkBlock block, SimMatrix3D transformation)>();
-                AddStaticBlockFromChain(handledBlocks, staticGroup.Value, staticGroup.Key, existingConnectors);
-            }
-        }
-
-
-        private void AdjustImportedElements(SimNetwork subnetwork)
-        {
-            var boundingBox = GetSubnetworkBoundingBox(subnetwork);
-            foreach (var element in subnetwork.ParentNetwork.ContainedElements)
-            {
-                if (element is BaseSimNetworkElement baseSimNetworkElement && !(baseSimNetworkElement is SimNetworkBlock bl && bl.IsStatic))
-                {
-                    var transVector = new SimVector3D(0, 0, 0);
-                    if (connectors.TryGetValue(element.RepresentationReference.GeometryId, out var connector))
-                    {
-                        var geom = connector.Geometry as Vertex;
-
-                        if (element.Position.X < subnetwork.Position.X)
-                        {
-                            if (geom.Position.X > boundingBox.Min.X)
-                            {
-                                // Item should be transformed by
-                                var transofrmBy = (boundingBox.Min.X - geom.Position.X);
-                                transVector.X = transVector.X - transofrmBy;
-                            }
-                        }
-                        if (element.Position.X > subnetwork.Position.X)
-                        {
-                            if (geom.Position.X < boundingBox.Max.X)
-                            {
-                                // Item should be transformed by
-                                var transofrmBy = (boundingBox.Max.X - geom.Position.X);
-                                transVector.X = transVector.X - transofrmBy;
-                            }
-                        }
-                        if (element.Position.Y < subnetwork.Position.Y)
-                        {
-                            if (geom.Position.Y > boundingBox.Min.Y)
-                            {
-                                // Item should be transformed by
-                                var transofrmBy = (boundingBox.Min.Y - geom.Position.Y);
-                                transVector.Y = transVector.Y - transofrmBy;
-                            }
-                        }
-                        if (element.Position.Y > subnetwork.Position.Y)
-                        {
-                            if (geom.Position.Y < boundingBox.Max.Y)
-                            {
-                                // Item should be transformed by
-                                var transofrmBy = (boundingBox.Max.Y - geom.Position.Y);
-                                transVector.Y = transVector.Y - transofrmBy;
-                            }
-                        }
-
-                        geom.Position = geom.Position - transVector;
-                        connector.ChangeBaseGeometry(geom);
-
-                    }
-
-                    foreach (var port in baseSimNetworkElement.Ports)
-                    {
-                        if (connectors.TryGetValue(port.RepresentationReference.GeometryId, out var portConnector))
-                        {
-                            ((Vertex)portConnector.Geometry).Position = ((Vertex)portConnector.Geometry).Position - transVector;
-                            portConnector.ChangeBaseGeometry(portConnector.Geometry);
-                        }
-                    }
-                }
-            }
-        }
-
-
-        private void UpdateNetworkConnectors(SimNetwork network, Dictionary<ulong, BaseSimnetworkGeometryConnector> existingConnectors)
-        {
-            foreach (var connector in network.ContainedConnectors)
-            {
-                UpdateConnector(connector, existingConnectors);
-            }
-            foreach (var subNet in network.ContainedElements.Where(r => r is SimNetwork))
-                UpdateNetworkConnectors(subNet as SimNetwork, existingConnectors);
-        }
-
-
-        private void UpdateConnector(SimNetworkConnector connector, Dictionary<ulong, BaseSimnetworkGeometryConnector> existingConnectors)
-        {
-            var connectorChain = FindConnectorChain(connector);
-
-            var startNode = connectorChain.FirstOrDefault()?.Source; //Start node is a port where the chain starts, and its parent is a block
-            var endNode = connectorChain.LastOrDefault()?.Target; //End node is where the chain ends and the parent is a block
-
-
-            if (startNode.ParentNetworkElement is SimNetworkBlock bl10 && bl10.IsStatic
-                && endNode.ParentNetworkElement is SimNetworkBlock bl11 && bl11.IsStatic)
-            {
-                AddStaticConnector(connectorChain, existingConnectors);
-            }
-            else
-            {
-                AddDynamicConnector(connectorChain, existingConnectors);
-            }
-        }
-
-        private List<SimNetworkConnector> FindConnectorChain(SimNetworkConnector connector)
-        {
-            var chain = new List<SimNetworkConnector>();
-            chain.InsertRange(0, FindSourceConnectors(connector, chain));
-            chain.AddRange(FindTargetConnectors(connector, chain));
-
-            return chain;
-        }
-
-
-        private List<SimNetworkConnector> FindSourceConnectors(SimNetworkConnector connector, List<SimNetworkConnector> chain)
-        {
-            var sourceConnector = connector.Source.Connectors.FirstOrDefault(con => !chain.Contains(con));
-
-            if (sourceConnector != null)
-            {
-                chain.Insert(0, sourceConnector);
-                var sourceConnectors = FindSourceConnectors(sourceConnector, chain);
-                chain.InsertRange(0, sourceConnectors);
-            }
-            return chain;
-        }
-
-        private List<SimNetworkConnector> FindTargetConnectors(SimNetworkConnector connector, List<SimNetworkConnector> chain)
-        {
-            var targetConnector = connector.Target.Connectors.FirstOrDefault(con => !chain.Contains(con));
-
-            if (targetConnector != null)
-            {
-                chain.Add(targetConnector);
-                var targetConnectors = FindTargetConnectors(targetConnector, chain);
-                chain.InsertRange(0, targetConnectors);
-            }
-            return chain;
-        }
-
-
-        private List<List<SimNetworkBlock>> FindStaticGroups(SimNetwork network, List<List<SimNetworkBlock>> currentGroups)
-        {
-
-            foreach (SimNetworkBlock block in network.ContainedElements.Where(t => t is SimNetworkBlock bl && bl.IsStatic))
-            {
-                if (!currentGroups.Any(t => t.Contains(block)))
-                {
-                    var currentGroup = new List<SimNetworkBlock>() { block };
-                    currentGroups.Add(GetStaticConnectedBlocks(currentGroup, block));
-                }
-            }
-            foreach (var item in network.ContainedElements.Where(c => c is SimNetwork))
-            {
-                currentGroups.Union(FindStaticGroups(item as SimNetwork, currentGroups));
-            }
-            return currentGroups;
-        }
-
-        private List<SimNetworkBlock> GetStaticConnectedBlocks(List<SimNetworkBlock> currentGroup, SimNetworkBlock block)
-        {
-            foreach (SimNetworkConnector connector in block.Ports.SelectMany(t => t.Connectors))
-            {
-                if (connector.Target.ParentNetworkElement != block)
-                {
-                    if (connector.Target.ParentNetworkElement is SimNetworkBlock bl && bl.IsStatic && !currentGroup.Any(t => t.Id == bl.Id))
-                    {
-                        currentGroup.Add(bl);
-                        currentGroup.Union(GetStaticConnectedBlocks(currentGroup, bl));
-                    }
-                    if (connector.Target.ParentNetworkElement is SimNetwork nw && connector.Target.Connectors.Count == 2)
-                    {
-                        currentGroup.Union(GetStaticConnectionFromConnectedSubnetwork(connector.Source, connector.Target, currentGroup));
-                    }
-
-                }
-                else if (connector.Source.ParentNetworkElement != block)
-                {
-                    if (connector.Source.ParentNetworkElement is SimNetworkBlock bl && bl.IsStatic && !currentGroup.Any(t => t.Id == bl.Id))
-                    {
-                        currentGroup.Add(bl);
-                        currentGroup.Union(GetStaticConnectedBlocks(currentGroup, bl));
-                    }
-                    if (connector.Source.ParentNetworkElement is SimNetwork nw && connector.Source.Connectors.Count == 2)
-                    {
-                        currentGroup.Union(GetStaticConnectionFromConnectedSubnetwork(connector.Target, connector.Source, currentGroup));
-                    }
-                }
-            }
-            return currentGroup;
-        }
-
-        private List<SimNetworkBlock> GetStaticConnectionFromConnectedSubnetwork(SimNetworkPort sourcePort, SimNetworkPort targetPort, List<SimNetworkBlock> currentGroup)
-        {
-            var newItems = new List<SimNetworkBlock>();
-
-            if (targetPort.ParentNetworkElement is SimNetwork subnetwork)
-            {
-                foreach (var item in targetPort.Connectors)
-                {
-                    if (item.Target.ParentNetworkElement is SimNetworkBlock block1 && block1.IsStatic && !currentGroup.Contains(block1) && !newItems.Contains(block1))
-                    {
-                        currentGroup.Add(block1);
-                        currentGroup.Union(GetStaticConnectedBlocks(currentGroup, block1));
-                    }
-                    if (item.Source.ParentNetworkElement is SimNetworkBlock block2 && block2.IsStatic && !currentGroup.Contains(block2) && !newItems.Contains(block2))
-                    {
-                        currentGroup.Add(block2);
-                        currentGroup.Union(GetStaticConnectedBlocks(currentGroup, block2));
-                    }
-
-                    if (item.Source.ParentNetworkElement is SimNetwork sbnw1 && item.Source != targetPort && item.Source != sourcePort)
-                    {
-                        currentGroup.Union(GetStaticConnectionFromConnectedSubnetwork(item.Target, item.Source, currentGroup));
-                    }
-                    if (item.Target.ParentNetworkElement is SimNetwork sbnw12 && item.Target != targetPort && item.Source != targetPort)
-                    {
-                        currentGroup.Union(GetStaticConnectionFromConnectedSubnetwork(item.Source, item.Target, currentGroup));
-                    }
-                }
-            }
-            return currentGroup;
-        }
-
-
-
-
 
 
         /// <summary>
-        /// Returns a port which is connected to the input port only if the port is a port of a block. 
-        /// Recursively searches for the block if there are subnetworks involved
+        /// Updates all dynamic blocks
         /// </summary>
-        /// <param name="port">The port we want to check whether a port is connected which parent is  a SimNetworkBlock</param>
-        /// <param name="visitedPorts">The already visited ports</param>
-        /// <returns>Returns null if the port is not connected any ports with a SimNetworkBlock parent</returns>
-        private SimNetworkPort GetConnectedToBlockPort(SimNetworkPort port, List<SimNetworkPort> visitedPorts)
+        /// <param name="network">The network</param>
+        /// <param name="existingConnectors">The connectors</param>
+        private void UpdateDynamicBlocks(SimNetwork network, Dictionary<ulong, BaseSimNetworkGeometryConnector> existingConnectors)
         {
-            foreach (var item in port.Connectors)
+            foreach (var node in network.ContainedElements.OfType<SimNetworkBlock>().Where(t => !t.IsStatic))
+                AddDynamicBlock(node, existingConnectors);
+        }
+
+        /// <summary>
+        /// Updates all subnetworks
+        /// </summary>
+        /// <param name="network">The parent network</param>
+        /// <param name="existingConnectors">The existing connectors</param>
+        /// <param name="isInitialConversion">If this is the initial conversion run</param>
+        private void UpdateSubnetworks(SimNetwork network, Dictionary<ulong, BaseSimNetworkGeometryConnector> existingConnectors, bool isInitialConversion)
+        {
+            foreach (var subnet in network.ContainedElements.OfType<SimNetwork>())
             {
-                if (item.Target != port && !visitedPorts.Contains(item.Target))
+                AddNetwork(subnet, existingConnectors, isInitialConversion);
+                if (isInitialConversion)
                 {
-                    if (item.Target.ParentNetworkElement is SimNetworkBlock)
+                    FixSubnetOverlap(subnet);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Updates all groups of static blocks
+        /// </summary>
+        /// <param name="staticGroups">The static groups</param>
+        /// <param name="existingConnectors">The existing connectors</param>
+        private void UpdateStaticBlocks(List<HashSet<SimNetworkBlock>> staticGroups, Dictionary<ulong, BaseSimNetworkGeometryConnector> existingConnectors)
+        {
+            foreach (var group in staticGroups)
+            {
+                AddStaticBlockFromChain(new(), group, group.FirstOrDefault(), existingConnectors);
+            }
+        }
+
+        private void FixSubnetOverlap(SimNetwork subnetwork)
+        {
+            var boundingBox = GetSubnetworkBoundingBox(subnetwork);
+            // check all elements of the parent network if they intersect with the subnetwork bounds
+            foreach (var element in subnetwork.ParentNetwork.ContainedElements)
+            {
+                // if dynamic block or network
+                if (!(element is SimNetworkBlock block && block.IsStatic))
+                {
+                    var transVector = new SimVector3D(0, 0, 0);
+                    if (connectors.TryGetValue(element.RepresentationReference.GeometryId, out var connector)
+                        && connector.Geometry is Vertex vertex)
                     {
-                        return item.Target;
-                    }
-                    if (item.Target.ParentNetworkElement is SimNetwork)
-                    {
-                        visitedPorts.Add(port);
-                        return GetConnectedToBlockPort(item.Target, visitedPorts);
+                        // 2D X pos is further left than the subnet but the 3D bounds are intersecting in X
+                        if (element.Position.X < subnetwork.Position.X
+                            && vertex.Position.X > boundingBox.Min.X)
+                        {
+                            var transofrmBy = (boundingBox.Min.X - vertex.Position.X);
+                            transVector.X = transVector.X - transofrmBy;
+                        }
+                        // 2D X pos is further right than the subnet but the 3D bounds are intersecting in X
+                        if (element.Position.X > subnetwork.Position.X
+                            && vertex.Position.X < boundingBox.Max.X)
+                        {
+                            var transofrmBy = (boundingBox.Max.X - vertex.Position.X);
+                            transVector.X = transVector.X - transofrmBy;
+                        }
+
+                        // Same for Y coordinate
+                        if (element.Position.Y < subnetwork.Position.Y
+                            && vertex.Position.Y > boundingBox.Min.Y)
+                        {
+                            var transofrmBy = (boundingBox.Min.Y - vertex.Position.Y);
+                            transVector.Y = transVector.Y - transofrmBy;
+                        }
+                        if (element.Position.Y > subnetwork.Position.Y
+                            && vertex.Position.Y < boundingBox.Max.Y)
+                        {
+                            var transofrmBy = (boundingBox.Max.Y - vertex.Position.Y);
+                            transVector.Y = transVector.Y - transofrmBy;
+                        }
+
+                        vertex.Position = vertex.Position - transVector;
+                        connector.ChangeBaseGeometry(vertex);
                     }
 
-                }
-                if (item.Source != port && !visitedPorts.Contains(item.Source))
-                {
-                    if (item.Source.ParentNetworkElement is SimNetworkBlock)
+                    foreach (var port in element.Ports)
                     {
-                        return item.Source;
+                        if (connectors.TryGetValue(port.RepresentationReference.GeometryId, out var portConnector)
+                            && portConnector.Geometry is Vertex portVertex)
+                        {
+                            portVertex.Position = portVertex.Position - transVector;
+                            portConnector.ChangeBaseGeometry(portVertex);
+                        }
                     }
-                    if (item.Source.ParentNetworkElement is SimNetwork)
+                }
+            }
+        }
+
+        /// <summary>
+        /// Updates all connections of the network recursively
+        /// </summary>
+        /// <param name="network">The network</param>
+        /// <param name="existingGeoConnectors">The existing connectors</param>
+        private void UpdateNetworkConnections(SimNetwork network, Dictionary<ulong, BaseSimNetworkGeometryConnector> existingGeoConnectors)
+        {
+            foreach (var connection in network.ContainedConnections)
+            {
+                UpdateConnection(connection, existingGeoConnectors);
+            }
+            // update subnet connections
+            foreach (var subNet in network.ContainedElements.OfType<SimNetwork>())
+            {
+                UpdateNetworkConnections(subNet, existingGeoConnectors);
+            }
+        }
+
+        /// <summary>
+        /// Update a connection
+        /// </summary>
+        /// <param name="connection">the connection</param>
+        /// <param name="existingGeoConnectors">The existing connectors</param>
+        private void UpdateConnection(SimNetworkConnection connection, Dictionary<ulong, BaseSimNetworkGeometryConnector> existingGeoConnectors)
+        {
+            var connectionChain = GetConnectionChain(connection);
+            var (startPort, endPort) = GetChainStartAndEndPorts(connectionChain);
+
+            if (startPort.ParentNetworkElement is SimNetworkBlock startBlock && startBlock.IsStatic
+                && endPort.ParentNetworkElement is SimNetworkBlock endBlock && endBlock.IsStatic)
+            {
+                AddStaticConnection(connectionChain, existingGeoConnectors);
+            }
+            else
+            {
+                AddDynamicConnection(connectionChain, existingGeoConnectors);
+            }
+        }
+
+        /// <summary>
+        /// Recursively find all connections that are connected trough subnetworks and terminate at blocks
+        /// This method returns a list of connections when one of the ports is the input or output of a subnetwork.
+        /// </summary>
+        /// <param name="connection">The connection to start with</param>
+        /// <returns>An ordered list of connections</returns>
+        public static List<SimNetworkConnection> GetConnectionChain(SimNetworkConnection connection)
+        {
+            var chain = new List<SimNetworkConnection>();
+            FindSourceConnections(connection, chain);
+            FindTargetConnections(connection, chain);
+            return chain;
+        }
+
+        /// <summary>
+        /// Returns the start and end ports of a connection chain (<see cref="GetConnectionChain(SimNetworkConnection)"/>)
+        /// </summary>
+        /// <param name="chain">The chain</param>
+        /// <returns>The start end ports</returns>
+        public static (SimNetworkPort start, SimNetworkPort end) GetChainStartAndEndPorts(List<SimNetworkConnection> chain)
+        {
+            var startPort = chain[0].Source;
+            var endPort = chain[chain.Count - 1].Target;
+            return (startPort, endPort);
+        }
+
+        /// <summary>
+        /// Recursively finds the source connections
+        /// </summary>
+        /// <param name="connection">The connection to start with</param>
+        /// <param name="chain">The current chain</param>
+        private static void FindSourceConnections(SimNetworkConnection connection, List<SimNetworkConnection> chain)
+        {
+            var sourceConnection = connection.Source.Connections.Find(con => !chain.Contains(con));
+            if (sourceConnection != null)
+            {
+                chain.Insert(0, sourceConnection);
+                FindSourceConnections(sourceConnection, chain);
+            }
+        }
+
+        /// <summary>
+        /// Recursively finds the target connections
+        /// </summary>
+        /// <param name="connection">The connection to start with</param>
+        /// <param name="chain">The current chain</param>
+        private static void FindTargetConnections(SimNetworkConnection connection, List<SimNetworkConnection> chain)
+        {
+            var targetConnection = connection.Target.Connections.Find(con => !chain.Contains(con));
+            if (targetConnection != null)
+            {
+                chain.Add(targetConnection);
+                FindTargetConnections(targetConnection, chain);
+            }
+        }
+
+        /// <summary>
+        /// Finds all static connected groups of <see cref="SimNetworkBlock"/>s
+        /// </summary>
+        /// <param name="network">The network to find the groups for</param>
+        /// <param name="groups">The current groups</param>
+        /// <returns>A list of connected block groups</returns>
+        private List<HashSet<SimNetworkBlock>> FindStaticGroups(SimNetwork network, List<HashSet<SimNetworkBlock>> groups)
+        {
+
+            foreach (var block in network.ContainedElements.OfType<SimNetworkBlock>().Where(t => t.IsStatic))
+            {
+                // if block is not in any group already, find its connected blocks and add the group
+                if (!groups.Exists(t => t.Contains(block)))
+                {
+                    groups.Add(GetStaticConnectedBlocks(new() { block }, block));
+                }
+            }
+            // recurse into subnetworks
+            foreach (var subnet in network.ContainedElements.OfType<SimNetwork>())
+            {
+                FindStaticGroups(subnet, groups);
+            }
+            return groups;
+        }
+
+        /// <summary>
+        /// Recursively finds all static connected blocks and adds them to the group
+        /// </summary>
+        /// <param name="group">The group to add to</param>
+        /// <param name="block">The block to process</param>
+        /// <returns>A set of all connected static blocks</returns>
+        private HashSet<SimNetworkBlock> GetStaticConnectedBlocks(HashSet<SimNetworkBlock> group, SimNetworkBlock block)
+        {
+            // check all connections of the block
+            foreach (var connection in block.Ports.SelectMany(t => t.Connections))
+            {
+                // port connected to this block
+                var sourcePort = connection.Source.ParentNetworkElement == block ?
+                    connection.Source : connection.Target;
+                // find port that this connection connects to
+                var targetPort = connection.Source.ParentNetworkElement == block ?
+                    connection.Target : connection.Source;
+                // if the connected block is static and not already in the group, add it to the group
+                if (targetPort.ParentNetworkElement is SimNetworkBlock bl && bl.IsStatic && !group.Any(t => t.Id == bl.Id))
+                {
+                    group.Add(bl);
+                    // recursively add all connected blocks
+                    GetStaticConnectedBlocks(group, bl);
+                }
+                // if connected to a subnetwork and subnet has connections inside, recurse into subnet
+                if (targetPort.ParentNetworkElement is SimNetwork && targetPort.Connections.Count == 2)
+                {
+                    GetStaticConnectionFromConnectedSubnetwork(group, sourcePort, targetPort);
+                }
+            }
+            return group;
+        }
+
+        /// <summary>
+        /// Recurses through a connected subnetwork (target port) to get the connected static blocks and adds them to the group
+        /// </summary>
+        /// <param name="group">The group</param>
+        /// <param name="sourcePort">The source port of the connection</param>
+        /// <param name="targetPort">The target port of the connection, part of the subnetwork</param>
+        private void GetStaticConnectionFromConnectedSubnetwork(HashSet<SimNetworkBlock> group, SimNetworkPort sourcePort, SimNetworkPort targetPort)
+        {
+            if (targetPort.ParentNetworkElement is SimNetwork)
+            {
+                // recursively add all connected blocks of the target port
+                foreach (var con in targetPort.Connections)
+                {
+                    if (con.Target.ParentNetworkElement is SimNetworkBlock targetBlock
+                        && targetBlock.IsStatic && !group.Contains(targetBlock))
                     {
-                        visitedPorts.Add(port);
-                        return GetConnectedToBlockPort(item.Source, visitedPorts);
+                        group.Add(targetBlock);
+                        GetStaticConnectedBlocks(group, targetBlock);
+                    }
+                    if (con.Source.ParentNetworkElement is SimNetworkBlock sourceBlock
+                        && sourceBlock.IsStatic && !group.Contains(sourceBlock))
+                    {
+                        group.Add(sourceBlock);
+                        GetStaticConnectedBlocks(group, sourceBlock);
+                    }
+
+                    if (con.Source.ParentNetworkElement is SimNetwork
+                        && con.Source != targetPort && con.Source != sourcePort)
+                    {
+                        GetStaticConnectionFromConnectedSubnetwork(group, con.Target, con.Source);
+                    }
+                    if (con.Target.ParentNetworkElement is SimNetwork
+                        && con.Target != targetPort && con.Source != targetPort)
+                    {
+                        GetStaticConnectionFromConnectedSubnetwork(group, con.Source, con.Target);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Finds the first port of a Block (not network) that is connected to the startPort.
+        /// Recursively searches through subnetworks till a block is found.
+        /// </summary>
+        /// <param name="startPort">The port we want to check whether a port is connected which parent is  a SimNetworkBlock</param>
+        /// <param name="visitedPorts">The already visited ports</param>
+        /// <returns>Returns null if the start port is not connected to any ports with a SimNetworkBlock parent</returns>
+        private SimNetworkPort FindConnectedPortOfBlock(SimNetworkPort startPort, HashSet<SimNetworkPort> visitedPorts)
+        {
+            foreach (var con in startPort.Connections)
+            {
+                if (con.Target != startPort && !visitedPorts.Contains(con.Target))
+                {
+                    if (con.Target.ParentNetworkElement is SimNetworkBlock)
+                    {
+                        return con.Target;
+                    }
+                    if (con.Target.ParentNetworkElement is SimNetwork)
+                    {
+                        visitedPorts.Add(startPort);
+                        return FindConnectedPortOfBlock(con.Target, visitedPorts);
+                    }
+                }
+                if (con.Source != startPort && !visitedPorts.Contains(con.Source))
+                {
+                    if (con.Source.ParentNetworkElement is SimNetworkBlock)
+                    {
+                        return con.Source;
+                    }
+                    if (con.Source.ParentNetworkElement is SimNetwork)
+                    {
+                        visitedPorts.Add(startPort);
+                        return FindConnectedPortOfBlock(con.Source, visitedPorts);
                     }
                 }
             }
             return null;
         }
 
-
-
-        private void AddStaticBlockFromChain(List<(SimNetworkBlock block, SimMatrix3D transformation)> existingBlocks, List<SimNetworkBlock> staticGroup, SimNetworkBlock newBlockToAdd, Dictionary<ulong, BaseSimnetworkGeometryConnector> existingConnectors)
+        /// <summary>
+        /// Recursively adds all connected static block connectors
+        /// </summary>
+        /// <param name="handledBlocks">Already handled blocks and their transforms</param>
+        /// <param name="staticGroup">The group to work on</param>
+        /// <param name="newBlockToAdd">The new block to add a connector for</param>
+        /// <param name="existingConnectors">The existing connectors</param>
+        private void AddStaticBlockFromChain(Dictionary<SimNetworkBlock, SimMatrix3D> handledBlocks, HashSet<SimNetworkBlock> staticGroup, SimNetworkBlock newBlockToAdd, Dictionary<ulong, BaseSimNetworkGeometryConnector> existingConnectors)
         {
-            if (connectors.TryGetValue(newBlockToAdd.RepresentationReference.GeometryId, out var existingConnectr))
+            if (connectors.ContainsKey(newBlockToAdd.RepresentationReference.GeometryId))
                 return;
 
+            PrintTrace($"AddStaticBlockFromChain: {newBlockToAdd.Name}({newBlockToAdd.Id.LocalId}");
+
             var transformation = new SimMatrix3D();
-            List<SimNetworkPort> connectedPortsWithBlockParent = new List<SimNetworkPort>();
+            // all ports of blocks that are connected (also through subnets) to the new block and are part of the static group
+            List<SimNetworkPort> connectedBlockPorts = new List<SimNetworkPort>();
+            var portsToConnect = new List<(SimNetworkPort otherPort, SimNetworkPort selfPort, SimNetworkBlock block, SimMatrix3D transformation)>();
 
-            var portsToConnectWith = new List<(SimNetworkPort otherPort, SimNetworkPort selfPort)>();
-
+            // find all connected ports of blocks (through subnetworks)
             foreach (var port in newBlockToAdd.Ports)
             {
-                var connectedPortWithBlockParent = GetConnectedToBlockPort(port, new List<SimNetworkPort>());
-                if (connectedPortWithBlockParent != null && staticGroup.Contains(connectedPortWithBlockParent.ParentNetworkElement))
+                var connectedPort = FindConnectedPortOfBlock(port, new());
+                if (connectedPort != null && connectedPort.ParentNetworkElement is SimNetworkBlock block
+                    && staticGroup.Contains(connectedPort.ParentNetworkElement))
                 {
-                    connectedPortsWithBlockParent.Add(connectedPortWithBlockParent);
-                    if (existingBlocks.Any(t => t.block == connectedPortWithBlockParent.ParentNetworkElement))
+                    connectedBlockPorts.Add(connectedPort);
+                    // if block was already handled, connect the ports
+                    if (handledBlocks.TryGetValue(block, out var transform))
                     {
-                        portsToConnectWith.Add((connectedPortWithBlockParent, port));
+                        portsToConnect.Add((connectedPort, port, block, transform));
                     }
                 }
             }
 
             var firstRot = SimQuaternion.Identity;
             var firstRotSet = false;
-            if (!existingBlocks.Select(t => t.block).Contains(newBlockToAdd) && newBlockToAdd.IsStatic && newBlockToAdd.RepresentationReference == GeometricReference.Empty)
+            if (!handledBlocks.ContainsKey(newBlockToAdd) && newBlockToAdd.IsStatic
+                && newBlockToAdd.RepresentationReference == GeometricReference.Empty)
             {
-                var nonCompliantConnections = new List<Tuple<SimNetworkConnector, ValidationError>>();
-                if (portsToConnectWith.Count() > 0)
+                var nonCompliantConnections = new List<(SimNetworkConnection, ValidationError)>();
+                if (portsToConnect.Count > 0)
                 {
                     var relPortPositionsToComplyWith = new List<(SimNetworkPort otherPort, SimPoint3D position, SimNetworkPort selfPort)>();
-                    foreach (var port in portsToConnectWith)
+                    foreach (var toConnect in portsToConnect)
                     {
-                        if (existingBlocks.TryFirstOrDefault(e => e.block == port.otherPort.ParentNetworkElement as SimNetworkBlock, out var existingBlock))
-                        {
-                            var position = existingBlock.transformation.Transform(GetPortRelativePosition(port.otherPort));
-                            relPortPositionsToComplyWith.Add((port.otherPort, position, port.selfPort));
-                        }
+                        var position = toConnect.transformation.Transform(GetPortRelativePosition(toConnect.otherPort));
+                        relPortPositionsToComplyWith.Add((toConnect.otherPort, position, toConnect.selfPort));
                     }
 
-                    var firstPort = relPortPositionsToComplyWith.ElementAt(0);
+                    var firstPort = relPortPositionsToComplyWith[0];
                     SimNetworkPort connectedToFirst = firstPort.selfPort;
                     var connectedToFirstRelPosition = GetPortRelativePosition(firstPort.selfPort);
-                    //1. Check if a transformations exists to connect the ports with the new block
 
+                    //1. Check if a transformations exists to connect the ports with the new block
                     for (int i = 0; i < relPortPositionsToComplyWith.Count; i++)
                     {
-                        if (relPortPositionsToComplyWith.ElementAt(i).otherPort != firstPort.otherPort)
+                        var current = relPortPositionsToComplyWith[i];
+                        if (current.otherPort != firstPort.otherPort)
                         {
-                            SimNetworkPort connectedPortInNewBlock = relPortPositionsToComplyWith.ElementAt(i).selfPort;
+                            SimNetworkPort connectedPortInNewBlock = current.selfPort;
 
                             if (connectedPortInNewBlock != null && newBlockToAdd.Ports.Contains(connectedPortInNewBlock))
                             {
+                                var complyDistance = (current.position - firstPort.position).Length;
+
                                 var relPositionOfPort = GetPortRelativePosition(connectedPortInNewBlock);
-                                var complyDistance = Distance.Euclidean(
-                                    new double[] { relPortPositionsToComplyWith.ElementAt(i).position.X, relPortPositionsToComplyWith.ElementAt(i).position.Y, relPortPositionsToComplyWith.ElementAt(i).position.Z },
+                                var newBlockDistaces = (connectedToFirstRelPosition - relPositionOfPort).Length;
 
-                                    new double[] { firstPort.position.X, firstPort.position.Y, firstPort.position.Z });
-                                var initialPositionOfConnectedPort = GetPortGlobalPosition(connectedPortInNewBlock);
-                                var newBlockDistaces = Distance.Euclidean(
-                                      new double[] { connectedToFirstRelPosition.X, connectedToFirstRelPosition.Y, connectedToFirstRelPosition.Z },
-                                      new double[] { relPositionOfPort.X, relPositionOfPort.Y, relPositionOfPort.Z });
-
-                                if (complyDistance != newBlockDistaces)
+                                if (Math.Abs(complyDistance - newBlockDistaces) > distanceTolearance)
                                 {
-                                    nonCompliantConnections.Add(
-                                        new Tuple<SimNetworkConnector, ValidationError>(
-                                            newBlockToAdd.Ports
-                                            .SelectMany(t => t.Connectors)
-                                            .FirstOrDefault(t => t.Target == connectedPortInNewBlock || t.Source == connectedPortInNewBlock),
+                                    nonCompliantConnections.Add((newBlockToAdd.Ports.SelectMany(t => t.Connections)
+                                        .FirstOrDefault(t => t.Target == connectedPortInNewBlock || t.Source == connectedPortInNewBlock),
                                         ValidationError.DistanceError));
                                 }
                             }
                         }
                     }
 
-                    var parentBLockOfFirstPort = existingBlocks.FirstOrDefault(t => t.block == firstPort.otherPort.ParentNetworkElement);
                     var firsPortGLobalPosition = GetPortGlobalPosition(firstPort.otherPort);
                     var connectedGlobalPosition = GetPortGlobalPosition(connectedToFirst);
 
                     transformation.Translate(((SimVector3D)firsPortGLobalPosition) - ((SimVector3D)connectedGlobalPosition));
 
-
-
                     //Check if rotation exists to connect the ports (the first one is connected by a simple translation transformation -->
                     //Hence we apply that transformation to the block and all of its´ ports)
-                    if (portsToConnectWith.Count() > 1)
+                    if (portsToConnect.Count > 1)
                     {
                         if (connectors.TryGetValue(firstPort.otherPort.RepresentationReference.GeometryId, out var rotCenterConnector))
                         {
                             var rotationCenter = ((Vertex)rotCenterConnector.Geometry).Position;
 
-                            List<SimQuaternion> SimQuaternions = new List<SimQuaternion>();
-                            for (int i = 0; i < relPortPositionsToComplyWith.Count; i++)
+                            List<SimQuaternion> rotations = new List<SimQuaternion>();
+                            // skip first
+                            for (int i = 1; i < relPortPositionsToComplyWith.Count; i++)
                             {
-                                if (i == 0)
-                                    continue;
+                                var current = relPortPositionsToComplyWith[i];
 
-                                var elementAt = relPortPositionsToComplyWith.ElementAt(i);
-                                if (connectors.TryGetValue(elementAt.otherPort.RepresentationReference.GeometryId, out var connector))
+                                if (connectors.TryGetValue(current.otherPort.RepresentationReference.GeometryId, out var connector))
                                 {
                                     var toComplyPortVertex = connector.Geometry as Vertex;
-                                    var equivalentInConneciton = transformation.Transform(GetPortGlobalPosition(elementAt.selfPort));
-                                    var targetVector = new SimVector3D(toComplyPortVertex.Position.X - rotationCenter.X, toComplyPortVertex.Position.Y - rotationCenter.Y, toComplyPortVertex.Position.Z - rotationCenter.Z);
-                                    var vectorToRotate = new SimVector3D(equivalentInConneciton.X - rotationCenter.X, equivalentInConneciton.Y - rotationCenter.Y, equivalentInConneciton.Z - rotationCenter.Z);
-
+                                    var equivalentInConnection = transformation.Transform(GetPortGlobalPosition(current.selfPort));
+                                    var targetVector = toComplyPortVertex.Position - rotationCenter;
+                                    var vectorToRotate = equivalentInConnection - rotationCenter;
                                     targetVector.Normalize();
                                     vectorToRotate.Normalize();
 
                                     SimQuaternion q = SimQuaternion.Identity;
-                                    var a = SimVector3D.CrossProduct((SimVector3D)vectorToRotate, targetVector);
+                                    var a = SimVector3D.CrossProduct(vectorToRotate, targetVector);
                                     q.X = a.X;
                                     q.Y = a.Y;
                                     q.Z = a.Z;
-                                    q.W = Math.Sqrt((Math.Pow(targetVector.Length, 2)) * (Math.Pow(vectorToRotate.Length, (double)2))) + SimVector3D.DotProduct(targetVector, (SimVector3D)vectorToRotate);
-                                    SimQuaternions.Add(q);
+                                    q.W = Math.Sqrt(1.0 + SimVector3D.DotProduct(targetVector, vectorToRotate));
+                                    rotations.Add(q);
 
-                                    if (q != SimQuaternions[i - 1])
+                                    if (q != rotations[i - 1])
                                     {
-                                        nonCompliantConnections.Add(new Tuple<SimNetworkConnector, ValidationError>(newBlockToAdd.Ports.SelectMany(t => t.Connectors).FirstOrDefault(t => t.Target == elementAt.otherPort || t.Source == elementAt.otherPort), ValidationError.RotationError));
+                                        nonCompliantConnections.Add((newBlockToAdd.Ports.SelectMany(t => t.Connections)
+                                            .FirstOrDefault(t => t.Target == current.otherPort || t.Source == current.otherPort),
+                                            ValidationError.RotationError));
                                     }
                                 }
                             }
 
-                            if (SimQuaternions.All(t => t == SimQuaternions[0]))
+                            if (rotations.All(t => t == rotations[0]))
                             {
-                                var quat = SimQuaternions[0];
+                                var quat = rotations[0];
                                 quat.Normalize();
                                 transformation.RotateAt(quat, rotationCenter);
                                 if (!firstRotSet)
@@ -694,440 +838,493 @@ namespace SIMULTAN.Exchange.SimNetworkConnectors
             AddStaticBlock(newBlockToAdd, existingConnectors, transformation, firstRot);
             foreach (var port in newBlockToAdd.Ports)
             {
-                if (port.Connectors.Count == 0)
+                if (port.Connections.Count == 0)
                 {
-                    AddStaticPort(port, existingConnectors, true);
+                    AddStaticUnconnectedPort(port, existingConnectors, true);
                 }
             }
-            existingBlocks.Add((newBlockToAdd, transformation));
+            handledBlocks.Add(newBlockToAdd, transformation);
 
-
-
-            foreach (var item in connectedPortsWithBlockParent)
+            foreach (var port in connectedBlockPorts)
             {
-                if (staticGroup.Contains(item.ParentNetworkElement) && !existingBlocks.Any(t => t.block == item.ParentNetworkElement as SimNetworkBlock))
+                if (staticGroup.Contains(port.ParentNetworkElement)
+                    && port.ParentNetworkElement is SimNetworkBlock block
+                    && !handledBlocks.ContainsKey(block))
                 {
-                    AddStaticBlockFromChain(existingBlocks, staticGroup, item.ParentNetworkElement as SimNetworkBlock, existingConnectors);
+                    AddStaticBlockFromChain(handledBlocks, staticGroup, block, existingConnectors);
                 }
             }
         }
 
-
-        private void AddStaticBlock(SimNetworkBlock block, Dictionary<ulong, BaseSimnetworkGeometryConnector> existingConnectors, SimMatrix3D transformation, SimQuaternion rotation)
+        /// <summary>
+        /// Recursively calculates the 2D offset for the subnetwork to the parent network
+        /// </summary>
+        /// <param name="subnetwork">The subnetwork</param>
+        /// <returns>The 2D offset</returns>
+        private SimPoint GetSubnetOffset2D(SimNetwork subnetwork)
         {
-            Vertex geometry = null;
+            return new SimPoint(0, 0);
+        }
+
+        /// <summary>
+        /// Adds a static block
+        /// </summary>
+        /// <param name="block">The block</param>
+        /// <param name="existingConnectors">The existing connections</param>
+        /// <param name="transformation">The transform</param>
+        /// <param name="rotation">The rotation</param>
+        private void AddStaticBlock(SimNetworkBlock block, Dictionary<ulong, BaseSimNetworkGeometryConnector> existingConnectors,
+            SimMatrix3D transformation, SimQuaternion rotation)
+        {
+            PrintTrace($"AddStaticBlock: {block.Name}({block.Id.LocalId}");
+            Vertex vertex = null;
 
             //Check if geometry for edge exists
             if (block.RepresentationReference != GeometricReference.Empty)
-                geometry = GeometryModel.Geometry.GeometryFromId(block.RepresentationReference.GeometryId) as Vertex;
+                vertex = GeometryModel.Geometry.GeometryFromId(block.RepresentationReference.GeometryId) as Vertex;
 
-            if (geometry == null)
+            // create geo if not exist
+            if (vertex == null)
             {
-                SimPoint3D position = transformation.Transform(TranslateCanvas2DPositionTo3D(block.Position));
-                geometry = new Vertex(this.GeometryModel.Geometry.Layers.First(), block.Name,
-                    new SimPoint3D(position.X, position.Y, position.Z))
+                SimPoint3D position = transformation.Transform(TranslateCanvas2DPositionTo3D(block.Position, GetSubnetOffset2D(block.ParentNetwork)));
+                vertex = new Vertex(this.GeometryModel.Geometry.Layers.First(), block.Name, position)
                 {
                     Color = new DerivedColor(block.Color),
                 };
             }
 
-            if (existingConnectors != null && existingConnectors.TryGetValue(geometry.Id, out var con))
+            // update existing if found
+            if (existingConnectors != null && existingConnectors.TryGetValue(vertex.Id, out var con))
             {
-                geometry.Position = transformation.Transform(TranslateCanvas2DPositionTo3D(block.Position));
-
-                con.ChangeBaseGeometry(geometry);
-                connectors.Add(geometry.Id, con);
-                existingConnectors.Remove(geometry.Id);
+                con.ChangeBaseGeometry(vertex);
+                connectors.Add(vertex.Id, con);
+                existingConnectors.Remove(vertex.Id);
             }
+            // create new connector
             else
             {
-                var conector = new SimNetworkBlockConnector(geometry, block, this, rotation);
-                connectors.Add(geometry.Id, conector);
+                var conector = new SimNetworkBlockConnector(vertex, block, this, rotation);
+                connectors.Add(vertex.Id, conector);
                 AttachBlockEvents(block);
             }
 
         }
 
 
-        private void AddStaticPort(SimNetworkPort port, Dictionary<ulong, BaseSimnetworkGeometryConnector> existingConnectors, bool addPortProxy)
+        /// <summary>
+        /// Adds a static port and proxy connection between block and port
+        /// </summary>
+        /// <param name="port">The port</param>
+        /// <param name="existingConnectors">The existing connectors</param>
+        /// <param name="addPortProxy">If a proxy port should be added</param>
+        private void AddStaticUnconnectedPort(SimNetworkPort port, Dictionary<ulong, BaseSimNetworkGeometryConnector> existingConnectors, bool addPortProxy)
         {
-            Vertex geometry = null;
+            PrintTrace($"AddStaticUnconnectedPort: {port.Name}({port.Id.LocalId}");
+            Vertex vertex = null;
 
             if (port.RepresentationReference != GeometricReference.Empty)
             {
-                geometry = this.GeometryModel.Geometry.GeometryFromId(port.RepresentationReference.GeometryId) as Vertex;
+                vertex = this.GeometryModel.Geometry.GeometryFromId(port.RepresentationReference.GeometryId) as Vertex;
             }
-            if (geometry == null)
-            {
-                var portPosition = GetPortGlobalPosition(port);
 
-                geometry = new Vertex(this.GeometryModel.Geometry.Layers.First(), port.Name, portPosition)
+            var portPosition = GetPortGlobalPosition(port);
+            if (vertex == null)
+            {
+                vertex = new Vertex(this.GeometryModel.Geometry.Layers.First(), port.Name, portPosition)
                 {
                     Color = new DerivedColor(port.Color)
                 };
             }
-            if (geometry != null && connectors.TryGetValue(port.RepresentationReference.GeometryId, out var existingCon))
-            {
-                var portRelPosition = GetPortGlobalPosition(port);
-                ((Vertex)existingCon.Geometry).Position = portRelPosition;
-            }
-            else if (geometry != null && existingConnectors != null && existingConnectors.TryGetValue(geometry.Id, out var con)
-                && existingConnectors.TryGetValue(port.ParentNetworkElement.RepresentationReference.GeometryId, out var prntConn))
-            {
-                var position = ((Vertex)prntConn.Geometry).Position;
 
-                geometry.Position = position;
-                con.ChangeBaseGeometry(geometry);
-                connectors.Add(geometry.Id, con);
-                existingConnectors.Remove(geometry.Id);
-            }
-
-            else
+            // if connector is already present, port was updated
+            if (!connectors.ContainsKey(vertex.Id))
             {
-                if (connectors.TryGetValue(port.ParentNetworkElement.RepresentationReference.GeometryId, out var parentConn))
+                if (existingConnectors != null && existingConnectors.TryGetValue(vertex.Id, out var con)
+                       && existingConnectors.TryGetValue(port.ParentNetworkElement.RepresentationReference.GeometryId, out var prntConn))
                 {
-                    var portConnector = new SimNetworkPortConnector(geometry, port, this);
-                    connectors.Add(geometry.Id, portConnector);
-                }
-            }
-
-
-
-            if (addPortProxy)
-            {
-                AddBlockPortConnectorProxy(port.ParentNetworkElement, port, existingConnectors);
-            }
-        }
-
-
-
-
-        private void AddStaticConnectorAsVertex(List<SimNetworkConnector> connectorChain, Dictionary<ulong, BaseSimnetworkGeometryConnector> existingConnectors, bool addPortConnectorProxies)
-        {
-            BaseGeometry geometry = null;
-            var startNode = connectorChain.FirstOrDefault(c => c.Source.ParentNetworkElement is SimNetworkBlock).Source; //Start node is a port where the chain starts, and its parent is a block
-            var endNode = connectorChain.FirstOrDefault(c => c.Target.ParentNetworkElement is SimNetworkBlock).Target; //End node is where the chain ends and the parent is a block
-
-            if (connectorChain[0].RepresentationReference != GeometricReference.Empty)
-            {
-                geometry = this.GeometryModel.Geometry.GeometryFromId(connectorChain[0].RepresentationReference.GeometryId) as Vertex;
-            }
-            if (geometry == null)
-            {
-                SimPoint3D position = new SimPoint3D(0, 0, 0);
-                if (connectors.TryGetValue(startNode.RepresentationReference.GeometryId, out var start) && connectors.TryGetValue(endNode.RepresentationReference.GeometryId, out var end))
-                {
-                    var startVertex = start.Geometry as Vertex;
-                    var endVertex = end.Geometry as Vertex;
-                    position = startVertex.Position;
+                    con.ChangeBaseGeometry(vertex);
+                    connectors.Add(vertex.Id, con);
+                    existingConnectors.Remove(vertex.Id);
                 }
                 else
                 {
-                    position = GetPortGlobalPosition(startNode);
+                    if (connectors.TryGetValue(port.ParentNetworkElement.RepresentationReference.GeometryId, out var parentConn))
+                    {
+                        var portConnector = new SimNetworkPortConnector(vertex, port, this);
+                        connectors.Add(vertex.Id, portConnector);
+                    }
                 }
+            }
 
-                geometry = new Vertex(this.GeometryModel.Geometry.Layers.First(), connectorChain[0].Name, position);
-
-            }
-            if (geometry != null && existingConnectors != null && existingConnectors.TryGetValue(geometry.Id, out var con))
+            if (addPortProxy)
             {
-                con.ChangeBaseGeometry(geometry);
-                connectors.Add(geometry.Id, con);
-                existingConnectors.Remove(geometry.Id);
-            }
-            else
-            {
-                var connectorConnector = new SimNetworkConnectorConnector(geometry as Vertex, connectorChain, this);
-                connectors.Add(geometry.Id, connectorConnector);
-            }
-            if (addPortConnectorProxies)
-            {
-                AddBlockToConnectorproxy(connectorChain.First(), startNode, existingConnectors);
-                AddBlockToConnectorproxy(connectorChain.First(), endNode, existingConnectors);
+                AddBlockToPortProxy(port.ParentNetworkElement, port, existingConnectors);
             }
         }
 
-        private void AddStaticConnectorAsPoly(List<SimNetworkConnector> connectorChain, Dictionary<ulong, BaseSimnetworkGeometryConnector> existingConnectors)
+        /// <summary>
+        /// Adds a connection vertex for a connection between two static blocks
+        /// </summary>
+        /// <param name="connectionChain">The connection chain</param>
+        /// <param name="existingConnectors">The existing connections</param>
+        /// <param name="addPortConnectorProxies">If proxies for the port connectors should be created</param>
+        private void AddStaticValidConnectionAsVertex(List<SimNetworkConnection> connectionChain, Dictionary<ulong, BaseSimNetworkGeometryConnector> existingConnectors, bool addPortConnectorProxies)
         {
-            BaseGeometry geometry = null;
-            var startNode = connectorChain.FirstOrDefault(c => c.Source.ParentNetworkElement is SimNetworkBlock).Source; //Start node is a port where the chain starts, and its parent is a block
-            var endNode = connectorChain.FirstOrDefault(c => c.Target.ParentNetworkElement is SimNetworkBlock).Target; //End node is where the chain ends and the parent is a block
+            Vertex vertex = null;
+            var (startPort, endPort) = GetChainStartAndEndPorts(connectionChain);
+            PrintTrace($"AddStaticValidConnectionAsPoly: {startPort.Name}({startPort.Id.LocalId}) -> {endPort.Name}({endPort.Id.LocalId})");
 
-            if (connectorChain[0].RepresentationReference != GeometricReference.Empty)
+            // try and find the vertex
+            if (connectionChain[0].RepresentationReference != GeometricReference.Empty)
             {
-                geometry = this.GeometryModel.Geometry.GeometryFromId(connectorChain[0].RepresentationReference.GeometryId) as Vertex;
+                vertex = this.GeometryModel.Geometry.GeometryFromId(connectionChain[0].RepresentationReference.GeometryId) as Vertex;
             }
-            if (geometry == null)
+
+            // Connection is between two valid static blocks, so position of both ports is the same
+            SimPoint3D position = GetPortGlobalPosition(startPort);
+
+            if (vertex == null)
+            {
+                vertex = new Vertex(this.GeometryModel.Geometry.Layers[0], connectionChain[0].Name, position);
+            }
+
+            // if connector is already present, connection was updated
+            if (!connectors.ContainsKey(vertex.Id))
+            {
+                if (existingConnectors != null && existingConnectors.TryGetValue(vertex.Id, out var con))
+                {
+                    con.ChangeBaseGeometry(vertex);
+                    connectors.Add(vertex.Id, con);
+                    existingConnectors.Remove(vertex.Id);
+                }
+                else
+                {
+                    var connectorConnector = new SimNetworkConnectionConnector(vertex, connectionChain, this);
+                    connectors.Add(vertex.Id, connectorConnector);
+                }
+            }
+
+            if (addPortConnectorProxies)
+            {
+                // ports are on a block, so they only have one connection
+                AddPortToConnectionProxy(startPort, startPort.Connections[0], existingConnectors);
+                AddPortToConnectionProxy(endPort, endPort.Connections[0], existingConnectors);
+            }
+        }
+
+        private void AddStaticInvalidConnectionAsPoly(List<SimNetworkConnection> connectionChain, Dictionary<ulong, BaseSimNetworkGeometryConnector> existingConnectors)
+        {
+            Polyline polyline = null;
+            var (startPort, endPort) = GetChainStartAndEndPorts(connectionChain);
+            PrintTrace($"AddStaticInvalidConnectionAsPoly: {startPort.Name}({startPort.Id.LocalId}) -> {endPort.Name}({endPort.Id.LocalId})");
+
+            // try to find if a polyline exists already
+            if (connectionChain[0].RepresentationReference != GeometricReference.Empty)
+            {
+                polyline = this.GeometryModel.Geometry.GeometryFromId(connectionChain[0].RepresentationReference.GeometryId) as Polyline;
+            }
+
+            if (polyline == null)
             {
                 Vertex startVertex = null;
                 Vertex endVertex = null;
 
-                if (connectors.TryGetValue(startNode.RepresentationReference.GeometryId, out var startConnector)
-                    && connectors.TryGetValue(endNode.RepresentationReference.GeometryId, out var endConnector))
+                if (connectors.TryGetValue(startPort.RepresentationReference.GeometryId, out var startConnector)
+                    && connectors.TryGetValue(endPort.RepresentationReference.GeometryId, out var endConnector))
                 {
                     startVertex = startConnector.Geometry as Vertex;
                     endVertex = endConnector.Geometry as Vertex;
+                    // if any is null or if they both are the same, create new ones
+                    if (startVertex == null || endVertex == null || endVertex == startVertex)
+                    {
+                        startVertex = null;
+                        endVertex = null;
+                    }
                 }
-                else
+
+                if (startVertex == null)
                 {
-                    var startPosition = GetPortGlobalPosition(startNode);
-                    var endPosition = GetPortGlobalPosition(endNode);
-
-                    startVertex = new Vertex(this.GeometryModel.Geometry.Layers.First(), startNode.Name, startPosition);
-                    endVertex = new Vertex(this.GeometryModel.Geometry.Layers.First(), endNode.Name, endPosition);
+                    var startPosition = GetPortGlobalPosition(startPort);
+                    startVertex = new Vertex(this.GeometryModel.Geometry.Layers[0], startPort.Name, startPosition);
+                }
+                if (endVertex == null)
+                {
+                    var endPosition = GetPortGlobalPosition(endPort);
+                    endVertex = new Vertex(this.GeometryModel.Geometry.Layers[0], endPort.Name, endPosition);
                 }
 
-
-                var innerEdge = new Edge(this.GeometryModel.Geometry.Layers.First(), connectorChain[0].Name + "_EDGE1",
+                var innerEdge = new Edge(this.GeometryModel.Geometry.Layers[0], connectionChain[0].Name + "_EDGE1",
                     new Vertex[] { startVertex, endVertex })
                 {
                     Color = new DerivedColor(SimColors.Red)
                 };
 
-                geometry = new Polyline(this.GeometryModel.Geometry.Layers.First(), "CHAIN",
+                polyline = new Polyline(this.GeometryModel.Geometry.Layers[0], "CHAIN",
                 new Edge[] { innerEdge })
                 {
                     Color = new DerivedColor(SimColors.Red)
                 };
-
             }
-            if (geometry != null && existingConnectors != null && existingConnectors.TryGetValue(geometry.Id, out var con))
+
+            // if connector is already present, connection was updated
+            if (!connectors.ContainsKey(polyline.Id))
             {
-                con.ChangeBaseGeometry(geometry);
-                connectors.Add(geometry.Id, con);
-                existingConnectors.Remove(geometry.Id);
-            }
-            else
-            {
-                var connectorConnector = new SimNetworkInvalidConnectorConnector(geometry as Polyline, connectorChain, this);
-                connectors.Add(geometry.Id, connectorConnector);
-            }
-        }
-
-
-
-
-        private void AddStaticConnector(List<SimNetworkConnector> connectorChain, Dictionary<ulong, BaseSimnetworkGeometryConnector> existingConnectors)
-        {
-
-            var startNode = connectorChain.FirstOrDefault(c => c.Source.ParentNetworkElement is SimNetworkBlock).Source; //Start node is a port where the chain starts, and its parent is a block
-            var endNode = connectorChain.FirstOrDefault(c => c.Target.ParentNetworkElement is SimNetworkBlock).Target; //End node is where the chain ends and the parent is a block
-
-            if (connectorChain[0].RepresentationReference != GeometricReference.Empty
-                && connectors.TryGetValue(connectorChain[0].RepresentationReference.GeometryId, out var connectorConnector))
-            {
-                if (connectors.TryGetValue(startNode.RepresentationReference.GeometryId, out var sCon)
-                     && connectors.TryGetValue(endNode.RepresentationReference.GeometryId, out var tCon))
+                if (existingConnectors != null && existingConnectors.TryGetValue(polyline.Id, out var con))
                 {
-                    SimPoint3D startPortPosittion = new SimPoint3D(0, 0, 0);
-                    SimPoint3D endPortPosition = new SimPoint3D(0, 0, 0);
-                    startPortPosittion = GetPortGlobalPosition(startNode);
-                    endPortPosition = GetPortGlobalPosition(endNode);
-
-                    if (startPortPosittion == endPortPosition && connectorConnector.Geometry is Polyline polyGeom)
-                    {
-                        foreach (var edge in polyGeom.Edges)
-                        {
-                            edge.Edge.RemoveFromModel();
-                        }
-                        polyGeom.RemoveFromModel();
-                        connectors.Remove(connectorChain[0].RepresentationReference.GeometryId);
-
-                        //Clean the unused geometry
-                        foreach (var edge in ((Vertex)sCon.Geometry).Edges)
-                        {
-                            var poliesToRemove = this.GeometryModel.Geometry.Polylines.Where(t => t.Edges.Any(p => p.Edge == edge)).ToList();
-                            for (int i = poliesToRemove.Count() - 1; i >= 0; --i)
-                            {
-                                poliesToRemove[i].RemoveFromModel();
-                            }
-
-                        }
-                        for (int i = ((Vertex)sCon.Geometry).Edges.Count - 1; i >= 0; --i)
-                        {
-                            ((Vertex)sCon.Geometry).Edges[i].RemoveFromModel();
-                        }
-                        sCon.Geometry.RemoveFromModel();
-
-
-                        //Clean the unused geometry
-                        foreach (var edge in ((Vertex)tCon.Geometry).Edges)
-                        {
-                            var poliesToRemove = this.GeometryModel.Geometry.Polylines.Where(t => t.Edges.Any(p => p.Edge == edge)).ToList();
-                            for (int i = poliesToRemove.Count() - 1; i >= 0; --i)
-                            {
-                                poliesToRemove[i].RemoveFromModel();
-                            }
-
-                        }
-
-                        for (int i = ((Vertex)tCon.Geometry).Edges.Count - 1; i >= 0; --i)
-                        {
-                            ((Vertex)tCon.Geometry).Edges[i].RemoveFromModel();
-                        }
-
-                        tCon.Geometry.RemoveFromModel();
-                        AddStaticConnectorAsVertex(connectorChain, existingConnectors, true);
-                    }
-                    else if (startPortPosittion != endPortPosition && connectorConnector.Geometry is Vertex vertexGeom)
-                    {
-                        var geom = connectorConnector.Geometry;
-
-                        for (int i = vertexGeom.Edges.Count - 1; i >= 0; --i)
-                        {
-                            vertexGeom.Edges[i].RemoveFromModel();
-                        }
-                        vertexGeom.RemoveFromModel();
-                        connectors.Remove(connectorChain[0].RepresentationReference.GeometryId);
-                        AddStaticPort(startNode, existingConnectors, true);
-                        AddStaticPort(endNode, existingConnectors, true);
-                        AddStaticConnectorAsPoly(connectorChain, existingConnectors);
-                    }
-                }
-            }
-            else
-            {
-                var startPortPosittion = GetPortGlobalPosition(startNode);
-                var endPortPosition = GetPortGlobalPosition(endNode);
-                if (startPortPosittion == endPortPosition)
-                {
-                    AddStaticConnectorAsVertex(connectorChain, existingConnectors, true);
-
+                    con.ChangeBaseGeometry(polyline);
+                    connectors.Add(polyline.Id, con);
+                    existingConnectors.Remove(polyline.Id);
                 }
                 else
                 {
-                    AddStaticPort(startNode, existingConnectors, true);
-                    AddStaticPort(endNode, existingConnectors, true);
-                    AddStaticConnectorAsPoly(connectorChain, existingConnectors);
+                    var connectorConnector = new SimNetworkInvalidConnectionConnector(polyline, connectionChain, this);
+                    connectors.Add(polyline.Id, connectorConnector);
                 }
             }
         }
 
-
-        private void AddDynamicConnector(List<SimNetworkConnector> connectorChain, Dictionary<ulong, BaseSimnetworkGeometryConnector> existingConnectors)
+        private BaseGeometry TryGetGeometry(GeometricReference geoRef)
         {
-            Vertex geometry = null;
-            var startNode = connectorChain.FirstOrDefault().Source; //Start node is a port where the chain starts, and its parent is a block
-            var endNode = connectorChain.LastOrDefault().Target; //End node is where the chain ends and the parent is a block
-            if (connectors.TryGetValue(startNode.ParentNetworkElement.RepresentationReference.GeometryId, out var startParent)
-                && connectors.TryGetValue(endNode.ParentNetworkElement.RepresentationReference.GeometryId, out var endParent))
+            if (geoRef == GeometricReference.Empty)
+                return null;
+            if (geoRef.FileId != GeometryModel.File.Key)
+                return null;
+            return GeometryModel.Geometry.GeometryFromId(geoRef.GeometryId);
+        }
+
+        private void AddStaticConnection(List<SimNetworkConnection> connectionChain, Dictionary<ulong, BaseSimNetworkGeometryConnector> existingGeoConnectors)
+        {
+            var (startPort, endPort) = GetChainStartAndEndPorts(connectionChain);
+
+            SimPoint3D startPortPosittion = GetPortGlobalPosition(startPort);
+            SimPoint3D endPortPosition = GetPortGlobalPosition(endPort);
+            var portsOnSamePosition = (startPortPosittion - endPortPosition).LengthSquared < distanceTolearance2;
+
+            // try to get the geometry 
+            var connection = connectionChain[0];
+            var connectionGeo = TryGetGeometry(connection.RepresentationReference);
+            var startPortGeo = TryGetGeometry(startPort.RepresentationReference);
+            var endPortGeo = TryGetGeometry(endPort.RepresentationReference);
+
+            PrintTrace($"AddStaticConnection: {connection.Name}({connection.Id.LocalId}");
+
+            if (portsOnSamePosition)
+            {
+                // ports moved to same position but were invalid before (polyline)
+                // so remove the polyline and create a vertex
+                if (connectionGeo is Polyline conPolyline)
+                {
+                    // remove unused polyline
+                    foreach (var edge in conPolyline.Edges)
+                    {
+                        edge.Edge.RemoveFromModel();
+                        TryRemoveConnector(edge.Edge, existingGeoConnectors);
+                    }
+                    conPolyline.RemoveFromModel();
+                    TryRemoveConnector(conPolyline, existingGeoConnectors);
+
+                    //Clean the unused start geometry
+                    if (startPortGeo is Vertex startVertex)
+                    {
+                        this.RemoveUnusedVertex(startVertex, existingGeoConnectors);
+                    }
+
+                    //Clean the unused end geometry
+                    if (endPortGeo is Vertex endVertex)
+                    {
+                        this.RemoveUnusedVertex(endVertex, existingGeoConnectors);
+                    }
+                }
+
+                // valid connection
+                AddStaticValidConnectionAsVertex(connectionChain, existingGeoConnectors, true);
+            }
+            else
+            {
+                // ports are not on the same position anymore, but were valid before (vertex)
+                // so remove the vertex and create a polyline
+                if (connectionGeo is Vertex vertexGeom)
+                {
+                    RemoveUnusedVertex(vertexGeom, existingGeoConnectors);
+                    if (startPortGeo is Vertex startVertex)
+                    {
+                        TryRemoveConnector(startVertex, existingGeoConnectors);
+                    }
+                    if (endPortGeo is Vertex endVertex)
+                    {
+                        TryRemoveConnector(endVertex, existingGeoConnectors);
+                    }
+                }
+
+                // add invalid connection
+                AddStaticUnconnectedPort(startPort, existingGeoConnectors, true);
+                AddStaticUnconnectedPort(endPort, existingGeoConnectors, true);
+                AddStaticInvalidConnectionAsPoly(connectionChain, existingGeoConnectors);
+            }
+        }
+
+        private void RemoveUnusedVertex(Vertex vertex, Dictionary<ulong, BaseSimNetworkGeometryConnector> existingGeoConnectors = null)
+        {
+            foreach (var edge in vertex.Edges.ToList())
+            {
+                edge.PEdges.Select(x => x.Parent).OfType<Polyline>().ToList().ForEach(p =>
+                {
+                    p.RemoveFromModel();
+                    TryRemoveConnector(p, existingGeoConnectors);
+                });
+                edge.RemoveFromModel();
+                TryRemoveConnector(edge, existingGeoConnectors);
+            }
+            foreach (var proxy in vertex.ProxyGeometries.ToList())
+            {
+                proxy.RemoveFromModel();
+                TryRemoveConnector(proxy, existingGeoConnectors);
+            }
+            vertex.RemoveFromModel();
+            TryRemoveConnector(vertex, existingGeoConnectors);
+        }
+
+
+        /// <summary>
+        /// Adds the vertex for the dynamic connection between two ports.
+        /// Either connects two dynamic blocks or one dynamic and one static block.
+        /// </summary>
+        /// <param name="connectionChain">The chain of connections</param>
+        /// <param name="existingConnectors">The existing connectors</param>
+        private void AddDynamicConnection(List<SimNetworkConnection> connectionChain, Dictionary<ulong, BaseSimNetworkGeometryConnector> existingConnectors)
+        {
+            Vertex vertex = null;
+            var (startPort, endPort) = GetChainStartAndEndPorts(connectionChain);
+            PrintTrace($"AddDynamicConnection: {startPort.Name}({startPort.Id.LocalId}) -> {endPort.Name}({endPort.Id.LocalId})");
+
+            if (connectors.TryGetValue(startPort.ParentNetworkElement.RepresentationReference.GeometryId, out var startParent)
+                && connectors.TryGetValue(endPort.ParentNetworkElement.RepresentationReference.GeometryId, out var endParent))
             {
                 //Check if geometry for edge exists
-                if (connectorChain[0].RepresentationReference != GeometricReference.Empty)
-                    geometry = GeometryModel.Geometry.GeometryFromId(connectorChain[0].RepresentationReference.GeometryId) as Vertex;
+                if (connectionChain[0].RepresentationReference != GeometricReference.Empty)
+                    vertex = GeometryModel.Geometry.GeometryFromId(connectionChain[0].RepresentationReference.GeometryId) as Vertex;
 
-                if (geometry == null)
+                SimPoint3D position;
+                if (startPort.ParentNetworkElement is SimNetworkBlock b && b.IsStatic)
                 {
-                    SimPoint3D position = new SimPoint3D(0, 0, 0);
-                    if (startNode.ParentNetworkElement is SimNetworkBlock b && b.IsStatic)
+                    position = GetPortGlobalPosition(startPort);
+                }
+                else if (endPort.ParentNetworkElement is SimNetworkBlock b1 && b1.IsStatic)
+                {
+                    position = GetPortGlobalPosition(endPort);
+                }
+                else // use point in between the parents or ports
+                {
+                    if (startParent.Geometry is Vertex startParentVertex
+                        && endParent.Geometry is Vertex endParentVertex)
                     {
-                        position = GetPortGlobalPosition(startNode);
-                    }
-                    else if (endNode.ParentNetworkElement is SimNetworkBlock b1 && b1.IsStatic)
-                    {
-                        position = GetPortGlobalPosition(endNode);
+                        position = (SimPoint3D)(((SimVector3D)startParentVertex.Position + (SimVector3D)endParentVertex.Position) / 2.0f);
                     }
                     else
                     {
-                        position = GetPortGlobalPosition(startNode);
-                        position = new SimPoint3D(position.X, position.Y, position.Z);
+                        var start = (SimVector3D)GetPortGlobalPosition(startPort);
+                        var end = (SimVector3D)GetPortGlobalPosition(startPort);
+                        position = (SimPoint3D)((start + end) / 2.0f);
                     }
-
-                    geometry = new Vertex(this.GeometryModel.Geometry.Layers.First(), startNode.Name, position);
-
                 }
-                if (geometry != null && existingConnectors != null && existingConnectors.TryGetValue(geometry.Id, out var con))
+
+                // create the vertex if not found
+                if (vertex == null)
                 {
-                    con.ChangeBaseGeometry(geometry);
-                    connectors.Add(geometry.Id, con);
-                    existingConnectors.Remove(geometry.Id);
-                }
-                else
-                {
-                    if (connectors.TryGetValue(geometry.Id, out var asd))
-                    {
-                        return;
-                    }
-                    //Remove old Port connectors 
-                    if (connectors.TryGetValue(startNode.RepresentationReference.GeometryId, out var tCon))
-                    {
-                        RemovePort(startNode);
-                    }
-                    if (connectors.TryGetValue(endNode.RepresentationReference.GeometryId, out var sCon))
-                    {
-                        RemovePort(endNode);
-                    }
-                    var conConnector = new SimNetworkConnectorConnector(geometry, connectorChain, this);
-                    connectors.Add(geometry.Id, conConnector);
+                    vertex = new Vertex(this.GeometryModel.Geometry.Layers.First(), startPort.Name, position);
                 }
 
-                AddBlockToConnectorproxy(startNode.Connectors.FirstOrDefault(), startNode, existingConnectors);
-                AddBlockToConnectorproxy(endNode.Connectors.FirstOrDefault(), endNode, existingConnectors);
+                // if in connectors, it was updated
+                if (!connectors.ContainsKey(vertex.Id))
+                {
+                    if (existingConnectors != null && existingConnectors.TryGetValue(vertex.Id, out var con))
+                    {
+                        con.ChangeBaseGeometry(vertex);
+                        connectors.Add(vertex.Id, con);
+                        existingConnectors.Remove(vertex.Id);
+                    }
+                    else
+                    {
+                        //Remove old Port connectors 
+                        if (connectors.TryGetValue(startPort.RepresentationReference.GeometryId, out var _))
+                        {
+                            RemovePort(startPort);
+                        }
+                        if (connectors.TryGetValue(endPort.RepresentationReference.GeometryId, out var _))
+                        {
+                            RemovePort(endPort);
+                        }
+                        var conConnector = new SimNetworkConnectionConnector(vertex, connectionChain, this);
+                        connectors.Add(vertex.Id, conConnector);
+                    }
+                }
+
+                AddPortToConnectionProxy(startPort, startPort.Connections[0], existingConnectors);
+                AddPortToConnectionProxy(endPort, endPort.Connections[0], existingConnectors);
             }
-
         }
 
-
-
-        private SimPoint3D TranslateCanvas2DPositionTo3D(SimPoint point)
+        private SimPoint3D TranslateCanvas2DPositionTo3D(SimPoint point, SimPoint offset)
         {
-            double canvasX = point.X;
-            double canvasY = point.Y;
+            double canvasX = point.X + offset.X;
+            double canvasY = point.Y + offset.Y;
 
             double x = (canvasX) / ReduceRatio;
             double z = (canvasY) / ReduceRatio;
             double y = 0;
-
 
             return new SimPoint3D(x, y, z);
         }
 
         private SimPoint3D GetPortGlobalPosition(SimNetworkPort port)
         {
-
             var relPosition = GetPortRelativePosition(port);
-            var rotation = SimQuaternion.Identity;
-
 
             if (connectors.TryGetValue(port.ParentNetworkElement.RepresentationReference.GeometryId, out var parentConnector))
             {
-                rotation = ((Vertex)parentConnector.Geometry).ProxyGeometries.FirstOrDefault().Rotation;
+                var rotation = SimQuaternion.Identity;
+                SimPoint3D parentPos;
+                if (parentConnector.Geometry is Vertex vertex)
+                {
+                    rotation = vertex.ProxyGeometries.FirstOrDefault()?.Rotation ?? SimQuaternion.Identity;
+                    parentPos = vertex.Position;
+                }
+                else
+                {
+                    parentPos = TranslateCanvas2DPositionTo3D(port.ParentNetworkElement.Position, GetSubnetOffset2D(port.ParentNetwork));
+                }
                 var matrixR = new SimMatrix3D();
                 matrixR.Rotate(rotation);
                 relPosition = matrixR.Transform(relPosition);
 
-                return new SimPoint3D(
-                     ((Vertex)parentConnector.Geometry).Position.X + relPosition.X,
-                     ((Vertex)parentConnector.Geometry).Position.Y + relPosition.Y,
-                     ((Vertex)parentConnector.Geometry).Position.Z + relPosition.Z);
+                return parentPos + (SimVector3D)relPosition;
 
             }
             else
             {
-                var position = TranslateCanvas2DPositionTo3D(port.ParentNetworkElement.Position);
-                return new SimPoint3D(
-                   position.X + relPosition.X,
-                   position.Y + relPosition.Y,
-                   position.Z + relPosition.Z);
-
+                var position = TranslateCanvas2DPositionTo3D(port.ParentNetworkElement.Position, GetSubnetOffset2D(port.ParentNetwork));
+                return position + (SimVector3D)relPosition;
             }
         }
 
-        private SimPoint3D GetPortRelativePosition(SimNetworkPort port)
+        /// <summary>
+        /// Returns the relative position of a port to its parent network element.
+        /// </summary>
+        /// <param name="port">The port</param>
+        /// <returns>The relative position</returns>
+        public static SimPoint3D GetPortRelativePosition(SimNetworkPort port)
         {
             //Static
             if (port.ParentNetworkElement is SimNetworkBlock bl && bl.IsStatic
                 && port.ComponentInstance != null
                 && port.ComponentInstance.InstanceParameterValuesPersistent
-                        .TryGetValue(((SimDoubleParameter)port.ComponentInstance.Component.Parameters.FirstOrDefault(p => p.HasReservedTaxonomyEntry(ReservedParameterKeys.SIMNW_STATIC_PORT_POSITION_X))), out var relX)
-                     && port.ComponentInstance.InstanceParameterValuesPersistent
-                        .TryGetValue(((SimDoubleParameter)port.ComponentInstance.Component.Parameters.FirstOrDefault(p => p.HasReservedTaxonomyEntry(ReservedParameterKeys.SIMNW_STATIC_PORT_POSITION_Y))), out var relY)
-                     && port.ComponentInstance.InstanceParameterValuesPersistent
-                        .TryGetValue(((SimDoubleParameter)port.ComponentInstance.Component.Parameters.FirstOrDefault(p => p.HasReservedTaxonomyEntry(ReservedParameterKeys.SIMNW_STATIC_PORT_POSITION_Z))), out var relZ))
+                    .TryGetValue(((SimDoubleParameter)port.ComponentInstance.Component.Parameters.FirstOrDefault(p => p.HasReservedTaxonomyEntry(ReservedParameterKeys.SIMNW_STATIC_PORT_POSITION_X))), out var relX)
+                && port.ComponentInstance.InstanceParameterValuesPersistent
+                    .TryGetValue(((SimDoubleParameter)port.ComponentInstance.Component.Parameters.FirstOrDefault(p => p.HasReservedTaxonomyEntry(ReservedParameterKeys.SIMNW_STATIC_PORT_POSITION_Y))), out var relY)
+                && port.ComponentInstance.InstanceParameterValuesPersistent
+                    .TryGetValue(((SimDoubleParameter)port.ComponentInstance.Component.Parameters.FirstOrDefault(p => p.HasReservedTaxonomyEntry(ReservedParameterKeys.SIMNW_STATIC_PORT_POSITION_Z))), out var relZ))
             {
-
                 return new SimPoint3D(relX, relY, relZ);
-
             }
             //Dynamic
             else
@@ -1136,108 +1333,91 @@ namespace SIMULTAN.Exchange.SimNetworkConnectors
                 double positionY = 0;
                 double positionZ = 0;
 
-
-                if (connectors.TryGetValue(port.ParentNetworkElement.RepresentationReference.GeometryId, out var parentConnector))
+                if (port.PortType == PortType.Input)
                 {
-                    if (port.PortType == PortType.Input)
-                    {
-                        positionX = -2;
-                        positionZ = +(port.ParentNetworkElement.Ports.Where(t => t.PortType == PortType.Input).ToList().IndexOf(port) * 2);
-                    }
-                    else
-                    {
-                        positionX = +2;
-                        positionZ = +(port.ParentNetworkElement.Ports.Where(t => t.PortType == PortType.Output).ToList().IndexOf(port) * 2);
-                    }
 
-                    positionY = 0;
+                    positionX = -2;
+                    positionZ = port.ParentNetworkElement.Ports.Where(t => t.PortType == PortType.Input).ToList().IndexOf(port) * 2;
                 }
-
                 else
                 {
-                    if (port.PortType == PortType.Input)
-                    {
-
-                        positionX = -2;
-                        positionZ = (port.ParentNetworkElement.Ports.Where(t => t.PortType == PortType.Input).ToList().IndexOf(port) * 2);
-                    }
-                    else
-                    {
-                        positionX = +2;
-                        positionZ = (port.ParentNetworkElement.Ports.Where(t => t.PortType == PortType.Output).ToList().IndexOf(port) * 2);
-                    }
-                    positionY = 0;
+                    positionX = +2;
+                    positionZ = port.ParentNetworkElement.Ports.Where(t => t.PortType == PortType.Output).ToList().IndexOf(port) * 2;
                 }
+
                 return new SimPoint3D(positionX, positionY, positionZ);
             }
         }
 
-
-        private void AddDynamicBlock(BaseSimNetworkElement networkElement, Dictionary<ulong, BaseSimnetworkGeometryConnector> existingConnectors)
+        /// <summary>
+        /// Adds the Vertex for a dynamic block/network
+        /// </summary>
+        /// <param name="networkElement">The block/network</param>
+        /// <param name="existingConnectors">The existing connectors</param>
+        private void AddDynamicBlock(BaseSimNetworkElement networkElement, Dictionary<ulong, BaseSimNetworkGeometryConnector> existingConnectors)
         {
-            Vertex geometry = null;
+            PrintTrace($"AddDynamicBlock: {networkElement.Name}({networkElement.Id.LocalId})");
+            Vertex vertex = null;
             var color = new DerivedColor(SimColor.FromArgb(10, (byte)rnd.Next(256), (byte)rnd.Next(256), (byte)rnd.Next(256)));
+            // try to get the geometry
             if (networkElement.RepresentationReference != GeometricReference.Empty)
             {
-                geometry = this.GeometryModel.Geometry.GeometryFromId(networkElement.RepresentationReference.GeometryId) as Vertex;
+                vertex = this.GeometryModel.Geometry.GeometryFromId(networkElement.RepresentationReference.GeometryId) as Vertex;
             }
-            if (geometry == null)
+            // create if not found
+            if (vertex == null)
             {
-                if (networkElement is SimNetworkBlock block)
+                if (networkElement is SimNetworkBlock || networkElement is SimNetwork)
                 {
-                    color = new DerivedColor(block.Color);
-                }
-                if (networkElement is SimNetwork network)
-                {
-                    color = new DerivedColor(network.Color);
+                    color = new DerivedColor(networkElement.Color);
                 }
 
-                var position = TranslateCanvas2DPositionTo3D(networkElement.Position);
-                geometry = new Vertex(this.GeometryModel.Geometry.Layers.First(), networkElement.Name,
-                    new SimPoint3D(position.X, position.Y, position.Z))
+                var position = TranslateCanvas2DPositionTo3D(networkElement.Position, GetSubnetOffset2D(networkElement.ParentNetwork));
+                vertex = new Vertex(this.GeometryModel.Geometry.Layers.First(), networkElement.Name, position)
                 {
                     Color = color
                 };
             }
 
-            if (existingConnectors != null && existingConnectors.TryGetValue(geometry.Id, out var con))
+            // connector existed with the same geometry
+            if (existingConnectors != null && existingConnectors.TryGetValue(vertex.Id, out var con))
             {
-                con.ChangeBaseGeometry(geometry);
-                connectors.Add(geometry.Id, con);
-                existingConnectors.Remove(geometry.Id);
+                con.ChangeBaseGeometry(vertex);
+                connectors.Add(vertex.Id, con);
+                existingConnectors.Remove(vertex.Id);
             }
+            // create a new connector
             else if (networkElement is SimNetworkBlock block)
             {
-                connectors.Add(geometry.Id, new SimNetworkBlockConnector(geometry, block, this, SimQuaternion.Identity));
+                connectors.Add(vertex.Id, new SimNetworkBlockConnector(vertex, block, this, SimQuaternion.Identity));
                 AttachBlockEvents(block);
             }
             else if (networkElement is SimNetwork nw)
             {
-                connectors.Add(geometry.Id, new SimNetworkNetworkConnector(geometry, nw, this, SimQuaternion.Identity));
+                connectors.Add(vertex.Id, new SimNetworkNetworkConnector(vertex, nw, this, SimQuaternion.Identity));
             }
         }
 
-        private void GetStaticGroups()
+        private List<HashSet<SimNetworkBlock>> FindStaticGroups()
         {
-            staticGroups.Clear();
-            var groups = FindStaticGroups(this.Network, new List<List<SimNetworkBlock>>());
-            foreach (var g in groups)
-            {
-                staticGroups.Add(g.FirstOrDefault(), g);
-            }
+            return FindStaticGroups(this.Network, new());
         }
 
 
 
+        /// <summary>
+        /// Calculates the 3D bounding box of a subnetwork geometry
+        /// </summary>
+        /// <param name="network">The network</param>
+        /// <returns>The bounding box of the network geometry</returns>
         private (SimPoint3D Min, SimPoint3D Max) GetSubnetworkBoundingBox(SimNetwork network)
         {
-            double? minX = null;
-            double? minY = null;
-            double? minZ = null;
-            double? maxX = null;
-            double? maxY = null;
-            double? maxZ = null;
-
+            double minX = double.MaxValue;
+            double minY = double.MaxValue;
+            double minZ = double.MaxValue;
+            double maxX = double.MinValue;
+            double maxY = double.MinValue;
+            double maxZ = double.MinValue;
 
             for (int i = 0; i < network.ContainedElements.Count; i++)
             {
@@ -1246,39 +1426,30 @@ namespace SIMULTAN.Exchange.SimNetworkConnectors
                 {
                     if (connector is SimNetworkBaseNetworkElementConnector baseElementCon)
                     {
-                        if (i == 0)
+                        var pos = baseElementCon.Vertex.Position;
+                        if (pos.X < minX)
                         {
-                            minX = baseElementCon.Vertex.Position.X;
-                            minY = baseElementCon.Vertex.Position.Y;
-                            minZ = baseElementCon.Vertex.Position.Z;
-                            maxX = baseElementCon.Vertex.Position.X;
-                            maxY = baseElementCon.Vertex.Position.Y;
-                            maxZ = baseElementCon.Vertex.Position.Z;
+                            minX = pos.X;
                         }
-
-                        if (baseElementCon.Vertex.Position.X < minX)
+                        if (pos.Y < minY)
                         {
-                            minX = baseElementCon.Vertex.Position.X;
+                            minY = pos.Y;
                         }
-                        if (baseElementCon.Vertex.Position.Y < minY)
+                        if (pos.Z < minZ)
                         {
-                            minY = baseElementCon.Vertex.Position.Y;
+                            minZ = pos.Z;
                         }
-                        if (baseElementCon.Vertex.Position.Z < minZ)
+                        if (pos.X > maxX)
                         {
-                            minZ = baseElementCon.Vertex.Position.Z;
+                            maxX = pos.X;
                         }
-                        if (baseElementCon.Vertex.Position.X > maxX)
+                        if (pos.Y > maxY)
                         {
-                            maxX = baseElementCon.Vertex.Position.X;
+                            maxY = pos.Y;
                         }
-                        if (baseElementCon.Vertex.Position.Y > maxY)
+                        if (pos.Z > maxZ)
                         {
-                            maxY = baseElementCon.Vertex.Position.Y;
-                        }
-                        if (baseElementCon.Vertex.Position.Z > maxZ)
-                        {
-                            maxZ = baseElementCon.Vertex.Position.Z;
+                            maxZ = pos.Z;
                         }
                     }
 
@@ -1286,21 +1457,6 @@ namespace SIMULTAN.Exchange.SimNetworkConnectors
                 else if (network.ContainedElements[i] is SimNetwork subNetworkWithElements)
                 {
                     var subBox = GetSubnetworkBoundingBox(subNetworkWithElements);
-                    if (minX == null)
-                        minX = subBox.Min.X;
-                    if (minY == null)
-                        minY = subBox.Min.Y;
-                    if (minZ == null)
-                        minZ = subBox.Min.Z;
-                    if (maxX == null)
-                        maxX = subBox.Max.X;
-                    if (maxY == null)
-                        maxY = subBox.Max.Y;
-                    if (maxZ == null)
-                        maxZ = subBox.Max.Z;
-
-
-
 
                     if (subBox.Min.X < minX)
                     {
@@ -1328,127 +1484,234 @@ namespace SIMULTAN.Exchange.SimNetworkConnectors
                     }
                 }
             }
-            return (new SimPoint3D(Convert.ToDouble(minX), Convert.ToDouble(minY), Convert.ToDouble(minZ)),
-                new SimPoint3D(Convert.ToDouble(maxX), Convert.ToDouble(maxY), Convert.ToDouble(maxZ)));
+            return (new SimPoint3D(minX, minY, minZ),
+                new SimPoint3D(maxX, maxY, maxZ));
         }
 
 
+        /// <summary>
+        /// Called when a coordinate parameter of a static port changed
+        /// </summary>
+        /// <param name="param"></param>
         internal void OnStaticPortCoordinateChanged(SimDoubleParameter param)
         {
-            this.connectors.Where(c => c.Value is SimNetworkBlockConnector).ForEach(c => ((SimNetworkBlockConnector)c.Value).transformInProgress = true);
+            this.connectors.Values.OfType<SimNetworkBlockConnector>()
+                .ForEach(c => c.transformInProgress = true);
 
-            var placements = param.Component.Instances.SelectMany(t => t.Placements)
-                .Where(p => p is SimInstancePlacementSimNetwork plcmnt
-                && plcmnt.NetworkElement is SimNetworkPort port
-                && connectors.TryGetValue(port.RepresentationReference.GeometryId, out var portConnector));
+            // find the ports of the parameter
+            var ports = param.Component.Instances.SelectMany(t => t.Placements)
+                .OfType<SimInstancePlacementSimNetwork>()
+                .Where(p => p.NetworkElement is SimNetworkPort port
+                && connectors.TryGetValue(port.RepresentationReference.GeometryId, out var portConnector))
+                .Select(p => (SimNetworkPort)p.NetworkElement);
 
-            foreach (var item in placements)
+            foreach (var port in ports)
             {
-                if (((SimNetworkPort)((SimInstancePlacementSimNetwork)item).NetworkElement).ParentNetworkElement is SimNetworkBlock bl && bl.IsStatic)
+                if (port.Connections.Count == 0)
                 {
-                    AddStaticPort(((SimNetworkPort)((SimInstancePlacementSimNetwork)item).NetworkElement), this.connectors, false);
-                    this.UpdateNetworkConnectors(this.Network, null);
-                }
-                else
-                {
-                    AddPort(((SimNetworkPort)((SimInstancePlacementSimNetwork)item).NetworkElement), this.connectors);
+                    if (port.ParentNetworkElement is SimNetworkBlock bl && bl.IsStatic)
+                    {
+                        AddStaticUnconnectedPort(port, this.connectors, false);
+                    }
+                    else
+                    {
+                        AddUnconnectedPort(port, this.connectors);
+                    }
                 }
             }
-            this.connectors.Where(c => c.Value is SimNetworkBlockConnector).ForEach(c => ((SimNetworkBlockConnector)c.Value).transformInProgress = false);
+            if (ports.Any())
+            {
+                UpdateNetworkConnections(this.Network, this.connectors);
+            }
+            this.connectors.Values.OfType<SimNetworkBlockConnector>()
+                .ForEach(c => c.transformInProgress = false);
         }
 
 
-        private void AddBlockToConnectorproxy(SimNetworkConnector connector, SimNetworkPort port, Dictionary<ulong, BaseSimnetworkGeometryConnector> existingConnectors)
+        /// <summary>
+        /// Adds the Polyline from a port's block to the connection vertex
+        /// </summary>
+        /// <param name="port">The port</param>
+        /// <param name="connection">The connection</param>
+        /// <param name="existingConnectors">The existing connections</param>
+        /// <exception cref="Exception">If the geometries could not be found</exception>
+        private void AddPortToConnectionProxy(SimNetworkPort port, SimNetworkConnection connection, Dictionary<ulong, BaseSimNetworkGeometryConnector> existingConnectors)
         {
-            Vertex startVertex;
-            Vertex endVertex;
+            PrintTrace($"AddPortToConnectionProxy: {port.Name}({port.Id.LocalId}) -> {connection.Name}({connection.Id.LocalId})");
+            Vertex blockVertex;
+            Vertex connectionVertex;
 
             if (connectors.TryGetValue(port.ParentNetworkElement.RepresentationReference.GeometryId, out var parentConnector))
             {
-                startVertex = parentConnector.Geometry as Vertex;
+                blockVertex = parentConnector.Geometry as Vertex;
             }
             else
             {
-                throw new Exception("Parent connector not found");
+                throw new Exception("Block connector not found");
             }
-            if (connectors.TryGetValue(connector.RepresentationReference.GeometryId, out var connectorConnector))
+            if (connectors.TryGetValue(connection.RepresentationReference.GeometryId, out var connectorConnector))
             {
-                endVertex = connectorConnector.Geometry as Vertex;
-            }
-            else
-            {
-                throw new Exception("Connector not found");
-            }
-
-            var innerEdge = new Edge(this.GeometryModel.Geometry.Layers.First(), startVertex.Name + "_EDGE2",
-                new Vertex[] { startVertex, endVertex })
-            { Color = new DerivedColor(connector.Color) };
-
-            var edgeGeometry = new Polyline(this.GeometryModel.Geometry.Layers.First(), startVertex.Name + "_PROXY",
-                new Edge[] { innerEdge })
-            { Color = new DerivedColor(connector.Color) }; ;
-
-
-            if (existingConnectors != null && existingConnectors.TryGetValue(edgeGeometry.Id, out var con))
-            {
-                con.ChangeBaseGeometry(edgeGeometry);
-                connectors.Add(edgeGeometry.Id, con);
-                existingConnectors.Remove(edgeGeometry.Id);
+                connectionVertex = connectorConnector.Geometry as Vertex;
             }
             else
             {
-                connectors.Add(edgeGeometry.Id, new SimNetworkBlockPortConnectorProxy(edgeGeometry, port.ParentNetworkElement, port));
+                throw new Exception("Connection connector not found");
+            }
+
+            // try to find edge connector and geometry
+            var edgeCon = existingConnectors?.Values.OfType<SimNetworkBlockPortConnectorProxy>()
+                .FirstOrDefault(t => t.ParentElement == port.ParentNetworkElement && t.Port == port);
+            var polyline = edgeCon?.Geometry as Polyline;
+
+            // try to find polyline connected to the vertices
+            if (polyline == null || !polyline.ModelGeometry.ContainsGeometry(polyline))
+            {
+                polyline = TryFindPolylineBetweenVertices(blockVertex, connectionVertex);
+            }
+
+            if (polyline == null || !polyline.ModelGeometry.ContainsGeometry(polyline))
+            {
+                var innerEdge = new Edge(this.GeometryModel.Geometry.Layers.First(), blockVertex.Name + "_EDGE2",
+                    new Vertex[] { blockVertex, connectionVertex })
+                { Color = new DerivedColor(connection.Color) };
+
+                polyline = new Polyline(this.GeometryModel.Geometry.Layers.First(), blockVertex.Name + "_PROXY",
+                    new Edge[] { innerEdge })
+                { Color = new DerivedColor(connection.Color) };
+            }
+
+            // check static constraints
+            var constraintsValid = true;
+            if (port.ParentNetworkElement is SimNetworkBlock block && block.IsStatic)
+            {
+                // connection should be positioned at the static ports position
+                constraintsValid = CheckStaticPortConstraints(port, connectionVertex);
+            }
+
+            // change or create connector
+            if (!connectors.ContainsKey(polyline.Id))
+            {
+                if (existingConnectors != null && existingConnectors.TryGetValue(polyline.Id, out var con))
+                {
+                    con.ChangeBaseGeometry(polyline);
+                    connectors.Add(polyline.Id, con);
+                    existingConnectors.Remove(polyline.Id);
+                }
+                else
+                {
+                    connectors.Add(polyline.Id, new SimNetworkBlockPortConnectorProxy(polyline, port.ParentNetworkElement, port, constraintsValid, connection));
+                }
             }
         }
 
-
-        private void AddBlockPortConnectorProxy(BaseSimNetworkElement parentElement, SimNetworkPort port, Dictionary<ulong, BaseSimnetworkGeometryConnector> existingConnectors)
+        private static Polyline TryFindPolylineBetweenVertices(Vertex startVertex, Vertex endVertex)
         {
-            Vertex startVertex;
-            Vertex endVertex;
+            return startVertex.Edges.SelectMany(x => x.PEdges).Select(x => x.Parent)
+                                .OfType<Polyline>().FirstOrDefault(pl => pl.Edges[0].Edge.Vertices.Contains(endVertex)
+                                    || pl.Edges[pl.Edges.Count - 1].Edge.Vertices.Contains(endVertex));
+        }
+
+
+        /// <summary>
+        /// Adds the Polyline from a block/network to the port
+        /// </summary>
+        /// <param name="parentElement">The block/network</param>
+        /// <param name="port">The port</param>
+        /// <param name="existingConnectors">The existing connections</param>
+        /// <exception cref="Exception">If the geometries could not be found</exception>
+        private void AddBlockToPortProxy(BaseSimNetworkElement parentElement, SimNetworkPort port, Dictionary<ulong, BaseSimNetworkGeometryConnector> existingConnectors)
+        {
+            Vertex blockVertex;
+            Vertex portVertex;
+
+            PrintTrace($"AddBlockToPortProxy: {parentElement.Name}({parentElement.Id.LocalId}) -> {port.Name}({port.Id.LocalId})");
 
             if (connectors.TryGetValue(parentElement.RepresentationReference.GeometryId, out var parentConnector))
             {
-                startVertex = parentConnector.Geometry as Vertex;
+                blockVertex = parentConnector.Geometry as Vertex;
             }
             else
             {
                 throw new Exception("Parent connector was not found");
             }
+
             if (connectors.TryGetValue(port.RepresentationReference.GeometryId, out var portConnector))
             {
-                endVertex = portConnector.Geometry as Vertex;
+                portVertex = portConnector.Geometry as Vertex;
             }
             else
             {
-                endVertex = connectors[port.RepresentationReference.GeometryId].Geometry as Vertex;
+                throw new Exception($"Could not find port connector of port {port.Name}({port.Id.LocalId})");
             }
 
-            var innerEdge = new Edge(this.GeometryModel.Geometry.Layers.First(), startVertex.Name + "_to_" + endVertex.Name,
-                new Vertex[] { startVertex, endVertex })
-            {
-                Color = new DerivedColor(port.Color)
-            };
 
-            var edgeGeometry = new Polyline(this.GeometryModel.Geometry.Layers.First(), startVertex.Name + "_PROXY",
-                new Edge[] { innerEdge })
-            {
-                Color = new DerivedColor(port.Color)
-            };
+            // try to find polyline from the existing connectors
+            var edgeCon = existingConnectors?.Values.OfType<SimNetworkBlockPortConnectorProxy>()
+                .FirstOrDefault(t => t.ParentElement == parentElement && t.Port == port);
+            var polyline = edgeCon?.Geometry as Polyline;
 
-
-            if (existingConnectors != null && existingConnectors.TryGetValue(edgeGeometry.Id, out var con))
+            // try to find polyline connected to the vertices
+            if (polyline == null || !polyline.ModelGeometry.ContainsGeometry(polyline))
             {
-                con.ChangeBaseGeometry(edgeGeometry);
-                connectors.Add(edgeGeometry.Id, con);
-                existingConnectors.Remove(edgeGeometry.Id);
+                polyline = TryFindPolylineBetweenVertices(blockVertex, portVertex);
             }
-            else
+
+            // create polyline if not found or if it got removed from the model
+            if (polyline == null || !polyline.ModelGeometry.ContainsGeometry(polyline))
             {
-                connectors.Add(edgeGeometry.Id, new SimNetworkBlockPortConnectorProxy(edgeGeometry, parentElement, port));
+                var innerEdge = new Edge(this.GeometryModel.Geometry.Layers.First(), blockVertex.Name + "_to_" + portVertex.Name,
+                    new Vertex[] { blockVertex, portVertex })
+                {
+                    Color = new DerivedColor(port.Color)
+                };
+
+                polyline = new Polyline(this.GeometryModel.Geometry.Layers.First(), blockVertex.Name + "_PROXY",
+                    new Edge[] { innerEdge })
+                {
+                    Color = new DerivedColor(port.Color)
+                };
+            }
+
+            // check static constraints
+            var constraintsValid = true;
+            if (port.ParentNetworkElement is SimNetworkBlock block && block.IsStatic)
+            {
+                constraintsValid = CheckStaticPortConstraints(port, portVertex);
+            }
+
+            // change or create connector
+            if (!connectors.ContainsKey(polyline.Id))
+            {
+                if (edgeCon != null) // was in existingConnectors so update
+                {
+                    edgeCon.ChangeBaseGeometry(polyline);
+                    connectors.Add(polyline.Id, edgeCon);
+                    existingConnectors.Remove(polyline.Id);
+                }
+                else // add new one
+                {
+                    connectors.Add(polyline.Id, new SimNetworkBlockPortConnectorProxy(polyline, parentElement, port, constraintsValid));
+                }
             }
         }
 
+        /// <summary>
+        /// Checks if the static port constraints are valid.
+        /// If the port is at its static global position, the constraints are valid.
+        /// </summary>
+        /// <param name="port">The port to check</param>
+        /// <param name="portVertex">The vertex representation of that port or the connection</param>
+        /// <returns>If the contraints are valid</returns>
+        private bool CheckStaticPortConstraints(SimNetworkPort port, Vertex portVertex)
+        {
+            var targetPos = this.GetPortGlobalPosition(port);
+            if ((targetPos - portVertex.Position).LengthSquared > distanceTolearance2)
+            {
+                return false;
+            }
+
+            return true;
+        }
 
         private void AttachBlockEvents(SimNetworkBlock block)
         {
@@ -1459,12 +1722,12 @@ namespace SIMULTAN.Exchange.SimNetworkConnectors
         private void AttachNetworkEvents(SimNetwork simNetwork)
         {
             simNetwork.ContainedElements.CollectionChanged -= this.ContainedElements_CollectionChanged;
-            simNetwork.ContainedConnectors.CollectionChanged -= this.ContainedConnectors_CollectionChanged;
+            simNetwork.ContainedConnections.CollectionChanged -= this.ContainedConnections_CollectionChanged;
             simNetwork.Ports.CollectionChanged -= this.Ports_CollectionChanged;
 
 
             simNetwork.ContainedElements.CollectionChanged += this.ContainedElements_CollectionChanged;
-            simNetwork.ContainedConnectors.CollectionChanged += this.ContainedConnectors_CollectionChanged;
+            simNetwork.ContainedConnections.CollectionChanged += this.ContainedConnections_CollectionChanged;
             simNetwork.Ports.CollectionChanged += this.Ports_CollectionChanged;
         }
 
@@ -1483,7 +1746,7 @@ namespace SIMULTAN.Exchange.SimNetworkConnectors
                                 .FirstOrDefault(t => t.Value is SimNetworkBlockConnector blockConnector && blockConnector.Block == portCollection.parentElement).Value;
                             this.connectors.Where(c => c.Value is SimNetworkBlockConnector).ForEach(c => ((SimNetworkBlockConnector)c.Value).transformInProgress = true);
 
-                            AddPort(port, null);
+                            AddUnconnectedPort(port, null);
 
                             this.connectors.Where(c => c.Value is SimNetworkBlockConnector).ForEach(c => ((SimNetworkBlockConnector)c.Value).transformInProgress = false);
                         }
@@ -1503,23 +1766,23 @@ namespace SIMULTAN.Exchange.SimNetworkConnectors
         }
 
 
-        private void ContainedConnectors_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+        private void ContainedConnections_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
         {
             switch (e.Action)
             {
                 case System.Collections.Specialized.NotifyCollectionChangedAction.Add:
                     foreach (var item in e.NewItems)
                     {
-                        var con = item as SimNetworkConnector;
-                        UpdateConnector(con, null);
+                        var con = item as SimNetworkConnection;
+                        UpdateConnection(con, null);
                     }
                     break;
                 case System.Collections.Specialized.NotifyCollectionChangedAction.Remove:
                     foreach (var item in e.OldItems)
                     {
-                        if (item is SimNetworkConnector connector)
+                        if (item is SimNetworkConnection connection)
                         {
-                            RemoveConnector(connector);
+                            RemoveConnection(connection);
                         }
                     }
                     break;
@@ -1534,7 +1797,7 @@ namespace SIMULTAN.Exchange.SimNetworkConnectors
             GeometryModel.Geometry.StartBatchOperation();
             if (sender is SimNetworkElementCollection collection && collection.Count == 1)
             {
-                UpdateNetwork(this.Network);
+                UpdateNetwork(this.Network, false);
             }
             else
             {
@@ -1543,10 +1806,19 @@ namespace SIMULTAN.Exchange.SimNetworkConnectors
                     case System.Collections.Specialized.NotifyCollectionChangedAction.Add:
                         foreach (var item in e.NewItems)
                         {
-                            if (item is SimNetworkBlock nwElement)
-                                AddDynamicBlock(nwElement, null);
+                            if (item is SimNetworkBlock block)
+                            {
+                                if (block.IsStatic)
+                                {
+                                    AddStaticBlockFromChain(new(), new() { block }, block, null);
+                                }
+                                else
+                                {
+                                    AddDynamicBlock(block, null);
+                                }
+                            }
                             if (item is SimNetwork subNetwork)
-                                AddNetwork(subNetwork, null);
+                                AddNetwork(subNetwork, null, false);
                         }
                         break;
                     case System.Collections.Specialized.NotifyCollectionChangedAction.Remove:
@@ -1573,27 +1845,11 @@ namespace SIMULTAN.Exchange.SimNetworkConnectors
                 if (block.RepresentationReference.FileId != this.GeometryModel.File.Key)
                     throw new Exception("Block is not connected to this geometry model");
 
-                var geometry = this.GeometryModel.Geometry.GeometryFromId(block.RepresentationReference.GeometryId) as Vertex;
-                if (geometry != null)
+                var vertex = this.GeometryModel.Geometry.GeometryFromId(block.RepresentationReference.GeometryId) as Vertex;
+                if (vertex != null)
                 {
-                    if (connectors.TryGetValue(geometry.Id, out var con))
-                    {
-                        con.Dispose();
-                        connectors.Remove(geometry.Id);
-                    }
-
                     GeometryModel.Geometry.StartBatchOperation();
-
-                    //Delete edges that use this vertex
-                    foreach (var edge in geometry.Edges.ToList())
-                        edge.RemoveFromModel();
-
-                    //Delete proxy
-                    foreach (var pro in geometry.ProxyGeometries)
-                        pro.RemoveFromModel();
-
-                    geometry.RemoveFromModel();
-
+                    this.RemoveUnusedVertex(vertex, null);
                     GeometryModel.Geometry.EndBatchOperation();
                 }
             }
@@ -1610,115 +1866,64 @@ namespace SIMULTAN.Exchange.SimNetworkConnectors
                 if (port.RepresentationReference.FileId != this.GeometryModel.File.Key)
                     throw new Exception("Port is not connected to this geometry model");
 
-                var geometry = this.GeometryModel.Geometry.GeometryFromId(port.RepresentationReference.GeometryId) as Vertex;
-                if (geometry != null)
+                var vertex = this.GeometryModel.Geometry.GeometryFromId(port.RepresentationReference.GeometryId) as Vertex;
+                if (vertex != null)
                 {
-                    if (connectors.TryGetValue(geometry.Id, out var con))
-                    {
-                        con.Dispose();
-                        connectors.Remove(geometry.Id);
-                    }
-
                     GeometryModel.Geometry.StartBatchOperation();
-
-
-
-                    //Delete edges that use this vertex
-                    foreach (var edge in geometry.Edges.ToList())
-                    {
-                        var poliesToRemove = this.GeometryModel.Geometry.Polylines.Where(t => t.Edges.Any(p => p.Edge == edge)).ToList();
-                        for (int i = poliesToRemove.Count() - 1; i >= 0; --i)
-                        {
-                            poliesToRemove[i].RemoveFromModel();
-                        }
-                        edge.RemoveFromModel();
-                    }
-
-
-                    //Delete proxy
-                    foreach (var pro in geometry.ProxyGeometries)
-                        pro.RemoveFromModel();
-
-                    geometry.RemoveFromModel();
-
+                    RemoveUnusedVertex(vertex, null);
                     GeometryModel.Geometry.EndBatchOperation();
                 }
             }
         }
 
-        private void RemoveConnector(SimNetworkConnector bConnector)
+        private void RemoveConnection(SimNetworkConnection connection)
         {
-            if (bConnector.RepresentationReference != GeometricReference.Empty)
+            if (connection.RepresentationReference != GeometricReference.Empty)
             {
-                if (bConnector.RepresentationReference.FileId != this.GeometryModel.File.Key)
+                if (connection.RepresentationReference.FileId != this.GeometryModel.File.Key)
                     throw new Exception("Port is not connected to this geometry model");
 
-                if (connectors.TryGetValue(bConnector.RepresentationReference.GeometryId, out var connector))
+                if (connectors.TryGetValue(connection.RepresentationReference.GeometryId, out var connector))
                 {
-                    if (connector is SimNetworkConnectorConnector conCon)
+                    if (connector is SimNetworkConnectionConnector conCon)
                     {
-
-                        var geometry = connector.Geometry as Vertex;
-                        if (connectors.TryGetValue(geometry.Id, out var con))
-                        {
-                            con.Dispose();
-                        }
-
+                        var vertex = connector.Geometry as Vertex;
                         GeometryModel.Geometry.StartBatchOperation();
-
-
-                        //Clean the unused geometry
-                        foreach (var edge in geometry.Edges)
-                        {
-                            var poliesToRemove = this.GeometryModel.Geometry.Polylines.Where(t => t.Edges.Any(p => p.Edge == edge)).ToList();
-                            for (int i = poliesToRemove.Count() - 1; i >= 0; --i)
-                            {
-                                poliesToRemove[i].RemoveFromModel();
-                            }
-
-                        }
-
-                        for (int i = geometry.Edges.Count - 1; i >= 0; --i)
-                        {
-                            geometry.Edges[i].RemoveFromModel();
-                        }
-
-                        //Delete proxy
-                        foreach (var pro in geometry.ProxyGeometries)
-                            pro.RemoveFromModel();
-
-                        connectors.Remove(geometry.Id);
-                        geometry.RemoveFromModel();
-
+                        RemoveUnusedVertex(vertex, null);
                         GeometryModel.Geometry.EndBatchOperation();
                     }
-                    else if (connector is SimNetworkInvalidConnectorConnector inCon)
+                    else if (connector is SimNetworkInvalidConnectionConnector inCon)
                     {
-                        var invalidConnector = this.GeometryModel.Geometry.GeometryFromId(bConnector.RepresentationReference.GeometryId) as Polyline;
-                        invalidConnector.RemoveFromModel();
+                        GeometryModel.Geometry.StartBatchOperation();
+                        var polyline = this.GeometryModel.Geometry.GeometryFromId(connection.RepresentationReference.GeometryId) as Polyline;
+                        polyline.RemoveFromModel();
                         //Delete edges that use this vertex
-                        foreach (var edge in invalidConnector.Edges)
-                            edge.Edge.RemoveFromModel();
-
-                        connectors.Remove(invalidConnector.Id);
+                        foreach (var edge in polyline.Edges.Select(x => x.Edge).Distinct())
+                        {
+                            edge.PEdges.Select(x => x.Parent).OfType<Polyline>().ToList().ForEach(p => p.RemoveFromModel());
+                            edge.RemoveFromModel();
+                        }
+                        TryRemoveConnector(polyline);
+                        GeometryModel.Geometry.EndBatchOperation();
                     }
                 }
             }
-            if (bConnector.Source.ParentNetworkElement is SimNetworkBlock block && block.IsStatic)
+
+            if (connection.Source.ParentNetworkElement is SimNetworkBlock block && block.IsStatic)
             {
-                AddStaticPort(bConnector.Source, null, true);
+                AddStaticUnconnectedPort(connection.Source, null, true);
             }
             else
             {
-                AddPort(bConnector.Source, null);
+                AddUnconnectedPort(connection.Source, null);
             }
-            if (bConnector.Target.ParentNetworkElement is SimNetworkBlock block1 && block1.IsStatic)
+            if (connection.Target.ParentNetworkElement is SimNetworkBlock block1 && block1.IsStatic)
             {
-                AddStaticPort(bConnector.Target, null, true);
+                AddStaticUnconnectedPort(connection.Target, null, true);
             }
             else
             {
-                AddPort(bConnector.Target, null);
+                AddUnconnectedPort(connection.Target, null);
             }
         }
 
@@ -1729,33 +1934,17 @@ namespace SIMULTAN.Exchange.SimNetworkConnectors
                 if (network.RepresentationReference.FileId != this.GeometryModel.File.Key)
                     throw new Exception("Network is not connected to this geometry model");
 
-                var geometry = this.GeometryModel.Geometry.GeometryFromId(network.RepresentationReference.GeometryId) as Vertex;
-                if (geometry != null)
+                var vertex = this.GeometryModel.Geometry.GeometryFromId(network.RepresentationReference.GeometryId) as Vertex;
+                if (vertex != null)
                 {
-                    if (connectors.TryGetValue(geometry.Id, out var con))
-                    {
-                        con.Dispose();
-                        connectors.Remove(geometry.Id);
-                    }
-
                     GeometryModel.Geometry.StartBatchOperation();
-
-                    //Delete edges that use this vertex
-                    foreach (var edge in geometry.Edges)
-                        edge.RemoveFromModel();
-
-                    //Delete proxy
-                    foreach (var pro in geometry.ProxyGeometries)
-                        pro.RemoveFromModel();
-
-                    geometry.RemoveFromModel();
-
+                    RemoveUnusedVertex(vertex);
                     GeometryModel.Geometry.EndBatchOperation();
                 }
 
-                foreach (var item in network.ContainedConnectors)
+                foreach (var item in network.ContainedConnections)
                 {
-                    RemoveConnector(item);
+                    RemoveConnection(item);
                 }
                 foreach (var item in network.Ports)
                 {
@@ -1767,7 +1956,6 @@ namespace SIMULTAN.Exchange.SimNetworkConnectors
                     {
                         RemoveSimNetwork(nw);
                     }
-
                 }
             }
         }
@@ -1804,7 +1992,7 @@ namespace SIMULTAN.Exchange.SimNetworkConnectors
             }
 
             HashSet<Vertex> usedVertices = GeometryModel.Geometry.Edges.SelectMany(x => x.Vertices).ToHashSet();
-            foreach (var connector in connectors.Where(t => t.Value is SimNetworkConnectorConnector || t.Value is SimNetworkBlockConnector || t.Value is SimNetworkNetworkConnector))
+            foreach (var connector in connectors.Where(t => t.Value is SimNetworkConnectionConnector || t.Value is SimNetworkBlockConnector || t.Value is SimNetworkNetworkConnector))
             {
                 usedVertices.Add(connector.Value.Geometry as Vertex);
             }
@@ -1818,7 +2006,8 @@ namespace SIMULTAN.Exchange.SimNetworkConnectors
                     i--;
                 }
             }
-            usedEdges.Clear(); usedEdges = null;
+            usedEdges.Clear();
+            usedEdges = null;
 
             for (int i = 0; i < GeometryModel.Geometry.ProxyGeometries.Count; ++i)
             {
@@ -1831,34 +2020,79 @@ namespace SIMULTAN.Exchange.SimNetworkConnectors
             }
         }
 
-
-
-
+        private void TryRemoveConnector(BaseGeometry geo, Dictionary<ulong, BaseSimNetworkGeometryConnector> existingConnectors = null)
+        {
+            if (connectors.TryGetValue(geo.Id, out var connector))
+            {
+                connector.Dispose();
+                connectors.Remove(geo.Id);
+            }
+            if (existingConnectors != null && existingConnectors.TryGetValue(geo.Id, out var econ))
+            {
+                econ.Dispose();
+                existingConnectors.Remove(geo.Id);
+            }
+        }
 
         #region Dispose
 
         private void DetachEvents(SimNetwork simNetwork)
         {
             simNetwork.ContainedElements.CollectionChanged -= this.ContainedElements_CollectionChanged;
-            simNetwork.ContainedConnectors.CollectionChanged -= this.ContainedConnectors_CollectionChanged;
+            simNetwork.ContainedConnections.CollectionChanged -= this.ContainedConnections_CollectionChanged;
             simNetwork.Ports.CollectionChanged -= this.Ports_CollectionChanged;
             GeometryModel.Geometry.TopologyChanged -= this.Geometry_TopologyChanged;
+            GeometryModel.Geometry.GeometryChanged -= this.Geometry_GeometryChanged;
             this.GeometryModel.Replaced -= this.GeometryModel_Replaced;
 
             foreach (var subnet in simNetwork.ContainedElements.Where(t => t is SimNetwork))
                 DetachEvents(subnet as SimNetwork);
         }
-        /// <summary>
-        /// Frees all resources created by this connector and detaches all event handler
-        /// </summary>
-        internal void Dispose()
-        {
-            DetachEvents(Network);
 
-            foreach (var con in connectors.Values)
-                con.Dispose();
+
+
+        private bool traceEnabled = false;
+
+        /// <summary>
+        /// For debugging
+        /// </summary>
+        /// <param name="message"></param>
+        private void PrintTrace(string message)
+        {
+            if (traceEnabled)
+            {
+                Debug.WriteLine(message);
+            }
         }
 
+        /// <summary>
+        /// Disposes the connector and cleans up resources.
+        /// </summary>
+        /// <param name="disposing">If it is actually disposing</param>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!isDisposed)
+            {
+                if (disposing)
+                {
+                    DetachEvents(Network);
+
+                    foreach (var con in connectors.Values)
+                        con.Dispose();
+
+                    connectors.Clear();
+                }
+
+                isDisposed = true;
+            }
+        }
+
+        /// <inheritdoc/>
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: true);
+        }
         #endregion
     }
 }

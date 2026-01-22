@@ -13,7 +13,7 @@ namespace SIMULTAN.Data.Geometry
     public static class ProxyShapeGenerator
     {
         /// <summary>
-        /// Updates the geoemtry data of a proxy geometry to a cube
+        /// Updates the geometry data of a proxy geometry to a cube
         /// </summary>
         /// <param name="proxy">The proxy geometry that should be updated.</param>
         /// <param name="size">Size of the cube geometry (NOT: size of the proxy. This size is used to calculate vertex coordinates)</param>
@@ -135,6 +135,209 @@ namespace SIMULTAN.Data.Geometry
             return proxy;
         }
 
+        /// <summary>
+        /// Generates a double pyramid
+        /// </summary>
+        /// <param name="layer">The layer</param>
+        /// <param name="name">The name</param>
+        /// <param name="baseVertex">The base vertex</param>
+        /// <param name="size">The size</param>
+        /// <param name="invert">If inverted, the two tips will touch in the middle</param>
+        /// <returns>The proxy geometry</returns>
+        public static ProxyGeometry GenerateDoublePyramid(Layer layer, string name, Vertex baseVertex, SimPoint3D size, bool invert = false)
+        {
+            ProxyGeometry proxy = new ProxyGeometry(layer, name, baseVertex);
+
+            UpdateDoublePyramid(proxy, size, invert);
+
+            return proxy;
+        }
+        /// <summary>
+        /// Updates a double pyramid
+        /// </summary>
+        /// <param name="proxy">The proxy to update</param>
+        /// <param name="size">The size</param>
+        /// <param name="invert">If inverted, the two tips will touch in the middle</param>
+        public static void UpdateDoublePyramid(ProxyGeometry proxy, SimPoint3D size, bool invert = false)
+        {
+            var s = ((SimVector3D)size) / 2.0;
+
+            if (invert)
+            {
+                proxy.Positions = new List<SimPoint3D>()
+                {
+                    // bottom front
+                    new SimPoint3D(),
+                    new SimPoint3D(-s.X, -s.Y, -s.Z), // front left
+                    new SimPoint3D(s.X, -s.Y, -s.Z), // front right
+                    // bottom right
+                    new SimPoint3D(),
+                    new SimPoint3D(s.X, -s.Y, -s.Z), // front right
+                    new SimPoint3D(s.X, -s.Y, s.Z), // back right
+                    // bottom back
+                    new SimPoint3D(),
+                    new SimPoint3D(s.X, -s.Y, s.Z), // back right
+                    new SimPoint3D(-s.X, -s.Y, s.Z), // back left
+                    // bottom left
+                    new SimPoint3D(),
+                    new SimPoint3D(-s.X, -s.Y, s.Z), // back left
+                    new SimPoint3D(-s.X, -s.Y, -s.Z), // front left
+                    // bottom
+                    new SimPoint3D(-s.X, -s.Y, -s.Z), // front left
+                    new SimPoint3D(-s.X, -s.Y, s.Z), // back left
+                    new SimPoint3D(s.X, -s.Y, s.Z), // back right
+                    new SimPoint3D(s.X, -s.Y, s.Z), // back right
+                    new SimPoint3D(s.X, -s.Y, -s.Z), // front right
+                    new SimPoint3D(-s.X, -s.Y, -s.Z), // front left
+
+                    // top front
+                    new SimPoint3D(),
+                    new SimPoint3D(-s.X, s.Y, -s.Z), // front left
+                    new SimPoint3D(s.X, s.Y, -s.Z), // front right
+                    // top right
+                    new SimPoint3D(),
+                    new SimPoint3D(s.X, s.Y, -s.Z), // front right
+                    new SimPoint3D(s.X, s.Y, s.Z), // back right
+                    // top back
+                    new SimPoint3D(),
+                    new SimPoint3D(s.X, s.Y, s.Z), // back right
+                    new SimPoint3D(-s.X, s.Y, s.Z), // back left
+                    // top left
+                    new SimPoint3D(),
+                    new SimPoint3D(-s.X, s.Y, s.Z), // back left
+                    new SimPoint3D(-s.X, s.Y, -s.Z), // front left
+                    // top
+                    new SimPoint3D(-s.X, s.Y, -s.Z), // front left
+                    new SimPoint3D(s.X, s.Y, -s.Z), // front right
+                    new SimPoint3D(s.X, s.Y, s.Z), // back right
+                    new SimPoint3D(s.X, s.Y, s.Z), // back right
+                    new SimPoint3D(-s.X, s.Y, s.Z), // back left
+                    new SimPoint3D(-s.X, s.Y, -s.Z), // front left
+                };
+            }
+            else
+            {
+                proxy.Positions = new List<SimPoint3D>()
+                {
+                    // top front
+                    new SimPoint3D(0, s.Y, 0),
+                    new SimPoint3D(-s.X, 0, -s.Z), // front left
+                    new SimPoint3D(s.X, 0, -s.Z), // front right
+                    // top right
+                    new SimPoint3D(0, s.Y, 0),
+                    new SimPoint3D(s.X, 0, -s.Z), // front right
+                    new SimPoint3D(s.X, 0, s.Z), // back right
+                    // top back
+                    new SimPoint3D(0, s.Y, 0),
+                    new SimPoint3D(s.X, 0, s.Z), // back right
+                    new SimPoint3D(-s.X, 0, s.Z), // back left
+                    // top back
+                    new SimPoint3D(0, s.Y, 0),
+                    new SimPoint3D(-s.X, 0, s.Z), // back left
+                    new SimPoint3D(-s.X, 0, -s.Z), // front left
+                    // bottom front
+                    new SimPoint3D(0, -s.Y, 0),
+                    new SimPoint3D(s.X, 0, -s.Z), // front right
+                    new SimPoint3D(-s.X, 0, -s.Z), // front left
+                    // top right
+                    new SimPoint3D(0, -s.Y, 0),
+                    new SimPoint3D(s.X, 0, s.Z), // back right
+                    new SimPoint3D(s.X, 0, -s.Z), // front right
+                    // top back
+                    new SimPoint3D(0, -s.Y, 0),
+                    new SimPoint3D(-s.X, 0, s.Z), // back left
+                    new SimPoint3D(s.X, 0, s.Z), // back right
+                    // top back
+                    new SimPoint3D(0, -s.Y, 0),
+                    new SimPoint3D(-s.X, 0, -s.Z), // front left
+                    new SimPoint3D(-s.X, 0, s.Z), // back left
+                };
+            }
+
+            // positions are already in index order
+            proxy.Indices = Enumerable.Range(0, proxy.Positions.Count).ToList();
+
+            CalculateNormals(proxy);
+
+            proxy.NotifyGeometryChanged();
+        }
+
+        /// <summary>
+        /// Generates a pyramid
+        /// </summary>
+        /// <param name="layer">The layer</param>
+        /// <param name="name">The name</param>
+        /// <param name="baseVertex">The base vertex</param>
+        /// <param name="size">The size</param>
+        /// <returns>The proxy geometry</returns>
+        public static ProxyGeometry GeneratePyramid(Layer layer, string name, Vertex baseVertex, SimPoint3D size)
+        {
+            ProxyGeometry proxy = new ProxyGeometry(layer, name, baseVertex);
+
+            UpdateDoublePyramid(proxy, size);
+
+            return proxy;
+        }
+        /// <summary>
+        /// Updates a pyramid
+        /// </summary>
+        /// <param name="proxy">The proxy to update</param>
+        /// <param name="size">The size</param>
+        public static void UpdatePyramid(ProxyGeometry proxy, SimPoint3D size)
+        {
+            var s = ((SimVector3D)size) / 2.0;
+
+            proxy.Positions = new List<SimPoint3D>()
+            {
+                // front
+                new SimPoint3D(0, s.Y, 0),
+                new SimPoint3D(-s.X, -s.Y, -s.Z), // front left
+                new SimPoint3D(s.X, -s.Y, -s.Z), // front right
+                // right
+                new SimPoint3D(0, s.Y, 0),
+                new SimPoint3D(s.X, -s.Y, -s.Z), // front right
+                new SimPoint3D(s.X, -s.Y, s.Z), // back right
+                // back
+                new SimPoint3D(0, s.Y, 0),
+                new SimPoint3D(s.X, -s.Y, s.Z), // back right
+                new SimPoint3D(-s.X, -s.Y, s.Z), // back left
+                // left
+                new SimPoint3D(0, s.Y, 0),
+                new SimPoint3D(-s.X, -s.Y, s.Z), // back left
+                new SimPoint3D(-s.X, -s.Y, -s.Z), // front left
+                // bottom
+                new SimPoint3D(-s.X, -s.Y, -s.Z), // front left
+                new SimPoint3D(-s.X, -s.Y, s.Z), // back left
+                new SimPoint3D(s.X, -s.Y, s.Z), // back right
+                new SimPoint3D(s.X, -s.Y, s.Z), // back right
+                new SimPoint3D(s.X, -s.Y, -s.Z), // front right
+                new SimPoint3D(-s.X, -s.Y, -s.Z), // front left
+            };
+
+            // positions are already in index order
+            proxy.Indices = Enumerable.Range(0, proxy.Positions.Count).ToList();
+
+            CalculateNormals(proxy);
+
+            proxy.NotifyGeometryChanged();
+        }
+
+        private static void CalculateNormals(ProxyGeometry proxy)
+        {
+            SimVector3D[] normals = new SimVector3D[proxy.Positions.Count];
+            for (int i = 0; i < proxy.Indices.Count; i += 3)
+            {
+                var d1 = proxy.Positions[proxy.Indices[i + 1]] - proxy.Positions[proxy.Indices[i]];
+                var d2 = proxy.Positions[proxy.Indices[i + 2]] - proxy.Positions[proxy.Indices[i + 1]];
+                var normal = SimVector3D.CrossProduct(d1, d2);
+                normal.Normalize();
+                // set for each vertex (only works on flat triangles)
+                normals[proxy.Indices[i + 0]] = normal;
+                normals[proxy.Indices[i + 1]] = normal;
+                normals[proxy.Indices[i + 2]] = normal;
+            }
+            proxy.Normals = normals.ToList();
+        }
         /// <summary>
         /// Loads a list of meshes and combines them into a single proxy geometry.
         /// </summary>

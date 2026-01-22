@@ -1,10 +1,11 @@
-﻿using SIMULTAN.Data.SimMath;
-using SIMULTAN.Data.MultiValues;
+﻿using SIMULTAN.Data.MultiValues;
+using SIMULTAN.Data.SimMath;
 using SIMULTAN.Data.Taxonomy;
 using SIMULTAN.Utils;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.Globalization;
 using System.Linq;
 
@@ -113,7 +114,7 @@ namespace SIMULTAN.Data.Components
             }
 
             List<KeyValuePair<string, List<SimDoubleParameter>>> to_aggregate = new List<KeyValuePair<string, List<SimDoubleParameter>>>();
-            List<SimDoubleParameter> filter = _comp.Parameters.OfType<SimDoubleParameter>().Where(x => x is SimDoubleParameter &&
+            List<SimDoubleParameter> filter = _comp.Parameters.OfType<SimDoubleParameter>().Where(x =>
                  x != null &&
                 !x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_ORIENTATION_HRZ) &&
                 !x.HasReservedTaxonomyEntry(ReservedParameterKeys.RP_TABLE_POINTER) &&
@@ -224,6 +225,10 @@ namespace SIMULTAN.Data.Components
                 throw new NotImplementedException();
             }
             if (parameter is SimEnumParameter eParam)
+            {
+                throw new NotImplementedException();
+            }
+            if (parameter is SimDoubleListParameter)
             {
                 throw new NotImplementedException();
             }
@@ -562,52 +567,56 @@ namespace SIMULTAN.Data.Components
         /// Propagates the numeric and textual value of the given parameter to all corresponding
         /// parameters in components referencing the calling component.
         /// </summary>
-        /// <param name="_comp">the calling component</param>
-        /// <param name="_p">the parameter in the calling component whose value changed</param>
-        internal static void PropagateRefParamValueFromClosestRef(this SimComponent _comp, SimBaseParameter _p)
+        /// <param name="component">the calling component</param>
+        /// <param name="parameter">the parameter in the calling component whose value changed</param>
+        internal static void PropagateRefParamValueFromClosestRef(this SimComponent component, SimBaseParameter parameter)
         {
-            using (AccessCheckingDisabler.Disable(_comp.Factory)) //Referencing parameters may be changed even if there is no write access
+            using (AccessCheckingDisabler.Disable(component.Factory)) //Referencing parameters may be changed even if there is no write access
             {
                 // follow references up the parent chain
-                List<SimComponent> parent_chain = ComponentWalker.GetParents(_comp).ToList();
+                List<SimComponent> parentChain = ComponentWalker.GetParents(component).ToList();
 
-                List<SimComponent> comps_referencing_this_or_parent = new List<SimComponent>();
-                foreach (SimComponent pC in parent_chain)
+                List<SimComponent> referencingComponents = new List<SimComponent>();
+                foreach (SimComponent parent in parentChain)
                 {
-                    foreach (var rpC in pC.ReferencedBy)
+                    foreach (var referencer in parent.ReferencedBy)
                     {
-                        if (!(comps_referencing_this_or_parent.Contains(rpC.Owner)))
-                            comps_referencing_this_or_parent.Add(rpC.Owner);
+                        if (!(referencingComponents.Contains(referencer.Owner)))
+                            referencingComponents.Add(referencer.Owner);
                     }
                 }
                 // look for referencing parameters
-                foreach (SimComponent c in comps_referencing_this_or_parent)
+                foreach (SimComponent refComponent in referencingComponents)
                 {
-                    GetLocalParamsListWDirectRefsAndLimits(c, out var closest_source, out var closest_sourceMAX, out var closest_sourceMIN, true);
+                    GetLocalParamsListWDirectRefsAndLimits(refComponent, out var closestSource, out var closestSourceMax, out var closestSourceMin, true);
 
                     // direct reference
-                    List<SimBaseParameter> to_synch = new List<SimBaseParameter>();
-                    foreach (var x in closest_source)
+                    List<SimBaseParameter> toSync = new List<SimBaseParameter>();
+                    foreach (var x in closestSource)
                     {
                         if (x.Key.Propagation == SimInfoFlow.FromReference &&
-                            x.Key.NameTaxonomyEntry.Equals(_p.NameTaxonomyEntry) &&
-                            x.Value.Id.LocalId == _p.Id.LocalId)
+                            x.Key.NameTaxonomyEntry.Equals(parameter.NameTaxonomyEntry) &&
+                            x.Value.Id.LocalId == parameter.Id.LocalId)
                         {
                             if (x.Key is SimDoubleParameter dParam && dParam.ValueSource == null)
                             {
-                                to_synch.Add(x.Key);
+                                toSync.Add(x.Key);
                             }
                             if (x.Key is SimIntegerParameter iParam && iParam.ValueSource == null)
                             {
-                                to_synch.Add(x.Key);
+                                toSync.Add(x.Key);
                             }
                             if (x.Key is SimStringParameter sParam && sParam.ValueSource == null)
                             {
-                                to_synch.Add(x.Key);
+                                toSync.Add(x.Key);
                             }
                             if (x.Key is SimBoolParameter bParam && bParam.ValueSource == null)
                             {
-                                to_synch.Add(x.Key);
+                                toSync.Add(x.Key);
+                            }
+                            if (x.Key is SimDoubleListParameter dlp && dlp.ValueSource == null)
+                            {
+                                toSync.Add(x.Key);
                             }
                         }
 
@@ -617,25 +626,25 @@ namespace SIMULTAN.Data.Components
                     //    x.Value.Id.LocalId == _p.Id.LocalId).Select(x => x.Key).ToList();
 
 
-                    foreach (SimBaseParameter cP in to_synch)
+                    foreach (SimBaseParameter referencing in toSync)
                     {
-                        PropagateParameterValueChange(cP, _p);
+                        PropagateParameterValueChange(referencing, parameter);
                     }
 
 
-                    if (_p is SimBaseNumericParameter<ValueType>)
+                    if (parameter is SimBaseNumericParameter<ValueType>)
                     {
                         // reference as a minimum value
-                        if (!_p.NameTaxonomyEntry.HasTaxonomyEntry && _p.NameTaxonomyEntry.Text.EndsWith("MIN"))
+                        if (!parameter.NameTaxonomyEntry.HasTaxonomyEntry && parameter.NameTaxonomyEntry.Text.EndsWith("MIN"))
                         {
-                            string p_name_only = _p.NameTaxonomyEntry.Text.Substring(0, _p.NameTaxonomyEntry.Text.Length - 3);
-                            List<SimBaseParameter> to_synch_min = closest_sourceMIN.Where(x => x.Key.NameTaxonomyEntry.Text == p_name_only && x.Value.Id.LocalId == _p.Id.LocalId)
+                            string paramNameOnly = parameter.NameTaxonomyEntry.Text.Substring(0, parameter.NameTaxonomyEntry.Text.Length - 3);
+                            List<SimBaseParameter> toSyncMin = closestSourceMin.Where(x => x.Key.NameTaxonomyEntry.Text == paramNameOnly && x.Value.Id.LocalId == parameter.Id.LocalId)
                                 .Select(y => y.Key).ToList();
-                            if (to_synch_min != null && to_synch_min.Count > 0)
+                            if (toSyncMin != null && toSyncMin.Count > 0)
                             {
-                                foreach (SimBaseParameter cP in to_synch_min)
+                                foreach (SimBaseParameter cP in toSyncMin)
                                 {
-                                    if (_p is SimDoubleParameter doubleParam && cP is SimDoubleParameter doubleCp)
+                                    if (parameter is SimDoubleParameter doubleParam && cP is SimDoubleParameter doubleCp)
                                     {
                                         if (doubleCp.ValueMin != doubleParam.Value)
                                             doubleCp.ValueMin = doubleParam.Value;
@@ -644,16 +653,16 @@ namespace SIMULTAN.Data.Components
                             }
                         }
                         // reference as a maximum value
-                        if (!_p.NameTaxonomyEntry.HasTaxonomyEntry && _p.NameTaxonomyEntry.Text.EndsWith("MAX"))
+                        if (!parameter.NameTaxonomyEntry.HasTaxonomyEntry && parameter.NameTaxonomyEntry.Text.EndsWith("MAX"))
                         {
-                            string p_name_only = _p.NameTaxonomyEntry.Text.Substring(0, _p.NameTaxonomyEntry.Text.Length - 3);
-                            List<SimBaseParameter> to_synch_max = closest_sourceMAX.Where(x => x.Key.NameTaxonomyEntry.Text == p_name_only && x.Value.Id.LocalId == _p.Id.LocalId)
+                            string paramNameOnly = parameter.NameTaxonomyEntry.Text.Substring(0, parameter.NameTaxonomyEntry.Text.Length - 3);
+                            List<SimBaseParameter> toSyncMax = closestSourceMax.Where(x => x.Key.NameTaxonomyEntry.Text == paramNameOnly && x.Value.Id.LocalId == parameter.Id.LocalId)
                                 .Select(y => y.Key).ToList();
-                            if (to_synch_max != null && to_synch_max.Count > 0)
+                            if (toSyncMax != null && toSyncMax.Count > 0)
                             {
-                                foreach (SimBaseParameter cP in to_synch_max)
+                                foreach (SimBaseParameter cP in toSyncMax)
                                 {
-                                    if (_p is SimDoubleParameter doubleParam && cP is SimDoubleParameter doubleCp)
+                                    if (parameter is SimDoubleParameter doubleParam && cP is SimDoubleParameter doubleCp)
                                     {
                                         if (doubleCp.ValueMin != doubleParam.Value)
                                             doubleCp.ValueMin = doubleParam.Value;
@@ -693,6 +702,11 @@ namespace SIMULTAN.Data.Components
                 eParamReferencing.Value = eParamReferenced.Value;
                 eParamReferencing.Description = eParamReferenced.Description;
             }
+            else if (referencing is SimDoubleListParameter dlParamReferencing && referenced is SimDoubleListParameter dlParamReferenced)
+            {
+                dlParamReferencing.Value = dlParamReferenced.Value?.Clone() as SimParameterValueCollection<double>;
+                dlParamReferencing.Description = dlParamReferenced.Description;
+            }
             else
             {
                 throw new InvalidOperationException(referencing.GetType().ToString() + " type does not match type " + referenced.GetType().ToString());
@@ -710,13 +724,8 @@ namespace SIMULTAN.Data.Components
         {
             if (_rComp == null) return;
 
-            Dictionary<SimBaseParameter, SimBaseParameter> closest_source = new Dictionary<SimBaseParameter, SimBaseParameter>();
-            Dictionary<SimBaseParameter, SimBaseParameter> closest_sourceMIN = new Dictionary<SimBaseParameter, SimBaseParameter>();
-            Dictionary<SimBaseParameter, SimBaseParameter> closest_sourceMAX = new Dictionary<SimBaseParameter, SimBaseParameter>();
-            GetLocalParamsListWDirectRefsAndLimits(_comp, out closest_source, out closest_sourceMAX, out closest_sourceMIN, true);
+            GetLocalParamsListWDirectRefsAndLimits(_comp, out var closest_source, out var closest_sourceMAX, out var closest_sourceMIN, true);
 
-
-            // new
             foreach (var entry in closest_source)
             {
                 if (entry.Key.GetType() == entry.Value.GetType()) //Same type
@@ -794,27 +803,7 @@ namespace SIMULTAN.Data.Components
             foreach (SimBaseParameter p in component.Parameters)
             {
                 if (p == null) continue;
-                if (p is SimDoubleParameter doubleParam)
-                {
-                    if (doubleParam.ValueSource != null) continue;
-                }
-                if (p is SimIntegerParameter intParam)
-                {
-                    if (intParam.ValueSource != null) continue;
-                }
-                if (p is SimBoolParameter boolParam)
-                {
-                    if (boolParam.ValueSource != null) continue;
-                }
-                if (p is SimStringParameter stringParameter)
-                {
-                    if (stringParameter.ValueSource != null) continue;
-                }
-                if (p is SimEnumParameter enumParameter)
-                {
-                    if (enumParameter.ValueSource != null) continue;
-                }
-
+                if (p.ValueSource != null) continue;
                 if (p.Propagation != SimInfoFlow.FromReference) continue;
 
                 //if (p.Propagation == InfoFlow.REF_IN)

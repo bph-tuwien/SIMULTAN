@@ -1,4 +1,5 @@
 ﻿using MathNet.Numerics.Distributions;
+using SIMULTAN.Data;
 using SIMULTAN.Data.Assets;
 using SIMULTAN.Data.Components;
 using SIMULTAN.Data.FlowNetworks;
@@ -968,10 +969,11 @@ namespace SIMULTAN.Exchange
             //Create empty asset
             var asset = ((ExtendedProjectData)ProjectData).Project.AddEmptyResource(targetFile);
 
-
             //Add reference to network
             network.IndexOfGeometricRepFile = asset.Key;
 
+            //Reset the representation references of the network elements
+            ResetNetworkGeoRepresentations(network);
 
             //Load geometry file
             GeometryModelData geometryData = new GeometryModelData(dispatcherTimer);
@@ -988,6 +990,60 @@ namespace SIMULTAN.Exchange
 
             return gm;
         }
+
+        private void ResetNetworkGeoRepresentations(SimNetwork network)
+        {
+            network.RepresentationReference = GeometricReference.Empty;
+            network.Ports.ForEach(x => x.RepresentationReference = GeometricReference.Empty);
+            network.ContainedElements.ForEach(x =>
+            {
+                x.RepresentationReference = GeometricReference.Empty;
+                if (x is SimNetworkBlock block)
+                {
+                    block.Ports.ForEach(x => x.RepresentationReference = GeometricReference.Empty);
+                }
+                else if (x is SimNetwork nw)
+                {
+                    ResetNetworkGeoRepresentations(nw);
+                }
+            });
+            network.ContainedConnections.ForEach(x => x.RepresentationReference = GeometricReference.Empty);
+        }
+
+        /// <summary>
+        /// Returns the network elements related to a specific geometry
+        /// </summary>
+        /// <param name="geometry">The geometry for which the network elements should be found</param>
+        /// <returns>A list of network elements related to the geometry. 
+        /// When no such network elements are found, a empty list is returned</returns>
+        public IEnumerable<ISimNetworkElement> GetSimNetworkElements(BaseGeometry geometry)
+        {
+            if (this.SimNetworkModelConnectors.TryGetValue(geometry.ModelGeometry.Model, out var connector))
+            {
+                var elements = connector.GetNetworkElements(geometry);
+                return elements ?? Enumerable.Empty<ISimNetworkElement>();
+            }
+            return Enumerable.Empty<ISimNetworkElement>();
+        }
+
+        /// <summary>
+        /// Returns the start, end and connections that fully represent a SimNetworkConnection.
+        /// This method handles connections from and into subnetworks and returns the final input and output port
+        /// that is attached to an actual block (not a subnetwork block).
+        /// </summary>
+        /// <param name="connection">The connection for which the subnetwork relations should be searched</param>
+        /// <returns>
+        /// In case of a simple connection (no subnetworks): A single element in chains and the start and end block
+        /// In case of subnetworks: All connections needed to attach the start and end network block (from inside the subnetwork)
+        /// </returns>
+        public static (List<SimNetworkConnection> chain, SimNetworkPort start, SimNetworkPort end) 
+            GetSimNetworkConnectionChain(SimNetworkConnection connection)
+        {
+            var chain = SimNetworkGeometryModelConnector.GetConnectionChain(connection);
+            var (start, end) = SimNetworkGeometryModelConnector.GetChainStartAndEndPorts(chain);
+            return (chain, start, end);
+        }
+
         #endregion
 
 
@@ -1090,6 +1146,9 @@ namespace SIMULTAN.Exchange
         public void Synchronize()
         {
             this.geometryModelConnectors.Values.ForEach(x => x.SynchronizeChanges());
+            this.SimNetworkModelConnectors.Values.ForEach(x => x.SynchronizeChanges());
         }
+
+
     }
 }

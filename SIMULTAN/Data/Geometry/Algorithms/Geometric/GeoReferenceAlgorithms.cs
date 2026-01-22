@@ -1,11 +1,9 @@
-﻿using SIMULTAN;
-using SIMULTAN.Data.SimMath;
+﻿using SIMULTAN.Data.SimMath;
 using SIMULTAN.Exceptions;
 using SIMULTAN.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Windows;
 
 namespace SIMULTAN.Data.Geometry
 {

@@ -1,8 +1,8 @@
 ﻿using SIMULTAN.Data.Assets;
 using SIMULTAN.Data.FlowNetworks;
 using SIMULTAN.Data.Geometry;
-using SIMULTAN.Data.SimMath;
 using SIMULTAN.Data.MultiValues;
+using SIMULTAN.Data.SimMath;
 using SIMULTAN.Data.Taxonomy;
 using SIMULTAN.Data.Users;
 using SIMULTAN.Exceptions;
@@ -11,6 +11,7 @@ using SIMULTAN.Utils.Collections;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
@@ -270,7 +271,7 @@ namespace SIMULTAN.Data.Components
         {
             get { return this.instanceType; }
             set
-            {                 
+            {
                 if (this.instanceType != value)
                 {
                     if (Instances.Any(i => i.Placements.Any(p => !value.HasFlag(p.InstanceType))))
@@ -940,23 +941,23 @@ namespace SIMULTAN.Data.Components
 
         #region Contained object data propagation
 
-        private void ReactToParameterPropagationChanged(SimBaseParameter p)
+        private void ReactToParameterPropagationChanged(SimBaseParameter parameter)
         {
             var comp = this;
 
             bool foundMin = true, foundMax = true;
             bool foundValue = false;
 
-            if (p is SimIntegerParameter || p is SimDoubleParameter)
+            if (parameter is SimIntegerParameter || parameter is SimDoubleParameter)
             {
                 foundMin = foundMax = false;
             }
 
             //Adapt value only when a reference parameter and when no MVpointer is attached
-            if (p.Propagation != SimInfoFlow.FromReference)
+            if (parameter.Propagation != SimInfoFlow.FromReference)
                 return;
 
-            if (p.ValueSource != null)
+            if (parameter.ValueSource != null)
             {
                 return;
             }
@@ -968,83 +969,83 @@ namespace SIMULTAN.Data.Components
                 {
                     if (entry.Target != null)
                     {
-                        foreach (var rP in ComponentWalker.GetFlatParameters(entry.Target))
+                        foreach (var referencedParameter in ComponentWalker.GetFlatParameters(entry.Target))
                         {
-                            if (p is SimDoubleParameter pDouble && rP is SimDoubleParameter rpDouble)
+                            if (parameter is SimDoubleParameter pDouble && referencedParameter is SimDoubleParameter rpDouble)
                             {
-                                if (rP.NameTaxonomyEntry.Equals(p.NameTaxonomyEntry))
+                                if (referencedParameter.NameTaxonomyEntry.Equals(parameter.NameTaxonomyEntry))
                                 {
                                     if (!foundValue)
                                     {
                                         pDouble.Value = rpDouble.Value;
-                                        p.Description = rP.Description;
+                                        parameter.Description = referencedParameter.Description;
                                         foundValue = true;
                                     }
                                 }
                                 else
                                 {
-                                    if (!foundMin && rP.NameTaxonomyEntry.Text != null
-                                            && rP.NameTaxonomyEntry.Text.EndsWith("MIN"))
+                                    if (!foundMin && referencedParameter.NameTaxonomyEntry.Text != null
+                                            && referencedParameter.NameTaxonomyEntry.Text.EndsWith("MIN"))
                                     {
                                         pDouble.ValueMin = rpDouble.Value;
                                         foundMin = true;
                                     }
-                                    if (!foundMax && rP.NameTaxonomyEntry.Text != null
-                                        && rP.NameTaxonomyEntry.Text.EndsWith("MAX"))
+                                    if (!foundMax && referencedParameter.NameTaxonomyEntry.Text != null
+                                        && referencedParameter.NameTaxonomyEntry.Text.EndsWith("MAX"))
                                     {
                                         pDouble.ValueMax = rpDouble.Value;
                                         foundMax = true;
                                     }
                                 }
                             }
-                            else if (p is SimIntegerParameter pInteger && rP is SimIntegerParameter rpInteger)
+                            else if (parameter is SimIntegerParameter pInteger && referencedParameter is SimIntegerParameter rpInteger)
                             {
-                                if (rP.NameTaxonomyEntry.Equals(p.NameTaxonomyEntry))
+                                if (referencedParameter.NameTaxonomyEntry.Equals(parameter.NameTaxonomyEntry))
                                 {
                                     if (!foundValue)
                                     {
                                         pInteger.Value = rpInteger.Value;
-                                        p.Description = rP.Description;
+                                        parameter.Description = referencedParameter.Description;
                                         foundValue = true;
                                     }
                                 }
                                 else
                                 {
-                                    if (!foundMin && rP.NameTaxonomyEntry.Text != null
-                                            && rP.NameTaxonomyEntry.Text.EndsWith("MIN"))
+                                    if (!foundMin && referencedParameter.NameTaxonomyEntry.Text != null
+                                            && referencedParameter.NameTaxonomyEntry.Text.EndsWith("MIN"))
                                     {
                                         pInteger.ValueMin = rpInteger.Value;
                                         foundMin = true;
                                     }
-                                    if (!foundMax && rP.NameTaxonomyEntry.Text != null
-                                        && rP.NameTaxonomyEntry.Text.EndsWith("MAX"))
+                                    if (!foundMax && referencedParameter.NameTaxonomyEntry.Text != null
+                                        && referencedParameter.NameTaxonomyEntry.Text.EndsWith("MAX"))
                                     {
                                         pInteger.ValueMax = rpInteger.Value;
                                         foundMax = true;
                                     }
                                 }
                             }
-                            else if (p is SimStringParameter sParam && rP is SimStringParameter rsParam)
+                            else if (parameter is SimStringParameter sParam && referencedParameter is SimStringParameter rsParam)
                             {
-                                if (!foundValue && p.NameTaxonomyEntry.Equals(rP.NameTaxonomyEntry))
+                                if (!foundValue && parameter.NameTaxonomyEntry.Equals(referencedParameter.NameTaxonomyEntry))
                                 {
                                     sParam.Value = rsParam.Value;
-                                    p.Description = rP.Description;
+                                    parameter.Description = referencedParameter.Description;
                                     foundValue = true;
                                 }
                             }
-                            else if (p is SimBoolParameter bParam && rP is SimBoolParameter rbParam)
+                            else if (parameter is SimBoolParameter bParam && referencedParameter is SimBoolParameter rbParam)
                             {
-                                if (!foundValue && p.NameTaxonomyEntry.Equals(rP.NameTaxonomyEntry))
+                                if (!foundValue && parameter.NameTaxonomyEntry.Equals(referencedParameter.NameTaxonomyEntry))
                                 {
                                     bParam.Value = rbParam.Value;
-                                    p.Description = rP.Description;
+                                    parameter.Description = referencedParameter.Description;
                                     foundValue = true;
                                 }
                             }
-                            else if (p is SimEnumParameter eParam && rP is SimEnumParameter ebParam)
+                            else if (parameter is SimEnumParameter eParam && referencedParameter is SimEnumParameter ebParam)
                             {
-                                if (!foundValue && p.NameTaxonomyEntry.Equals(rP.NameTaxonomyEntry))
+                                if (!foundValue && parameter.NameTaxonomyEntry.Equals(referencedParameter.NameTaxonomyEntry))
                                 {
                                     if (ebParam.Value != null)
                                     {
@@ -1054,13 +1055,22 @@ namespace SIMULTAN.Data.Components
                                     {
                                         eParam.Value = null;
                                     }
-                                    p.Description = rP.Description;
+                                    parameter.Description = referencedParameter.Description;
                                     foundValue = true;
                                 }
                             }
-                            else if (!foundValue && p.GetType() == rP.GetType() && p.NameTaxonomyEntry.Equals(rP.NameTaxonomyEntry))
+                            else if (parameter is SimDoubleListParameter dlpParam && referencedParameter is SimDoubleListParameter dlpRefParam)
                             {
-                                throw new NotImplementedException(p.GetType().ToString());
+                                if (!foundValue && parameter.NameTaxonomyEntry.Equals(referencedParameter.NameTaxonomyEntry))
+                                {
+                                    dlpParam.Value = dlpRefParam.Value?.Clone() as SimParameterValueCollection<double>;
+                                    parameter.Description = referencedParameter.Description;
+                                    foundValue = true;
+                                }
+                            }
+                            else if (!foundValue && parameter.GetType() == referencedParameter.GetType() && parameter.NameTaxonomyEntry.Equals(referencedParameter.NameTaxonomyEntry))
+                            {
+                                throw new NotImplementedException(parameter.GetType().ToString());
                             }
 
                             //Early exit when all references are found
@@ -1086,6 +1096,15 @@ namespace SIMULTAN.Data.Components
             this.PropagateRefParamValueFromClosestRef(p);
             // update all instances
             this.Instances?.OnParameterValueChanged(p);
+        }
+
+        internal void OnListParameterCollectionChanged(SimBaseParameter p, NotifyCollectionChangedEventArgs e)
+        {
+            // propagate info to all components that reference this one
+            this.PropagateRefParamValueFromClosestRef(p);
+
+            // update instances
+            this.Instances?.OnListParameterCollectionChanged(p, e);
         }
 
         /// <inheritdoc />
